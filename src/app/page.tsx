@@ -29,15 +29,8 @@ export default function HomePage() {
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Your emails,{' '}
-            <span className="relative inline-grid align-baseline h-[1.15em] min-w-[11ch] overflow-hidden">
-              {['intelligently', 'instantly', 'securely', 'beautifully'].map((word) => (
-                <span
-                  key={word}
-                  className="looping-hero-word text-transparent bg-clip-text bg-linear-to-r from-[#d1b52e] to-[#f0da5f] dark:from-[#f0da5f] dark:to-[#fff0a8]"
-                >
-                  {word}
-                </span>
-              ))}
+            <span className="animated-gradient-text text-transparent bg-clip-text bg-linear-to-r from-[#d1b52e] via-[#f0da5f] to-[#fff0a8] dark:from-[#f0da5f] dark:via-[#fff0a8] dark:to-[#d1b52e]">
+              intelligently
             </span>{' '}
             processed
           </h1>
