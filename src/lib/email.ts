@@ -3,6 +3,11 @@ import crypto from 'crypto';
 import { adminDb } from './firebase-admin';
 export { generateAssignedEmail } from './email-utils';
 
+/** Strip CR and LF characters to prevent email header (CRLF) injection. */
+function stripCrlf(value: string): string {
+  return value.replace(/[\r\n]/g, '');
+}
+
 export async function createTransport() {
   const db = adminDb();
   const settingsSnap = await db.collection('settings').doc('global').get();
@@ -44,9 +49,9 @@ async function sendViaMailgun(options: {
   const url = `${options.baseUrl}/v3/${options.domain}/messages`;
 
   const body = new URLSearchParams({
-    from: options.from,
-    to: options.to,
-    subject: options.subject,
+    from: stripCrlf(options.from),
+    to: stripCrlf(options.to),
+    subject: stripCrlf(options.subject),
     html: options.html,
     text: options.text,
   });
@@ -86,16 +91,19 @@ export async function sendEmail(options: {
   const mailgunBaseUrl =
     settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
-  const fromAddress =
-    options.from || settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.app'}>`;
+  const fromAddress = stripCrlf(
+    options.from || settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.app'}>`
+  );
+  const toAddress = stripCrlf(options.to);
+  const subjectLine = stripCrlf(options.subject);
 
   const text = options.text || options.html.replace(/<[^>]*>/g, '');
 
   if (mailgunApiKey && mailgunDomain) {
     await sendViaMailgun({
-      to: options.to,
+      to: toAddress,
       from: fromAddress,
-      subject: options.subject,
+      subject: subjectLine,
       html: options.html,
       text,
       apiKey: mailgunApiKey,
@@ -109,8 +117,8 @@ export async function sendEmail(options: {
   const transporter = await createTransport();
   await transporter.sendMail({
     from: fromAddress,
-    to: options.to,
-    subject: options.subject,
+    to: toAddress,
+    subject: subjectLine,
     html: options.html,
     text,
   });
