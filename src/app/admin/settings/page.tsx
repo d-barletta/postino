@@ -123,33 +123,38 @@ export default function AdminSettingsPage() {
             placeholder="sk-or-..."
           />
           <div className="space-y-1">
-            <label htmlFor="llm-model" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="llm-model" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               LLM Model
             </label>
-            <select
-              id="llm-model"
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-[#EFD957] focus:outline-none focus:ring-1 focus:ring-[#EFD957] disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
-              value={settings.llmModel || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, llmModel: e.target.value }))}
-              disabled={modelsLoading || models.length === 0}
-            >
-              {!modelsLoading &&
-                settings.llmModel &&
-                !models.some((model) => model.id === settings.llmModel) && (
-                  <option value={settings.llmModel}>{settings.llmModel} (current)</option>
+            <div className="relative">
+              <select
+                id="llm-model"
+                className="peer block w-full appearance-none rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:border-[#EFD957] focus:outline-none focus:ring-1 focus:ring-[#EFD957] disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+                value={settings.llmModel || ''}
+                onChange={(e) => setSettings((p) => ({ ...p, llmModel: e.target.value }))}
+                disabled={modelsLoading || models.length === 0}
+              >
+                {!modelsLoading &&
+                  settings.llmModel &&
+                  !models.some((model) => model.id === settings.llmModel) && (
+                    <option value={settings.llmModel}>{settings.llmModel} (current)</option>
+                  )}
+                {modelsLoading && <option value="">Loading models...</option>}
+                {!modelsLoading && models.length === 0 && (
+                  <option value="">No models available</option>
                 )}
-              {modelsLoading && <option value="">Loading models...</option>}
-              {!modelsLoading && models.length === 0 && (
-                <option value="">No models available</option>
-              )}
-              {!modelsLoading &&
-                models.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name} ({model.id})
-                  </option>
-                ))}
-            </select>
-            {!modelsError && <p className="text-xs text-gray-500">Fetched live from OpenRouter</p>}
+                {!modelsLoading &&
+                  models.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name} ({model.id})
+                    </option>
+                  ))}
+              </select>
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400 peer-disabled:text-gray-400">
+                <i className="bi bi-chevron-down text-xs" aria-hidden="true" />
+              </span>
+            </div>
+            {!modelsError && <p className="text-xs text-gray-500 dark:text-gray-400">Fetched live from OpenRouter</p>}
             {modelsError && <p className="text-xs text-red-600">{modelsError}</p>}
           </div>
           <Input
