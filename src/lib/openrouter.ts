@@ -16,7 +16,6 @@ export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: st
 
   const apiKey =
     settings?.llmApiKey ||
-    process.env.OPENROUTER_API_KEY ||
     process.env.OPEN_ROUTER_API_KEY ||
     '';
   const model = settings?.llmModel || process.env.LLM_MODEL || 'openai/gpt-4o-mini';

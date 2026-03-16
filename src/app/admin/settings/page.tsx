@@ -36,6 +36,8 @@ export default function AdminSettingsPage() {
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState('');
+  const [llmTesting, setLlmTesting] = useState(false);
+  const [llmTestResult, setLlmTestResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -84,6 +86,28 @@ export default function AdminSettingsPage() {
 
     fetchModels();
   }, [firebaseUser]);
+
+  const handleTestLlm = async () => {
+    if (!firebaseUser) return;
+    setLlmTesting(true);
+    setLlmTestResult(null);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/admin/test-llm', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.chatCompletion === 'ok') {
+        setLlmTestResult({ ok: true, message: `Connection successful — model: ${data.model}`, detail: data.chatResponse });
+      } else {
+        setLlmTestResult({ ok: false, message: 'Connection failed', detail: data.chatError || JSON.stringify(data) });
+      }
+    } catch (err) {
+      setLlmTestResult({ ok: false, message: 'Request failed', detail: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setLlmTesting(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!firebaseUser) return;
@@ -166,6 +190,22 @@ export default function AdminSettingsPage() {
             value={settings.maxRuleLength || 1000}
             onChange={(e) => setSettings((p) => ({ ...p, maxRuleLength: parseInt(e.target.value) }))}
           />
+          <div className="flex items-center gap-3 pt-1">
+            <Button onClick={handleTestLlm} loading={llmTesting} variant="secondary">
+              Test Connection
+            </Button>
+            {llmTestResult && (
+              <span className={`text-sm flex flex-col gap-0.5 ${llmTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className="flex items-center gap-1">
+                  <i className={`bi ${llmTestResult.ok ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}`} aria-hidden="true" />
+                  {llmTestResult.message}
+                </span>
+                {llmTestResult.detail && (
+                  <span className="text-xs opacity-75 font-mono">{llmTestResult.detail}</span>
+                )}
+              </span>
+            )}
+          </div>
         </CardContent>
       </Card>
 

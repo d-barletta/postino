@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
     const settings = settingsSnap.data();
     const apiKey =
       settings?.llmApiKey ||
-      process.env.OPENROUTER_API_KEY ||
       process.env.OPEN_ROUTER_API_KEY ||
       '';
     const normalizedApiKey = apiKey.trim();
