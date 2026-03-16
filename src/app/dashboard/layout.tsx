@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +11,7 @@ import { PostinoLogo } from '@/components/brand/PostinoLogo';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { firebaseUser, user, loading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !firebaseUser) {
@@ -53,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
               {firebaseUser.email}
             </span>
@@ -61,7 +62,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Sign out
             </Button>
           </div>
+          <button
+            type="button"
+            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
+            aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((v) => !v)}
+          >
+            <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`} aria-hidden="true" />
+          </button>
         </div>
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20"
+            >
+              Dashboard
+            </Link>
+            {user?.isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20"
+              >
+                Admin
+              </Link>
+            )}
+            <div className="px-3 pt-1 text-xs text-gray-500 dark:text-gray-400 truncate">{firebaseUser.email}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-gray-700 dark:text-gray-200"
+              onClick={async () => {
+                setMobileMenuOpen(false);
+                await handleSignOut();
+              }}
+            >
+              Sign out
+            </Button>
+          </div>
+        )}
       </nav>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}

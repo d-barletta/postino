@@ -12,6 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { firebaseUser, user, loading } = useAuth();
   const [checking, setChecking] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -56,6 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
                   className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 rounded-lg transition-colors"
                 >
                   {item.label}
@@ -63,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                 Dashboard
@@ -73,7 +75,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Sign out
             </Button>
           </div>
+          <button
+            type="button"
+            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
+            aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((v) => !v)}
+          >
+            <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`} aria-hidden="true" />
+          </button>
         </div>
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">
+            {[
+              { href: '/admin', label: 'Overview' },
+              { href: '/admin/users', label: 'Users' },
+              { href: '/admin/settings', label: 'Settings' },
+              { href: '/dashboard', label: 'Dashboard' },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-gray-700 dark:text-gray-200"
+              onClick={async () => {
+                setMobileMenuOpen(false);
+                await handleSignOut();
+              }}
+            >
+              Sign out
+            </Button>
+          </div>
+        )}
       </nav>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
     </div>
