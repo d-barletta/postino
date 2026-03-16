@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
     const currentSettings = currentSettingsSnap.data() || {};
 
     const allowed = [
-      'maxRuleLength', 'llmModel', 'llmApiKey',
+      'maxRuleLength', 'llmModel', 'llmApiKey', 'llmSystemPrompt',
       'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
       'emailDomain',
       'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
