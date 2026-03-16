@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-[#EFD957] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -34,8 +34,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!firebaseUser) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen">
+      <nav className="glass-panel sticky top-0 z-10 border-b border-white/40 dark:border-white/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
@@ -43,18 +43,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="font-bold text-gray-900">Postino</span>
             </Link>
             <nav className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard" className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+              <Link href="/dashboard" className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 rounded-lg transition-colors">
                 Dashboard
               </Link>
               {user?.isAdmin && (
-                <Link href="/admin" className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <Link href="/admin" className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 rounded-lg transition-colors">
                   Admin
                 </Link>
               )}
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500 hidden sm:block">
+            <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
               {firebaseUser.email}
             </span>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>

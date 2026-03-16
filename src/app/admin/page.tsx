@@ -60,7 +60,7 @@ export default function AdminPage() {
               <a
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-[#EFD957] hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-colors"
+                className="flex items-center gap-3 p-4 rounded-xl border border-white/50 dark:border-white/10 bg-white/55 dark:bg-gray-900/35 hover:border-[#EFD957] hover:bg-yellow-50/80 dark:hover:bg-yellow-900/15 transition-colors"
               >
                 <i className={`${item.icon} text-2xl text-[#d0b53f]`} aria-hidden="true" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</span>

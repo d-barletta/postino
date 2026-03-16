@@ -11,6 +11,8 @@
   --border: #d1d5db;
   --input-text: #111827;
   --muted-text: #6b7280;
+  --accent: #efd957;
+  --accent-strong: #d6c043;
 }
 
 .dark {
@@ -31,9 +33,19 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1100px 500px at 85% -10%, #fff0a8 0%, transparent 55%),
+    radial-gradient(900px 420px at 0% 100%, #f7f0cb 0%, transparent 60%),
+    linear-gradient(135deg, #fffdf5 0%, #ffffff 50%, #fff8d4 100%);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.dark body {
+  background:
+    radial-gradient(1000px 520px at 85% -10%, #5a501f 0%, transparent 55%),
+    radial-gradient(900px 420px at 0% 100%, #2d2914 0%, transparent 60%),
+    linear-gradient(135deg, #090f1b 0%, #0f172a 50%, #1f1b0f 100%);
 }
 
 input,
@@ -80,4 +92,16 @@ textarea::placeholder {
 .dark .text-gray-500,
 .dark .text-gray-400 {
   color: #9ca3af;
+}
+
+.glass-panel {
+  background-color: rgb(255 255 255 / 0.68);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgb(255 255 255 / 0.45);
+}
+
+.dark .glass-panel {
+  background-color: rgb(17 24 39 / 0.58);
+  border-color: rgb(255 255 255 / 0.12);
 }

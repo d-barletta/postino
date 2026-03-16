@@ -23,7 +23,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-[#EFD957] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -32,14 +32,14 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Manage your Postino address and email rules</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your Postino address and email rules</p>
       </div>
 
       {user?.assignedEmail && (
         <AssignedEmailCard assignedEmail={user.assignedEmail} />
       )}
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex gap-6">
           {(['rules', 'emails'] as const).map((tab) => (
             <button
@@ -47,8 +47,8 @@ export default function DashboardPage() {
               onClick={() => setActiveTab(tab)}
               className={`pb-3 text-sm font-medium capitalize border-b-2 transition-colors ${
                 activeTab === tab
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-[#EFD957] text-[#a3891f] dark:text-[#f3df79]'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               {tab === 'rules' ? 'My Rules' : 'Email History'}

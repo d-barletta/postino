@@ -70,7 +70,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH }: RulesManage
       <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold text-gray-900">Add New Rule</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Describe how you want Postino to process your emails. Be specific!
           </p>
         </CardHeader>
@@ -107,12 +107,12 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH }: RulesManage
           Your Rules ({rules.filter((r) => r.isActive).length} active)
         </h2>
         {loading ? (
-          <div className="text-center py-8 text-gray-400">Loading rules...</div>
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500">Loading rules...</div>
         ) : rules.length === 0 ? (
           <Card>
             <CardContent className="text-center py-8">
-              <p className="text-gray-500">No rules yet. Add your first rule above!</p>
-              <p className="text-sm text-gray-400 mt-2">
+              <p className="text-gray-500 dark:text-gray-400">No rules yet. Add your first rule above!</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                 Example: &ldquo;Remove ads and summarize newsletters&rdquo;
               </p>
             </CardContent>
@@ -142,8 +142,8 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH }: RulesManage
                   ) : (
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{rule.text}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{rule.text}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                           Updated {formatDate(rule.updatedAt)}
                         </p>
                       </div>
