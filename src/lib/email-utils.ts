@@ -11,6 +11,22 @@ const WORD_LIST_B = [
   'river', 'storm', 'tide', 'union', 'vale', 'wind', 'xenial', 'yard', 'zone',
 ];
 
+interface DomainSettings {
+  emailDomain?: string;
+  mailgunSandboxEmail?: string;
+  mailgunDomain?: string;
+}
+
+export function resolveAssignedEmailDomain(settings?: DomainSettings): string {
+  return (
+    settings?.emailDomain ||
+    settings?.mailgunSandboxEmail ||
+    settings?.mailgunDomain ||
+    process.env.MAILGUN_SANDBOX_EMAIL ||
+    'sandbox.postino.app'
+  );
+}
+
 export function generateAssignedEmail(domain = 'sandbox.postino.app'): string {
   const wordA = WORD_LIST_A[Math.floor(Math.random() * WORD_LIST_A.length)];
   const wordB = WORD_LIST_B[Math.floor(Math.random() * WORD_LIST_B.length)];

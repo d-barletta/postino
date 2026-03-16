@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { generateAssignedEmail } from '@/lib/email-utils';
+import { generateAssignedEmail, resolveAssignedEmailDomain } from '@/lib/email-utils';
 
 function toIsoDate(value: unknown): string | null {
   if (!value) return null;
@@ -29,12 +29,7 @@ export async function GET(request: NextRequest) {
 
     if (!userSnap.exists) {
       const settingsSnap = await db.collection('settings').doc('global').get();
-      const domain =
-        settingsSnap.data()?.emailDomain ||
-        settingsSnap.data()?.mailgunSandboxEmail ||
-        settingsSnap.data()?.mailgunDomain ||
-        process.env.MAILGUN_SANDBOX_EMAIL ||
-        'sandbox.postino.app';
+      const domain = resolveAssignedEmailDomain(settingsSnap.data());
       await userRef.set({
         email: decoded.email ?? '',
         assignedEmail: generateAssignedEmail(domain),
@@ -45,6 +40,16 @@ export async function GET(request: NextRequest) {
       userSnap = await userRef.get();
     } else if (decoded.email_verified && !userSnap.data()?.isActive) {
       await userRef.update({ isActive: true });
+      userSnap = await userRef.get();
+    }
+
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const domain = resolveAssignedEmailDomain(settingsSnap.data());
+    const assignedEmail = userSnap.data()?.assignedEmail as string | undefined;
+    const localPart = assignedEmail?.split('@')[0]?.trim();
+
+    if (localPart && assignedEmail?.toLowerCase() !== `${localPart}@${domain}`.toLowerCase()) {
+      await userRef.update({ assignedEmail: `${localPart}@${domain}`.toLowerCase() });
       userSnap = await userRef.get();
     }
 

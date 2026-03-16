@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { generateAssignedEmail } from '@/lib/email';
+import { resolveAssignedEmailDomain } from '@/lib/email-utils';
 
 const MAX_ATTEMPTS = 10;
 
@@ -15,12 +16,7 @@ export async function POST(request: NextRequest) {
 
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
-    const domain =
-      settingsSnap.data()?.emailDomain ||
-      settingsSnap.data()?.mailgunSandboxEmail ||
-      settingsSnap.data()?.mailgunDomain ||
-      process.env.MAILGUN_SANDBOX_EMAIL ||
-      'sandbox.postino.app';
+    const domain = resolveAssignedEmailDomain(settingsSnap.data());
 
     // Generate a unique email address with collision detection
     let newEmail = '';

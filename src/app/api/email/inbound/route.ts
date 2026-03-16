@@ -43,35 +43,58 @@ export async function POST(request: NextRequest) {
     }
 
     const recipientRaw = (formData.get('recipient') as string) || '';
-    const recipient = recipientRaw.trim().toLowerCase();
-    const normalizedRecipient =
+    const recipients = recipientRaw
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+    const normalizedRecipients = recipients.map((recipient) =>
       recipient.includes('@') || !mailgunDomain
         ? recipient
-        : `${recipient}@${mailgunDomain}`.toLowerCase();
+        : `${recipient}@${mailgunDomain}`.toLowerCase()
+    );
     const sender = formData.get('sender') as string;
     const subject = formData.get('subject') as string;
     const bodyHtml = (formData.get('body-html') as string) || '';
     const bodyPlain = (formData.get('body-plain') as string) || '';
     const emailBody = bodyHtml || bodyPlain;
 
-    const usersSnap = await db
-      .collection('users')
-      .where('assignedEmail', '==', normalizedRecipient)
-      .where('isActive', '==', true)
-      .limit(1)
-      .get();
-
-    if (usersSnap.empty) {
-      console.log(`No active user found for email: ${normalizedRecipient}`);
-      return NextResponse.json({ message: `No active user found for email: ${normalizedRecipient}` });
+    if (normalizedRecipients.length === 0) {
+      return NextResponse.json({ error: 'Missing recipient' }, { status: 400 });
     }
 
-    const userDoc = usersSnap.docs[0];
+    // Firestore `in` queries support up to 10 values per query.
+    const recipientChunks: string[][] = [];
+    for (let i = 0; i < normalizedRecipients.length; i += 10) {
+      recipientChunks.push(normalizedRecipients.slice(i, i + 10));
+    }
+
+    let userDoc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData> | null = null;
+    for (const chunk of recipientChunks) {
+      const usersSnap = await db
+        .collection('users')
+        .where('assignedEmail', 'in', chunk)
+        .where('isActive', '==', true)
+        .limit(1)
+        .get();
+
+      if (!usersSnap.empty) {
+        userDoc = usersSnap.docs[0];
+        break;
+      }
+    }
+
+    if (!userDoc) {
+      const recipientsText = normalizedRecipients.join(',');
+      console.log(`No active user found for email(s): ${recipientsText}`);
+      return NextResponse.json({ message: `No active user found for email(s): ${recipientsText}` });
+    }
+
     const userData = userDoc.data();
     const userId = userDoc.id;
+    const matchedRecipient = (userData.assignedEmail as string) || normalizedRecipients[0];
 
     const logRef = await db.collection('emailLogs').add({
-      toAddress: normalizedRecipient,
+      toAddress: matchedRecipient,
       fromAddress: sender,
       subject,
       receivedAt: Timestamp.now(),
