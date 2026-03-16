@@ -4,6 +4,21 @@ import { processEmailWithRules } from '@/lib/openrouter';
 import { sendEmail, verifyMailgunSignature } from '@/lib/email';
 import { Timestamp } from 'firebase-admin/firestore';
 
+/** Escape special HTML characters to prevent HTML injection in email templates. */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/** Strip CR and LF characters to prevent email header (CRLF) injection. */
+function stripCrlf(value: string): string {
+  return value.replace(/[\r\n]/g, '');
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -52,8 +67,8 @@ export async function POST(request: NextRequest) {
         ? recipient
         : `${recipient}@${mailgunDomain}`.toLowerCase()
     );
-    const sender = formData.get('sender') as string;
-    const subject = formData.get('subject') as string;
+    const sender = stripCrlf((formData.get('sender') as string) || '');
+    const subject = stripCrlf((formData.get('subject') as string) || '');
     const bodyHtml = (formData.get('body-html') as string) || '';
     const bodyPlain = (formData.get('body-plain') as string) || '';
     const emailBody = bodyHtml || bodyPlain;
@@ -122,7 +137,7 @@ export async function POST(request: NextRequest) {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #f0f4ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; color: #4b5563;">
           <strong>📮 Postino processed this email</strong><br>
-          Original from: ${sender} | Rule: ${result.ruleApplied}${originalEmailUrl ? `<br><a href="${originalEmailUrl}" style="color: #4f46e5; text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
+          Original from: ${escapeHtml(sender)} | Rule: ${escapeHtml(result.ruleApplied)}${originalEmailUrl ? `<br><a href="${escapeHtml(originalEmailUrl)}" style="color: #4f46e5; text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
         </div>
         ${result.body}
       </div>
@@ -130,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     await sendEmail({
       to: userData.email,
-      subject: result.subject,
+      subject: stripCrlf(result.subject),
       html: emailHtml,
     });
 

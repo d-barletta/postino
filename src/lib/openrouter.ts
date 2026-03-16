@@ -64,6 +64,50 @@ function sanitizeRule(rule: string): string {
     .trim();
 }
 
+/**
+ * Sanitizes a single-line email header field (FROM / SUBJECT) for safe inclusion
+ * in the LLM prompt.
+ * - Encodes angle brackets as HTML entities to prevent structural-delimiter injection
+ * - Removes ASCII control characters including CR / LF
+ * - Collapses whitespace so multi-line injections are flattened into a single line
+ */
+function sanitizeEmailField(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Sanitizes an email body for safe inclusion in the LLM prompt.
+ * - Encodes angle brackets as HTML entities to prevent structural-delimiter injection
+ *   (e.g. prevents </user_rules> or <system> from being interpreted as delimiters)
+ * - Removes non-printable control characters (preserves \t, \n, \r for readability)
+ */
+function sanitizeEmailBody(body: string): string {
+  return body
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .trim();
+}
+
+/** Escapes special HTML characters to prevent HTML injection. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export async function processEmailWithRules(
   emailFrom: string,
   emailSubject: string,
@@ -97,11 +141,11 @@ ${rulesText}
 
   const userPrompt = `Process this incoming email:
 
-FROM: ${emailFrom}
-SUBJECT: ${emailSubject}
+FROM: ${sanitizeEmailField(emailFrom)}
+SUBJECT: ${sanitizeEmailField(emailSubject)}
 
 BODY:
-${emailBody}
+${sanitizeEmailBody(emailBody)}
 
 Return a JSON object with exactly these fields:
 {
@@ -135,7 +179,7 @@ Return a JSON object with exactly these fields:
   } catch {
     parsed = {
       subject: `[Postino] ${emailSubject}`,
-      body: `<p>Original email from ${emailFrom}:</p><pre>${emailBody}</pre>`,
+      body: `<p>Original email from ${escapeHtml(emailFrom)}:</p><pre>${escapeHtml(emailBody)}</pre>`,
       ruleApplied: 'error parsing LLM response, forwarded as-is',
     };
   }
