@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import type { User } from '@/types';
@@ -28,7 +28,7 @@ export function useAuthState() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserData = async (fbUser: FirebaseUser) => {
+  const fetchUserData = useCallback(async (fbUser: FirebaseUser) => {
     try {
       const token = await fbUser.getIdToken();
       const res = await fetch('/api/auth/me', {
@@ -41,13 +41,13 @@ export function useAuthState() {
     } catch (err) {
       console.error('Failed to fetch user data:', err);
     }
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (firebaseUser) {
       await fetchUserData(firebaseUser);
     }
-  };
+  }, [firebaseUser, fetchUserData]);
 
   useEffect(() => {
     if (!auth) {
@@ -64,7 +64,7 @@ export function useAuthState() {
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [fetchUserData]);
 
   return { firebaseUser, user, loading, refreshUser };
 }

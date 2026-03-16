@@ -39,8 +39,11 @@ export async function GET(request: NextRequest) {
         assignedEmail: generateAssignedEmail(domain),
         createdAt: new Date(),
         isAdmin: false,
-        isActive: true,
+        isActive: false,
       });
+      userSnap = await userRef.get();
+    } else if (decoded.email_verified && !userSnap.data()?.isActive) {
+      await userRef.update({ isActive: true });
       userSnap = await userRef.get();
     }
 
