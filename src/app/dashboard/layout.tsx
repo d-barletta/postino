@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <span className="text-xl">✉️</span>
+              <i className="bi bi-envelope-paper-fill text-xl text-indigo-600" aria-hidden="true" />
               <span className="font-bold text-gray-900">Postino</span>
             </Link>
             <nav className="hidden md:flex items-center gap-1">

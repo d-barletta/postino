@@ -7,7 +7,7 @@ export default function HomePage() {
       <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">✉️</span>
+            <i className="bi bi-envelope-paper-fill text-2xl text-indigo-600" aria-hidden="true" />
             <span className="font-bold text-xl text-gray-900">Postino</span>
           </div>
           <div className="flex items-center gap-3">
@@ -24,7 +24,7 @@ export default function HomePage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-20 text-center">
           <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 rounded-full px-4 py-1.5 text-sm font-medium mb-8">
-            <span>🤖</span> Powered by AI
+            <i className="bi bi-robot" aria-hidden="true" /> Powered by AI
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Your emails,{' '}
@@ -57,19 +57,19 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                icon: '📬',
+                icon: 'bi bi-inbox-fill',
                 step: '1',
                 title: 'Get your address',
                 desc: 'Sign up and get a unique Postino email address like amber-cloud-4829@postino.app',
               },
               {
-                icon: '📝',
+                icon: 'bi bi-pencil-square',
                 step: '2',
                 title: 'Write your rules',
                 desc: 'Tell Postino what to do in plain English: "Summarize newsletters", "Remove promotional content", etc.',
               },
               {
-                icon: '⚡',
+                icon: 'bi bi-lightning-charge-fill',
                 step: '3',
                 title: 'Receive processed email',
                 desc: 'Postino processes incoming emails with AI and forwards clean, useful content to your real inbox.',
@@ -77,7 +77,7 @@ export default function HomePage() {
             ].map((item) => (
               <div key={item.step} className="text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-100 text-3xl mb-4">
-                  {item.icon}
+                  <i className={item.icon} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
                 <p className="text-gray-600">{item.desc}</p>
@@ -101,7 +101,7 @@ export default function HomePage() {
                 key={rule}
                 className="flex items-start gap-3 bg-white rounded-xl border border-gray-200 p-4"
               >
-                <span className="text-green-500 mt-0.5">✓</span>
+                <i className="bi bi-check-circle-fill text-green-500 mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-gray-700">{rule}</p>
               </div>
             ))}
