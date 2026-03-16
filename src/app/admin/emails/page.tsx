@@ -118,14 +118,20 @@ export default function AdminEmailsPage() {
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
                           {formatDate(log.receivedAt)}
                         </td>
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-[140px] truncate" title={log.userEmail || log.userId}>
-                          {log.userEmail || log.userId}
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          <div className="max-w-[140px] truncate" title={log.userEmail || log.userId}>
+                            {log.userEmail || log.userId}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-[140px] truncate" title={log.fromAddress}>
-                          {log.fromAddress}
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          <div className="max-w-[140px] truncate" title={log.fromAddress}>
+                            {log.fromAddress}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-800 dark:text-gray-100 max-w-[200px] truncate" title={log.subject}>
-                          {log.subject}
+                        <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
+                          <div className="max-w-[200px] truncate" title={log.subject}>
+                            {log.subject}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant={STATUS_VARIANT[log.status] || 'default'}>{log.status}</Badge>
@@ -150,7 +156,7 @@ export default function AdminEmailsPage() {
                               </div>
                               <div>
                                 <dt className="font-medium text-gray-500 dark:text-gray-400">To (Postino address)</dt>
-                                <dd className="text-gray-700 dark:text-gray-300">{log.toAddress}</dd>
+                                <dd className="text-gray-700 dark:text-gray-300 break-all">{log.toAddress}</dd>
                               </div>
                               <div>
                                 <dt className="font-medium text-gray-500 dark:text-gray-400">Processed at</dt>
