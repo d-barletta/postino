@@ -75,9 +75,9 @@ export default function AdminUsersPage() {
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {users.map((user) => (
                 <div key={user.uid} className="px-6 py-4 bg-white dark:bg-gray-900">
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{user.email}</p>
                         {user.isAdmin && <Badge variant="info">Admin</Badge>}
                         <Badge variant={user.isActive ? 'success' : 'error'}>
@@ -87,7 +87,7 @@ export default function AdminUsersPage() {
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono">{user.assignedEmail}</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500">Joined {formatDate(user.createdAt)}</p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
                         size="sm"
                         variant="secondary"

@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <PostinoLogo className="h-6 w-6" />
               <span className="font-bold">Postino Admin</span>
             </Link>
-            <nav className="flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1">
               {[
                 { href: '/admin', label: 'Overview' },
                 { href: '/admin/users', label: 'Users' },
@@ -57,7 +57,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
                   className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 rounded-lg transition-colors"
                 >
                   {item.label}
@@ -65,25 +64,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ))}
             </nav>
           </div>
-          <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                 Dashboard
               </Button>
             </Link>
-            <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" className="hidden md:inline-flex text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white" onClick={handleSignOut}>
               Sign out
             </Button>
+            <button
+              type="button"
+              className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((v) => !v)}
+            >
+              <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`} aria-hidden="true" />
+            </button>
           </div>
-          <button
-            type="button"
-            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
-            aria-label="Toggle menu"
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen((v) => !v)}
-          >
-            <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`} aria-hidden="true" />
-          </button>
         </div>
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">
@@ -91,7 +90,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { href: '/admin', label: 'Overview' },
               { href: '/admin/users', label: 'Users' },
               { href: '/admin/settings', label: 'Settings' },
-              { href: '/dashboard', label: 'Dashboard' },
             ].map((item) => (
               <Link
                 key={item.href}
