@@ -41,7 +41,7 @@ export default function HomePage() {
               ))}
             </span>
             <br/>
-            fixes
+            polishes
             <br/>
             e-mails <span className="text-[0.62em] align-[0.08em]">&</span> newsletters
           </h1>
