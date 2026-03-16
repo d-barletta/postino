@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50">
       <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
@@ -28,7 +28,7 @@ export default function HomePage() {
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Your emails,{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-purple-600">
               intelligently
             </span>{' '}
             processed
@@ -109,11 +109,6 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-gray-200 py-8 mt-16">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} Postino. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

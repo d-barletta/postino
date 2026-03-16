@@ -7,6 +7,11 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import type { Settings } from '@/types';
 
+interface OpenRouterModel {
+  id: string;
+  name: string;
+}
+
 export default function AdminSettingsPage() {
   const { firebaseUser } = useAuth();
   const [settings, setSettings] = useState<Partial<Settings>>({
@@ -25,6 +30,9 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [models, setModels] = useState<OpenRouterModel[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState('');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -43,6 +51,35 @@ export default function AdminSettingsPage() {
       }
     };
     fetchSettings();
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      if (!firebaseUser) return;
+      setModelsLoading(true);
+      setModelsError('');
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/admin/openrouter-models', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setModels([]);
+          setModelsError(data.error || 'Failed to load models');
+          return;
+        }
+        const fetchedModels = (data.models || []) as OpenRouterModel[];
+        setModels(fetchedModels);
+      } catch {
+        setModels([]);
+        setModelsError('Failed to load models');
+      } finally {
+        setModelsLoading(false);
+      }
+    };
+
+    fetchModels();
   }, [firebaseUser]);
 
   const handleSave = async () => {
@@ -85,12 +122,36 @@ export default function AdminSettingsPage() {
             onChange={(e) => setSettings((p) => ({ ...p, llmApiKey: e.target.value }))}
             placeholder="sk-or-..."
           />
-          <Input
-            label="LLM Model"
-            value={settings.llmModel || ''}
-            onChange={(e) => setSettings((p) => ({ ...p, llmModel: e.target.value }))}
-            hint="e.g. openai/gpt-4o-mini, anthropic/claude-3-haiku"
-          />
+          <div className="space-y-1">
+            <label htmlFor="llm-model" className="block text-sm font-medium text-gray-700">
+              LLM Model
+            </label>
+            <select
+              id="llm-model"
+              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+              value={settings.llmModel || ''}
+              onChange={(e) => setSettings((p) => ({ ...p, llmModel: e.target.value }))}
+              disabled={modelsLoading || models.length === 0}
+            >
+              {!modelsLoading &&
+                settings.llmModel &&
+                !models.some((model) => model.id === settings.llmModel) && (
+                  <option value={settings.llmModel}>{settings.llmModel} (current)</option>
+                )}
+              {modelsLoading && <option value="">Loading models...</option>}
+              {!modelsLoading && models.length === 0 && (
+                <option value="">No models available</option>
+              )}
+              {!modelsLoading &&
+                models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({model.id})
+                  </option>
+                ))}
+            </select>
+            {!modelsError && <p className="text-xs text-gray-500">Fetched live from OpenRouter</p>}
+            {modelsError && <p className="text-xs text-red-600">{modelsError}</p>}
+          </div>
           <Input
             label="Max Rule Length (characters)"
             type="number"

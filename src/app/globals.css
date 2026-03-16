@@ -1,8 +1,25 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #d1d5db;
+  --input-text: #111827;
+  --muted-text: #6b7280;
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #e5e7eb;
+  --surface: #111827;
+  --surface-muted: #1f2937;
+  --border: #374151;
+  --input-text: #f3f4f6;
+  --muted-text: #9ca3af;
 }
 
 @theme inline {
@@ -12,15 +29,54 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+input,
+textarea,
+select {
+  color: var(--input-text);
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-text);
+  opacity: 1;
+}
+
+/* Improve dark mode compatibility for common Tailwind gray utility classes used across the app. */
+.dark .bg-white {
+  background-color: #111827;
+}
+
+.dark .bg-gray-50 {
+  background-color: #0f172a;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1f2937;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: #374151;
+}
+
+.dark .text-gray-900 {
+  color: #f3f4f6;
+}
+
+.dark .text-gray-700 {
+  color: #d1d5db;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: #9ca3af;
 }
