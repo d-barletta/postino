@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import type { Settings } from '@/types';
 
+type SectionKey = 'llm' | 'domain' | 'smtp' | 'mailgun';
+
 interface OpenRouterModel {
   id: string;
   name: string;
@@ -35,6 +37,12 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
+    llm: true,
+    domain: true,
+    smtp: true,
+    mailgun: true,
+  });
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState('');
@@ -130,6 +138,10 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const toggleSection = (section: SectionKey) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
   if (loading) {
     return <div className="text-center py-12 text-gray-400">Loading settings...</div>;
   }
@@ -142,7 +154,18 @@ export default function AdminSettingsPage() {
       </div>
 
       <Card>
-        <CardHeader><h2 className="font-semibold text-gray-900">AI / LLM Settings</h2></CardHeader>
+        <CardHeader>
+          <button
+            onClick={() => toggleSection('llm')}
+            className="flex w-full items-center justify-between"
+            aria-expanded={openSections.llm}
+            aria-label="Toggle AI / LLM Settings section"
+          >
+            <h2 className="font-semibold text-gray-900">AI / LLM Settings</h2>
+            <i className={`bi ${openSections.llm ? 'bi-chevron-up' : 'bi-chevron-down'} text-gray-500`} aria-hidden="true" />
+          </button>
+        </CardHeader>
+        {openSections.llm && (
         <CardContent className="space-y-4">
           <Input
             label="OpenRouter API Key"
@@ -217,10 +240,22 @@ export default function AdminSettingsPage() {
             )}
           </div>
         </CardContent>
+        )}
       </Card>
 
       <Card>
-        <CardHeader><h2 className="font-semibold text-gray-900">Email Domain</h2></CardHeader>
+        <CardHeader>
+          <button
+            onClick={() => toggleSection('domain')}
+            className="flex w-full items-center justify-between"
+            aria-expanded={openSections.domain}
+            aria-label="Toggle Email Domain section"
+          >
+            <h2 className="font-semibold text-gray-900">Email Domain</h2>
+            <i className={`bi ${openSections.domain ? 'bi-chevron-up' : 'bi-chevron-down'} text-gray-500`} aria-hidden="true" />
+          </button>
+        </CardHeader>
+        {openSections.domain && (
         <CardContent>
           <Input
             label="Email Domain"
@@ -230,10 +265,22 @@ export default function AdminSettingsPage() {
             hint="Domain used for generating user email addresses"
           />
         </CardContent>
+        )}
       </Card>
 
       <Card>
-        <CardHeader><h2 className="font-semibold text-gray-900">SMTP Settings</h2></CardHeader>
+        <CardHeader>
+          <button
+            onClick={() => toggleSection('smtp')}
+            className="flex w-full items-center justify-between"
+            aria-expanded={openSections.smtp}
+            aria-label="Toggle SMTP Settings section"
+          >
+            <h2 className="font-semibold text-gray-900">SMTP Settings</h2>
+            <i className={`bi ${openSections.smtp ? 'bi-chevron-up' : 'bi-chevron-down'} text-gray-500`} aria-hidden="true" />
+          </button>
+        </CardHeader>
+        {openSections.smtp && (
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
@@ -267,10 +314,22 @@ export default function AdminSettingsPage() {
             placeholder="Postino <noreply@postino.app>"
           />
         </CardContent>
+        )}
       </Card>
 
       <Card>
-        <CardHeader><h2 className="font-semibold text-gray-900">Mailgun Settings</h2></CardHeader>
+        <CardHeader>
+          <button
+            onClick={() => toggleSection('mailgun')}
+            className="flex w-full items-center justify-between"
+            aria-expanded={openSections.mailgun}
+            aria-label="Toggle Mailgun Settings section"
+          >
+            <h2 className="font-semibold text-gray-900">Mailgun Settings</h2>
+            <i className={`bi ${openSections.mailgun ? 'bi-chevron-up' : 'bi-chevron-down'} text-gray-500`} aria-hidden="true" />
+          </button>
+        </CardHeader>
+        {openSections.mailgun && (
         <CardContent className="space-y-4">
           <Input
             label="Mailgun API Key"
@@ -307,6 +366,7 @@ export default function AdminSettingsPage() {
             placeholder="https://api.mailgun.net"
           />
         </CardContent>
+        )}
       </Card>
 
       <div className="flex items-center gap-3">
