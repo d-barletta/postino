@@ -15,15 +15,28 @@ export async function POST(request: NextRequest) {
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data();
-    const mailgunApiKey = settings?.mailgunApiKey || process.env.MAILGUN_API_KEY || '';
-    const mailgunDomain = settings?.mailgunDomain || process.env.MAILGUN_SANDBOX_EMAIL || '';
-    const mailgunBaseUrl = process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
+    const mailgunWebhookSigningKey =
+      settings?.mailgunWebhookSigningKey ||
+      process.env.MAILGUN_WEBHOOK_SIGNING_KEY ||
+      settings?.mailgunApiKey ||
+      process.env.MAILGUN_API_KEY ||
+      '';
+    const mailgunDomain =
+      settings?.mailgunSandboxEmail ||
+      settings?.mailgunDomain ||
+      process.env.MAILGUN_SANDBOX_EMAIL ||
+      '';
+    const mailgunBaseUrl =
+      settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
-    if (mailgunApiKey && !verifyMailgunSignature(timestamp, token, signature, mailgunApiKey)) {
+    if (
+      mailgunWebhookSigningKey &&
+      !verifyMailgunSignature(timestamp, token, signature, mailgunWebhookSigningKey)
+    ) {
       return NextResponse.json(
         {
           error: 'Invalid signature',
-          hint: `Check Mailgun API key and endpoint (${mailgunBaseUrl})`,
+          hint: `Check Mailgun webhook signing key and endpoint (${mailgunBaseUrl})`,
         },
         { status: 403 }
       );

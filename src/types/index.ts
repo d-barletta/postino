@@ -46,7 +46,10 @@ export interface Settings {
   smtpFrom: string;
   emailDomain: string;
   mailgunApiKey: string;
+  mailgunWebhookSigningKey?: string;
   mailgunDomain: string;
+  mailgunSandboxEmail?: string;
+  mailgunBaseUrl?: string;
   updatedAt?: Date;
 }
 

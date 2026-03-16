@@ -25,7 +25,10 @@ export default function AdminSettingsPage() {
     smtpFrom: '',
     emailDomain: '',
     mailgunApiKey: '',
+    mailgunWebhookSigningKey: '',
     mailgunDomain: '',
+    mailgunSandboxEmail: '',
+    mailgunBaseUrl: 'https://api.mailgun.net',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -227,10 +230,31 @@ export default function AdminSettingsPage() {
             placeholder="key-..."
           />
           <Input
+            label="Mailgun Webhook Signing Key"
+            type="password"
+            value={settings.mailgunWebhookSigningKey || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, mailgunWebhookSigningKey: e.target.value }))}
+            placeholder="webhook signing key"
+            hint="Used to verify inbound Mailgun webhook signatures"
+          />
+          <Input
             label="Mailgun Domain"
             value={settings.mailgunDomain || ''}
             onChange={(e) => setSettings((p) => ({ ...p, mailgunDomain: e.target.value }))}
             placeholder="sandbox....mailgun.org"
+          />
+          <Input
+            label="Mailgun Sandbox Email"
+            value={settings.mailgunSandboxEmail || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, mailgunSandboxEmail: e.target.value }))}
+            placeholder="sandbox123.mailgun.org"
+            hint="Used when recipient arrives without @domain"
+          />
+          <Input
+            label="Mailgun Base URL"
+            value={settings.mailgunBaseUrl || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, mailgunBaseUrl: e.target.value }))}
+            placeholder="https://api.mailgun.net"
           />
         </CardContent>
       </Card>

@@ -46,7 +46,8 @@ export async function PUT(request: NextRequest) {
     const allowed = [
       'maxRuleLength', 'llmModel', 'llmApiKey',
       'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
-      'emailDomain', 'mailgunApiKey', 'mailgunDomain',
+      'emailDomain',
+      'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))

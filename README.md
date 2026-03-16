@@ -61,7 +61,8 @@ npm install
 3. For production, add and verify your own domain
 4. Go to **Sending → Domains** and note your domain name
 5. Go to **Settings → API Keys** and copy your Private API Key
-6. Configure an **Inbound Route**:
+6. Go to **Sending → Webhooks** and copy your Webhook Signing Key
+7. Configure an **Inbound Route**:
    - Go to **Receiving → Create Route**
    - Expression: `match_recipient(".*@your-domain.com")`
    - Action: Forward to `https://your-app.vercel.app/api/email/inbound`
@@ -94,6 +95,7 @@ cp .env.local.example .env.local
 | `SMTP_PASS` | SMTP password / app password |
 | `SMTP_FROM` | From address, e.g. `Postino <noreply@postino.app>` |
 | `MAILGUN_API_KEY` | Mailgun private API key |
+| `MAILGUN_WEBHOOK_SIGNING_KEY` | Mailgun webhook signing key used to verify inbound webhook signatures |
 | `NEXT_PUBLIC_APP_URL` | Your deployed app URL |
 
 ### 5. Deploy to Vercel
@@ -123,6 +125,7 @@ Go to `/admin/settings` to configure:
 - **Email Domain** for user addresses
 - **SMTP settings** for outbound mail
 - **Mailgun settings** for inbound webhook verification
+   - Use the **Webhook Signing Key** (not API key) for signature verification
 
 Settings saved in the admin panel override environment variables.
 

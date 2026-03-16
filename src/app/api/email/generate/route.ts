@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     const settingsSnap = await db.collection('settings').doc('global').get();
     const domain =
       settingsSnap.data()?.emailDomain ||
+      settingsSnap.data()?.mailgunSandboxEmail ||
       settingsSnap.data()?.mailgunDomain ||
       process.env.MAILGUN_SANDBOX_EMAIL ||
       'sandbox.postino.app';
