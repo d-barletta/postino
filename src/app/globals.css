@@ -164,24 +164,42 @@ textarea::placeholder {
   animation: gradient-shift 4.8s ease-in-out infinite;
 }
 
+/*
+  hero-word-loop: 12s cycle, 4 words, each gets a 3s slot (25% of cycle).
+  Slot breakdown: 0.5s enter → 2.0s hold → 0.5s exit → 9s hidden.
+  Delays: word 1 = -1.5s (mid-visible at t=0), word 2 = 1.5s (enters as word 1 exits), etc.
+  The jump from exit-position back to entry-position happens at 26% while opacity=0, so it's invisible.
+*/
 @keyframes hero-word-loop {
-  0%,
-  8% {
+  0% {
     opacity: 0;
-    transform: translateY(56%) scale(0.98);
-    filter: blur(6px);
+    transform: translateY(60%) scale(0.97);
+    filter: blur(4px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  18%,
-  20% {
+  4.17% {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
+    animation-timing-function: linear;
+  }
+  20.83% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  25% {
+    opacity: 0;
+    transform: translateY(-60%) scale(0.97);
+    filter: blur(4px);
+    animation-timing-function: step-end;
   }
   26%,
   100% {
     opacity: 0;
-    transform: translateY(-64%) scale(0.98);
-    filter: blur(6px);
+    transform: translateY(60%) scale(0.97);
+    filter: blur(4px);
   }
 }
 
@@ -189,13 +207,15 @@ textarea::placeholder {
   grid-area: 1 / 1;
   opacity: 0;
   will-change: transform, opacity, filter;
-  animation: hero-word-loop 12s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation: hero-word-loop 12s linear infinite;
 }
 
-.looping-hero-word:nth-child(1) { animation-delay: -2.2s; }
-.looping-hero-word:nth-child(2) { animation-delay: 3s; }
-.looping-hero-word:nth-child(3) { animation-delay: 6s; }
-.looping-hero-word:nth-child(4) { animation-delay: 9s; }
+/* Word 1 at -1.5s → at t=0 it's at 12.5% of cycle (mid visible window). */
+/* Each subsequent word starts 3s later, entering exactly as the previous one exits. */
+.looping-hero-word:nth-child(1) { animation-delay: -1.5s; }
+.looping-hero-word:nth-child(2) { animation-delay: 1.5s; }
+.looping-hero-word:nth-child(3) { animation-delay: 4.5s; }
+.looping-hero-word:nth-child(4) { animation-delay: 7.5s; }
 
 @media (prefers-reduced-motion: reduce) {
   .ui-fade-up,
