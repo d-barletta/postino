@@ -56,16 +56,16 @@ export function LoginForm() {
         placeholder="••••••••"
       />
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm text-red-600 dark:text-red-300">
           {error}
         </div>
       )}
       <Button type="submit" loading={loading} className="w-full" size="lg">
         Sign in
       </Button>
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         Don&apos;t have an account?{' '}
-        <Link href="/register" className="text-indigo-600 hover:underline font-medium">
+        <Link href="/register" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
           Sign up
         </Link>
       </p>

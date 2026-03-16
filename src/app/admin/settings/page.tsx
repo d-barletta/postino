@@ -128,7 +128,7 @@ export default function AdminSettingsPage() {
             </label>
             <select
               id="llm-model"
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-[#EFD957] focus:outline-none focus:ring-1 focus:ring-[#EFD957] disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
               value={settings.llmModel || ''}
               onChange={(e) => setSettings((p) => ({ ...p, llmModel: e.target.value }))}
               disabled={modelsLoading || models.length === 0}
@@ -234,7 +234,11 @@ export default function AdminSettingsPage() {
         <Button onClick={handleSave} loading={saving}>
           Save Settings
         </Button>
-        {saved && <span className="text-sm text-green-600">✓ Settings saved!</span>}
+        {saved && (
+          <span className="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-300">
+            <i className="bi bi-check-circle-fill" aria-hidden="true" /> Settings saved!
+          </span>
+        )}
       </div>
     </div>
   );

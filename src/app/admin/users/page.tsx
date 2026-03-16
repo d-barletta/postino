@@ -61,7 +61,7 @@ export default function AdminUsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-500 mt-1">{users.length} total users</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{users.length} total users</p>
         </div>
       </div>
       <Card>
@@ -70,22 +70,22 @@ export default function AdminUsersPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="text-center py-8 text-gray-400">Loading users...</div>
+            <div className="text-center py-8 text-gray-400 dark:text-gray-500">Loading users...</div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {users.map((user) => (
-                <div key={user.uid} className="px-6 py-4">
+                <div key={user.uid} className="px-6 py-4 bg-white dark:bg-gray-900">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-800 truncate">{user.email}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{user.email}</p>
                         {user.isAdmin && <Badge variant="info">Admin</Badge>}
                         <Badge variant={user.isActive ? 'success' : 'error'}>
                           {user.isActive ? 'Active' : 'Suspended'}
                         </Badge>
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5 font-mono">{user.assignedEmail}</p>
-                      <p className="text-xs text-gray-400">Joined {formatDate(user.createdAt)}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono">{user.assignedEmail}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Joined {formatDate(user.createdAt)}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button

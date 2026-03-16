@@ -3,7 +3,7 @@ import { PostinoLogo } from '@/components/brand/PostinoLogo';
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-yellow-50 via-white to-amber-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
@@ -11,9 +11,9 @@ export default function RegisterPage() {
             <span className="font-bold text-2xl text-gray-900">Postino</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-          <p className="text-gray-500 mt-1">Get your personal Postino address</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Get your personal Postino address</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
           <RegisterForm />
         </div>
       </div>

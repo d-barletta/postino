@@ -35,7 +35,15 @@ export function AssignedEmailCard({ assignedEmail }: AssignedEmailCardProps) {
             {assignedEmail}
           </div>
           <Button variant="secondary" size="sm" onClick={handleCopy}>
-            {copied ? '✓ Copied' : 'Copy'}
+            {copied ? (
+              <span className="inline-flex items-center gap-1">
+                <i className="bi bi-check-lg" aria-hidden="true" /> Copied
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                <i className="bi bi-copy" aria-hidden="true" /> Copy
+              </span>
+            )}
           </Button>
         </div>
       </CardContent>

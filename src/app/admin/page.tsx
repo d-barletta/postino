@@ -34,16 +34,16 @@ export default function AdminPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Admin Overview</h1>
-        <p className="text-gray-500 mt-1">Platform statistics and management</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Platform statistics and management</p>
       </div>
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading stats...</div>
+        <div className="text-center py-12 text-gray-400 dark:text-gray-500">Loading stats...</div>
       ) : stats ? (
         <StatsCards stats={stats} />
       ) : (
         <Card>
           <CardContent>
-            <p className="text-gray-500">Failed to load statistics.</p>
+            <p className="text-gray-500 dark:text-gray-400">Failed to load statistics.</p>
           </CardContent>
         </Card>
       )}
@@ -54,16 +54,16 @@ export default function AdminPage() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { href: '/admin/users', label: 'Manage Users', icon: '👥' },
-              { href: '/admin/settings', label: 'Platform Settings', icon: '⚙️' },
+              { href: '/admin/users', label: 'Manage Users', icon: 'bi bi-people-fill' },
+              { href: '/admin/settings', label: 'Platform Settings', icon: 'bi bi-gear-fill' },
             ].map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-[#EFD957] hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-colors"
               >
-                <span className="text-2xl">{item.icon}</span>
-                <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                <i className={`${item.icon} text-2xl text-[#d0b53f]`} aria-hidden="true" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</span>
               </a>
             ))}
           </div>
