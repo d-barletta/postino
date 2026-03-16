@@ -33,6 +33,17 @@ export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: st
   return { client, model, apiKey: normalizedApiKey };
 }
 
+const DEFAULT_SYSTEM_PROMPT = `You are Postino, an intelligent email processing assistant. Your job is to process incoming emails according to user-defined rules and return a processed version.
+
+Instructions:
+- Apply the user's rules to transform the email content
+- Return the processed email in the exact JSON format specified
+- If a rule says to summarize, create a clear summary
+- If a rule says to remove ads/promotional content, strip that content
+- If no rules match the email content, still process it helpfully
+- Keep the subject relevant to the processed content
+- Preserve important information while applying the rules`;
+
 export async function processEmailWithRules(
   emailFrom: string,
   emailSubject: string,
@@ -45,24 +56,22 @@ export async function processEmailWithRules(
     throw new Error('Missing OpenRouter API key');
   }
 
+  const db = adminDb();
+  const settingsSnap = await db.collection('settings').doc('global').get();
+  const settings = settingsSnap.data();
+  const basePrompt = (typeof settings?.llmSystemPrompt === 'string' && settings.llmSystemPrompt.trim())
+    ? settings.llmSystemPrompt.trim()
+    : DEFAULT_SYSTEM_PROMPT;
+
   const activeRules = rules.filter((r) => r.trim().length > 0);
   const rulesText = activeRules.length > 0
     ? activeRules.map((r, i) => `Rule ${i + 1}: ${r}`).join('\n')
     : 'No specific rules. Forward the email as-is with a brief summary prepended.';
 
-  const systemPrompt = `You are Postino, an intelligent email processing assistant. Your job is to process incoming emails according to user-defined rules and return a processed version.
+  const systemPrompt = `${basePrompt}
 
 User Rules:
-${rulesText}
-
-Instructions:
-- Apply the user's rules to transform the email content
-- Return the processed email in the exact JSON format specified
-- If a rule says to summarize, create a clear summary
-- If a rule says to remove ads/promotional content, strip that content
-- If no rules match the email content, still process it helpfully
-- Keep the subject relevant to the processed content
-- Preserve important information while applying the rules`;
+${rulesText}`;
 
   const userPrompt = `Process this incoming email:
 

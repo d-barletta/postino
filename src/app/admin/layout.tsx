@@ -52,6 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {[
                 { href: '/admin', label: 'Overview' },
                 { href: '/admin/users', label: 'Users' },
+                { href: '/admin/emails', label: 'Emails' },
                 { href: '/admin/settings', label: 'Settings' },
               ].map((item) => (
                 <Link
@@ -89,6 +90,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {[
               { href: '/admin', label: 'Overview' },
               { href: '/admin/users', label: 'Users' },
+              { href: '/admin/emails', label: 'Emails' },
               { href: '/admin/settings', label: 'Settings' },
             ].map((item) => (
               <Link

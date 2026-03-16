@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import type { Settings } from '@/types';
 
@@ -18,6 +19,7 @@ export default function AdminSettingsPage() {
     maxRuleLength: 1000,
     llmModel: 'openai/gpt-4o-mini',
     llmApiKey: '',
+    llmSystemPrompt: '',
     smtpHost: '',
     smtpPort: 587,
     smtpUser: '',
@@ -189,6 +191,14 @@ export default function AdminSettingsPage() {
             type="number"
             value={settings.maxRuleLength || 1000}
             onChange={(e) => setSettings((p) => ({ ...p, maxRuleLength: parseInt(e.target.value) }))}
+          />
+          <Textarea
+            label="System Prompt (base)"
+            value={settings.llmSystemPrompt || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, llmSystemPrompt: e.target.value }))}
+            rows={8}
+            placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
+            hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
           />
           <div className="flex items-center gap-3 pt-1">
             <Button onClick={handleTestLlm} loading={llmTesting} variant="secondary">

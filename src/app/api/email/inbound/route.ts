@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
       receivedAt: Timestamp.now(),
       status: 'processing',
       userId,
+      originalBody: emailBody,
     });
 
     const rulesSnap = await db
@@ -112,11 +113,16 @@ export async function POST(request: NextRequest) {
 
     const result = await processEmailWithRules(sender, subject, emailBody, rules);
 
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+    const originalEmailUrl = appUrl
+      ? `${appUrl}/email/original/${logRef.id}`
+      : null;
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #f0f4ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; color: #4b5563;">
           <strong>📮 Postino processed this email</strong><br>
-          Original from: ${sender} | Rule: ${result.ruleApplied}
+          Original from: ${sender} | Rule: ${result.ruleApplied}${originalEmailUrl ? `<br><a href="${originalEmailUrl}" style="color: #4f46e5; text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
         </div>
         ${result.body}
       </div>
