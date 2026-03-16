@@ -166,18 +166,12 @@ textarea::placeholder {
 
 @keyframes hero-word-loop {
   0%,
-  12% {
-    opacity: 0;
-    transform: translateY(64%) scale(0.98);
-    filter: blur(6px);
-  }
-  16%,
-  33% {
+  26% {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
   }
-  42%,
+  34%,
   100% {
     opacity: 0;
     transform: translateY(-64%) scale(0.98);
