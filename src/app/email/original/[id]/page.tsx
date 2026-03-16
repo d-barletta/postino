@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
@@ -21,6 +21,30 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const [email, setEmail] = useState<OriginalEmail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    if (!document.fullscreenElement) {
+      iframe.requestFullscreen().then(() => setIsFullscreen(true)).catch((err) => {
+        console.error('Failed to enter fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch((err) => {
+        console.error('Failed to exit fullscreen:', err);
+      });
+    }
+  };
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) setIsFullscreen(false);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
 
   const handleBack = () => {
     if (typeof window !== 'undefined' && document.referrer && document.referrer.startsWith(window.location.origin)) {
@@ -132,11 +156,24 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-gray-900 dark:text-white">Email Content</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Email Content</h2>
+              {email.originalBody && (
+                <button
+                  onClick={toggleFullscreen}
+                  className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  title={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                  aria-label={isFullscreen ? 'Exit full screen' : 'View email in full screen'}
+                >
+                  <i className={isFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'} aria-hidden="true" />
+                </button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {email.originalBody ? (
               <iframe
+                ref={iframeRef}
                 sandbox=""
                 srcDoc={email.originalBody}
                 className="w-full border-0 rounded-b-xl"
