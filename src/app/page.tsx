@@ -28,7 +28,7 @@ export default function HomePage() {
              <PostinoLogo className="h-4 w-4" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Your 
+            <span className="text-[0.62em] align-[0.08em]">Your</span> 
             <br/>
             e-mails <span className="text-[0.62em] align-[0.08em]">&</span> newsletters
             <br/>
