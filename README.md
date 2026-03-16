@@ -88,6 +88,7 @@ cp .env.local.example .env.local
 | `FIREBASE_CLIENT_EMAIL` | Service account email |
 | `FIREBASE_PRIVATE_KEY` | Service account private key (with `\n` escaped) |
 | `OPENROUTER_API_KEY` | OpenRouter API key (`sk-or-...`) |
+| `OPEN_ROUTER_API_KEY` | Supported fallback env name for the same OpenRouter API key |
 | `LLM_MODEL` | Model to use, e.g. `openai/gpt-4o-mini` |
 | `SMTP_HOST` | SMTP server host |
 | `SMTP_PORT` | SMTP port (587 for TLS, 465 for SSL) |

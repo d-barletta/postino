@@ -14,19 +14,24 @@ export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: st
   const settingsSnap = await db.collection('settings').doc('global').get();
   const settings = settingsSnap.data();
 
-  const apiKey = settings?.llmApiKey || process.env.OPENROUTER_API_KEY || '';
+  const apiKey =
+    settings?.llmApiKey ||
+    process.env.OPENROUTER_API_KEY ||
+    process.env.OPEN_ROUTER_API_KEY ||
+    '';
   const model = settings?.llmModel || process.env.LLM_MODEL || 'openai/gpt-4o-mini';
+  const normalizedApiKey = apiKey.trim();
 
   const client = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
-    apiKey,
+    apiKey: normalizedApiKey,
     defaultHeaders: {
       'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.app',
       'X-Title': 'Postino Email Redirector',
     },
   });
 
-  return { client, model, apiKey };
+  return { client, model, apiKey: normalizedApiKey };
 }
 
 export async function processEmailWithRules(
@@ -35,7 +40,11 @@ export async function processEmailWithRules(
   emailBody: string,
   rules: string[]
 ): Promise<ProcessEmailResult> {
-  const { client, model } = await getOpenRouterClient();
+  const { client, model, apiKey } = await getOpenRouterClient();
+
+  if (!apiKey) {
+    throw new Error('Missing OpenRouter API key');
+  }
 
   const activeRules = rules.filter((r) => r.trim().length > 0);
   const rulesText = activeRules.length > 0
@@ -71,15 +80,22 @@ Return a JSON object with exactly these fields:
   "ruleApplied": "description of which rule was applied or 'forwarded as-is'"
 }`;
 
-  const response = await client.chat.completions.create({
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    response_format: { type: 'json_object' },
-    max_tokens: 2000,
-  });
+  let response;
+
+  try {
+    response = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 2000,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown OpenRouter error';
+    throw new Error(`OpenRouter request failed: ${message}`);
+  }
 
   const content = response.choices[0]?.message?.content || '{}';
   let parsed: { subject?: string; body?: string; ruleApplied?: string };

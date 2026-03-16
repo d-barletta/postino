@@ -58,13 +58,19 @@ export async function PUT(request: NextRequest) {
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
+    const normalized = Object.fromEntries(
+      Object.entries(filtered).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.trim() : value,
+      ])
+    );
 
-    const nextSettings = { ...currentSettings, ...filtered };
+    const nextSettings = { ...currentSettings, ...normalized };
     const previousAssignedEmailDomain = resolveAssignedEmailDomain(currentSettings);
     const nextAssignedEmailDomain = resolveAssignedEmailDomain(nextSettings);
 
     await settingsRef.set(
-      { ...filtered, updatedAt: Timestamp.now() },
+      { ...normalized, updatedAt: Timestamp.now() },
       { merge: true }
     );
 

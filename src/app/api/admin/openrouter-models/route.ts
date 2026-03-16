@@ -24,15 +24,20 @@ export async function GET(request: NextRequest) {
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data();
-    const apiKey = settings?.llmApiKey || process.env.OPENROUTER_API_KEY || '';
+    const apiKey =
+      settings?.llmApiKey ||
+      process.env.OPENROUTER_API_KEY ||
+      process.env.OPEN_ROUTER_API_KEY ||
+      '';
+    const normalizedApiKey = apiKey.trim();
 
-    if (!apiKey) {
+    if (!normalizedApiKey) {
       return NextResponse.json({ models: [], error: 'Missing OpenRouter API key' }, { status: 400 });
     }
 
     const response = await fetch('https://openrouter.ai/api/v1/models', {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${normalizedApiKey}`,
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.app',
         'X-Title': 'Postino Email Redirector',
       },
