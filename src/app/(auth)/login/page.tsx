@@ -1,4 +1,5 @@
 import { LoginForm } from '@/components/auth/LoginForm';
+import { PostinoLogo } from '@/components/brand/PostinoLogo';
 
 export default function LoginPage() {
   return (
@@ -6,7 +7,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <i className="bi bi-envelope-paper-fill text-3xl text-indigo-600" aria-hidden="true" />
+            <PostinoLogo className="h-9 w-9" />
             <span className="font-bold text-2xl text-gray-900">Postino</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>

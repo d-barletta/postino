@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { PostinoLogo } from '@/components/brand/PostinoLogo';
 
 export default function HomePage() {
   return (
@@ -7,7 +8,7 @@ export default function HomePage() {
       <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <i className="bi bi-envelope-paper-fill text-2xl text-indigo-600" aria-hidden="true" />
+            <PostinoLogo className="h-7 w-7" />
             <span className="font-bold text-xl text-gray-900">Postino</span>
           </div>
           <div className="flex items-center gap-3">
