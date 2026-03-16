@@ -4,8 +4,8 @@ import { PostinoLogo } from '@/components/brand/PostinoLogo';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50">
-      <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+    <div className="min-h-screen">
+      <nav className="glass-panel sticky top-0 z-10 border-b border-white/40 dark:border-white/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <PostinoLogo className="h-7 w-7" />
@@ -24,13 +24,20 @@ export default function HomePage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ui-fade-up">
         <div className="py-20 text-center ui-stagger">
-          <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 rounded-full px-4 py-1.5 text-sm font-medium mb-8 ui-accent-pulse">
+          <div className="inline-flex items-center gap-2 bg-yellow-100 text-[#8f7a18] dark:bg-yellow-300/20 dark:text-yellow-200 rounded-full px-4 py-1.5 text-sm font-medium mb-8 ui-accent-pulse">
             <i className="bi bi-robot" aria-hidden="true" /> Powered by AI
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Your emails,{' '}
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-purple-600">
-              intelligently
+            <span className="relative inline-grid align-baseline h-[1.15em] min-w-[11ch] overflow-hidden">
+              {['intelligently', 'instantly', 'securely', 'beautifully'].map((word) => (
+                <span
+                  key={word}
+                  className="looping-hero-word text-transparent bg-clip-text bg-linear-to-r from-[#d1b52e] to-[#f0da5f] dark:from-[#f0da5f] dark:to-[#fff0a8]"
+                >
+                  {word}
+                </span>
+              ))}
             </span>{' '}
             processed
           </h1>
@@ -41,7 +48,7 @@ export default function HomePage() {
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link href="/register">
-              <Button size="lg" className="shadow-lg shadow-indigo-200">
+              <Button size="lg" className="shadow-lg shadow-yellow-200/70 dark:shadow-yellow-900/30">
                 Start for free
               </Button>
             </Link>
@@ -77,7 +84,7 @@ export default function HomePage() {
               },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-100 text-3xl mb-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-100 text-[#8f7a18] dark:bg-yellow-300/20 dark:text-yellow-200 text-3xl mb-4">
                   <i className={item.icon} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
@@ -100,7 +107,7 @@ export default function HomePage() {
             ].map((rule) => (
               <div
                 key={rule}
-                className="flex items-start gap-3 bg-white rounded-xl border border-gray-200 p-4"
+                className="flex items-start gap-3 glass-panel rounded-xl p-4"
               >
                 <i className="bi bi-check-circle-fill text-green-500 mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-gray-700">{rule}</p>

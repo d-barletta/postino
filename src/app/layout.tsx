@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ClientProviders } from '@/components/auth/ClientProviders';
 import { AppFooter } from '@/components/layout/AppFooter';
@@ -6,6 +6,14 @@ import { AppFooter } from '@/components/layout/AppFooter';
 export const metadata: Metadata = {
   title: 'Postino - AI Email Redirector',
   description: 'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#EFD957' },
+    { media: '(prefers-color-scheme: dark)', color: '#1f1b0f' },
+  ],
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -22,10 +22,10 @@ export function ThemeToggle() {
     return (
       <button
         type="button"
-        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-600"
         aria-label="Toggle theme"
       >
-        Theme
+        <i className="bi bi-circle-half" aria-hidden="true" />
       </button>
     );
   }
@@ -34,10 +34,11 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-      aria-label="Toggle theme"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-yellow-100/80 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-yellow-300/20 transition-colors"
+      aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
     >
-      {isDark ? 'Light theme' : 'Dark theme'}
+      <i className={`bi ${isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'} text-sm`} aria-hidden="true" />
     </button>
   );
 }
