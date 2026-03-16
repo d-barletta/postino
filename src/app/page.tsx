@@ -34,7 +34,7 @@ export default function HomePage() {
               intelligently 
             </span>
             <br/>
-            processed and forwarded to you
+            processed
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Get a private email address. Write simple rules in plain English. Postino&apos;s AI
