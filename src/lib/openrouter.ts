@@ -95,6 +95,7 @@ Return a JSON object with exactly these fields:
   }
 
   const tokensUsed = response.usage?.total_tokens || 0;
+  // Approximate cost at $0.30/M tokens (gpt-4o-mini rate); actual cost varies by model
   const estimatedCost = (tokensUsed / 1_000_000) * 0.30;
 
   return {

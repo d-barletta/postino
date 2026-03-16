@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     const recipient = formData.get('recipient') as string;
     const sender = formData.get('sender') as string;
     const subject = formData.get('subject') as string;
-    const bodyHtml = formData.get('body-html') as string || '';
-    const bodyPlain = formData.get('body-plain') as string || '';
+    const bodyHtml = (formData.get('body-html') as string) || '';
+    const bodyPlain = (formData.get('body-plain') as string) || '';
     const emailBody = bodyHtml || bodyPlain;
 
     const usersSnap = await db

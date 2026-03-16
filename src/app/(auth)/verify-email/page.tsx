@@ -13,7 +13,7 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const user = auth.currentUser;
+      const user = auth?.currentUser;
       if (user) {
         await user.reload();
         if (user.emailVerified) {
@@ -26,7 +26,7 @@ export default function VerifyEmailPage() {
   }, [router]);
 
   const handleResend = async () => {
-    const user = auth.currentUser;
+    const user = auth?.currentUser;
     if (!user) return;
     setResending(true);
     try {

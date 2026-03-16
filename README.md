@@ -14,7 +14,7 @@
 
 ## Tech Stack
 
-- **Next.js 15** (App Router, TypeScript)
+- **Next.js 16** (App Router, TypeScript)
 - **Firebase** (Authentication + Firestore)
 - **OpenRouter** (LLM API — any model)
 - **Mailgun** (Inbound email webhooks)
@@ -38,7 +38,7 @@
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-org/postino.git
+git clone https://github.com/d-barletta/postino.git
 cd postino
 npm install
 ```
