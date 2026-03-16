@@ -166,12 +166,18 @@ textarea::placeholder {
 
 @keyframes hero-word-loop {
   0%,
-  18% {
+  8% {
+    opacity: 0;
+    transform: translateY(56%) scale(0.98);
+    filter: blur(6px);
+  }
+  18%,
+  20% {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
   }
-  24%,
+  26%,
   100% {
     opacity: 0;
     transform: translateY(-64%) scale(0.98);
@@ -186,7 +192,7 @@ textarea::placeholder {
   animation: hero-word-loop 12s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
-.looping-hero-word:nth-child(1) { animation-delay: 0s; }
+.looping-hero-word:nth-child(1) { animation-delay: -2.2s; }
 .looping-hero-word:nth-child(2) { animation-delay: 3s; }
 .looping-hero-word:nth-child(3) { animation-delay: 6s; }
 .looping-hero-word:nth-child(4) { animation-delay: 9s; }
