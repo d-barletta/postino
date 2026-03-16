@@ -43,7 +43,7 @@ export default function HomePage() {
             <br/>
             fixes
             <br/>
-            your e-mails <span className="text-[0.62em] align-[0.08em]">&</span> newsletters
+            e-mails <span className="text-[0.62em] align-[0.08em]">&</span> newsletters
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Get a private email address. Write simple rules in natural language. Postino&apos;s AI
