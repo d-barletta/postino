@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     if (usersSnap.empty) {
       console.log(`No active user found for email: ${normalizedRecipient}`);
-      return NextResponse.json({ message: 'No user found' });
+      return NextResponse.json({ message: `No active user found for email: ${normalizedRecipient}` });
     }
 
     const userDoc = usersSnap.docs[0];
