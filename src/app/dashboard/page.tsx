@@ -1,0 +1,67 @@
+'use client';
+
+import { useAuth } from '@/hooks/useAuth';
+import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
+import { RulesManager } from '@/components/dashboard/RulesManager';
+import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
+import { useState, useEffect } from 'react';
+
+export default function DashboardPage() {
+  const { user, loading } = useAuth();
+  const [maxRuleLength, setMaxRuleLength] = useState(1000);
+  const [activeTab, setActiveTab] = useState<'rules' | 'emails'>('rules');
+
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-500 mt-1">Manage your Postino address and email rules</p>
+      </div>
+
+      {user?.assignedEmail && (
+        <AssignedEmailCard assignedEmail={user.assignedEmail} />
+      )}
+
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-6">
+          {(['rules', 'emails'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 text-sm font-medium capitalize border-b-2 transition-colors ${
+                activeTab === tab
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab === 'rules' ? 'My Rules' : 'Email History'}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {activeTab === 'rules' ? (
+        <RulesManager maxRuleLength={maxRuleLength} />
+      ) : (
+        <EmailLogsList />
+      )}
+    </div>
+  );
+}

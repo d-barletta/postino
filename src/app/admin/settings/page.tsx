@@ -1,0 +1,180 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import type { Settings } from '@/types';
+
+export default function AdminSettingsPage() {
+  const { firebaseUser } = useAuth();
+  const [settings, setSettings] = useState<Partial<Settings>>({
+    maxRuleLength: 1000,
+    llmModel: 'openai/gpt-4o-mini',
+    llmApiKey: '',
+    smtpHost: '',
+    smtpPort: 587,
+    smtpUser: '',
+    smtpPass: '',
+    smtpFrom: '',
+    emailDomain: '',
+    mailgunApiKey: '',
+    mailgunDomain: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!firebaseUser) return;
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/admin/settings', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSettings((prev) => ({ ...prev, ...data.settings }));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, [firebaseUser]);
+
+  const handleSave = async () => {
+    if (!firebaseUser) return;
+    setSaving(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-12 text-gray-400">Loading settings...</div>;
+  }
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Platform Settings</h1>
+        <p className="text-gray-500 mt-1">Configure Postino&apos;s core settings</p>
+      </div>
+
+      <Card>
+        <CardHeader><h2 className="font-semibold text-gray-900">AI / LLM Settings</h2></CardHeader>
+        <CardContent className="space-y-4">
+          <Input
+            label="OpenRouter API Key"
+            type="password"
+            value={settings.llmApiKey || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, llmApiKey: e.target.value }))}
+            placeholder="sk-or-..."
+          />
+          <Input
+            label="LLM Model"
+            value={settings.llmModel || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, llmModel: e.target.value }))}
+            hint="e.g. openai/gpt-4o-mini, anthropic/claude-3-haiku"
+          />
+          <Input
+            label="Max Rule Length (characters)"
+            type="number"
+            value={settings.maxRuleLength || 1000}
+            onChange={(e) => setSettings((p) => ({ ...p, maxRuleLength: parseInt(e.target.value) }))}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><h2 className="font-semibold text-gray-900">Email Domain</h2></CardHeader>
+        <CardContent>
+          <Input
+            label="Email Domain"
+            value={settings.emailDomain || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, emailDomain: e.target.value }))}
+            placeholder="sandbox.postino.app"
+            hint="Domain used for generating user email addresses"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><h2 className="font-semibold text-gray-900">SMTP Settings</h2></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="SMTP Host"
+              value={settings.smtpHost || ''}
+              onChange={(e) => setSettings((p) => ({ ...p, smtpHost: e.target.value }))}
+              placeholder="smtp.gmail.com"
+            />
+            <Input
+              label="SMTP Port"
+              type="number"
+              value={settings.smtpPort || 587}
+              onChange={(e) => setSettings((p) => ({ ...p, smtpPort: parseInt(e.target.value) }))}
+            />
+          </div>
+          <Input
+            label="SMTP Username"
+            value={settings.smtpUser || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, smtpUser: e.target.value }))}
+          />
+          <Input
+            label="SMTP Password"
+            type="password"
+            value={settings.smtpPass || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, smtpPass: e.target.value }))}
+          />
+          <Input
+            label="From Address"
+            value={settings.smtpFrom || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, smtpFrom: e.target.value }))}
+            placeholder="Postino <noreply@postino.app>"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><h2 className="font-semibold text-gray-900">Mailgun Settings</h2></CardHeader>
+        <CardContent className="space-y-4">
+          <Input
+            label="Mailgun API Key"
+            type="password"
+            value={settings.mailgunApiKey || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, mailgunApiKey: e.target.value }))}
+            placeholder="key-..."
+          />
+          <Input
+            label="Mailgun Domain"
+            value={settings.mailgunDomain || ''}
+            onChange={(e) => setSettings((p) => ({ ...p, mailgunDomain: e.target.value }))}
+            placeholder="sandbox....mailgun.org"
+          />
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={handleSave} loading={saving}>
+          Save Settings
+        </Button>
+        {saved && <span className="text-sm text-green-600">✓ Settings saved!</span>}
+      </div>
+    </div>
+  );
+}
