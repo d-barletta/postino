@@ -25,9 +25,9 @@ export default function HomePage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ui-fade-up">
         <div className="py-20 text-center ui-stagger">
           <div className="inline-flex items-center">
-             <PostinoLogo className="h-10 w-10" />
+             <PostinoLogo className="h-16 w-16" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
             Your
             <br/>
             e-mails <span className="text-[0.62em] align-[0.08em]">&</span> newsletters
