@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [resending, setResending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -18,12 +20,16 @@ export default function VerifyEmailPage() {
         await user.reload();
         if (user.emailVerified) {
           clearInterval(interval);
+          // Force a fresh token with the updated email_verified claim, then
+          // refresh the app user so isActive is updated before navigating.
+          await user.getIdToken(true);
+          await refreshUser();
           router.push('/dashboard');
         }
       }
     }, 3000);
     return () => clearInterval(interval);
-  }, [router]);
+  }, [router, refreshUser]);
 
   const handleResend = async () => {
     const user = auth?.currentUser;
