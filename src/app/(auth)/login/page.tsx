@@ -4,7 +4,7 @@ import { PostinoLogo } from '@/components/brand/PostinoLogo';
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-linear-to-br from-yellow-50 via-white to-amber-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md ui-fade-up">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <PostinoLogo className="h-9 w-9" />

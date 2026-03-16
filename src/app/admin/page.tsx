@@ -31,7 +31,7 @@ export default function AdminPage() {
   }, [firebaseUser]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ui-fade-up">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Admin Overview</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Platform statistics and management</p>
@@ -52,7 +52,7 @@ export default function AdminPage() {
           <h2 className="text-lg font-semibold text-gray-900">Quick Links</h2>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 ui-stagger">
             {[
               { href: '/admin/users', label: 'Manage Users', icon: 'bi bi-people-fill' },
               { href: '/admin/settings', label: 'Platform Settings', icon: 'bi bi-gear-fill' },
@@ -60,7 +60,7 @@ export default function AdminPage() {
               <a
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 p-4 rounded-xl border border-white/50 dark:border-white/10 bg-white/55 dark:bg-gray-900/35 hover:border-[#EFD957] hover:bg-yellow-50/80 dark:hover:bg-yellow-900/15 transition-colors"
+                className="flex items-center gap-3 p-4 rounded-xl border border-white/50 dark:border-white/10 bg-white/55 dark:bg-gray-900/35 hover:border-[#EFD957] hover:bg-yellow-50/80 dark:hover:bg-yellow-900/15 transition-all duration-250 hover:-translate-y-px"
               >
                 <i className={`${item.icon} text-2xl text-[#d0b53f]`} aria-hidden="true" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</span>

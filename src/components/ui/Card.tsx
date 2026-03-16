@@ -9,7 +9,7 @@ export function Card({ children, className }: CardProps) {
   return (
     <div
       className={cn(
-        'glass-panel rounded-xl shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]',
+        'glass-panel ui-fade-up rounded-xl shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-px hover:shadow-[0_14px_35px_rgba(15,23,42,0.12)] dark:hover:shadow-[0_14px_35px_rgba(0,0,0,0.45)]',
         className
       )}
     >

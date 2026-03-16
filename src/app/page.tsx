@@ -22,9 +22,9 @@ export default function HomePage() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 rounded-full px-4 py-1.5 text-sm font-medium mb-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ui-fade-up">
+        <div className="py-20 text-center ui-stagger">
+          <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 rounded-full px-4 py-1.5 text-sm font-medium mb-8 ui-accent-pulse">
             <i className="bi bi-robot" aria-hidden="true" /> Powered by AI
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
@@ -53,9 +53,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        <section id="how-it-works" className="py-16">
+        <section id="how-it-works" className="py-16 ui-fade-up">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">How it works</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 ui-stagger">
             {[
               {
                 icon: 'bi bi-inbox-fill',
@@ -87,9 +87,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-16">
+        <section className="py-16 ui-fade-up">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Example rules</h2>
-          <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto ui-stagger">
             {[
               'Summarize newsletters and remove all ads and promotional content',
               'Extract and list only the important action items from emails',

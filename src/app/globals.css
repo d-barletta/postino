@@ -105,3 +105,54 @@ textarea::placeholder {
   background-color: rgb(17 24 39 / 0.58);
   border-color: rgb(255 255 255 / 0.12);
 }
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(239 217 87 / 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(239 217 87 / 0.16);
+  }
+}
+
+.ui-fade-up {
+  animation: fade-up 420ms ease-out both;
+}
+
+.ui-stagger > * {
+  opacity: 0;
+  animation: fade-up 420ms ease-out both;
+}
+
+.ui-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.ui-stagger > *:nth-child(2) { animation-delay: 90ms; }
+.ui-stagger > *:nth-child(3) { animation-delay: 140ms; }
+.ui-stagger > *:nth-child(4) { animation-delay: 190ms; }
+.ui-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.ui-stagger > *:nth-child(6) { animation-delay: 290ms; }
+
+.ui-accent-pulse {
+  animation: soft-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-fade-up,
+  .ui-stagger > *,
+  .ui-accent-pulse {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
