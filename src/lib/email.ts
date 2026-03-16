@@ -31,6 +31,41 @@ export async function createTransport() {
   });
 }
 
+async function sendViaMailgun(options: {
+  to: string;
+  from: string;
+  subject: string;
+  html: string;
+  text: string;
+  apiKey: string;
+  domain: string;
+  baseUrl: string;
+}): Promise<void> {
+  const url = `${options.baseUrl}/v3/${options.domain}/messages`;
+
+  const body = new URLSearchParams({
+    from: options.from,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+    text: options.text,
+  });
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`api:${options.apiKey}`).toString('base64')}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Mailgun send failed (${response.status}): ${detail}`);
+  }
+}
+
 export async function sendEmail(options: {
   to: string;
   from?: string;
@@ -42,15 +77,42 @@ export async function sendEmail(options: {
   const settingsSnap = await db.collection('settings').doc('global').get();
   const settings = settingsSnap.data();
 
-  const fromAddress = options.from || settings?.smtpFrom || process.env.SMTP_FROM || 'postino@postino.app';
+  const mailgunApiKey = settings?.mailgunApiKey || process.env.MAILGUN_API_KEY || '';
+  const mailgunDomain =
+    settings?.mailgunSandboxEmail ||
+    settings?.mailgunDomain ||
+    process.env.MAILGUN_SANDBOX_EMAIL ||
+    '';
+  const mailgunBaseUrl =
+    settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
+  const fromAddress =
+    options.from || settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.app'}>`;
+
+  const text = options.text || options.html.replace(/<[^>]*>/g, '');
+
+  if (mailgunApiKey && mailgunDomain) {
+    await sendViaMailgun({
+      to: options.to,
+      from: fromAddress,
+      subject: options.subject,
+      html: options.html,
+      text,
+      apiKey: mailgunApiKey,
+      domain: mailgunDomain,
+      baseUrl: mailgunBaseUrl,
+    });
+    return;
+  }
+
+  // Fallback to SMTP
   const transporter = await createTransport();
   await transporter.sendMail({
     from: fromAddress,
     to: options.to,
     subject: options.subject,
     html: options.html,
-    text: options.text || options.html.replace(/<[^>]*>/g, ''),
+    text,
   });
 }
 
