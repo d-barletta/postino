@@ -28,11 +28,13 @@ export default function HomePage() {
             <i className="bi bi-robot" aria-hidden="true" /> Powered by AI
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Your emails,{' '}
+            Your emails & newsletters,
+            <br/>
             <span className="animated-gradient-text text-transparent bg-clip-text bg-linear-to-r from-[#d1b52e] via-[#f0da5f] to-[#fff0a8] dark:from-[#f0da5f] dark:via-[#fff0a8] dark:to-[#d1b52e]">
-              intelligently
-            </span>{' '}
-            processed
+              intelligently 
+            </span>
+            <br/>
+            processed and forwarded to you
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Get a private email address. Write simple rules in plain English. Postino&apos;s AI
