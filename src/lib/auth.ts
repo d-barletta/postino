@@ -6,8 +6,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { auth } from './firebase';
-import { createUser, getUserById } from './firestore';
-import { generateAssignedEmail } from './email-utils';
+import { getUserById } from './firestore';
 
 function getAuth() {
   if (!auth) throw new Error('Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.');
@@ -19,16 +18,6 @@ export async function registerUser(email: string, password: string): Promise<Fir
   const user = credential.user;
 
   await sendEmailVerification(user);
-
-  const assignedEmail = generateAssignedEmail();
-
-  await createUser(user.uid, {
-    email: user.email!,
-    assignedEmail,
-    createdAt: new Date(),
-    isAdmin: false,
-    isActive: true,
-  });
 
   return user;
 }

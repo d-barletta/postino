@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { generateAssignedEmail } from '@/lib/email-utils';
+
+function toIsoDate(value: unknown): string | null {
+  if (!value) return null;
+  const maybeTimestamp = value as { toDate?: () => Date };
+  if (typeof maybeTimestamp.toDate === 'function') {
+    return maybeTimestamp.toDate().toISOString();
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  return null;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,10 +24,20 @@ export async function GET(request: NextRequest) {
     const decoded = await adminAuth().verifyIdToken(token);
 
     const db = adminDb();
-    const userSnap = await db.collection('users').doc(decoded.uid).get();
+    const userRef = db.collection('users').doc(decoded.uid);
+    let userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      const settingsSnap = await db.collection('settings').doc('global').get();
+      const domain = settingsSnap.data()?.emailDomain || 'sandbox.postino.app';
+      await userRef.set({
+        email: decoded.email ?? '',
+        assignedEmail: generateAssignedEmail(domain),
+        createdAt: new Date(),
+        isAdmin: false,
+        isActive: true,
+      });
+      userSnap = await userRef.get();
     }
 
     const userData = userSnap.data()!;
@@ -22,7 +45,7 @@ export async function GET(request: NextRequest) {
       user: {
         uid: decoded.uid,
         ...userData,
-        createdAt: userData.createdAt?.toDate?.()?.toISOString() ?? null,
+        createdAt: toIsoDate(userData.createdAt),
       },
     });
   } catch (error) {
