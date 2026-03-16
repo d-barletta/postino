@@ -22,6 +22,14 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && document.referrer && document.referrer.startsWith(window.location.origin)) {
+      router.back();
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (!firebaseUser) {
@@ -76,7 +84,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
             <p className="text-gray-700 dark:text-gray-300">{error}</p>
             <button
               className="mt-4 text-sm text-[#d0b53f] hover:underline"
-              onClick={() => router.back()}
+              onClick={handleBack}
             >
               Go back
             </button>
@@ -95,13 +103,13 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-3">
           <button
-            className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-1"
-            onClick={() => router.back()}
+            className="shrink-0 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-1"
+            onClick={handleBack}
           >
             <i className="bi bi-arrow-left" aria-hidden="true" />
             Back
           </button>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">{email.subject}</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white min-w-0 truncate">{email.subject}</h1>
         </div>
 
         <Card>
@@ -111,11 +119,11 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <CardContent className="space-y-3 text-sm">
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
               <dt className="text-gray-500 dark:text-gray-400 font-medium">From:</dt>
-              <dd className="text-gray-800 dark:text-gray-200">{email.fromAddress}</dd>
+              <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.fromAddress}</dd>
               <dt className="text-gray-500 dark:text-gray-400 font-medium">To:</dt>
-              <dd className="text-gray-800 dark:text-gray-200">{email.toAddress}</dd>
+              <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.toAddress}</dd>
               <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
-              <dd className="text-gray-800 dark:text-gray-200">{email.subject}</dd>
+              <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-words">{email.subject}</dd>
               <dt className="text-gray-500 dark:text-gray-400 font-medium">Received:</dt>
               <dd className="text-gray-800 dark:text-gray-200">{receivedDate}</dd>
             </dl>
@@ -126,12 +134,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <CardHeader>
             <h2 className="font-semibold text-gray-900 dark:text-white">Email Content</h2>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {email.originalBody ? (
               <iframe
                 sandbox=""
                 srcDoc={email.originalBody}
-                className="w-full border-0 rounded"
+                className="w-full border-0 rounded-b-xl"
                 style={{ minHeight: '300px' }}
                 title="Original email content"
                 onLoad={(e) => {
@@ -141,7 +149,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                 }}
               />
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">No original content stored.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm px-6 py-4">No original content stored.</p>
             )}
           </CardContent>
         </Card>
