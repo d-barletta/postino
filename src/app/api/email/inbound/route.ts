@@ -16,12 +16,25 @@ export async function POST(request: NextRequest) {
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data();
     const mailgunApiKey = settings?.mailgunApiKey || process.env.MAILGUN_API_KEY || '';
+    const mailgunDomain = settings?.mailgunDomain || process.env.MAILGUN_SANDBOX_EMAIL || '';
+    const mailgunBaseUrl = process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
     if (mailgunApiKey && !verifyMailgunSignature(timestamp, token, signature, mailgunApiKey)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+      return NextResponse.json(
+        {
+          error: 'Invalid signature',
+          hint: `Check Mailgun API key and endpoint (${mailgunBaseUrl})`,
+        },
+        { status: 403 }
+      );
     }
 
-    const recipient = formData.get('recipient') as string;
+    const recipientRaw = (formData.get('recipient') as string) || '';
+    const recipient = recipientRaw.trim().toLowerCase();
+    const normalizedRecipient =
+      recipient.includes('@') || !mailgunDomain
+        ? recipient
+        : `${recipient}@${mailgunDomain}`.toLowerCase();
     const sender = formData.get('sender') as string;
     const subject = formData.get('subject') as string;
     const bodyHtml = (formData.get('body-html') as string) || '';
@@ -30,13 +43,13 @@ export async function POST(request: NextRequest) {
 
     const usersSnap = await db
       .collection('users')
-      .where('assignedEmail', '==', recipient)
+      .where('assignedEmail', '==', normalizedRecipient)
       .where('isActive', '==', true)
       .limit(1)
       .get();
 
     if (usersSnap.empty) {
-      console.log(`No active user found for email: ${recipient}`);
+      console.log(`No active user found for email: ${normalizedRecipient}`);
       return NextResponse.json({ message: 'No user found' });
     }
 
@@ -45,7 +58,7 @@ export async function POST(request: NextRequest) {
     const userId = userDoc.id;
 
     const logRef = await db.collection('emailLogs').add({
-      toAddress: recipient,
+      toAddress: normalizedRecipient,
       fromAddress: sender,
       subject,
       receivedAt: Timestamp.now(),

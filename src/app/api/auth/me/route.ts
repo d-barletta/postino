@@ -29,7 +29,11 @@ export async function GET(request: NextRequest) {
 
     if (!userSnap.exists) {
       const settingsSnap = await db.collection('settings').doc('global').get();
-      const domain = settingsSnap.data()?.emailDomain || 'sandbox.postino.app';
+      const domain =
+        settingsSnap.data()?.emailDomain ||
+        settingsSnap.data()?.mailgunDomain ||
+        process.env.MAILGUN_SANDBOX_EMAIL ||
+        'sandbox.postino.app';
       await userRef.set({
         email: decoded.email ?? '',
         assignedEmail: generateAssignedEmail(domain),
