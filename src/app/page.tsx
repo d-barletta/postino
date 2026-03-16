@@ -25,12 +25,14 @@ export default function HomePage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ui-fade-up">
         <div className="py-20 text-center ui-stagger">
           <div className="inline-flex items-center gap-2 bg-yellow-100 text-[#8f7a18] dark:bg-yellow-300/20 dark:text-yellow-200 rounded-full px-4 py-1.5 text-sm font-medium mb-8 ui-accent-pulse">
-            <i className="bi bi-robot" aria-hidden="true" /> Powered by AI
+            <PostinoLogo className="h-4 w-4" /> Powered by AI
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Your emails & newsletters,
+            Your 
             <br/>
-            <span className="relative inline-grid align-baseline h-[1.15em] min-w-[12ch] overflow-hidden">
+            e-mails <span className="text-[0.72em] align-[0.08em] opacity-80">&</span> newsletters,
+            <br/>
+            <span className="relative inline-grid align-baseline h-[1.35em] min-w-[12ch] leading-[1.2] overflow-hidden">
               {['intelligently', 'instantly', 'securely', 'beautifully'].map((word) => (
                 <span
                   key={word}
