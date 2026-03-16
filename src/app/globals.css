@@ -164,14 +164,52 @@ textarea::placeholder {
   animation: gradient-shift 4.8s ease-in-out infinite;
 }
 
+@keyframes hero-word-loop {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translateY(64%) scale(0.98);
+    filter: blur(6px);
+  }
+  16%,
+  33% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  42%,
+  100% {
+    opacity: 0;
+    transform: translateY(-64%) scale(0.98);
+    filter: blur(6px);
+  }
+}
+
+.looping-hero-word {
+  grid-area: 1 / 1;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  animation: hero-word-loop 12s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.looping-hero-word:nth-child(1) { animation-delay: 0s; }
+.looping-hero-word:nth-child(2) { animation-delay: 3s; }
+.looping-hero-word:nth-child(3) { animation-delay: 6s; }
+.looping-hero-word:nth-child(4) { animation-delay: 9s; }
+
 @media (prefers-reduced-motion: reduce) {
   .ui-fade-up,
   .ui-stagger > *,
   .ui-accent-pulse,
-  .animated-gradient-text {
+  .animated-gradient-text,
+  .looping-hero-word {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
+  }
+
+  .looping-hero-word:not(:first-child) {
+    display: none;
   }
 }

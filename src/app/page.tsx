@@ -30,14 +30,21 @@ export default function HomePage() {
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Your emails & newsletters,
             <br/>
-            <span className="animated-gradient-text text-transparent bg-clip-text bg-linear-to-r from-[#d1b52e] via-[#f0da5f] to-[#fff0a8] dark:from-[#f0da5f] dark:via-[#fff0a8] dark:to-[#d1b52e]">
-              intelligently 
+            <span className="relative inline-grid align-baseline h-[1.15em] min-w-[12ch] overflow-hidden">
+              {['intelligently', 'instantly', 'securely', 'beautifully'].map((word) => (
+                <span
+                  key={word}
+                  className="looping-hero-word text-transparent bg-clip-text bg-linear-to-r from-[#7c3aed] via-[#a855f7] to-[#c084fc] dark:from-[#a78bfa] dark:via-[#c084fc] dark:to-[#ddd6fe]"
+                >
+                  {word}
+                </span>
+              ))}
             </span>
             <br/>
             processed
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Get a private email address. Write simple rules in plain English. Postino&apos;s AI
+            Get a private email address. Write simple rules in natural language. Postino&apos;s AI
             processes your incoming emails — summarizing newsletters, removing ads, extracting
             key info — then forwards the result to you.
           </p>
