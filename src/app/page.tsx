@@ -30,7 +30,7 @@ export default function HomePage() {
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Your 
             <br/>
-            e-mails <span className="text-[0.72em] align-[0.08em] opacity-80">&</span> newsletters,
+            e-mails <span className="text-[0.42em] align-[0.08em] opacity-80">&</span> newsletters
             <br/>
             <span className="relative inline-grid align-baseline h-[1.35em] min-w-[12ch] leading-[1.2] overflow-hidden">
               {['intelligently', 'instantly', 'securely', 'beautifully'].map((word) => (
