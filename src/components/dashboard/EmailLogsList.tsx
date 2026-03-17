@@ -64,7 +64,7 @@ export function EmailLogsList() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{log.subject}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">From: {log.fromAddress}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">From: {log.fromAddress}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge variant={statusVariant[log.status] || 'default'}>{log.status}</Badge>
