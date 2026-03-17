@@ -6,6 +6,10 @@ import { AppFooter } from '@/components/layout/AppFooter';
 export const metadata: Metadata = {
   title: 'Postino - AI Email Redirector',
   description: 'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
+  icons: {
+    icon: '/logo.svg',
+    apple: '/logo.svg',
+  },
 };
 
 export const viewport: Viewport = {

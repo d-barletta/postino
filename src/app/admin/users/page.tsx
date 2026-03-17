@@ -84,8 +84,8 @@ export default function AdminUsersPage() {
                           {user.isActive ? 'Active' : 'Suspended'}
                         </Badge>
                       </div>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono truncate">{user.assignedEmail}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">Joined {formatDate(user.createdAt)}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-mono truncate">{user.assignedEmail}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Joined {formatDate(user.createdAt)}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button

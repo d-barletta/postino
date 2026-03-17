@@ -164,11 +164,16 @@ export async function POST(request: NextRequest) {
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #f0f4ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; color: #4b5563;">
-          <strong>📮 Postino processed this email</strong><br>
-          Original from: ${escapeHtml(sender)} | Rule: <strong>${escapeHtml(result.ruleApplied)}</strong>${editRuleUrl ? ` | <a href="${escapeHtml(editRuleUrl)}" style="color: #4f46e5; text-decoration: underline;">Edit rule</a>` : ''}${originalEmailUrl ? `<br><a href="${escapeHtml(originalEmailUrl)}" style="color: #4f46e5; text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
+      <div style="background: #f0f4ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; color: #4b5563;">
+        <div style="margin-bottom: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><path d="M4 4h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <strong>Postino processed this email</strong>
         </div>
-        ${result.body}
+        Original from: ${escapeHtml(sender)}<br>
+        Rule: <strong>${escapeHtml(result.ruleApplied)}</strong>${editRuleUrl ? ` | <a href="${escapeHtml(editRuleUrl)}" style="text-decoration: underline;">Edit rule</a>` : ''}
+        ${originalEmailUrl ? `<br><a href="${escapeHtml(originalEmailUrl)}" style="text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
+      </div>
+      ${result.body}
       </div>
     `;
 

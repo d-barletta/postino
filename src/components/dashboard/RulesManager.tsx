@@ -38,6 +38,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   const [editMatchBody, setEditMatchBody] = useState('');
   const [showEditFilters, setShowEditFilters] = useState(false);
 
+  const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -165,13 +166,21 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-900">Add New Rule</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Give your rule a name and describe how you want Postino to process your emails.
-          </p>
+        <CardHeader
+          className="cursor-pointer select-none"
+          onClick={() => setShowAddForm((v) => !v)}
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Add New Rule</h2>
+            <span className="text-gray-400 text-sm">{showAddForm ? '▾' : '▸'}</span>
+          </div>
+          {!showAddForm && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Give your rule a name and describe how you want Postino to process your emails.
+            </p>
+          )}
         </CardHeader>
-        <CardContent>
+        {showAddForm && <CardContent>
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -269,7 +278,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
               )}
             </div>
           </div>
-        </CardContent>
+        </CardContent>}
       </Card>
 
       <div>
