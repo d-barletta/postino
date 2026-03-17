@@ -28,6 +28,8 @@ const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error'> =
   error: 'error',
 };
 
+const PAGE_SIZE = 20;
+
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString();
@@ -47,40 +49,73 @@ export default function AdminEmailsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
 
-  const fetchLogs = useCallback(async () => {
-    if (!firebaseUser) return;
+  const fetchPage = useCallback(async (cursor: string | null): Promise<boolean> => {
+    if (!firebaseUser) return false;
     try {
       const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/admin/emails?limit=100', {
+      const url = cursor
+        ? `/api/admin/emails?pageSize=${PAGE_SIZE}&cursor=${encodeURIComponent(cursor)}`
+        : `/api/admin/emails?pageSize=${PAGE_SIZE}`;
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs || []);
+        setHasMore(data.hasMore ?? false);
+        setNextCursor(data.nextCursor ?? null);
+        setExpanded(null);
         setFetchError('');
+        return true;
       } else {
         setFetchError('Failed to load email logs.');
+        return false;
       }
     } catch {
       setFetchError('Failed to load email logs.');
+      return false;
     } finally {
       setLoading(false);
     }
   }, [firebaseUser]);
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    fetchPage(null);
+  }, [fetchPage]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    setCursorStack([]);
     try {
-      await fetchLogs();
+      await fetchPage(null);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchLogs]);
+  }, [fetchPage]);
+
+  const handleNextPage = useCallback(async () => {
+    if (!nextCursor) return;
+    const success = await fetchPage(nextCursor);
+    if (success) {
+      setCursorStack((prev) => [...prev, nextCursor]);
+    }
+  }, [nextCursor, fetchPage]);
+
+  const handlePrevPage = useCallback(async () => {
+    const newStack = [...cursorStack];
+    newStack.pop();
+    const prevCursor = newStack.length > 0 ? newStack[newStack.length - 1] : null;
+    const success = await fetchPage(prevCursor);
+    if (success) {
+      setCursorStack(newStack);
+    }
+  }, [cursorStack, fetchPage]);
+
+  const currentPage = cursorStack.length + 1;
 
   return (
     <div className="space-y-6 ui-fade-up">
@@ -103,7 +138,9 @@ export default function AdminEmailsPage() {
                 <i className={`bi bi-arrow-clockwise text-lg${refreshing ? ' animate-spin' : ''}`} aria-hidden="true" />
               </button>
               {!loading && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">{logs.length} records</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Page {currentPage} · {logs.length} records
+                </span>
               )}
             </div>
           </div>
@@ -205,6 +242,23 @@ export default function AdminEmailsPage() {
                   ))}
                 </tbody>
               </table>
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ← Previous
+                </button>
+                <span className="text-xs text-gray-400 dark:text-gray-500">Page {currentPage}</span>
+                <button
+                  onClick={handleNextPage}
+                  disabled={!hasMore}
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next →
+                </button>
+              </div>
             </div>
           )}
         </CardContent>

@@ -69,6 +69,14 @@ export interface Stats {
   totalEstimatedCost: number;
 }
 
+export interface UserStats {
+  totalEmailsReceived: number;
+  totalEmailsForwarded: number;
+  totalEmailsError: number;
+  totalTokensUsed: number;
+  totalEstimatedCost: number;
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
