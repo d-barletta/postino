@@ -150,12 +150,7 @@ SUBJECT: ${sanitizeEmailField(emailSubject)}
 BODY:
 ${sanitizeEmailBody(emailBody)}
 
-Return a JSON object with exactly these fields:
-{
-  "subject": "processed subject line",
-  "body": "processed email body in HTML format",
-  "ruleApplied": "the exact name of the rule that was applied, or 'forwarded as-is' if no rule matched"
-}`;
+Respond with a JSON object containing: subject (processed subject line), body (processed email body in HTML format), and ruleApplied (the exact name of the rule applied, or 'forwarded as-is' if no rule matched).`;
 
   let response;
 
@@ -166,7 +161,26 @@ Return a JSON object with exactly these fields:
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' },
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'email_processing_result',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              subject: { type: 'string', description: 'Processed subject line' },
+              body: { type: 'string', description: 'Processed email body in HTML format' },
+              ruleApplied: {
+                type: 'string',
+                description: "Exact name of the rule applied, or 'forwarded as-is' if no rule matched",
+              },
+            },
+            required: ['subject', 'body', 'ruleApplied'],
+            additionalProperties: false,
+          },
+        },
+      },
       max_tokens: 2000,
     });
   } catch (error) {

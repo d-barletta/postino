@@ -6,6 +6,12 @@ interface OpenRouterModel {
   name: string;
 }
 
+interface OpenRouterModelRaw {
+  id?: string;
+  name?: string;
+  supported_parameters?: string[];
+}
+
 async function verifyAdmin(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
@@ -52,11 +58,14 @@ export async function GET(request: NextRequest) {
     }
 
     const payload = (await response.json()) as {
-      data?: Array<{ id?: string; name?: string }>;
+      data?: OpenRouterModelRaw[];
     };
 
     const models: OpenRouterModel[] = (payload.data || [])
-      .filter((m): m is { id: string; name?: string } => Boolean(m.id))
+      .filter(
+        (m): m is OpenRouterModelRaw & { id: string } =>
+          Boolean(m.id) && Array.isArray(m.supported_parameters) && m.supported_parameters.includes('structured_outputs')
+      )
       .map((m) => ({ id: m.id, name: m.name || m.id }))
       .sort((a, b) => a.id.localeCompare(b.id));
 
