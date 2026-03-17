@@ -156,8 +156,8 @@ export async function POST(request: NextRequest) {
       ? `${appUrl}/email/original/${logRef.id}`
       : null;
 
-    // Find the rule that was applied (by name) to get its ID for the edit link
-    const appliedRule = matchingRules.find((r) => r.name === result.ruleApplied);
+    // Use the first matching rule (if any) for the edit link
+    const appliedRule = matchingRules[0];
     const editRuleUrl = appUrl && appliedRule
       ? `${appUrl}/dashboard?editRule=${appliedRule.id}`
       : appUrl
