@@ -184,7 +184,7 @@ ${htmlInstruction}
 BODY:
 ${emailBodyForPrompt}
 
-Respond with a JSON object containing: subject (processed subject line), body (processed email body in HTML format), and ruleApplied (the exact name of the rule applied, or 'forwarded as-is' if no rule matched).`;
+Respond with a JSON object containing: subject (processed subject line) and body (processed email body in HTML format).`;
 
   let response;
 
@@ -204,7 +204,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
   }
 
   const content = response.choices[0]?.message?.content || '{}';
-  let parsed: { subject?: string; body?: string; ruleApplied?: string };
+  let parsed: { subject?: string; body?: string };
   let parseError: string | undefined;
 
   try {
@@ -220,7 +220,6 @@ Respond with a JSON object containing: subject (processed subject line), body (p
     parsed = {
       subject: `📬 ${emailSubject}`,
       body: emailBody,
-      ruleApplied: 'error parsing LLM response, forwarded as-is',
     };
   }
 
@@ -233,7 +232,9 @@ Respond with a JSON object containing: subject (processed subject line), body (p
     body: parsed.body || emailBody,
     tokensUsed,
     estimatedCost,
-    ruleApplied: parsed.ruleApplied || 'unknown',
+    ruleApplied: activeRules.length > 0
+      ? activeRules.map((r) => r.name).join(', ')
+      : 'No rule applied',
     ...(parseError ? { parseError } : {}),
   };
 }
