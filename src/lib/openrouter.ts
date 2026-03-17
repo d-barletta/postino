@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { jsonrepair } from 'jsonrepair';
 import { adminDb } from './firebase-admin';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
 
@@ -95,38 +96,6 @@ function sanitizeEmailBody(body: string): string {
     .trim();
 }
 
-/**
- * Extracts a JSON object from an LLM response that may be wrapped in
- * markdown code fences (e.g. ```json ... ```) or contain surrounding text.
- */
-function extractJson(content: string): string {
-  const trimmed = content.trim();
-
-  // Strip markdown code fences: find the first ``` opener and the last ``` closer
-  // so that any triple-backtick sequences inside the JSON content are ignored.
-  const openFenceIdx = trimmed.indexOf('```');
-  const closeFenceIdx = trimmed.lastIndexOf('```');
-  if (openFenceIdx !== -1 && closeFenceIdx > openFenceIdx) {
-    // Skip past the opening fence and any optional language identifier line
-    const afterFence = trimmed.slice(openFenceIdx + 3);
-    const firstNewline = afterFence.indexOf('\n');
-    const body = firstNewline !== -1 ? afterFence.slice(firstNewline + 1) : afterFence;
-    // Trim up to the closing fence (using last occurrence)
-    const closingIdx = body.lastIndexOf('```');
-    return closingIdx !== -1 ? body.slice(0, closingIdx).trim() : body.trim();
-  }
-
-  // Fall back to extracting the first {...} block, using lastIndexOf for the
-  // closing brace to capture the full JSON object span.
-  const firstBrace = trimmed.indexOf('{');
-  const lastBrace = trimmed.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return trimmed.slice(firstBrace, lastBrace + 1);
-  }
-
-  return trimmed;
-}
-
 export interface RuleForProcessing {
   id: string;
   name: string;
@@ -195,7 +164,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
   let parsed: { subject?: string; body?: string; ruleApplied?: string };
 
   try {
-    parsed = JSON.parse(extractJson(content));
+    parsed = JSON.parse(jsonrepair(content));
   } catch {
     // JSON extraction failed entirely – fall back to forwarding the original
     // email body as-is.  Using the raw HTML here is consistent with the normal
