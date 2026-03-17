@@ -234,7 +234,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
     estimatedCost,
     ruleApplied: activeRules.length > 0
       ? activeRules.map((r) => r.name).join(', ')
-      : 'forwarded as-is',
+      : 'No rule applied',
     ...(parseError ? { parseError } : {}),
   };
 }
