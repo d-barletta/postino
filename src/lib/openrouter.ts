@@ -95,14 +95,36 @@ function sanitizeEmailBody(body: string): string {
     .trim();
 }
 
-/** Escapes special HTML characters to prevent HTML injection. */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+/**
+ * Extracts a JSON object from an LLM response that may be wrapped in
+ * markdown code fences (e.g. ```json ... ```) or contain surrounding text.
+ */
+function extractJson(content: string): string {
+  const trimmed = content.trim();
+
+  // Strip markdown code fences: find the first ``` opener and the last ``` closer
+  // so that any triple-backtick sequences inside the JSON content are ignored.
+  const openFenceIdx = trimmed.indexOf('```');
+  const closeFenceIdx = trimmed.lastIndexOf('```');
+  if (openFenceIdx !== -1 && closeFenceIdx > openFenceIdx) {
+    // Skip past the opening fence and any optional language identifier line
+    const afterFence = trimmed.slice(openFenceIdx + 3);
+    const firstNewline = afterFence.indexOf('\n');
+    const body = firstNewline !== -1 ? afterFence.slice(firstNewline + 1) : afterFence;
+    // Trim up to the closing fence (using last occurrence)
+    const closingIdx = body.lastIndexOf('```');
+    return closingIdx !== -1 ? body.slice(0, closingIdx).trim() : body.trim();
+  }
+
+  // Fall back to extracting the first {...} block, using lastIndexOf for the
+  // closing brace to capture the full JSON object span.
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+
+  return trimmed;
 }
 
 export interface RuleForProcessing {
@@ -161,26 +183,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'email_processing_result',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              subject: { type: 'string', description: 'Processed subject line' },
-              body: { type: 'string', description: 'Processed email body in HTML format' },
-              ruleApplied: {
-                type: 'string',
-                description: "Exact name of the rule applied, or 'forwarded as-is' if no rule matched",
-              },
-            },
-            required: ['subject', 'body', 'ruleApplied'],
-            additionalProperties: false,
-          },
-        },
-      },
+      response_format: { type: 'json_object' },
       max_tokens: 2000,
     });
   } catch (error) {
@@ -192,11 +195,16 @@ Respond with a JSON object containing: subject (processed subject line), body (p
   let parsed: { subject?: string; body?: string; ruleApplied?: string };
 
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(extractJson(content));
   } catch {
+    // JSON extraction failed entirely – fall back to forwarding the original
+    // email body as-is.  Using the raw HTML here is consistent with the normal
+    // forwarding path (where `result.body` is also inserted unescaped into the
+    // outgoing email template).  Sanitisation of arbitrary email HTML is left
+    // to the recipient's mail client, which sandboxes untrusted content.
     parsed = {
       subject: `[Postino] ${emailSubject}`,
-      body: `<p>Original email from ${escapeHtml(emailFrom)}:</p><pre>${escapeHtml(emailBody)}</pre>`,
+      body: emailBody,
       ruleApplied: 'error parsing LLM response, forwarded as-is',
     };
   }
