@@ -218,7 +218,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
     console.error('Failed to parse LLM response:', content);
     parseError = 'Failed to parse LLM JSON response; email forwarded as-is';
     parsed = {
-      subject: `[Postino] ${emailSubject}`,
+      subject: `📬 ${emailSubject}`,
       body: emailBody,
       ruleApplied: 'error parsing LLM response, forwarded as-is',
     };
