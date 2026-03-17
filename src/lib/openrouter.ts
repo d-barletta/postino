@@ -151,6 +151,9 @@ export async function processEmailWithRules(
   const basePrompt = (typeof settings?.llmSystemPrompt === 'string' && settings.llmSystemPrompt.trim())
     ? settings.llmSystemPrompt.trim()
     : DEFAULT_SYSTEM_PROMPT;
+  const maxTokens = (typeof settings?.llmMaxTokens === 'number' && settings.llmMaxTokens > 0)
+    ? settings.llmMaxTokens
+    : 4000;
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
   const rulesText = activeRules.length > 0
@@ -192,7 +195,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 4000,
+      max_tokens: maxTokens,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown OpenRouter error';

@@ -44,6 +44,7 @@ export interface Settings {
   maxRuleLength: number;
   llmModel: string;
   llmApiKey: string;
+  llmMaxTokens?: number;
   llmSystemPrompt?: string;
   smtpHost: string;
   smtpPort: number;

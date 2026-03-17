@@ -21,6 +21,7 @@ export default function AdminSettingsPage() {
     maxRuleLength: 1000,
     llmModel: 'openai/gpt-4o-mini',
     llmApiKey: '',
+    llmMaxTokens: 4000,
     llmSystemPrompt: '',
     smtpHost: '',
     smtpPort: 587,
@@ -214,6 +215,13 @@ export default function AdminSettingsPage() {
             type="number"
             value={settings.maxRuleLength || 1000}
             onChange={(e) => setSettings((p) => ({ ...p, maxRuleLength: parseInt(e.target.value) }))}
+          />
+          <Input
+            label="Max Response Tokens"
+            type="number"
+            value={settings.llmMaxTokens || 4000}
+            onChange={(e) => setSettings((p) => ({ ...p, llmMaxTokens: parseInt(e.target.value) }))}
+            hint="Maximum number of tokens the LLM can return per email (default: 4000). Increase for long HTML emails."
           />
           <Textarea
             label="System Prompt (base)"
