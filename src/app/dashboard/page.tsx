@@ -5,6 +5,7 @@ import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { EmailLog } from '@/types';
 
 export default function DashboardPage() {
@@ -13,6 +14,14 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'rules' | 'emails'>('rules');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const editRuleId = searchParams.get('editRule');
+
+  useEffect(() => {
+    if (editRuleId) {
+      setActiveTab('rules');
+    }
+  }, [editRuleId]);
 
   useEffect(() => {
     fetch('/api/settings/public')
@@ -39,7 +48,7 @@ export default function DashboardPage() {
           const data = await res.json();
           const fetchedLogs: EmailLog[] = data.logs || [];
           setLogs(fetchedLogs);
-          if (fetchedLogs.length > 0) {
+          if (fetchedLogs.length > 0 && !editRuleId) {
             setActiveTab('emails');
           }
         }
@@ -88,7 +97,7 @@ export default function DashboardPage() {
       </div>
 
       {activeTab === 'rules' ? (
-        <RulesManager maxRuleLength={maxRuleLength} />
+        <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
       ) : (
         <EmailLogsList logs={logs} />
       )}

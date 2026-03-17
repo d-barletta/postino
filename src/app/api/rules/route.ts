@@ -35,13 +35,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const decoded = await verifyUser(request);
-    const { text } = await request.json();
+    const { name, text, matchSender, matchSubject, matchBody } = await request.json();
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ error: 'Rule name is required' }, { status: 400 });
+    }
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'Rule text is required' }, { status: 400 });
     }
 
     const db = adminDb();
+
+    // Check name uniqueness for this user
+    const existingSnap = await db
+      .collection('rules')
+      .where('userId', '==', decoded.uid)
+      .where('name', '==', name.trim())
+      .limit(1)
+      .get();
+
+    if (!existingSnap.empty) {
+      return NextResponse.json({ error: 'A rule with this name already exists' }, { status: 409 });
+    }
+
     const settingsSnap = await db.collection('settings').doc('global').get();
     const maxRuleLength = settingsSnap.data()?.maxRuleLength ?? 1000;
 
@@ -52,7 +69,11 @@ export async function POST(request: NextRequest) {
     const now = Timestamp.now();
     const ref = await db.collection('rules').add({
       userId: decoded.uid,
+      name: name.trim(),
       text: text.trim(),
+      matchSender: matchSender?.trim() || '',
+      matchSubject: matchSubject?.trim() || '',
+      matchBody: matchBody?.trim() || '',
       createdAt: now,
       updatedAt: now,
       isActive: true,

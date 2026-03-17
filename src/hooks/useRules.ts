@@ -32,13 +32,19 @@ export function useRules() {
     fetchRules();
   }, [fetchRules]);
 
-  const createRule = async (text: string) => {
+  const createRule = async (
+    name: string,
+    text: string,
+    matchSender?: string,
+    matchSubject?: string,
+    matchBody?: string
+  ) => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
     const res = await fetch('/api/rules', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ name, text, matchSender, matchSubject, matchBody }),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -47,13 +53,21 @@ export function useRules() {
     await fetchRules();
   };
 
-  const updateRule = async (id: string, text: string, isActive: boolean) => {
+  const updateRule = async (
+    id: string,
+    name: string,
+    text: string,
+    isActive: boolean,
+    matchSender?: string,
+    matchSubject?: string,
+    matchBody?: string
+  ) => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
     const res = await fetch(`/api/rules/${id}`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, isActive }),
+      body: JSON.stringify({ name, text, isActive, matchSender, matchSubject, matchBody }),
     });
     if (!res.ok) throw new Error('Failed to update rule');
     await fetchRules();
