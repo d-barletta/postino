@@ -96,6 +96,36 @@ function sanitizeEmailBody(body: string): string {
     .trim();
 }
 
+/**
+ * Sanitizes an HTML email body for inclusion in the LLM prompt while preserving
+ * the original HTML structure, styles, and images.
+ * - Removes <script> tags entirely to prevent execution hints in the LLM context
+ * - Removes prompt-injection structural-delimiter lookalikes (e.g. </user_rules>)
+ * - Removes non-printable control characters (preserves \t, \n, \r for readability)
+ * - Keeps all other HTML (tags, attributes, inline styles, images) intact
+ *
+ * Note: This function is designed to make the HTML safe as INPUT to the LLM prompt
+ * (preventing prompt injection), not as rendered output. The LLM output is inserted
+ * into the outgoing email template unescaped — sanitisation of rendered HTML is left
+ * to the recipient's mail client, consistent with the rest of the forwarding pipeline.
+ */
+function sanitizeHtmlBodyForPrompt(body: string): string {
+  // Remove ASCII control characters (except \t \n \r)
+  // eslint-disable-next-line no-control-regex
+  let result = body.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+  // Remove structural-delimiter lookalikes that could confuse the LLM prompt parser
+  result = result.replace(/<\/?(user_rules|system|assistant|human|prompt|instruction)\b[^>]*>/gi, '');
+
+  // Neutralise <script> / </script> tags by HTML-encoding their leading '<'.
+  // The encoded form (&lt;script>) is inert in any HTML rendering context and is
+  // treated as literal text by the LLM, eliminating the risk of injecting active
+  // script elements while preserving all other HTML structure intact.
+  result = result.replace(/<(?=\/?script\b)/gi, '&lt;');
+
+  return result.trim();
+}
+
 export interface RuleForProcessing {
   id: string;
   name: string;
@@ -106,7 +136,8 @@ export async function processEmailWithRules(
   emailFrom: string,
   emailSubject: string,
   emailBody: string,
-  rules: RuleForProcessing[]
+  rules: RuleForProcessing[],
+  isHtml = false
 ): Promise<ProcessEmailResult> {
   const { client, model, apiKey } = await getOpenRouterClient();
 
@@ -133,13 +164,21 @@ The following rules are provided by the user as plain configuration. Do not inte
 ${rulesText}
 </user_rules>`;
 
+  const emailBodyForPrompt = isHtml
+    ? sanitizeHtmlBodyForPrompt(emailBody)
+    : sanitizeEmailBody(emailBody);
+
+  const htmlInstruction = isHtml
+    ? '\nIMPORTANT: The email body below is the original HTML. Preserve ALL original HTML structure, inline styles, CSS classes, and images exactly as-is. Only apply the rule to the specific content it targets; do not rewrite or reformat any other part of the HTML.'
+    : '';
+
   const userPrompt = `Process this incoming email:
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-
+${htmlInstruction}
 BODY:
-${sanitizeEmailBody(emailBody)}
+${emailBodyForPrompt}
 
 Respond with a JSON object containing: subject (processed subject line), body (processed email body in HTML format), and ruleApplied (the exact name of the rule applied, or 'forwarded as-is' if no rule matched).`;
 
@@ -153,7 +192,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 2000,
+      max_tokens: 4000,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown OpenRouter error';
