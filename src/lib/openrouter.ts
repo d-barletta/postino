@@ -108,11 +108,17 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#039;');
 }
 
+export interface RuleForProcessing {
+  id: string;
+  name: string;
+  text: string;
+}
+
 export async function processEmailWithRules(
   emailFrom: string,
   emailSubject: string,
   emailBody: string,
-  rules: string[]
+  rules: RuleForProcessing[]
 ): Promise<ProcessEmailResult> {
   const { client, model, apiKey } = await getOpenRouterClient();
 
@@ -127,9 +133,9 @@ export async function processEmailWithRules(
     ? settings.llmSystemPrompt.trim()
     : DEFAULT_SYSTEM_PROMPT;
 
-  const activeRules = rules.filter((r) => r.trim().length > 0);
+  const activeRules = rules.filter((r) => r.text.trim().length > 0);
   const rulesText = activeRules.length > 0
-    ? activeRules.map((r, i) => `Rule ${i + 1}: ${sanitizeRule(r)}`).join('\n')
+    ? activeRules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
     : 'No specific rules. Forward the email as-is with a brief summary prepended.';
 
   const systemPrompt = `${basePrompt}
@@ -151,7 +157,7 @@ Return a JSON object with exactly these fields:
 {
   "subject": "processed subject line",
   "body": "processed email body in HTML format",
-  "ruleApplied": "description of which rule was applied or 'forwarded as-is'"
+  "ruleApplied": "the exact name of the rule that was applied, or 'forwarded as-is' if no rule matched"
 }`;
 
   let response;

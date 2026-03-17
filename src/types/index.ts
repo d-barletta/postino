@@ -11,7 +11,11 @@ export interface User {
 export interface Rule {
   id: string;
   userId: string;
+  name: string;
   text: string;
+  matchSender?: string;
+  matchSubject?: string;
+  matchBody?: string;
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;

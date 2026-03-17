@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 
+const MAX_RULE_NAME_LENGTH = 100;
+const MAX_PATTERN_LENGTH = 200;
+
 async function verifyUser(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
@@ -21,8 +24,50 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const { text, isActive } = await request.json();
-    await ruleRef.update({ text, isActive, updatedAt: Timestamp.now() });
+    const { name, text, isActive, matchSender, matchSubject, matchBody } = await request.json();
+
+    if (name !== undefined) {
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return NextResponse.json({ error: 'Rule name is required' }, { status: 400 });
+      }
+
+      if (name.trim().length > MAX_RULE_NAME_LENGTH) {
+        return NextResponse.json({ error: `Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters` }, { status: 400 });
+      }
+
+      // Check name uniqueness (exclude current rule)
+      const existingSnap = await db
+        .collection('rules')
+        .where('userId', '==', decoded.uid)
+        .where('name', '==', name.trim())
+        .limit(1)
+        .get();
+
+      if (!existingSnap.empty && existingSnap.docs[0].id !== id) {
+        return NextResponse.json({ error: 'A rule with this name already exists' }, { status: 409 });
+      }
+    }
+
+    if (matchSender !== undefined && (typeof matchSender !== 'string' || matchSender.length > MAX_PATTERN_LENGTH)) {
+      return NextResponse.json({ error: `Sender pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    }
+
+    if (matchSubject !== undefined && (typeof matchSubject !== 'string' || matchSubject.length > MAX_PATTERN_LENGTH)) {
+      return NextResponse.json({ error: `Subject pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    }
+
+    if (matchBody !== undefined && (typeof matchBody !== 'string' || matchBody.length > MAX_PATTERN_LENGTH)) {
+      return NextResponse.json({ error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    }
+
+    const updateData: Record<string, unknown> = { isActive, updatedAt: Timestamp.now() };
+    if (text !== undefined) updateData.text = text;
+    if (name !== undefined) updateData.name = name.trim();
+    if (matchSender !== undefined) updateData.matchSender = matchSender?.trim() || '';
+    if (matchSubject !== undefined) updateData.matchSubject = matchSubject?.trim() || '';
+    if (matchBody !== undefined) updateData.matchBody = matchBody?.trim() || '';
+
+    await ruleRef.update(updateData);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Failed to update rule' }, { status: 500 });

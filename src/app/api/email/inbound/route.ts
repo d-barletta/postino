@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { processEmailWithRules } from '@/lib/openrouter';
+import { processEmailWithRules, RuleForProcessing } from '@/lib/openrouter';
 import { sendEmail, verifyMailgunSignature } from '@/lib/email';
 import { Timestamp } from 'firebase-admin/firestore';
 
@@ -17,6 +17,12 @@ function escapeHtml(text: string): string {
 /** Strip CR and LF characters to prevent email header (CRLF) injection. */
 function stripCrlf(value: string): string {
   return value.replace(/[\r\n]/g, '');
+}
+
+/** Returns true if the value contains the pattern (case-insensitive), or if pattern is empty. */
+function matchesPattern(value: string, pattern?: string): boolean {
+  if (!pattern || !pattern.trim()) return true;
+  return value.toLowerCase().includes(pattern.toLowerCase());
 }
 
 export async function POST(request: NextRequest) {
@@ -124,20 +130,43 @@ export async function POST(request: NextRequest) {
       .where('isActive', '==', true)
       .get();
 
-    const rules = rulesSnap.docs.map((d) => d.data().text as string);
+    const allRules = rulesSnap.docs.map((d) => ({
+      id: d.id,
+      name: (d.data().name as string) || d.id,
+      text: d.data().text as string,
+      matchSender: (d.data().matchSender as string) || '',
+      matchSubject: (d.data().matchSubject as string) || '',
+      matchBody: (d.data().matchBody as string) || '',
+    }));
 
-    const result = await processEmailWithRules(sender, subject, emailBody, rules);
+    // Filter rules based on pattern matching against the incoming email
+    const matchingRules: RuleForProcessing[] = allRules.filter(
+      (r) =>
+        matchesPattern(sender, r.matchSender) &&
+        matchesPattern(subject, r.matchSubject) &&
+        matchesPattern(emailBody, r.matchBody)
+    );
+
+    const result = await processEmailWithRules(sender, subject, emailBody, matchingRules);
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const originalEmailUrl = appUrl
       ? `${appUrl}/email/original/${logRef.id}`
       : null;
 
+    // Find the rule that was applied (by name) to get its ID for the edit link
+    const appliedRule = matchingRules.find((r) => r.name === result.ruleApplied);
+    const editRuleUrl = appUrl && appliedRule
+      ? `${appUrl}/dashboard?editRule=${appliedRule.id}`
+      : appUrl
+      ? `${appUrl}/dashboard`
+      : null;
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #f0f4ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; color: #4b5563;">
           <strong>📮 Postino processed this email</strong><br>
-          Original from: ${escapeHtml(sender)} | Rule: ${escapeHtml(result.ruleApplied)}${originalEmailUrl ? `<br><a href="${escapeHtml(originalEmailUrl)}" style="color: #4f46e5; text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
+          Original from: ${escapeHtml(sender)} | Rule: <strong>${escapeHtml(result.ruleApplied)}</strong>${editRuleUrl ? ` | <a href="${escapeHtml(editRuleUrl)}" style="color: #4f46e5; text-decoration: underline;">Edit rule</a>` : ''}${originalEmailUrl ? `<br><a href="${escapeHtml(originalEmailUrl)}" style="color: #4f46e5; text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
         </div>
         ${result.body}
       </div>
