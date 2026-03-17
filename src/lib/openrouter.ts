@@ -233,7 +233,10 @@ Respond with a JSON object containing: subject (processed subject line), body (p
     body: parsed.body || emailBody,
     tokensUsed,
     estimatedCost,
-    ruleApplied: parsed.ruleApplied || 'forwarded as-is',
+    ruleApplied: parsed.ruleApplied ||
+      (activeRules.length > 0
+        ? activeRules.map((r) => r.name).join(', ')
+        : 'forwarded as-is'),
     ...(parseError ? { parseError } : {}),
   };
 }
