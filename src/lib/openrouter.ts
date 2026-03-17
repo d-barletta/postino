@@ -233,7 +233,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
     body: parsed.body || emailBody,
     tokensUsed,
     estimatedCost,
-    ruleApplied: parsed.ruleApplied || 'unknown',
+    ruleApplied: parsed.ruleApplied || 'forwarded as-is',
     ...(parseError ? { parseError } : {}),
   };
 }
