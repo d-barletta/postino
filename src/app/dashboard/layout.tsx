@@ -54,23 +54,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </nav>
           </div>
-          <div className="hidden md:flex items-center gap-3">
-            <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-              {firebaseUser.email}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              Sign out
-            </Button>
+          <div className="flex items-center gap-3">
+            {user?.isAdmin && (
+              <Link href="/admin">
+                <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                  Admin
+                </Button>
+              </Link>
+            )}
+            <div className="hidden md:flex items-center gap-3">
+              <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
+                {firebaseUser.email}
+              </span>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                Sign out
+              </Button>
+            </div>
+            <button
+              type="button"
+              className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((v) => !v)}
+            >
+              <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`} aria-hidden="true" />
+            </button>
           </div>
-          <button
-            type="button"
-            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
-            aria-label="Toggle menu"
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen((v) => !v)}
-          >
-            <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`} aria-hidden="true" />
-          </button>
         </div>
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">

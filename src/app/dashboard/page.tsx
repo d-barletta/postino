@@ -5,11 +5,14 @@ import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
 import { useState, useEffect } from 'react';
+import type { EmailLog } from '@/types';
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, firebaseUser } = useAuth();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
   const [activeTab, setActiveTab] = useState<'rules' | 'emails'>('rules');
+  const [logs, setLogs] = useState<EmailLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/settings/public')
@@ -20,7 +23,34 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    setLogsLoading(true);
+    if (!firebaseUser) {
+      setLogsLoading(false);
+      return;
+    }
+    const fetchLogs = async () => {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/email/logs', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const fetchedLogs: EmailLog[] = data.logs || [];
+          setLogs(fetchedLogs);
+          if (fetchedLogs.length > 0) {
+            setActiveTab('emails');
+          }
+        }
+      } finally {
+        setLogsLoading(false);
+      }
+    };
+    fetchLogs();
+  }, [firebaseUser]);
+
+  if (loading || logsLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin h-8 w-8 border-4 border-[#EFD957] border-t-transparent rounded-full" />
@@ -60,7 +90,7 @@ export default function DashboardPage() {
       {activeTab === 'rules' ? (
         <RulesManager maxRuleLength={maxRuleLength} />
       ) : (
-        <EmailLogsList />
+        <EmailLogsList logs={logs} />
       )}
     </div>
   );
