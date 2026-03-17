@@ -11,9 +11,11 @@ const PAGE_SIZE = 10;
 
 interface EmailLogsListProps {
   logs: EmailLog[];
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
-export function EmailLogsList({ logs }: EmailLogsListProps) {
+export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogsListProps) {
   const [selected, setSelected] = useState<EmailLog | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -42,7 +44,19 @@ export function EmailLogsList({ logs }: EmailLogsListProps) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-900">Email History</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Email History</h2>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={refreshing}
+                title="Refresh"
+                className="text-gray-400 hover:text-[#d0b53f] dark:hover:text-[#f3df79] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <i className={`bi bi-arrow-clockwise text-lg${refreshing ? ' animate-spin' : ''}`} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {logs.length === 0 ? (

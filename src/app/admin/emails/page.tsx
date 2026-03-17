@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -43,31 +43,43 @@ export default function AdminEmailsPage() {
   const { firebaseUser } = useAuth();
   const [logs, setLogs] = useState<AdminEmailLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      if (!firebaseUser) return;
-      try {
-        const token = await firebaseUser.getIdToken();
-        const res = await fetch('/api/admin/emails?limit=100', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setLogs(data.logs || []);
-        } else {
-          setFetchError('Failed to load email logs.');
-        }
-      } catch {
+  const fetchLogs = useCallback(async () => {
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/admin/emails?limit=100', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.logs || []);
+        setFetchError('');
+      } else {
         setFetchError('Failed to load email logs.');
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchLogs();
+    } catch {
+      setFetchError('Failed to load email logs.');
+    } finally {
+      setLoading(false);
+    }
   }, [firebaseUser]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchLogs();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchLogs]);
 
   return (
     <div className="space-y-6 ui-fade-up">
@@ -80,9 +92,19 @@ export default function AdminEmailsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Processed Emails</h2>
-            {!loading && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">{logs.length} records</span>
-            )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleRefresh}
+                disabled={loading || refreshing}
+                title="Refresh"
+                className="text-gray-400 hover:text-[#d0b53f] dark:hover:text-[#f3df79] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <i className={`bi bi-arrow-clockwise text-lg${refreshing ? ' animate-spin' : ''}`} aria-hidden="true" />
+              </button>
+              {!loading && (
+                <span className="text-sm text-gray-500 dark:text-gray-400">{logs.length} records</span>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

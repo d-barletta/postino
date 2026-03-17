@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog } from '@/types';
 
@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'rules' | 'emails'>('rules');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+  const [logsRefreshing, setLogsRefreshing] = useState(false);
   const searchParams = useSearchParams();
   const editRuleId = searchParams.get('editRule');
 
@@ -32,13 +33,25 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
+  const fetchLogs = useCallback(async () => {
+    if (!firebaseUser) return;
+    const token = await firebaseUser.getIdToken();
+    const res = await fetch('/api/email/logs', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setLogs(data.logs || []);
+    }
+  }, [firebaseUser]);
+
   useEffect(() => {
     setLogsLoading(true);
     if (!firebaseUser) {
       setLogsLoading(false);
       return;
     }
-    const fetchLogs = async () => {
+    const initialFetch = async () => {
       try {
         const token = await firebaseUser.getIdToken();
         const res = await fetch('/api/email/logs', {
@@ -56,8 +69,17 @@ export default function DashboardPage() {
         setLogsLoading(false);
       }
     };
-    fetchLogs();
+    initialFetch();
   }, [firebaseUser]);
+
+  const handleLogsRefresh = useCallback(async () => {
+    setLogsRefreshing(true);
+    try {
+      await fetchLogs();
+    } finally {
+      setLogsRefreshing(false);
+    }
+  }, [fetchLogs]);
 
   if (loading || logsLoading) {
     return (
@@ -99,7 +121,7 @@ export default function DashboardPage() {
       {activeTab === 'rules' ? (
         <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
       ) : (
-        <EmailLogsList logs={logs} />
+        <EmailLogsList logs={logs} onRefresh={handleLogsRefresh} refreshing={logsRefreshing} />
       )}
     </div>
   );
