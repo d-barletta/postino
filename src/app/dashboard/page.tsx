@@ -4,9 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
+import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import type { EmailLog } from '@/types';
+import type { EmailLog, UserStats } from '@/types';
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser } = useAuth();
@@ -15,6 +16,7 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsRefreshing, setLogsRefreshing] = useState(false);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const searchParams = useSearchParams();
   const editRuleId = searchParams.get('editRule');
 
@@ -45,6 +47,18 @@ export default function DashboardPage() {
     }
   }, [firebaseUser]);
 
+  const fetchStats = useCallback(async () => {
+    if (!firebaseUser) return;
+    const token = await firebaseUser.getIdToken();
+    const res = await fetch('/api/user/stats', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.stats) setUserStats(data.stats);
+    }
+  }, [firebaseUser]);
+
   useEffect(() => {
     setLogsLoading(true);
     if (!firebaseUser) {
@@ -54,16 +68,21 @@ export default function DashboardPage() {
     const initialFetch = async () => {
       try {
         const token = await firebaseUser.getIdToken();
-        const res = await fetch('/api/email/logs', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const [logsRes, statsRes] = await Promise.all([
+          fetch('/api/email/logs', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/user/stats', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+        if (logsRes.ok) {
+          const data = await logsRes.json();
           const fetchedLogs: EmailLog[] = data.logs || [];
           setLogs(fetchedLogs);
           if (fetchedLogs.length > 0 && !editRuleId) {
             setActiveTab('emails');
           }
+        }
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          if (data.stats) setUserStats(data.stats);
         }
       } finally {
         setLogsLoading(false);
@@ -75,11 +94,11 @@ export default function DashboardPage() {
   const handleLogsRefresh = useCallback(async () => {
     setLogsRefreshing(true);
     try {
-      await fetchLogs();
+      await Promise.all([fetchLogs(), fetchStats()]);
     } finally {
       setLogsRefreshing(false);
     }
-  }, [fetchLogs]);
+  }, [fetchLogs, fetchStats]);
 
   if (loading || logsLoading) {
     return (
@@ -99,6 +118,8 @@ export default function DashboardPage() {
       {user?.assignedEmail && (
         <AssignedEmailCard assignedEmail={user.assignedEmail} />
       )}
+
+      {userStats && <UserStatsCards stats={userStats} />}
 
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex gap-6">

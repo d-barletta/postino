@@ -19,21 +19,34 @@ export async function GET(request: NextRequest) {
     const db = adminDb();
 
     const { searchParams } = new URL(request.url);
-    const limitParam = parseInt(searchParams.get('limit') || '50', 10);
-    const limit = Math.min(Math.max(limitParam, 1), 200);
+    const pageSizeParam = parseInt(searchParams.get('pageSize') || '20', 10);
+    const pageSize = Math.min(Math.max(pageSizeParam, 1), 100);
+    const cursor = searchParams.get('cursor');
 
-    const logsSnap = await db
+    let query = db
       .collection('emailLogs')
       .orderBy('receivedAt', 'desc')
-      .limit(limit)
-      .get();
+      .limit(pageSize + 1);
+
+    if (cursor) {
+      const cursorDoc = await db.collection('emailLogs').doc(cursor).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const logsSnap = await query.get();
+
+    const hasMore = logsSnap.docs.length > pageSize;
+    const docs = hasMore ? logsSnap.docs.slice(0, pageSize) : logsSnap.docs;
+    const nextCursor = hasMore ? docs[docs.length - 1].id : null;
 
     const usersSnap = await db.collection('users').get();
     const usersMap = new Map(
       usersSnap.docs.map((d) => [d.id, d.data().email as string])
     );
 
-    const logs = logsSnap.docs.map((d) => {
+    const logs = docs.map((d) => {
       const data = d.data();
       return {
         id: d.id,
@@ -52,7 +65,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ logs });
+    return NextResponse.json({ logs, hasMore, nextCursor });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
