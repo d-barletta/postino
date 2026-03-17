@@ -22,13 +22,14 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const emailContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
+    const container = emailContainerRef.current;
+    if (!container) return;
     if (!document.fullscreenElement) {
-      iframe.requestFullscreen().then(() => setIsFullscreen(true)).catch((err) => {
+      container.requestFullscreen().then(() => setIsFullscreen(true)).catch((err) => {
         console.error('Failed to enter fullscreen:', err);
       });
     } else {
@@ -172,19 +173,25 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           </CardHeader>
           <CardContent className="p-0">
             {email.originalBody ? (
-              <iframe
-                ref={iframeRef}
-                sandbox=""
-                srcDoc={email.originalBody}
-                className="w-full border-0 rounded-b-xl"
-                style={{ minHeight: '300px' }}
-                title="Original email content"
-                onLoad={(e) => {
-                  const iframe = e.currentTarget;
-                  const height = iframe.contentDocument?.documentElement?.scrollHeight;
-                  if (height) iframe.style.height = `${height + 20}px`;
-                }}
-              />
+              <div
+                ref={emailContainerRef}
+                className={isFullscreen ? 'bg-white dark:bg-gray-900 w-full h-full overflow-auto' : ''}
+              >
+                <iframe
+                  ref={iframeRef}
+                  sandbox=""
+                  srcDoc={email.originalBody}
+                  className={`w-full border-0 ${isFullscreen ? '' : 'rounded-b-xl'}`}
+                  style={isFullscreen ? { width: '100%', height: '100vh' } : { minHeight: '300px' }}
+                  title="Original email content"
+                  onLoad={(e) => {
+                    if (isFullscreen) return;
+                    const iframe = e.currentTarget;
+                    const height = iframe.contentDocument?.documentElement?.scrollHeight;
+                    if (height) iframe.style.height = `${height + 20}px`;
+                  }}
+                />
+              </div>
             ) : (
               <p className="text-gray-500 dark:text-gray-400 text-sm px-6 py-4">No original content stored.</p>
             )}
