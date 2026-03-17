@@ -32,6 +32,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const MAX_RULE_NAME_LENGTH = 100;
+const MAX_PATTERN_LENGTH = 200;
+
 export async function POST(request: NextRequest) {
   try {
     const decoded = await verifyUser(request);
@@ -41,8 +44,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rule name is required' }, { status: 400 });
     }
 
+    if (name.trim().length > MAX_RULE_NAME_LENGTH) {
+      return NextResponse.json({ error: `Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters` }, { status: 400 });
+    }
+
     if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'Rule text is required' }, { status: 400 });
+    }
+
+    if (matchSender !== undefined && (typeof matchSender !== 'string' || matchSender.length > MAX_PATTERN_LENGTH)) {
+      return NextResponse.json({ error: `Sender pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    }
+
+    if (matchSubject !== undefined && (typeof matchSubject !== 'string' || matchSubject.length > MAX_PATTERN_LENGTH)) {
+      return NextResponse.json({ error: `Subject pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    }
+
+    if (matchBody !== undefined && (typeof matchBody !== 'string' || matchBody.length > MAX_PATTERN_LENGTH)) {
+      return NextResponse.json({ error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
     }
 
     const db = adminDb();

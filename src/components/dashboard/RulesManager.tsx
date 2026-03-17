@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
 
 const DEFAULT_MAX_LENGTH = 1000;
+const MAX_RULE_NAME_LENGTH = 100;
+const MAX_PATTERN_LENGTH = 200;
 
 interface RulesManagerProps {
   maxRuleLength?: number;
@@ -67,6 +69,10 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       setError('Rule name is required');
       return;
     }
+    if (newRuleName.trim().length > MAX_RULE_NAME_LENGTH) {
+      setError(`Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters`);
+      return;
+    }
     if (!newRuleText.trim()) {
       setError('Rule text is required');
       return;
@@ -101,6 +107,10 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   const handleUpdate = async (id: string) => {
     if (!editName.trim()) {
       setError('Rule name is required');
+      return;
+    }
+    if (editName.trim().length > MAX_RULE_NAME_LENGTH) {
+      setError(`Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters`);
       return;
     }
     if (!editText.trim()) {
@@ -171,6 +181,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                 value={newRuleName}
                 onChange={(e) => setNewRuleName(e.target.value)}
                 placeholder="e.g. Newsletter Summarizer"
+                maxLength={MAX_RULE_NAME_LENGTH}
               />
             </div>
             <div>
@@ -207,6 +218,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                     value={newMatchSender}
                     onChange={(e) => setNewMatchSender(e.target.value)}
                     placeholder="e.g. newsletter@example.com"
+                    maxLength={MAX_PATTERN_LENGTH}
                   />
                 </div>
                 <div>
@@ -215,6 +227,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                     value={newMatchSubject}
                     onChange={(e) => setNewMatchSubject(e.target.value)}
                     placeholder="e.g. Weekly Digest"
+                    maxLength={MAX_PATTERN_LENGTH}
                   />
                 </div>
                 <div>
@@ -223,6 +236,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                     value={newMatchBody}
                     onChange={(e) => setNewMatchBody(e.target.value)}
                     placeholder="e.g. unsubscribe"
+                    maxLength={MAX_PATTERN_LENGTH}
                   />
                 </div>
               </div>
@@ -289,6 +303,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           placeholder="e.g. Newsletter Summarizer"
+                          maxLength={MAX_RULE_NAME_LENGTH}
                         />
                       </div>
                       <div>
@@ -324,6 +339,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               value={editMatchSender}
                               onChange={(e) => setEditMatchSender(e.target.value)}
                               placeholder="e.g. newsletter@example.com"
+                              maxLength={MAX_PATTERN_LENGTH}
                             />
                           </div>
                           <div>
@@ -332,6 +348,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               value={editMatchSubject}
                               onChange={(e) => setEditMatchSubject(e.target.value)}
                               placeholder="e.g. Weekly Digest"
+                              maxLength={MAX_PATTERN_LENGTH}
                             />
                           </div>
                           <div>
@@ -340,6 +357,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               value={editMatchBody}
                               onChange={(e) => setEditMatchBody(e.target.value)}
                               placeholder="e.g. unsubscribe"
+                              maxLength={MAX_PATTERN_LENGTH}
                             />
                           </div>
                         </div>
