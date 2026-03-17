@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { processEmailWithRules, RuleForProcessing } from '@/lib/openrouter';
 import { sendEmail, verifyMailgunSignature } from '@/lib/email';
 import { Timestamp } from 'firebase-admin/firestore';
+import type { DocumentReference } from 'firebase-admin/firestore';
 
 /** Escape special HTML characters to prevent HTML injection in email templates. */
 function escapeHtml(text: string): string {
@@ -26,6 +27,7 @@ function matchesPattern(value: string, pattern?: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  let logRef: DocumentReference | null = null;
   try {
     const formData = await request.formData();
 
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest) {
     const userId = userDoc.id;
     const matchedRecipient = (userData.assignedEmail as string) || normalizedRecipients[0];
 
-    const logRef = await db.collection('emailLogs').add({
+    logRef = await db.collection('emailLogs').add({
       toAddress: matchedRecipient,
       fromAddress: sender,
       subject,
@@ -195,6 +197,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Inbound email processing error:', error);
+    if (logRef) {
+      try {
+        await logRef.update({
+          status: 'error',
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+      } catch (updateError) {
+        console.error('Failed to update email log with error status:', updateError);
+      }
+    }
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
   }
 }

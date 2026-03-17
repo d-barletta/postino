@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
         ruleApplied: data.ruleApplied ?? null,
         tokensUsed: data.tokensUsed ?? null,
         estimatedCost: data.estimatedCost ?? null,
+        errorMessage: data.errorMessage ?? null,
       };
     });
 
