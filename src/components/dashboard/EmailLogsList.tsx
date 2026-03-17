@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -88,6 +89,16 @@ export function EmailLogsList() {
                           {truncate(log.processedBody.replace(/<[^>]*>/g, ''), 300)}
                         </div>
                       )}
+                      <div className="pt-1">
+                        <Link
+                          href={`/email/original/${log.id}`}
+                          className="inline-flex items-center gap-1 text-xs text-[#d0b53f] hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <i className="bi bi-envelope-open" aria-hidden="true" />
+                          View original email
+                        </Link>
+                      </div>
                     </div>
                   )}
                 </div>
