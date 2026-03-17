@@ -78,9 +78,18 @@ function sanitizeEmailField(value: string): string {
  */
 function sanitizeEmailBody(body: string): string {
   return body
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+    // Strip HTML tags so the LLM receives plain text, not raw markup
+    .replace(/<[^>]*>/g, ' ')
+    // Decode common HTML entities so the LLM sees actual content
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    // Collapse excess whitespace left by removed tags
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .trim();
