@@ -192,6 +192,7 @@ export async function POST(request: NextRequest) {
       tokensUsed: result.tokensUsed,
       estimatedCost: result.estimatedCost,
       processedBody: result.body,
+      ...(result.parseError ? { errorMessage: result.parseError } : {}),
     });
 
     return NextResponse.json({ success: true });

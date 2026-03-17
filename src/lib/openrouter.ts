@@ -9,6 +9,7 @@ export interface ProcessEmailResult {
   tokensUsed: number;
   estimatedCost: number;
   ruleApplied: string;
+  parseError?: string;
 }
 
 export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: string; apiKey: string }> {
@@ -204,6 +205,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
 
   const content = response.choices[0]?.message?.content || '{}';
   let parsed: { subject?: string; body?: string; ruleApplied?: string };
+  let parseError: string | undefined;
 
   try {
     parsed = JSON.parse(jsonrepair(content));
@@ -213,8 +215,10 @@ Respond with a JSON object containing: subject (processed subject line), body (p
     // forwarding path (where `result.body` is also inserted unescaped into the
     // outgoing email template).  Sanitisation of arbitrary email HTML is left
     // to the recipient's mail client, which sandboxes untrusted content.
+    console.error('Failed to parse LLM response:', content);
+    parseError = 'Failed to parse LLM JSON response; email forwarded as-is';
     parsed = {
-      subject: `[Postino] ${emailSubject}`,
+      subject: `📬 ${emailSubject}`,
       body: emailBody,
       ruleApplied: 'error parsing LLM response, forwarded as-is',
     };
@@ -230,5 +234,6 @@ Respond with a JSON object containing: subject (processed subject line), body (p
     tokensUsed,
     estimatedCost,
     ruleApplied: parsed.ruleApplied || 'unknown',
+    ...(parseError ? { parseError } : {}),
   };
 }
