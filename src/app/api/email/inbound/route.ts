@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         matchesPattern(emailBody, r.matchBody)
     );
 
-    const result = await processEmailWithRules(sender, subject, emailBody, matchingRules);
+    const result = await processEmailWithRules(sender, subject, emailBody, matchingRules, bodyHtml !== '');
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const originalEmailUrl = appUrl
