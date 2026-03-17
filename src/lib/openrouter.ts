@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { jsonrepair } from 'jsonrepair';
 import { adminDb } from './firebase-admin';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
 
@@ -95,16 +96,6 @@ function sanitizeEmailBody(body: string): string {
     .trim();
 }
 
-/** Escapes special HTML characters to prevent HTML injection. */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
 export interface RuleForProcessing {
   id: string;
   name: string;
@@ -161,26 +152,7 @@ Respond with a JSON object containing: subject (processed subject line), body (p
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'email_processing_result',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              subject: { type: 'string', description: 'Processed subject line' },
-              body: { type: 'string', description: 'Processed email body in HTML format' },
-              ruleApplied: {
-                type: 'string',
-                description: "Exact name of the rule applied, or 'forwarded as-is' if no rule matched",
-              },
-            },
-            required: ['subject', 'body', 'ruleApplied'],
-            additionalProperties: false,
-          },
-        },
-      },
+      response_format: { type: 'json_object' },
       max_tokens: 2000,
     });
   } catch (error) {
@@ -192,11 +164,16 @@ Respond with a JSON object containing: subject (processed subject line), body (p
   let parsed: { subject?: string; body?: string; ruleApplied?: string };
 
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(jsonrepair(content));
   } catch {
+    // JSON extraction failed entirely – fall back to forwarding the original
+    // email body as-is.  Using the raw HTML here is consistent with the normal
+    // forwarding path (where `result.body` is also inserted unescaped into the
+    // outgoing email template).  Sanitisation of arbitrary email HTML is left
+    // to the recipient's mail client, which sandboxes untrusted content.
     parsed = {
       subject: `[Postino] ${emailSubject}`,
-      body: `<p>Original email from ${escapeHtml(emailFrom)}:</p><pre>${escapeHtml(emailBody)}</pre>`,
+      body: emailBody,
       ruleApplied: 'error parsing LLM response, forwarded as-is',
     };
   }

@@ -16,6 +16,7 @@
     "crypto-js": "^4.2.0",
     "firebase": "^12.10.0",
     "firebase-admin": "^13.7.0",
+    "jsonrepair": "^3.13.3",
     "next": "16.1.6",
     "nodemailer": "^8.0.2",
     "openai": "^6.29.0",
@@ -28,7 +29,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
+    "eslint": "^9.39.4",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5.9.3"
