@@ -38,6 +38,12 @@ export async function POST(request: NextRequest) {
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data();
+
+    if (settings?.maintenanceMode === true) {
+      console.log('Maintenance mode is active, email not forwarded');
+      return NextResponse.json({ message: 'Service is under maintenance. Email not forwarded.' });
+    }
+
     const mailgunWebhookSigningKey =
       settings?.mailgunWebhookSigningKey ||
       process.env.MAILGUN_WEBHOOK_SIGNING_KEY ||
@@ -80,6 +86,7 @@ export async function POST(request: NextRequest) {
     const bodyHtml = (formData.get('body-html') as string) || '';
     const bodyPlain = (formData.get('body-plain') as string) || '';
     const emailBody = bodyHtml || bodyPlain;
+    const messageId = stripCrlf((formData.get('Message-Id') as string) || '');
 
     if (normalizedRecipients.length === 0) {
       return NextResponse.json({ error: 'Missing recipient' }, { status: 400 });
@@ -116,6 +123,20 @@ export async function POST(request: NextRequest) {
     const userId = userDoc.id;
     const matchedRecipient = (userData.assignedEmail as string) || normalizedRecipients[0];
 
+    // Deduplicate: if a log entry already exists for this Message-Id, skip reprocessing
+    if (messageId) {
+      const existingLog = await db
+        .collection('emailLogs')
+        .where('messageId', '==', messageId)
+        .where('userId', '==', userId)
+        .limit(1)
+        .get();
+      if (!existingLog.empty) {
+        console.log(`Duplicate email detected (Message-Id: ${messageId}), skipping`);
+        return NextResponse.json({ message: 'Duplicate email, already processed' });
+      }
+    }
+
     logRef = await db.collection('emailLogs').add({
       toAddress: matchedRecipient,
       fromAddress: sender,
@@ -124,6 +145,7 @@ export async function POST(request: NextRequest) {
       status: 'processing',
       userId,
       originalBody: emailBody,
+      ...(messageId ? { messageId } : {}),
     });
 
     const rulesSnap = await db

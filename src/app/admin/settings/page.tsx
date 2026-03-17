@@ -34,6 +34,7 @@ export default function AdminSettingsPage() {
     mailgunDomain: '',
     mailgunSandboxEmail: '',
     mailgunBaseUrl: 'https://api.mailgun.net',
+    maintenanceMode: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -153,6 +154,41 @@ export default function AdminSettingsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Platform Settings</h1>
         <p className="text-gray-500 mt-1">Configure Postino&apos;s core settings</p>
       </div>
+
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-900">Maintenance Mode</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                When enabled, no emails will be forwarded to any user.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!!settings.maintenanceMode}
+              aria-label="Toggle maintenance mode"
+              onClick={() => setSettings((p) => ({ ...p, maintenanceMode: !p.maintenanceMode }))}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#EFD957] focus:ring-offset-2 ${
+                settings.maintenanceMode ? 'bg-amber-400' : 'bg-gray-200 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  settings.maintenanceMode ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          {settings.maintenanceMode && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+              <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+              Maintenance mode is <strong>ON</strong> — emails are not being forwarded.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -57,6 +57,7 @@ export interface Settings {
   mailgunDomain: string;
   mailgunSandboxEmail?: string;
   mailgunBaseUrl?: string;
+  maintenanceMode?: boolean;
   updatedAt?: Date;
 }
 
