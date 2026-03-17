@@ -37,6 +37,7 @@ export interface EmailLog {
   userId: string;
   originalBody?: string;
   processedBody?: string;
+  errorMessage?: string;
 }
 
 export interface Settings {

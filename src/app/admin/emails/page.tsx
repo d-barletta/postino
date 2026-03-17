@@ -18,6 +18,7 @@ interface AdminEmailLog {
   ruleApplied: string | null;
   tokensUsed: number | null;
   estimatedCost: number | null;
+  errorMessage: string | null;
 }
 
 const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
@@ -188,6 +189,12 @@ export default function AdminEmailsPage() {
                                 <div className="col-span-2 md:col-span-3">
                                   <dt className="font-medium text-gray-500 dark:text-gray-400">Rule applied</dt>
                                   <dd className="text-gray-700 dark:text-gray-300">{log.ruleApplied}</dd>
+                                </div>
+                              )}
+                              {log.errorMessage && (
+                                <div className="col-span-2 md:col-span-3">
+                                  <dt className="font-medium text-red-500 dark:text-red-400">Error</dt>
+                                  <dd className="text-red-600 dark:text-red-400 break-words">{log.errorMessage}</dd>
                                 </div>
                               )}
                             </dl>
