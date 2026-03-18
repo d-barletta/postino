@@ -60,10 +60,14 @@ export function Combobox({
           className={cn('w-full justify-between font-normal', className)}
           disabled={disabled}
         >
-          <span className={cn('flex items-center gap-2 truncate', !selectedOption && 'text-gray-400 dark:text-gray-500')}>
-            {selectedOption?.icon && <span className="shrink-0">{selectedOption.icon}</span>}
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
+          {selectedOption ? (
+            <span className="flex items-center gap-2 truncate">
+              {selectedOption.icon && <span className="shrink-0">{selectedOption.icon}</span>}
+              {selectedOption.label}
+            </span>
+          ) : (
+            <span className="text-gray-400 dark:text-gray-500 truncate">{placeholder}</span>
+          )}
           <span className="flex items-center gap-1 ml-2 shrink-0">
             {clearable && value && (
               <X
@@ -71,13 +75,13 @@ export function Combobox({
                 onClick={handleClear}
               />
             )}
-            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
           </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder} className="h-9" />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
@@ -87,14 +91,14 @@ export function Combobox({
                   value={option.value}
                   onSelect={handleSelect}
                 >
-                  {option.icon && <span className="shrink-0">{option.icon}</span>}
-                  {option.label}
                   <Check
                     className={cn(
-                      'ml-auto h-4 w-4 text-[#a3891f] dark:text-[#f3df79]',
+                      'mr-2 h-4 w-4',
                       value === option.value ? 'opacity-100' : 'opacity-0'
                     )}
                   />
+                  {option.icon && <span className="shrink-0">{option.icon}</span>}
+                  {option.label}
                 </CommandItem>
               ))}
             </CommandGroup>
