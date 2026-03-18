@@ -37,7 +37,17 @@ export default function AdminPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">Platform statistics and management</p>
       </div>
       {loading ? (
-        <div className="text-center py-12 text-gray-400 dark:text-gray-500">Loading stats...</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div
+              key={i}
+              className="glass-panel rounded-xl px-6 py-4 animate-pulse"
+            >
+              <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-3" />
+              <div className="h-7 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
+          ))}
+        </div>
       ) : stats ? (
         <StatsCards stats={stats} />
       ) : (
