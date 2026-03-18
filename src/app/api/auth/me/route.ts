@@ -36,11 +36,17 @@ export async function GET(request: NextRequest) {
         createdAt: new Date(),
         isAdmin: false,
         isActive: false,
+        suspended: false,
       });
       userSnap = await userRef.get();
-    } else if (decoded.email_verified && !userSnap.data()?.isActive) {
-      await userRef.update({ isActive: true });
-      userSnap = await userRef.get();
+    } else {
+      if (userSnap.data()?.suspended) {
+        return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
+      }
+      if (decoded.email_verified && !userSnap.data()?.isActive && !userSnap.data()?.suspended) {
+        await userRef.update({ isActive: true });
+        userSnap = await userRef.get();
+      }
     }
 
     const settingsSnap = await db.collection('settings').doc('global').get();
