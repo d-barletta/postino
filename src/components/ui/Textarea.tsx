@@ -1,46 +1,61 @@
-import React from 'react';
+import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   hint?: string;
   charCount?: { current: number; max: number };
 }
 
-export function Textarea({ label, error, hint, charCount, className, id, ...props }: TextareaProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ label, error, hint, charCount, className, id, ...props }, ref) => {
+    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
-  return (
-    <div className="space-y-1">
-      {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          {label}
-        </label>
-      )}
-      <textarea
-        id={inputId}
-        className={cn(
-          'block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm',
-          'placeholder:text-gray-500 resize-y min-h-20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400',
-          'focus:border-[#EFD957] focus:outline-none focus:ring-1 focus:ring-[#EFD957]',
-          'disabled:cursor-not-allowed disabled:bg-gray-50 dark:disabled:bg-gray-700',
-          error && 'border-red-300 focus:border-red-500 focus:ring-red-500',
-          className
+    return (
+      <div className="space-y-1.5">
+        {label && (
+          <label
+            htmlFor={inputId}
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-700 dark:text-gray-300"
+          >
+            {label}
+          </label>
         )}
-        {...props}
-      />
-      <div className="flex justify-between">
-        <div>
-          {hint && !error && <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
-          {error && <p className="text-xs text-red-600">{error}</p>}
+        <textarea
+          id={inputId}
+          className={cn(
+            'flex min-h-[80px] w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm',
+            'placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-y',
+            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#EFD957] focus-visible:border-[#EFD957]',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            'dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-100',
+            error && 'border-red-400 focus-visible:ring-red-400 focus-visible:border-red-400',
+            className
+          )}
+          ref={ref}
+          {...props}
+        />
+        <div className="flex justify-between items-start">
+          <div>
+            {hint && !error && <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
+            {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+          </div>
+          {charCount && (
+            <p
+              className={cn(
+                'text-xs tabular-nums',
+                charCount.current > charCount.max ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'
+              )}
+            >
+              {charCount.current}/{charCount.max}
+            </p>
+          )}
         </div>
-        {charCount && (
-          <p className={cn('text-xs', charCount.current > charCount.max ? 'text-red-600' : 'text-gray-400 dark:text-gray-500')}>
-            {charCount.current}/{charCount.max}
-          </p>
-        )}
       </div>
-    </div>
-  );
-}
+    );
+  }
+);
+Textarea.displayName = 'Textarea';
+
+export { Textarea };

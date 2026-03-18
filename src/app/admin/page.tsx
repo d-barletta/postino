@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { StatsCards } from '@/components/admin/StatsCards';
-import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import type { Stats } from '@/types';
 
 export default function AdminPage() {
@@ -33,7 +33,7 @@ export default function AdminPage() {
   return (
     <div className="space-y-6 ui-fade-up">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Admin Overview</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Overview</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Platform statistics and management</p>
       </div>
       {loading ? (
@@ -49,7 +49,7 @@ export default function AdminPage() {
       )}
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-900">Quick Links</h2>
+          <CardTitle>Quick Links</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 ui-stagger">

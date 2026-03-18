@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface AdminEmailLog {
   id: string;
@@ -60,9 +62,7 @@ export default function AdminEmailsPage() {
       const url = cursor
         ? `/api/admin/emails?pageSize=${PAGE_SIZE}&cursor=${encodeURIComponent(cursor)}`
         : `/api/admin/emails?pageSize=${PAGE_SIZE}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs || []);
@@ -83,26 +83,19 @@ export default function AdminEmailsPage() {
     }
   }, [firebaseUser]);
 
-  useEffect(() => {
-    fetchPage(null);
-  }, [fetchPage]);
+  useEffect(() => { fetchPage(null); }, [fetchPage]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setCursorStack([]);
-    try {
-      await fetchPage(null);
-    } finally {
-      setRefreshing(false);
-    }
+    try { await fetchPage(null); }
+    finally { setRefreshing(false); }
   }, [fetchPage]);
 
   const handleNextPage = useCallback(async () => {
     if (!nextCursor) return;
     const success = await fetchPage(nextCursor);
-    if (success) {
-      setCursorStack((prev) => [...prev, nextCursor]);
-    }
+    if (success) setCursorStack((prev) => [...prev, nextCursor]);
   }, [nextCursor, fetchPage]);
 
   const handlePrevPage = useCallback(async () => {
@@ -110,9 +103,7 @@ export default function AdminEmailsPage() {
     newStack.pop();
     const prevCursor = newStack.length > 0 ? newStack[newStack.length - 1] : null;
     const success = await fetchPage(prevCursor);
-    if (success) {
-      setCursorStack(newStack);
-    }
+    if (success) setCursorStack(newStack);
   }, [cursorStack, fetchPage]);
 
   const currentPage = cursorStack.length + 1;
@@ -127,21 +118,16 @@ export default function AdminEmailsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Processed Emails</h2>
+            <CardTitle>Processed Emails</CardTitle>
             <div className="flex items-center gap-3">
-              <button
-                onClick={handleRefresh}
-                disabled={loading || refreshing}
-                title="Refresh"
-                className="text-gray-400 hover:text-[#d0b53f] dark:hover:text-[#f3df79] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <i className={`bi bi-arrow-clockwise text-lg${refreshing ? ' animate-spin' : ''}`} aria-hidden="true" />
-              </button>
               {!loading && (
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   Page {currentPage} · {logs.length} records
                 </span>
               )}
+              <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={loading || refreshing} title="Refresh">
+                <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -175,23 +161,15 @@ export default function AdminEmailsPage() {
                         className="border-b border-gray-100 dark:border-gray-800 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors"
                         onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                       >
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                          {formatDate(log.receivedAt)}
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{formatDate(log.receivedAt)}</td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          <div className="max-w-[140px] truncate" title={log.userEmail || log.userId}>{log.userEmail || log.userId}</div>
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          <div className="max-w-[140px] truncate" title={log.userEmail || log.userId}>
-                            {log.userEmail || log.userId}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          <div className="max-w-[140px] truncate" title={log.fromAddress}>
-                            {log.fromAddress}
-                          </div>
+                          <div className="max-w-[140px] truncate" title={log.fromAddress}>{log.fromAddress}</div>
                         </td>
                         <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                          <div className="max-w-[200px] truncate" title={log.subject}>
-                            {log.subject}
-                          </div>
+                          <div className="max-w-[200px] truncate" title={log.subject}>{log.subject}</div>
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant={STATUS_VARIANT[log.status] || 'default'}>{log.status}</Badge>
@@ -243,21 +221,15 @@ export default function AdminEmailsPage() {
                 </tbody>
               </table>
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  ← Previous
-                </button>
+                <Button variant="ghost" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
                 <span className="text-xs text-gray-400 dark:text-gray-500">Page {currentPage}</span>
-                <button
-                  onClick={handleNextPage}
-                  disabled={!hasMore}
-                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Next →
-                </button>
+                <Button variant="ghost" size="sm" onClick={handleNextPage} disabled={!hasMore}>
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
             </div>
           )}
