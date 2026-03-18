@@ -36,6 +36,12 @@ export async function createTransport() {
   });
 }
 
+export interface EmailAttachment {
+  filename: string;
+  content: ArrayBuffer;
+  contentType: string;
+}
+
 async function sendViaMailgun(options: {
   to: string;
   from: string;
@@ -43,31 +49,37 @@ async function sendViaMailgun(options: {
   html: string;
   text: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
   apiKey: string;
   domain: string;
   baseUrl: string;
 }): Promise<void> {
   const url = `${options.baseUrl}/v3/${options.domain}/messages`;
 
-  const body = new URLSearchParams({
-    from: stripCrlf(options.from),
-    to: stripCrlf(options.to),
-    subject: stripCrlf(options.subject),
-    html: options.html,
-    text: options.text,
-  });
+  const body = new FormData();
+  body.append('from', stripCrlf(options.from));
+  body.append('to', stripCrlf(options.to));
+  body.append('subject', stripCrlf(options.subject));
+  body.append('html', options.html);
+  body.append('text', options.text);
 
   if (options.replyTo) {
     body.append('h:Reply-To', stripCrlf(options.replyTo));
+  }
+
+  if (options.attachments) {
+    for (const attachment of options.attachments) {
+      const blob = new Blob([attachment.content], { type: attachment.contentType });
+      body.append('attachment', blob, attachment.filename);
+    }
   }
 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${Buffer.from(`api:${options.apiKey}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: body.toString(),
+    body,
   });
 
   if (!response.ok) {
@@ -83,6 +95,7 @@ export async function sendEmail(options: {
   html: string;
   text?: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }): Promise<void> {
   const db = adminDb();
   const settingsSnap = await db.collection('settings').doc('global').get();
@@ -113,6 +126,7 @@ export async function sendEmail(options: {
       html: options.html,
       text,
       replyTo: options.replyTo,
+      attachments: options.attachments,
       apiKey: mailgunApiKey,
       domain: mailgunDomain,
       baseUrl: mailgunBaseUrl,
@@ -129,6 +143,15 @@ export async function sendEmail(options: {
     html: options.html,
     text,
     ...(options.replyTo ? { replyTo: stripCrlf(options.replyTo) } : {}),
+    ...(options.attachments && options.attachments.length > 0
+      ? {
+          attachments: options.attachments.map((att) => ({
+            filename: att.filename,
+            content: Buffer.from(att.content),
+            contentType: att.contentType,
+          })),
+        }
+      : {}),
   });
 }
 

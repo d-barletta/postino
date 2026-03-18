@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { processEmailWithRules, RuleForProcessing } from '@/lib/openrouter';
-import { sendEmail, verifyMailgunSignature } from '@/lib/email';
+import { sendEmail, verifyMailgunSignature, EmailAttachment } from '@/lib/email';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { DocumentReference } from 'firebase-admin/firestore';
 
@@ -82,11 +82,26 @@ export async function POST(request: NextRequest) {
         : `${recipient}@${mailgunDomain}`.toLowerCase()
     );
     const sender = stripCrlf((formData.get('sender') as string) || '');
+    const replyToHeader = stripCrlf((formData.get('Reply-To') as string) || '');
     const subject = stripCrlf((formData.get('subject') as string) || '');
     const bodyHtml = (formData.get('body-html') as string) || '';
     const bodyPlain = (formData.get('body-plain') as string) || '';
     const emailBody = bodyHtml || bodyPlain;
     const messageId = stripCrlf((formData.get('Message-Id') as string) || '');
+    const rawAttachmentCount = parseInt((formData.get('attachment-count') as string) || '0', 10);
+    const attachmentCount = Number.isFinite(rawAttachmentCount) ? rawAttachmentCount : 0;
+
+    const attachments: EmailAttachment[] = [];
+    for (let i = 1; i <= attachmentCount; i++) {
+      const file = formData.get(`attachment-${i}`) as File | null;
+      if (file) {
+        attachments.push({
+          filename: file.name,
+          content: await file.arrayBuffer(),
+          contentType: file.type || 'application/octet-stream',
+        });
+      }
+    }
 
     if (normalizedRecipients.length === 0) {
       return NextResponse.json({ error: 'Missing recipient' }, { status: 400 });
@@ -205,7 +220,8 @@ export async function POST(request: NextRequest) {
       to: userData.email,
       subject: stripCrlf(result.subject),
       html: emailHtml,
-      replyTo: sender,
+      replyTo: replyToHeader || sender,
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
 
     await logRef.update({
