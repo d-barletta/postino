@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { signOut } from '@/lib/auth';
 import type { User } from '@/types';
 
 interface AuthContextType {
@@ -34,6 +35,11 @@ export function useAuthState() {
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 403) {
+        await signOut();
+        setUser(null);
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);

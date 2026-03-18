@@ -25,6 +25,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       Object.entries(updates).filter(([k]) => allowed.includes(k))
     );
 
+    if ('isActive' in filtered) {
+      filtered.suspended = !filtered.isActive;
+    }
+
     await db.collection('users').doc(uid).update(filtered);
     return NextResponse.json({ success: true });
   } catch (error) {

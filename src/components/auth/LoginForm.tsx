@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { loginUser } from '@/lib/auth';
+import { loginUser, signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
@@ -21,7 +21,16 @@ export function LoginForm() {
     setError('');
     setLoading(true);
     try {
-      await loginUser(email, password);
+      const fbUser = await loginUser(email, password);
+      const token = await fbUser.getIdToken();
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 403) {
+        await signOut();
+        setError('Your account has been suspended. Please contact support.');
+        return;
+      }
       router.push('/dashboard');
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
