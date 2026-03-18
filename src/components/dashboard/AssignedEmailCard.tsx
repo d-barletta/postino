@@ -22,7 +22,7 @@ export function AssignedEmailCard({ assignedEmail }: AssignedEmailCardProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Your Postino Address</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Postino Address</h2>
           <Badge variant="success">Active</Badge>
         </div>
       </CardHeader>

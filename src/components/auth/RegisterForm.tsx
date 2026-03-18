@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { registerUser } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
+import { AlertCircle } from 'lucide-react';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -74,9 +76,10 @@ export function RegisterForm() {
         placeholder="Repeat password"
       />
       {error && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm text-red-600 dark:text-red-300">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
       <Button type="submit" loading={loading} className="w-full" size="lg">
         Create account

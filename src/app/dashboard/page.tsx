@@ -5,6 +5,7 @@ import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
@@ -29,18 +30,14 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch('/api/settings/public')
       .then((r) => r.json())
-      .then((d) => {
-        if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength);
-      })
+      .then((d) => { if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength); })
       .catch(() => {});
   }, []);
 
   const fetchLogs = useCallback(async () => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
-    const res = await fetch('/api/email/logs', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch('/api/email/logs', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const data = await res.json();
       setLogs(data.logs || []);
@@ -50,9 +47,7 @@ export default function DashboardPage() {
   const fetchStats = useCallback(async () => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
-    const res = await fetch('/api/user/stats', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch('/api/user/stats', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const data = await res.json();
       if (data.stats) setUserStats(data.stats);
@@ -61,10 +56,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setLogsLoading(true);
-    if (!firebaseUser) {
-      setLogsLoading(false);
-      return;
-    }
+    if (!firebaseUser) { setLogsLoading(false); return; }
     const initialFetch = async () => {
       try {
         const token = await firebaseUser.getIdToken();
@@ -93,11 +85,8 @@ export default function DashboardPage() {
 
   const handleLogsRefresh = useCallback(async () => {
     setLogsRefreshing(true);
-    try {
-      await Promise.all([fetchLogs(), fetchStats()]);
-    } finally {
-      setLogsRefreshing(false);
-    }
+    try { await Promise.all([fetchLogs(), fetchStats()]); }
+    finally { setLogsRefreshing(false); }
   }, [fetchLogs, fetchStats]);
 
   if (loading || logsLoading) {
@@ -111,39 +100,25 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 ui-fade-up">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your Postino address and email rules</p>
       </div>
 
-      {user?.assignedEmail && (
-        <AssignedEmailCard assignedEmail={user.assignedEmail} />
-      )}
-
+      {user?.assignedEmail && <AssignedEmailCard assignedEmail={user.assignedEmail} />}
       {userStats && <UserStatsCards stats={userStats} />}
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex gap-6">
-          {(['rules', 'emails'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize border-b-2 transition-colors ${
-                activeTab === tab
-                  ? 'border-[#EFD957] text-[#a3891f] dark:text-[#f3df79]'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-              }`}
-            >
-              {tab === 'rules' ? 'My Rules' : 'Email History'}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {activeTab === 'rules' ? (
-        <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
-      ) : (
-        <EmailLogsList logs={logs} onRefresh={handleLogsRefresh} refreshing={logsRefreshing} />
-      )}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'rules' | 'emails')}>
+        <TabsList>
+          <TabsTrigger value="rules">My Rules</TabsTrigger>
+          <TabsTrigger value="emails">Email History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="rules">
+          <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
+        </TabsContent>
+        <TabsContent value="emails">
+          <EmailLogsList logs={logs} onRefresh={handleLogsRefresh} refreshing={logsRefreshing} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
