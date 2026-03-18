@@ -131,10 +131,14 @@ export default function AdminSettingsPage() {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Build model options for Combobox
+  // Build model options for Combobox — add a star icon to indicate if the saved model is not in the fetched list
   const modelOptions: ComboboxOption[] = [];
   if (settings.llmModel && !models.some((m) => m.id === settings.llmModel)) {
-    modelOptions.push({ value: settings.llmModel, label: `${settings.llmModel} (current)` });
+    modelOptions.push({
+      value: settings.llmModel,
+      label: `${settings.llmModel} (currently saved)`,
+      icon: <span title="Currently saved model" className="text-amber-500">★</span>,
+    });
   }
   models.forEach((m) => modelOptions.push({ value: m.id, label: `${m.name} (${m.id})` }));
 
