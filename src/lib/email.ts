@@ -42,6 +42,7 @@ async function sendViaMailgun(options: {
   subject: string;
   html: string;
   text: string;
+  replyTo?: string;
   apiKey: string;
   domain: string;
   baseUrl: string;
@@ -55,6 +56,10 @@ async function sendViaMailgun(options: {
     html: options.html,
     text: options.text,
   });
+
+  if (options.replyTo) {
+    body.append('h:Reply-To', stripCrlf(options.replyTo));
+  }
 
   const response = await fetch(url, {
     method: 'POST',
@@ -77,6 +82,7 @@ export async function sendEmail(options: {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }): Promise<void> {
   const db = adminDb();
   const settingsSnap = await db.collection('settings').doc('global').get();
@@ -106,6 +112,7 @@ export async function sendEmail(options: {
       subject: subjectLine,
       html: options.html,
       text,
+      replyTo: options.replyTo,
       apiKey: mailgunApiKey,
       domain: mailgunDomain,
       baseUrl: mailgunBaseUrl,
@@ -121,6 +128,7 @@ export async function sendEmail(options: {
     subject: subjectLine,
     html: options.html,
     text,
+    ...(options.replyTo ? { replyTo: stripCrlf(options.replyTo) } : {}),
   });
 }
 

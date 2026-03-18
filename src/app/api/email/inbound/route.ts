@@ -205,6 +205,7 @@ export async function POST(request: NextRequest) {
       to: userData.email,
       subject: stripCrlf(result.subject),
       html: emailHtml,
+      replyTo: sender,
     });
 
     await logRef.update({
