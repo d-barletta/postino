@@ -14,26 +14,37 @@ interface OriginalEmail {
   receivedAt: string | null;
 }
 
+interface ReprocessResult {
+  subject: string;
+  body: string;
+  tokensUsed: number;
+  estimatedCost: number;
+  ruleApplied: string;
+}
+
 export default function OriginalEmailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { firebaseUser, loading: authLoading } = useAuth();
+  const { firebaseUser, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState<OriginalEmail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const emailContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+  const [reprocessResult, setReprocessResult] = useState<ReprocessResult | null>(null);
+  const [reprocessError, setReprocessError] = useState('');
 
   const toggleFullscreen = () => {
     const container = emailContainerRef.current;
     if (!container) return;
     if (!document.fullscreenElement) {
-      container.requestFullscreen().then(() => setIsFullscreen(true)).catch((err) => {
+      container.requestFullscreen().catch((err) => {
         console.error('Failed to enter fullscreen:', err);
       });
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch((err) => {
+      document.exitFullscreen().catch((err) => {
         console.error('Failed to exit fullscreen:', err);
       });
     }
@@ -41,7 +52,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     const onFullscreenChange = () => {
-      if (!document.fullscreenElement) setIsFullscreen(false);
+      setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
@@ -52,6 +63,32 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
       router.back();
     } else {
       router.push('/dashboard');
+    }
+  };
+
+  const handleReprocess = async () => {
+    if (!firebaseUser) return;
+    setReprocessing(true);
+    setReprocessError('');
+    setReprocessResult(null);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`/api/admin/email/${id}/reprocess`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setReprocessError(data.error || 'Failed to reprocess email.');
+        return;
+      }
+      const data = await res.json();
+      setReprocessResult(data);
+    } catch (error) {
+      console.error('Reprocess error:', error);
+      setReprocessError('Failed to reprocess email.');
+    } finally {
+      setReprocessing(false);
     }
   };
 
@@ -159,14 +196,14 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <CardHeader>
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 dark:text-white">Email Content</h2>
-              {email.originalBody && (
+              {email.originalBody && !isFullscreen && (
                 <button
                   onClick={toggleFullscreen}
                   className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  title={isFullscreen ? 'Exit full screen' : 'Full screen'}
-                  aria-label={isFullscreen ? 'Exit full screen' : 'View email in full screen'}
+                  title="Full screen"
+                  aria-label="View email in full screen"
                 >
-                  <i className={isFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'} aria-hidden="true" />
+                  <i className="bi bi-fullscreen" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -175,8 +212,18 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
             {email.originalBody ? (
               <div
                 ref={emailContainerRef}
-                className={isFullscreen ? 'bg-white dark:bg-gray-900 w-full h-full overflow-auto' : ''}
+                className={isFullscreen ? 'bg-white dark:bg-gray-900 w-full h-full overflow-auto relative' : 'relative'}
               >
+                {isFullscreen && (
+                  <button
+                    onClick={toggleFullscreen}
+                    className="absolute top-2 right-2 z-10 bg-white dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white p-1 rounded shadow transition-colors"
+                    title="Exit full screen"
+                    aria-label="Exit full screen"
+                  >
+                    <i className="bi bi-fullscreen-exit" aria-hidden="true" />
+                  </button>
+                )}
                 <iframe
                   ref={iframeRef}
                   sandbox=""
@@ -197,6 +244,69 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
             )}
           </CardContent>
         </Card>
+
+        {user?.isAdmin && email.originalBody && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900 dark:text-white">Re-process Email</h2>
+                <button
+                  onClick={handleReprocess}
+                  disabled={reprocessing}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#EFD957] hover:bg-[#d0b53f] text-gray-900 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {reprocessing ? (
+                    <>
+                      <div className="animate-spin h-3.5 w-3.5 border-2 border-gray-900 border-t-transparent rounded-full" />
+                      Processing…
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-arrow-repeat" aria-hidden="true" />
+                      Re-process with current LLM
+                    </>
+                  )}
+                </button>
+              </div>
+            </CardHeader>
+            {(reprocessResult || reprocessError) && (
+              <CardContent className="space-y-4">
+                {reprocessError && (
+                  <p className="text-sm text-red-500">{reprocessError}</p>
+                )}
+                {reprocessResult && (
+                  <>
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
+                      <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-words">{reprocessResult.subject}</dd>
+                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Rule applied:</dt>
+                      <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.ruleApplied}</dd>
+                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Tokens used:</dt>
+                      <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.tokensUsed.toLocaleString()}</dd>
+                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Est. cost:</dt>
+                      <dd className="text-gray-800 dark:text-gray-200">${reprocessResult.estimatedCost.toFixed(6)}</dd>
+                    </dl>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Processed body:</p>
+                      <iframe
+                        sandbox=""
+                        srcDoc={reprocessResult.body}
+                        className="w-full border-0 rounded-lg"
+                        style={{ minHeight: '300px' }}
+                        title="Processed email content"
+                        onLoad={(e) => {
+                          const iframe = e.currentTarget;
+                          const height = iframe.contentDocument?.documentElement?.scrollHeight;
+                          if (height) iframe.style.height = `${height + 20}px`;
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );
