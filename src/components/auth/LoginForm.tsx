@@ -63,7 +63,7 @@ export function LoginForm() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button type="submit" loading={loading} className="w-full" size="lg">
+      <Button type="submit" loading={loading} className="w-full" size="md">
         Sign in
       </Button>
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
