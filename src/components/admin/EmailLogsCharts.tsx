@@ -1,4 +1,4 @@
-import { Bar, BarChart, Cell, Pie, PieChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Bar, Cell, Pie, PieChart, CartesianGrid, XAxis, YAxis, ComposedChart, Line } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/Chart';
 
@@ -42,7 +42,7 @@ export function EmailLogsCharts({ logs }: EmailLogsChartsProps) {
   const pieData = byStatus.filter((item) => item.count > 0);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-3">
+    <div className="grid gap-4 xl:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Status Distribution</CardTitle>
@@ -81,35 +81,56 @@ export function EmailLogsCharts({ logs }: EmailLogsChartsProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tokens by Status</CardTitle>
+          <CardTitle>Tokens and Estimated Cost by Status</CardTitle>
         </CardHeader>
         <CardContent className="px-4 py-3 sm:px-6 sm:py-4">
           <ChartContainer config={chartConfig}>
-            <BarChart data={byStatus} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+            <ComposedChart data={byStatus} margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="status" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={34} tick={{ fontSize: 12 }} />
-              <ChartTooltip content={<ChartTooltipContent formatter={(v) => Number(v || 0).toLocaleString()} />} />
-              <Bar dataKey="tokens" radius={8} fill="var(--color-tokens)" />
-            </BarChart>
+              <YAxis yAxisId="tokens" allowDecimals={false} tickLine={false} axisLine={false} width={34} tick={{ fontSize: 12 }} />
+              <YAxis
+                yAxisId="cost"
+                orientation="right"
+                tickLine={false}
+                axisLine={false}
+                width={54}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(v) => `$${Number(v).toFixed(3)}`}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(value, name) =>
+                      String(name) === 'cost'
+                        ? `$${Number(value || 0).toFixed(5)}`
+                        : Number(value || 0).toLocaleString()
+                    }
+                  />
+                }
+              />
+              <Bar yAxisId="tokens" dataKey="tokens" radius={8} fill="var(--color-tokens)" />
+              <Line
+                yAxisId="cost"
+                type="monotone"
+                dataKey="cost"
+                stroke="var(--color-cost)"
+                strokeWidth={2.5}
+                dot={{ r: 3, fill: 'var(--color-cost)' }}
+                activeDot={{ r: 5 }}
+              />
+            </ComposedChart>
           </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Estimated Cost by Status</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-3 sm:px-6 sm:py-4">
-          <ChartContainer config={chartConfig}>
-            <BarChart data={byStatus} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="status" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
-              <YAxis tickLine={false} axisLine={false} width={44} tick={{ fontSize: 12 }} tickFormatter={(v) => `$${Number(v).toFixed(2)}`} />
-              <ChartTooltip content={<ChartTooltipContent formatter={(v) => `$${Number(v || 0).toFixed(5)}`} />} />
-              <Bar dataKey="cost" radius={8} fill="var(--color-cost)" />
-            </BarChart>
-          </ChartContainer>
+          <div className="mt-3 flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden />
+              Tokens (bar)
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-0.5 w-4 bg-violet-500" aria-hidden />
+              Cost (line)
+            </span>
+          </div>
         </CardContent>
       </Card>
     </div>
