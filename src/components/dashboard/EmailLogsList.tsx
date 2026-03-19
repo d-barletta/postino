@@ -24,6 +24,7 @@ const STATUS_OPTIONS = [
   { value: 'processing', label: 'Processing' },
   { value: 'forwarded', label: 'Forwarded' },
   { value: 'error', label: 'Error' },
+  { value: 'skipped', label: 'Skipped' },
 ];
 
 export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogsListProps) {
@@ -52,11 +53,12 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
     setSelected(null);
   };
 
-  const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
+  const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
     received: 'info',
     processing: 'warning',
     forwarded: 'success',
     error: 'error',
+    skipped: 'default',
   };
 
   return (
