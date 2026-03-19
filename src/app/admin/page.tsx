@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { StatsCards } from '@/components/admin/StatsCards';
+import { AdminOverviewCharts } from '@/components/admin/AdminOverviewCharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import type { Stats } from '@/types';
 
@@ -49,7 +50,10 @@ export default function AdminPage() {
           ))}
         </div>
       ) : stats ? (
-        <StatsCards stats={stats} />
+        <>
+          <StatsCards stats={stats} />
+          <AdminOverviewCharts stats={stats} />
+        </>
       ) : (
         <Card>
           <CardContent>

@@ -5,6 +5,7 @@ import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
+import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -106,6 +107,7 @@ export default function DashboardPage() {
 
       {user?.assignedEmail && <AssignedEmailCard assignedEmail={user.assignedEmail} />}
       {userStats && <UserStatsCards stats={userStats} />}
+      {userStats && <UserOverviewCharts stats={userStats} />}
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'rules' | 'emails')}>
         <TabsList>
