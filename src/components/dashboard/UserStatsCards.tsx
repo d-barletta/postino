@@ -10,6 +10,7 @@ export function UserStatsCards({ stats }: UserStatsCardsProps) {
     { label: 'Emails Received', value: stats.totalEmailsReceived, color: 'text-blue-600 dark:text-blue-400' },
     { label: 'Emails Forwarded', value: stats.totalEmailsForwarded, color: 'text-purple-600 dark:text-purple-400' },
     { label: 'Emails Errored', value: stats.totalEmailsError, color: 'text-red-600 dark:text-red-400' },
+    { label: 'Emails Skipped', value: stats.totalEmailsSkipped, color: 'text-gray-500 dark:text-gray-400' },
     {
       label: 'Tokens Used',
       value: stats.totalTokensUsed.toLocaleString(),
@@ -23,7 +24,7 @@ export function UserStatsCards({ stats }: UserStatsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
       {cards.map((card) => (
         <Card key={card.label}>
           <CardContent className="py-4">

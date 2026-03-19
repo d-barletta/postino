@@ -24,6 +24,7 @@ const chartConfig = {
   processing: { label: 'Processing', color: '#f59e0b' },
   forwarded: { label: 'Forwarded', color: '#16a34a' },
   error: { label: 'Error', color: '#dc2626' },
+  skipped: { label: 'Skipped', color: '#6b7280' },
   cost: { label: 'Estimated Cost', color: '#8b5cf6' },
 } satisfies ChartConfig;
 
@@ -35,11 +36,12 @@ type VolumePoint = {
   processing: number;
   forwarded: number;
   error: number;
+  skipped: number;
   cost: number;
 };
 
-function normalizeStatus(status: string): 'received' | 'processing' | 'forwarded' | 'error' {
-  if (status === 'processing' || status === 'forwarded' || status === 'error') {
+function normalizeStatus(status: string): 'received' | 'processing' | 'forwarded' | 'error' | 'skipped' {
+  if (status === 'processing' || status === 'forwarded' || status === 'error' || status === 'skipped') {
     return status;
   }
   return 'received';
@@ -86,6 +88,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
         processing: 0,
         forwarded: 0,
         error: 0,
+        skipped: 0,
         cost: 0,
       };
 
@@ -105,9 +108,10 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
 
   const legendItems = [
     { key: 'received', label: 'Received', value: stats.totalEmailsReceived },
-    { key: 'processing', label: 'Processing', value: Math.max(stats.totalEmailsReceived - stats.totalEmailsForwarded - stats.totalEmailsError, 0) },
+    { key: 'processing', label: 'Processing', value: Math.max(stats.totalEmailsReceived - stats.totalEmailsForwarded - stats.totalEmailsError - stats.totalEmailsSkipped, 0) },
     { key: 'forwarded', label: 'Forwarded', value: stats.totalEmailsForwarded },
     { key: 'error', label: 'Error', value: stats.totalEmailsError },
+    { key: 'skipped', label: 'Skipped', value: stats.totalEmailsSkipped },
     { key: 'cost', label: 'Est. Cost', value: `$${stats.totalEstimatedCost.toFixed(5)}` },
   ] as const;
 
@@ -174,6 +178,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                   <Bar yAxisId="count" dataKey="processing" stackId="emails" radius={0} fill="var(--color-processing)" />
                   <Bar yAxisId="count" dataKey="forwarded" stackId="emails" radius={0} fill="var(--color-forwarded)" />
                   <Bar yAxisId="count" dataKey="error" stackId="emails" radius={0} fill="var(--color-error)" />
+                  <Bar yAxisId="count" dataKey="skipped" stackId="emails" radius={0} fill="var(--color-skipped)" />
                   <Line
                     yAxisId="cost"
                     type="monotone"
@@ -185,7 +190,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                   />
                 </ComposedChart>
               </ChartContainer>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 md:grid-cols-5">
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 md:grid-cols-6">
                 {legendItems.map((item) => (
                   <div key={item.key} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
                     <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
