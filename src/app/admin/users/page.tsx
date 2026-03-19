@@ -87,7 +87,17 @@ export default function AdminUsersPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="text-center py-8 text-gray-400 dark:text-gray-500">Loading users...</div>
+            <div className="animate-pulse divide-y divide-gray-100 dark:divide-gray-800">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="px-6 py-4 flex items-center justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-3 w-56 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </div>
+                  <div className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded-md" />
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {users.map((user) => (

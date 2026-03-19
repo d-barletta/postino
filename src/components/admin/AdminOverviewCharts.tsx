@@ -8,7 +8,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/Chart';
 import type { Stats } from '@/types';
 
@@ -47,69 +48,81 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
-        <CardHeader>
-          <CardTitle>Email Outcomes</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-3 sm:px-6 sm:py-4">
-          <ChartContainer config={chartConfig}>
-            <BarChart data={outcomesData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 12 }} />
-              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-              <Bar dataKey="received" radius={8} fill="var(--color-received)" />
-              <Bar dataKey="forwarded" radius={8} fill="var(--color-forwarded)" />
-              <Bar dataKey="error" radius={8} fill="var(--color-error)" />
-            </BarChart>
-          </ChartContainer>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-            {legendItems.map((item) => (
-              <div key={item.key} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[item.key].color }} aria-hidden />
-                  <span>{item.label}</span>
+        <Accordion type="single" collapsible defaultValue="email-outcomes">
+          <AccordionItem value="email-outcomes" className="border-0">
+            <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+              Email Outcomes
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="px-4 pb-4 sm:px-6">
+                <ChartContainer config={chartConfig}>
+                  <BarChart data={outcomesData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 12 }} />
+                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                    <Bar dataKey="received" radius={0} fill="var(--color-received)" />
+                    <Bar dataKey="forwarded" radius={0} fill="var(--color-forwarded)" />
+                    <Bar dataKey="error" radius={0} fill="var(--color-error)" />
+                  </BarChart>
+                </ChartContainer>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                  {legendItems.map((item) => (
+                    <div key={item.key} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
+                      <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[item.key].color }} aria-hidden />
+                        <span>{item.label}</span>
+                      </div>
+                      <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{item.value.toLocaleString()}</p>
+                    </div>
+                  ))}
                 </div>
-                <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{item.value.toLocaleString()}</p>
               </div>
-            ))}
-          </div>
-        </CardContent>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>User Activity Split</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-3 sm:px-6 sm:py-4">
-          <ChartContainer config={chartConfig} className="h-56 sm:h-65">
-            <PieChart>
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Pie
-                data={userSplitData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={44}
-                outerRadius={78}
-                strokeWidth={0}
-              >
-                {userSplitData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ChartContainer>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            {userSplitData.map((entry) => (
-              <div key={entry.name} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.fill }} aria-hidden />
-                  <span>{entry.name}</span>
+        <Accordion type="single" collapsible defaultValue="user-split">
+          <AccordionItem value="user-split" className="border-0">
+            <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+              User Activity Split
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="px-4 pb-4 sm:px-6">
+                <ChartContainer config={chartConfig} className="h-56 sm:h-65">
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Pie
+                      data={userSplitData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={44}
+                      outerRadius={78}
+                      strokeWidth={0}
+                    >
+                      {userSplitData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  {userSplitData.map((entry) => (
+                    <div key={entry.name} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
+                      <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.fill }} aria-hidden />
+                        <span>{entry.name}</span>
+                      </div>
+                      <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{entry.value.toLocaleString()}</p>
+                    </div>
+                  ))}
                 </div>
-                <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{entry.value.toLocaleString()}</p>
               </div>
-            ))}
-          </div>
-        </CardContent>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </Card>
     </div>
   );
