@@ -29,6 +29,7 @@ import {
 } from './openrouter';
 import type { ProcessEmailResult, RuleForProcessing } from './openrouter';
 import type { EmailMemoryEntry, UserMemory } from '@/types';
+import * as cheerio from 'cheerio';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -203,6 +204,96 @@ function stripHtmlForChunking(html: string): string {
     .trim();
 }
 
+/** Represents a single surgical DOM modification to apply to an HTML document. */
+interface DomPatch {
+  /** CSS selector targeting the element(s) to operate on. */
+  selector: string;
+  /** DOM operation to perform. */
+  operation: 'prepend' | 'append' | 'before' | 'after' | 'replace_content' | 'replace_element' | 'remove';
+  /** HTML content for the operation; empty string for 'remove'. */
+  html: string;
+}
+
+/** Zod schema for a single DOM patch — shared by both the standard and map-reduce LLM call schemas. */
+const domPatchSchema = z.object({
+  selector: z.string().describe(
+    'CSS selector targeting the element(s) to modify, e.g. "body", "h1", ".article", "#preview". ' +
+    'Use the most specific selector inferrable from the HTML structure.'
+  ),
+  operation: z.enum([
+    'prepend',         // insert as first child
+    'append',          // insert as last child
+    'before',          // insert immediately before the element
+    'after',           // insert immediately after the element
+    'replace_content', // replace innerHTML
+    'replace_element', // replace outerHTML
+    'remove',          // remove the element entirely
+  ]).describe('DOM operation to apply to the matched element(s)'),
+  html: z.string().describe('HTML to inject. Use an empty string for "remove".'),
+});
+
+/**
+ * Applies a list of DOM patch operations to an HTML document using Cheerio.
+ * Patches that match no elements are skipped with a warning; individual patch
+ * errors are caught so a bad selector cannot abort the whole operation.
+ */
+function applyDomPatches(html: string, patches: DomPatch[]): string {
+  if (patches.length === 0) return html;
+  const $ = cheerio.load(html, null, false);
+  for (const patch of patches) {
+    try {
+      const $el = $(patch.selector);
+      if ($el.length === 0) {
+        console.warn(`DOM patch: selector "${patch.selector}" matched no elements, skipping.`);
+        continue;
+      }
+      switch (patch.operation) {
+        case 'prepend':          $el.prepend(patch.html);      break;
+        case 'append':           $el.append(patch.html);       break;
+        case 'before':           $el.before(patch.html);       break;
+        case 'after':            $el.after(patch.html);        break;
+        case 'replace_content':  $el.html(patch.html);         break;
+        case 'replace_element':  $el.replaceWith(patch.html);  break;
+        case 'remove':           $el.remove();                 break;
+      }
+    } catch (err) {
+      console.warn(`DOM patch failed for selector "${patch.selector}":`, err);
+    }
+  }
+  return $.html();
+}
+
+/**
+ * Extracts a concise two-level structural outline of the HTML document body:
+ * tag names, IDs and up to 3 CSS classes per element.
+ *
+ * Passed to the map-reduce reduce phase so the LLM can propose meaningful CSS
+ * selectors for DOM patches without needing to read all of the email content.
+ */
+function extractHtmlStructure(html: string): string {
+  const $ = cheerio.load(html, null, false);
+  const lines: string[] = [];
+  let topCount = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  $('body > *').each((_: number, el: any) => {
+    if (++topCount > 24) return false;
+    if (el.type !== 'tag') return;
+    const id  = el.attribs?.id ? `#${el.attribs.id}` : '';
+    const cls = (el.attribs?.class ?? '').split(/\s+/).filter(Boolean).slice(0, 3).map((c: string) => `.${c}`).join('');
+    lines.push(`<${el.name}${id}${cls}>`);
+    let childCount = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    $(el).children().each((_2: number, child: any) => {
+      if (++childCount > 8) return false;
+      if (child.type !== 'tag') return;
+      const cid  = child.attribs?.id ? `#${child.attribs.id}` : '';
+      const ccls = (child.attribs?.class ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((c: string) => `.${c}`).join('');
+      lines.push(`  <${child.name}${cid}${ccls}>`);
+    });
+  });
+  return lines.length > 0 ? lines.join('\n') : '(no structured elements found)';
+}
+
 /**
  * Splits `text` into chunks of at most `chunkSizeChars` characters, preferring
  * natural boundaries in this order: double-newline → single-newline → sentence → word.
@@ -261,7 +352,12 @@ function splitIntoChunks(text: string, chunkSizeChars: number): string[] {
 async function processEmailInChunks(
   emailFrom: string,
   emailSubject: string,
+  /** The full original email (HTML or plain text) — preserved in the output when possible. */
+  originalBody: string,
+  /** Plain-text version used for chunking and extraction in the map phase. */
   plainTextBody: string,
+  /** Whether the original body is HTML. Controls whether HTML-preservation logic is applied. */
+  isHtml: boolean,
   rules: RuleForProcessing[],
   systemPrompt: string,
   openrouterProvider: ReturnType<typeof createOpenAI>,
@@ -313,13 +409,18 @@ ${chunks[i]}`;
 
   const reduceSystemPrompt = `${systemPrompt}
 
-Note: This email was too large to process in a single pass. It was split into ${chunks.length} chunk(s); the content below is the extracted text from all chunks combined.`;
+Note: This email was too large to process in a single pass. It was split into ${chunks.length} chunk(s); the content below is the extracted text from all chunks combined.
+${isHtml ? 'The original HTML email structure will be preserved — use targeted DOM patches (selector + operation + html) for surgical changes. Only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the whole content.' : ''}`.trim();
 
-  const reducePrompt = `Apply the user rules to the following extracted email content and return a processed version.
+  const htmlStructureSection = isHtml
+    ? `\nHTML STRUCTURE (top-level DOM outline for selector reference):\n${extractHtmlStructure(originalBody)}\n`
+    : '';
+
+  const reducePrompt = `Apply the user rules to the following extracted email content.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-
+${htmlStructureSection}
 EXTRACTED CONTENT (${chunks.length} chunks combined):
 ${combinedContent}
 
@@ -327,13 +428,26 @@ ${combinedContent}
 ${rulesText}
 </user_rules>
 
-Respond with a JSON object containing: subject (processed subject line) and body (processed email body in HTML format).`;
+${isHtml
+    ? 'Respond with requiresFullBodyReplacement=false and an ordered patches array of DOM operations that target selectors from the HTML structure above. Set requiresFullBodyReplacement=true only when the rules require translating or completely rewriting the entire content.'
+    : 'Set requiresFullBodyReplacement=true and provide the full replacementBody as HTML.'}`;
 
   const { object, usage } = await generateObject({
     model: openrouterProvider(model),
     schema: z.object({
       subject: z.string().describe('The processed email subject line'),
-      body: z.string().describe('The processed email body in HTML format'),
+      requiresFullBodyReplacement: z.boolean().describe(
+        'Set to true ONLY when the rules require transforming the entire body (e.g. translate, ' +
+        'fully rewrite). Set to false for surgical changes like annotations or content edits.'
+      ),
+      patches: z.array(domPatchSchema).describe(
+        'Ordered list of DOM patch operations to apply to the original HTML. ' +
+        'Used when requiresFullBodyReplacement is false. Empty array if no changes are needed.'
+      ),
+      replacementBody: z.string().describe(
+        'Full replacement email body in HTML format. ' +
+        'Only populated when requiresFullBodyReplacement is true. Empty string otherwise.'
+      ),
     }),
     system: reduceSystemPrompt,
     prompt: reducePrompt,
@@ -342,9 +456,20 @@ Respond with a JSON object containing: subject (processed subject line) and body
 
   totalTokens += usage?.totalTokens ?? 0;
 
+  // Apply surgical DOM patches to the original HTML whenever possible.
+  // Only fall back to a full regeneration when the rules explicitly require it.
+  let finalBody: string;
+  if (isHtml && !object.requiresFullBodyReplacement) {
+    finalBody = object.patches.length > 0
+      ? applyDomPatches(originalBody, object.patches as DomPatch[])
+      : originalBody;
+  } else {
+    finalBody = object.replacementBody || combinedContent;
+  }
+
   return {
     subject: object.subject || `[Postino] ${emailSubject}`,
-    body: object.body || combinedContent,
+    body: finalBody,
     tokensUsed: totalTokens,
   };
 }
@@ -441,13 +566,16 @@ ${rulesText}
 
   try {
     if (isLargeEmail) {
-      // For very large HTML emails we strip tags so the plain-text chunks are
-      // compact; the reduce-phase LLM re-formats the output as HTML.
+      // Strip HTML to plain text for map-phase chunking/extraction.
+      // The original HTML is passed separately so the reduce phase can
+      // preserve it and inject only the targeted changes.
       const plainBody = isHtml ? stripHtmlForChunking(emailBody) : emailBodyForPrompt;
       const result = await processEmailInChunks(
         emailFrom,
         emailSubject,
+        emailBody,
         plainBody,
+        isHtml,
         rules,
         systemPrompt,
         openrouter,
@@ -458,34 +586,71 @@ ${rulesText}
       body = result.body;
       tokensUsed = result.tokensUsed;
     } else {
-      const htmlInstruction = isHtml
-        ? '\nIMPORTANT: The email body below is the original HTML. Preserve ALL original HTML structure, inline styles, CSS classes, and images exactly as-is. Only apply the rule to the specific content it targets; do not rewrite or reformat any other part of the HTML.'
-        : '';
-
-      const userPrompt = `Process this incoming email:
+      if (isHtml) {
+        // HTML email: ask the LLM for surgical DOM patches so the original
+        // structure, inline styles, and branding are preserved as-is.
+        const userPrompt = `Process this incoming email using surgical DOM patches.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-${htmlInstruction}
+
+Apply the user rules to the HTML email below. Prefer targeted DOM patches over a full body replacement — only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the entire content.
+
+FULL EMAIL HTML:
+${emailBodyForPrompt}`;
+
+        const { object, usage } = await generateObject({
+          model: openrouter(model),
+          schema: z.object({
+            subject: z.string().describe('The processed email subject line'),
+            requiresFullBodyReplacement: z.boolean().describe(
+              'true only when rules require a full content rewrite or translation; false for surgical changes.'
+            ),
+            patches: z.array(domPatchSchema).describe(
+              'Ordered DOM patch operations to apply to the original HTML when requiresFullBodyReplacement is false. ' +
+              'Empty array if no structural changes are needed.'
+            ),
+            replacementBody: z.string().describe(
+              'Full HTML replacement body. Only when requiresFullBodyReplacement is true. Empty string otherwise.'
+            ),
+          }),
+          system: systemPrompt,
+          prompt: userPrompt,
+          maxOutputTokens: maxTokens,
+        });
+
+        subject = object.subject || `[Postino] ${emailSubject}`;
+        body = !object.requiresFullBodyReplacement
+          ? (object.patches.length > 0 ? applyDomPatches(emailBody, object.patches as DomPatch[]) : emailBody)
+          : (object.replacementBody || emailBody);
+        tokensUsed = usage?.totalTokens ?? 0;
+      } else {
+        // Plain-text email: LLM produces the full output directly.
+        const userPrompt = `Process this incoming email:
+
+FROM: ${sanitizeEmailField(emailFrom)}
+SUBJECT: ${sanitizeEmailField(emailSubject)}
+
 BODY:
 ${emailBodyForPrompt}
 
 Respond with a JSON object containing: subject (processed subject line) and body (processed email body in HTML format).`;
 
-      const { object, usage } = await generateObject({
-        model: openrouter(model),
-        schema: z.object({
-          subject: z.string().describe('The processed email subject line'),
-          body: z.string().describe('The processed email body in HTML format'),
-        }),
-        system: systemPrompt,
-        prompt: userPrompt,
-        maxOutputTokens: maxTokens,
-      });
+        const { object, usage } = await generateObject({
+          model: openrouter(model),
+          schema: z.object({
+            subject: z.string().describe('The processed email subject line'),
+            body: z.string().describe('The processed email body in HTML format'),
+          }),
+          system: systemPrompt,
+          prompt: userPrompt,
+          maxOutputTokens: maxTokens,
+        });
 
-      subject = object.subject || `[Postino] ${emailSubject}`;
-      body = object.body || emailBody;
-      tokensUsed = usage?.totalTokens ?? 0;
+        subject = object.subject || `[Postino] ${emailSubject}`;
+        body = object.body || emailBody;
+        tokensUsed = usage?.totalTokens ?? 0;
+      }
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
