@@ -37,6 +37,29 @@ export default function AdminPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Overview</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Platform statistics and management</p>
       </div>
+            <Card>
+        <CardHeader>
+          <CardTitle>Quick Links</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 ui-stagger">
+            {[
+              { href: '/admin/users', label: 'Manage Users', icon: 'bi bi-people-fill' },
+              { href: '/admin/emails', label: 'Email Logs', icon: 'bi bi-envelope-fill' },
+              { href: '/admin/settings', label: 'Settings', icon: 'bi bi-gear-fill' },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-3 p-4 rounded-xl border border-white/50 dark:border-white/10 bg-white/55 dark:bg-gray-900/35 hover:border-[#EFD957] hover:bg-yellow-50/80 dark:hover:bg-yellow-900/15 transition-all duration-250 hover:-translate-y-px"
+              >
+                <i className={`${item.icon} text-2xl text-[#d0b53f]`} aria-hidden="true" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</span>
+              </a>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 7 }).map((_, i) => (
@@ -61,29 +84,6 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Links</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 ui-stagger">
-            {[
-              { href: '/admin/users', label: 'Manage Users', icon: 'bi bi-people-fill' },
-              { href: '/admin/emails', label: 'Email Logs', icon: 'bi bi-envelope-fill' },
-              { href: '/admin/settings', label: 'Platform Settings', icon: 'bi bi-gear-fill' },
-            ].map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-3 p-4 rounded-xl border border-white/50 dark:border-white/10 bg-white/55 dark:bg-gray-900/35 hover:border-[#EFD957] hover:bg-yellow-50/80 dark:hover:bg-yellow-900/15 transition-all duration-250 hover:-translate-y-px"
-              >
-                <i className={`${item.icon} text-2xl text-[#d0b53f]`} aria-hidden="true" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</span>
-              </a>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

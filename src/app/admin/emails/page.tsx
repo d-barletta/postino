@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { EmailLogsCharts } from '@/components/admin/EmailLogsCharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -114,6 +115,8 @@ export default function AdminEmailsPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Logs</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Details of all emails processed by Postino</p>
       </div>
+
+      {!loading && logs.length > 0 && <EmailLogsCharts logs={logs} />}
 
       <Card>
         <CardHeader>
