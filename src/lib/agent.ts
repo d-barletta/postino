@@ -362,7 +362,8 @@ async function processEmailInChunks(
   systemPrompt: string,
   openrouterProvider: ReturnType<typeof createOpenAI>,
   model: string,
-  maxOutputTokens: number
+  maxOutputTokens: number,
+  fallbackSubject: string
 ): Promise<{ subject: string; body: string; tokensUsed: number }> {
   const chunks = splitIntoChunks(plainTextBody, CHUNK_SIZE_CHARS);
   let totalTokens = 0;
@@ -468,7 +469,7 @@ ${isHtml
   }
 
   return {
-    subject: object.subject || `[Postino] ${emailSubject}`,
+    subject: object.subject || fallbackSubject,
     body: finalBody,
     tokensUsed: totalTokens,
   };
@@ -519,6 +520,14 @@ export async function processEmailWithAgent(
       ? settings.llmMaxTokens
       : 4000;
 
+  const subjectPrefix =
+    typeof settings?.emailSubjectPrefix === 'string' && settings.emailSubjectPrefix.length > 0
+      ? settings.emailSubjectPrefix
+      : '[Postino]';
+  const buildFallbackSubject = (subjectValue: string) =>
+    subjectPrefix.trim().length > 0 ? `${subjectPrefix} ${subjectValue}`.trim() : subjectValue;
+  const fallbackSubject = buildFallbackSubject(emailSubject);
+
   // 2. Load user memory and build context
   const memory = await getUserMemory(userId);
   const memoryContext = buildMemoryContext(memory.entries, emailFrom);
@@ -557,7 +566,7 @@ ${rulesText}
 
   // 5. Call the LLM — switching to chunked processing for very large bodies.
   // Initialise with safe defaults so both paths are always defined.
-  let subject: string = `[Postino] ${emailSubject}`;
+  let subject: string = fallbackSubject;
   let body: string = emailBody;
   let tokensUsed = 0;
   let parseError: string | undefined;
@@ -580,7 +589,8 @@ ${rulesText}
         systemPrompt,
         openrouter,
         model,
-        maxTokens
+        maxTokens,
+        fallbackSubject
       );
       subject = result.subject;
       body = result.body;
@@ -619,7 +629,7 @@ ${emailBodyForPrompt}`;
           maxOutputTokens: maxTokens,
         });
 
-        subject = object.subject || `[Postino] ${emailSubject}`;
+        subject = object.subject || fallbackSubject;
         body = !object.requiresFullBodyReplacement
           ? (object.patches.length > 0 ? applyDomPatches(emailBody, object.patches as DomPatch[]) : emailBody)
           : (object.replacementBody || emailBody);
@@ -647,7 +657,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
           maxOutputTokens: maxTokens,
         });
 
-        subject = object.subject || `[Postino] ${emailSubject}`;
+        subject = object.subject || fallbackSubject;
         body = object.body || emailBody;
         tokensUsed = usage?.totalTokens ?? 0;
       }
@@ -657,7 +667,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
     console.error('Agent LLM request failed:', message);
     // Fall back to forwarding as-is
     parseError = `LLM request failed: ${message}; email forwarded as-is`;
-    subject = `[Postino] ${emailSubject}`;
+    subject = fallbackSubject;
     body = emailBody;
   }
 

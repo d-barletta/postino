@@ -219,6 +219,12 @@ export async function processEmailWithRules(
   const maxTokens = (typeof settings?.llmMaxTokens === 'number' && settings.llmMaxTokens > 0)
     ? settings.llmMaxTokens
     : 4000;
+  const subjectPrefix =
+    typeof settings?.emailSubjectPrefix === 'string' && settings.emailSubjectPrefix.length > 0
+      ? settings.emailSubjectPrefix
+      : '[Postino]';
+  const buildFallbackSubject = (subjectValue: string) =>
+    subjectPrefix.trim().length > 0 ? `${subjectPrefix} ${subjectValue}`.trim() : subjectValue;
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
   const rulesText = activeRules.length > 0
@@ -308,7 +314,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
     };
   }
 
-  const subject = typeof parsed.subject === 'string' ? parsed.subject : `[Postino] ${emailSubject}`;
+  const subject = typeof parsed.subject === 'string' ? parsed.subject : buildFallbackSubject(emailSubject);
 
   let body: string;
   if (isHtml) {

@@ -29,6 +29,7 @@ export default function AdminSettingsPage() {
     llmApiKey: '',
     llmMaxTokens: 4000,
     llmSystemPrompt: '',
+    emailSubjectPrefix: '[Postino]',
     smtpHost: '',
     smtpPort: 587,
     smtpUser: '',
@@ -237,6 +238,13 @@ export default function AdminSettingsPage() {
               rows={8}
               placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
               hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
+            />
+            <Input
+              label="Default Subject Prefix"
+              value={settings.emailSubjectPrefix || ''}
+              onChange={(e) => setSettings((p) => ({ ...p, emailSubjectPrefix: e.target.value }))}
+              placeholder="[Postino]"
+              hint="Used when the LLM does not return a subject. Leave empty to disable prefixing."
             />
             <Separator />
             <div className="flex items-center gap-3">

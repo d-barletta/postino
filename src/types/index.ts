@@ -46,6 +46,7 @@ export interface Settings {
   llmApiKey: string;
   llmMaxTokens?: number;
   llmSystemPrompt?: string;
+  emailSubjectPrefix?: string;
   smtpHost: string;
   smtpPort: number;
   smtpUser: string;
