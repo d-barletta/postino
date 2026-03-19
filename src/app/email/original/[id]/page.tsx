@@ -249,7 +249,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 dark:text-white">Re-process Email</h2>
+                <h2 className="font-semibold text-gray-900 dark:text-white">Re-process</h2>
                 <button
                   onClick={handleReprocess}
                   disabled={reprocessing}
@@ -263,7 +263,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                   ) : (
                     <>
                       <i className="bi bi-arrow-repeat" aria-hidden="true" />
-                      Re-process with current LLM
+                      Current LLM
                     </>
                   )}
                 </button>
