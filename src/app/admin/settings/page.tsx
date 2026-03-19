@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
@@ -11,10 +12,8 @@ import { Label } from '@/components/ui/Label';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 import { Separator } from '@/components/ui/Separator';
-import { AlertCircle, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import type { Settings } from '@/types';
-
-type SectionKey = 'llm' | 'domain' | 'smtp' | 'mailgun';
 
 interface OpenRouterModel {
   id: string;
@@ -46,9 +45,6 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
-    llm: true, domain: true, smtp: true, mailgun: true,
-  });
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState('');
@@ -128,10 +124,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const toggleSection = (section: SectionKey) => {
-    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  };
-
   // Build model options for Combobox — add a star icon to indicate if the saved model is not in the fetched list
   const modelOptions: ComboboxOption[] = [];
   if (settings.llmModel && !models.some((m) => m.id === settings.llmModel)) {
@@ -154,240 +146,215 @@ export default function AdminSettingsPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">Configure Postino&apos;s core settings</p>
       </div>
 
-      {/* Maintenance Mode */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">Maintenance Mode</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                When enabled, no emails will be forwarded to any user.
-              </p>
-            </div>
-            <Switch
-              id="maintenance-mode"
-              checked={!!settings.maintenanceMode}
-              onCheckedChange={(checked) => setSettings((p) => ({ ...p, maintenanceMode: checked }))}
-            />
-          </div>
-          {settings.maintenanceMode && (
-            <Alert variant="warning" className="mt-3">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Maintenance mode is <strong>ON</strong> — emails are not being forwarded.
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* AI / LLM Settings */}
       <Card>
         <CardHeader
-          className="cursor-pointer select-none"
-          onClick={() => toggleSection('llm')}
+          className="select-none"
         >
-          <div className="flex items-center justify-between">
-            <CardTitle>AI / LLM Settings</CardTitle>
-            {openSections.llm ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
-          </div>
+          <CardTitle>Settings Sections</CardTitle>
         </CardHeader>
-        {openSections.llm && (
-          <CardContent className="space-y-4">
-            <Input
-              label="OpenRouter API Key"
-              type="password"
-              value={settings.llmApiKey || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, llmApiKey: e.target.value }))}
-              placeholder="sk-or-..."
-            />
-            <div className="space-y-1.5">
-              <Label htmlFor="llm-model">LLM Model</Label>
-              <Combobox
-                options={modelOptions}
-                value={settings.llmModel || ''}
-                onValueChange={(v) => setSettings((p) => ({ ...p, llmModel: v }))}
-                placeholder={modelsLoading ? 'Loading models…' : 'Select a model'}
-                searchPlaceholder="Search models..."
-                emptyText="No models found."
-                disabled={modelsLoading}
-              />
-              {modelsError ? (
-                <p className="text-xs text-red-600 dark:text-red-400">{modelsError}</p>
-              ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">Fetched live from OpenRouter</p>
-              )}
-            </div>
-            <Input
-              label="Max Rule Length (characters)"
-              type="number"
-              value={settings.maxRuleLength || 1000}
-              onChange={(e) => setSettings((p) => ({ ...p, maxRuleLength: parseInt(e.target.value) }))}
-            />
-            <Input
-              label="Max Response Tokens"
-              type="number"
-              value={settings.llmMaxTokens || 4000}
-              onChange={(e) => setSettings((p) => ({ ...p, llmMaxTokens: parseInt(e.target.value) }))}
-              hint="Maximum number of tokens the LLM can return per email (default: 4000). Increase for long HTML emails."
-            />
-            <Textarea
-              label="System Prompt (base)"
-              value={settings.llmSystemPrompt || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, llmSystemPrompt: e.target.value }))}
-              rows={8}
-              placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
-              hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
-            />
-            <Input
-              label="Default Subject Prefix"
-              value={settings.emailSubjectPrefix || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, emailSubjectPrefix: e.target.value }))}
-              placeholder="[Postino]"
-              hint="Used when the LLM does not return a subject. Leave empty to disable prefixing."
-            />
-            <Separator />
-            <div className="flex items-center gap-3">
-              <Button onClick={handleTestLlm} loading={llmTesting} variant="secondary">
-                Test Connection
-              </Button>
-              {llmTestResult && (
-                <div className={`text-sm flex flex-col gap-0.5 ${llmTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  <span className="flex items-center gap-1">
-                    {llmTestResult.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                    {llmTestResult.message}
-                  </span>
-                  {llmTestResult.detail && (
-                    <span className="text-xs opacity-75 font-mono">{llmTestResult.detail}</span>
+        <CardContent className="pt-0">
+          <Accordion type="multiple" defaultValue={['maintenance', 'llm', 'domain', 'smtp', 'mailgun']}>
+            <AccordionItem value="maintenance">
+              <AccordionTrigger>Maintenance Mode</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">Maintenance Mode</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        When enabled, no emails will be forwarded to any user.
+                      </p>
+                    </div>
+                    <Switch
+                      id="maintenance-mode"
+                      checked={!!settings.maintenanceMode}
+                      onCheckedChange={(checked) => setSettings((p) => ({ ...p, maintenanceMode: checked }))}
+                    />
+                  </div>
+                  {settings.maintenanceMode && (
+                    <Alert variant="warning">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Maintenance mode is <strong>ON</strong> — emails are not being forwarded.
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
-              )}
-            </div>
-          </CardContent>
-        )}
-      </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-      {/* Email Domain */}
-      <Card>
-        <CardHeader
-          className="cursor-pointer select-none"
-          onClick={() => toggleSection('domain')}
-        >
-          <div className="flex items-center justify-between">
-            <CardTitle>Email Domain</CardTitle>
-            {openSections.domain ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
-          </div>
-        </CardHeader>
-        {openSections.domain && (
-          <CardContent>
-            <Input
-              label="Email Domain"
-              value={settings.emailDomain || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, emailDomain: e.target.value }))}
-              placeholder="sandbox.postino.app"
-              hint="Domain used for generating user email addresses"
-            />
-          </CardContent>
-        )}
-      </Card>
+            <AccordionItem value="llm">
+              <AccordionTrigger>AI / LLM Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <Input
+                    label="OpenRouter API Key"
+                    type="password"
+                    value={settings.llmApiKey || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, llmApiKey: e.target.value }))}
+                    placeholder="sk-or-..."
+                  />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="llm-model">LLM Model</Label>
+                    <Combobox
+                      options={modelOptions}
+                      value={settings.llmModel || ''}
+                      onValueChange={(v) => setSettings((p) => ({ ...p, llmModel: v }))}
+                      placeholder={modelsLoading ? 'Loading models…' : 'Select a model'}
+                      searchPlaceholder="Search models..."
+                      emptyText="No models found."
+                      disabled={modelsLoading}
+                    />
+                    {modelsError ? (
+                      <p className="text-xs text-red-600 dark:text-red-400">{modelsError}</p>
+                    ) : (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Fetched live from OpenRouter</p>
+                    )}
+                  </div>
+                  <Input
+                    label="Max Rule Length (characters)"
+                    type="number"
+                    value={settings.maxRuleLength || 1000}
+                    onChange={(e) => setSettings((p) => ({ ...p, maxRuleLength: parseInt(e.target.value) }))}
+                  />
+                  <Input
+                    label="Max Response Tokens"
+                    type="number"
+                    value={settings.llmMaxTokens || 4000}
+                    onChange={(e) => setSettings((p) => ({ ...p, llmMaxTokens: parseInt(e.target.value) }))}
+                    hint="Maximum number of tokens the LLM can return per email (default: 4000). Increase for long HTML emails."
+                  />
+                  <Textarea
+                    label="System Prompt (base)"
+                    value={settings.llmSystemPrompt || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, llmSystemPrompt: e.target.value }))}
+                    rows={8}
+                    placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
+                    hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
+                  />
+                  <Input
+                    label="Default Subject Prefix"
+                    value={settings.emailSubjectPrefix || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, emailSubjectPrefix: e.target.value }))}
+                    placeholder="[Postino]"
+                    hint="Used when the LLM does not return a subject. Leave empty to disable prefixing."
+                  />
+                  <Separator />
+                  <div className="flex items-center gap-3">
+                    <Button onClick={handleTestLlm} loading={llmTesting} variant="secondary">
+                      Test Connection
+                    </Button>
+                    {llmTestResult && (
+                      <div className={`text-sm flex flex-col gap-0.5 ${llmTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        <span className="flex items-center gap-1">
+                          {llmTestResult.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                          {llmTestResult.message}
+                        </span>
+                        {llmTestResult.detail && (
+                          <span className="text-xs opacity-75 font-mono">{llmTestResult.detail}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-      {/* SMTP Settings */}
-      <Card>
-        <CardHeader
-          className="cursor-pointer select-none"
-          onClick={() => toggleSection('smtp')}
-        >
-          <div className="flex items-center justify-between">
-            <CardTitle>SMTP Settings</CardTitle>
-            {openSections.smtp ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
-          </div>
-        </CardHeader>
-        {openSections.smtp && (
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="SMTP Host"
-                value={settings.smtpHost || ''}
-                onChange={(e) => setSettings((p) => ({ ...p, smtpHost: e.target.value }))}
-                placeholder="smtp.gmail.com"
-              />
-              <Input
-                label="SMTP Port"
-                type="number"
-                value={settings.smtpPort || 587}
-                onChange={(e) => setSettings((p) => ({ ...p, smtpPort: parseInt(e.target.value) }))}
-              />
-            </div>
-            <Input
-              label="SMTP Username"
-              value={settings.smtpUser || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, smtpUser: e.target.value }))}
-            />
-            <Input
-              label="SMTP Password"
-              type="password"
-              value={settings.smtpPass || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, smtpPass: e.target.value }))}
-            />
-            <Input
-              label="From Address"
-              value={settings.smtpFrom || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, smtpFrom: e.target.value }))}
-              placeholder="Postino <noreply@postino.app>"
-            />
-          </CardContent>
-        )}
-      </Card>
+            <AccordionItem value="domain">
+              <AccordionTrigger>Email Domain</AccordionTrigger>
+              <AccordionContent>
+                <Input
+                  label="Email Domain"
+                  value={settings.emailDomain || ''}
+                  onChange={(e) => setSettings((p) => ({ ...p, emailDomain: e.target.value }))}
+                  placeholder="sandbox.postino.app"
+                  hint="Domain used for generating user email addresses"
+                />
+              </AccordionContent>
+            </AccordionItem>
 
-      {/* Mailgun Settings */}
-      <Card>
-        <CardHeader
-          className="cursor-pointer select-none"
-          onClick={() => toggleSection('mailgun')}
-        >
-          <div className="flex items-center justify-between">
-            <CardTitle>Mailgun Settings</CardTitle>
-            {openSections.mailgun ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
-          </div>
-        </CardHeader>
-        {openSections.mailgun && (
-          <CardContent className="space-y-4">
-            <Input
-              label="Mailgun API Key"
-              type="password"
-              value={settings.mailgunApiKey || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, mailgunApiKey: e.target.value }))}
-              placeholder="key-..."
-            />
-            <Input
-              label="Mailgun Webhook Signing Key"
-              type="password"
-              value={settings.mailgunWebhookSigningKey || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, mailgunWebhookSigningKey: e.target.value }))}
-              placeholder="webhook signing key"
-              hint="Used to verify inbound Mailgun webhook signatures"
-            />
-            <Input
-              label="Mailgun Domain"
-              value={settings.mailgunDomain || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, mailgunDomain: e.target.value }))}
-              placeholder="sandbox....mailgun.org"
-            />
-            <Input
-              label="Mailgun Sandbox Email"
-              value={settings.mailgunSandboxEmail || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, mailgunSandboxEmail: e.target.value }))}
-              placeholder="sandbox123.mailgun.org"
-              hint="Used when recipient arrives without @domain"
-            />
-            <Input
-              label="Mailgun Base URL"
-              value={settings.mailgunBaseUrl || ''}
-              onChange={(e) => setSettings((p) => ({ ...p, mailgunBaseUrl: e.target.value }))}
-              placeholder="https://api.mailgun.net"
-            />
-          </CardContent>
-        )}
+            <AccordionItem value="smtp">
+              <AccordionTrigger>SMTP Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="SMTP Host"
+                      value={settings.smtpHost || ''}
+                      onChange={(e) => setSettings((p) => ({ ...p, smtpHost: e.target.value }))}
+                      placeholder="smtp.gmail.com"
+                    />
+                    <Input
+                      label="SMTP Port"
+                      type="number"
+                      value={settings.smtpPort || 587}
+                      onChange={(e) => setSettings((p) => ({ ...p, smtpPort: parseInt(e.target.value) }))}
+                    />
+                  </div>
+                  <Input
+                    label="SMTP Username"
+                    value={settings.smtpUser || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, smtpUser: e.target.value }))}
+                  />
+                  <Input
+                    label="SMTP Password"
+                    type="password"
+                    value={settings.smtpPass || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, smtpPass: e.target.value }))}
+                  />
+                  <Input
+                    label="From Address"
+                    value={settings.smtpFrom || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, smtpFrom: e.target.value }))}
+                    placeholder="Postino <noreply@postino.app>"
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="mailgun">
+              <AccordionTrigger>Mailgun Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <Input
+                    label="Mailgun API Key"
+                    type="password"
+                    value={settings.mailgunApiKey || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, mailgunApiKey: e.target.value }))}
+                    placeholder="key-..."
+                  />
+                  <Input
+                    label="Mailgun Webhook Signing Key"
+                    type="password"
+                    value={settings.mailgunWebhookSigningKey || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, mailgunWebhookSigningKey: e.target.value }))}
+                    placeholder="webhook signing key"
+                    hint="Used to verify inbound Mailgun webhook signatures"
+                  />
+                  <Input
+                    label="Mailgun Domain"
+                    value={settings.mailgunDomain || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, mailgunDomain: e.target.value }))}
+                    placeholder="sandbox....mailgun.org"
+                  />
+                  <Input
+                    label="Mailgun Sandbox Email"
+                    value={settings.mailgunSandboxEmail || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, mailgunSandboxEmail: e.target.value }))}
+                    placeholder="sandbox123.mailgun.org"
+                    hint="Used when recipient arrives without @domain"
+                  />
+                  <Input
+                    label="Mailgun Base URL"
+                    value={settings.mailgunBaseUrl || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, mailgunBaseUrl: e.target.value }))}
+                    placeholder="https://api.mailgun.net"
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
       </Card>
 
       <div className="flex items-center gap-3">
