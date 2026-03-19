@@ -153,7 +153,7 @@ export default function AdminSettingsPage() {
           <CardTitle>Settings Sections</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <Accordion type="multiple" defaultValue={['maintenance', 'llm', 'domain', 'smtp', 'mailgun']}>
+          <Accordion type="multiple">
             <AccordionItem value="maintenance">
               <AccordionTrigger>Maintenance Mode</AccordionTrigger>
               <AccordionContent>
