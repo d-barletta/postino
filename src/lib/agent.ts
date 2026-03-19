@@ -26,6 +26,8 @@ import {
   sanitizeEmailBody,
   sanitizeHtmlBodyForPrompt,
   getOpenRouterClient,
+  getModelPricing,
+  calculateCost,
 } from './openrouter';
 import type { ProcessEmailResult, RuleForProcessing } from './openrouter';
 import type { EmailMemoryEntry, UserMemory } from '@/types';
@@ -364,9 +366,11 @@ async function processEmailInChunks(
   model: string,
   maxOutputTokens: number,
   fallbackSubject: string
-): Promise<{ subject: string; body: string; tokensUsed: number }> {
+): Promise<{ subject: string; body: string; tokensUsed: number; promptTokens: number; completionTokens: number }> {
   const chunks = splitIntoChunks(plainTextBody, CHUNK_SIZE_CHARS);
   let totalTokens = 0;
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
   const extractions: string[] = [];
 
   // ---- Map phase ----
@@ -391,6 +395,8 @@ ${chunks[i]}`;
       });
       extractions.push(text.trim());
       totalTokens += usage?.totalTokens ?? 0;
+      totalPromptTokens += usage?.inputTokens ?? 0;
+      totalCompletionTokens += usage?.outputTokens ?? 0;
     } catch (err) {
       // If a single chunk fails, fall back to raw (truncated) text so we
       // still have something to pass to the reduce phase.
@@ -456,6 +462,8 @@ ${isHtml
   });
 
   totalTokens += usage?.totalTokens ?? 0;
+  totalPromptTokens += usage?.inputTokens ?? 0;
+  totalCompletionTokens += usage?.outputTokens ?? 0;
 
   // Apply surgical DOM patches to the original HTML whenever possible.
   // Only fall back to a full regeneration when the rules explicitly require it.
@@ -472,6 +480,8 @@ ${isHtml
     subject: object.subject || fallbackSubject,
     body: finalBody,
     tokensUsed: totalTokens,
+    promptTokens: totalPromptTokens,
+    completionTokens: totalCompletionTokens,
   };
 }
 
@@ -569,6 +579,8 @@ ${rulesText}
   let subject: string = fallbackSubject;
   let body: string = emailBody;
   let tokensUsed = 0;
+  let promptTokens = 0;
+  let completionTokens = 0;
   let parseError: string | undefined;
 
   const isLargeEmail = emailBodyForPrompt.length > CHUNK_THRESHOLD_CHARS;
@@ -595,6 +607,8 @@ ${rulesText}
       subject = result.subject;
       body = result.body;
       tokensUsed = result.tokensUsed;
+      promptTokens = result.promptTokens;
+      completionTokens = result.completionTokens;
     } else {
       if (isHtml) {
         // HTML email: ask the LLM for surgical DOM patches so the original
@@ -634,6 +648,8 @@ ${emailBodyForPrompt}`;
           ? (object.patches.length > 0 ? applyDomPatches(emailBody, object.patches as DomPatch[]) : emailBody)
           : (object.replacementBody || emailBody);
         tokensUsed = usage?.totalTokens ?? 0;
+        promptTokens = usage?.inputTokens ?? 0;
+        completionTokens = usage?.outputTokens ?? 0;
       } else {
         // Plain-text email: LLM produces the full output directly.
         const userPrompt = `Process this incoming email:
@@ -660,6 +676,8 @@ Respond with a JSON object containing: subject (processed subject line) and body
         subject = object.subject || fallbackSubject;
         body = object.body || emailBody;
         tokensUsed = usage?.totalTokens ?? 0;
+        promptTokens = usage?.inputTokens ?? 0;
+        completionTokens = usage?.outputTokens ?? 0;
       }
     }
   } catch (error) {
@@ -671,8 +689,8 @@ Respond with a JSON object containing: subject (processed subject line) and body
     body = emailBody;
   }
 
-  // Approximate cost at $0.30/M tokens (gpt-4o-mini rate); actual cost varies by model
-  const estimatedCost = (tokensUsed / 1_000_000) * 0.30;
+  const pricing = await getModelPricing(model, apiKey);
+  const estimatedCost = calculateCost(promptTokens, completionTokens, pricing);
 
   const ruleApplied =
     activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';

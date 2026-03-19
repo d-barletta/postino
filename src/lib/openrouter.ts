@@ -76,6 +76,76 @@ export interface ProcessEmailResult {
   parseError?: string;
 }
 
+/** Pricing for a specific model (USD per token). */
+export interface ModelPricing {
+  promptCostPerToken: number;
+  completionCostPerToken: number;
+}
+
+// In-memory cache for model pricing to avoid repeated API calls.
+const modelPricingCache = new Map<string, { pricing: ModelPricing; fetchedAt: number }>();
+const PRICING_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Fetches the pricing for a specific model from the OpenRouter models endpoint.
+ * Results are cached in memory for one hour.
+ * Returns null if pricing information cannot be retrieved.
+ */
+export async function getModelPricing(model: string, apiKey: string): Promise<ModelPricing | null> {
+  const cached = modelPricingCache.get(model);
+  if (cached && Date.now() - cached.fetchedAt < PRICING_CACHE_TTL_MS) {
+    return cached.pricing;
+  }
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.app',
+        'X-Title': 'Postino Email Redirector',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const payload = (await response.json()) as {
+      data?: Array<{
+        id?: string;
+        pricing?: { prompt?: string; completion?: string };
+      }>;
+    };
+
+    const modelData = payload.data?.find((m) => m.id === model);
+    if (!modelData?.pricing) return null;
+
+    const pricing: ModelPricing = {
+      promptCostPerToken: parseFloat(modelData.pricing.prompt || '0') || 0,
+      completionCostPerToken: parseFloat(modelData.pricing.completion || '0') || 0,
+    };
+
+    modelPricingCache.set(model, { pricing, fetchedAt: Date.now() });
+    return pricing;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Calculates the real cost for a generation using model-specific pricing.
+ * Falls back to a fixed approximate rate if pricing information is unavailable.
+ */
+export function calculateCost(
+  promptTokens: number,
+  completionTokens: number,
+  pricing: ModelPricing | null
+): number {
+  if (!pricing) {
+    // Fallback: approximate cost at $0.30/M tokens (openai/gpt-4o-mini approximate rate)
+    return ((promptTokens + completionTokens) / 1_000_000) * 0.30;
+  }
+  return promptTokens * pricing.promptCostPerToken + completionTokens * pricing.completionCostPerToken;
+}
+
 export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: string; apiKey: string }> {
   const db = adminDb();
   const settingsSnap = await db.collection('settings').doc('global').get();
@@ -330,9 +400,12 @@ Respond with a JSON object containing: subject (processed subject line) and body
     body = typeof parsed.body === 'string' ? parsed.body : emailBody;
   }
 
-  const tokensUsed = response.usage?.total_tokens || 0;
-  // Approximate cost at $0.30/M tokens (gpt-4o-mini rate); actual cost varies by model
-  const estimatedCost = (tokensUsed / 1_000_000) * 0.30;
+  const promptTokens = response.usage?.prompt_tokens || 0;
+  const completionTokens = response.usage?.completion_tokens || 0;
+  const tokensUsed = response.usage?.total_tokens || (promptTokens + completionTokens);
+
+  const pricing = await getModelPricing(model, apiKey);
+  const estimatedCost = calculateCost(promptTokens, completionTokens, pricing);
 
   return {
     subject,
