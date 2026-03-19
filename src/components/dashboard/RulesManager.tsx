@@ -5,8 +5,7 @@ import { useRules } from '@/hooks/useRules';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Switch } from '@/components/ui/Switch';
 import { Label } from '@/components/ui/Label';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
@@ -17,11 +16,9 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from '@/components/ui/Drawer';
-import { Separator } from '@/components/ui/Separator';
 import { formatDate } from '@/lib/utils';
-import { Plus, Filter, Pencil, Trash2, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Filter, Pencil, Trash2, AlertCircle, ChevronUp, ChevronDown, X } from 'lucide-react';
 
 const DEFAULT_MAX_LENGTH = 1000;
 const MAX_RULE_NAME_LENGTH = 100;
@@ -54,11 +51,22 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   const [deleting, setDeleting] = useState(false);
   const [reordering, setReordering] = useState(false);
 
-  const [addDrawerOpen, setAddDrawerOpen] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const editRuleRef = useRef<HTMLDivElement>(null);
+
+  const resetAddForm = () => {
+    setShowAddForm(false);
+    setNewRuleName('');
+    setNewRuleText('');
+    setNewMatchSender('');
+    setNewMatchSubject('');
+    setNewMatchBody('');
+    setShowNewFilters(false);
+    setError('');
+  };
 
   useEffect(() => {
     if (editRuleId && !loading && rules.length > 0) {
@@ -98,7 +106,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       );
       setNewRuleName(''); setNewRuleText('');
       setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
-      setShowNewFilters(false); setAddDrawerOpen(false);
+      setShowNewFilters(false); setShowAddForm(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create rule');
     } finally {
@@ -173,152 +181,141 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
 
   return (
     <div className="space-y-6">
-      <Drawer open={addDrawerOpen} onOpenChange={(open) => { setAddDrawerOpen(open); if (!open) setError(''); }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add New Rule</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Create a new processing rule in a dedicated drawer.
+      {/* Add Rule inline section */}
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Your Rules{' '}
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+              ({rules.filter((r) => r.isActive).length} active)
+            </span>
+          </h2>
+          {rules.length > 1 && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              Rules are applied top to bottom. Use the arrows to change the order.
             </p>
-          </div>
-          <DrawerTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Add New Rule
-            </Button>
-          </DrawerTrigger>
+          )}
         </div>
+        {!showAddForm && (
+          <Button onClick={() => { setShowAddForm(true); setError(''); }}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add New Rule
+          </Button>
+        )}
+      </div>
 
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Add New Rule</DrawerTitle>
-            <DrawerDescription>
-              Give your rule a name and describe how you want Postino to process your emails.
-            </DrawerDescription>
-          </DrawerHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="new-rule-name">
-                Rule Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="new-rule-name"
-                value={newRuleName}
-                onChange={(e) => setNewRuleName(e.target.value)}
-                placeholder="e.g. Newsletter Summarizer"
-                maxLength={MAX_RULE_NAME_LENGTH}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="new-rule-description">
-                Rule Description <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="new-rule-description"
-                value={newRuleText}
-                onChange={(e) => setNewRuleText(e.target.value)}
-                placeholder="Example: Summarize newsletters and remove promotional content. Keep only the key articles and links."
-                rows={3}
-                charCount={{ current: newRuleText.length, max: maxRuleLength }}
-              />
-            </div>
-
-            <div>
+      {showAddForm && (
+        <Card className="mb-3">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">New Rule</h3>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                onClick={() => setShowNewFilters((v) => !v)}
+                onClick={resetAddForm}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                title="Close"
               >
-                <Filter className="h-3.5 w-3.5" />
-                {showNewFilters ? 'Hide filters' : 'Add sender/subject/body filters (optional)'}
+                <X className="h-4 w-4" />
               </button>
             </div>
-
-            {showNewFilters && (
-              <div className="space-y-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.
-                </p>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-rule-name">
+                  Rule Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  label="Sender contains"
-                  value={newMatchSender}
-                  onChange={(e) => setNewMatchSender(e.target.value)}
-                  placeholder="e.g. newsletter@example.com"
-                  maxLength={MAX_PATTERN_LENGTH}
-                />
-                <Input
-                  label="Subject contains"
-                  value={newMatchSubject}
-                  onChange={(e) => setNewMatchSubject(e.target.value)}
-                  placeholder="e.g. Weekly Digest"
-                  maxLength={MAX_PATTERN_LENGTH}
-                />
-                <Input
-                  label="Body contains"
-                  value={newMatchBody}
-                  onChange={(e) => setNewMatchBody(e.target.value)}
-                  placeholder="e.g. unsubscribe"
-                  maxLength={MAX_PATTERN_LENGTH}
+                  id="new-rule-name"
+                  value={newRuleName}
+                  onChange={(e) => setNewRuleName(e.target.value)}
+                  placeholder="e.g. Newsletter Summarizer"
+                  maxLength={MAX_RULE_NAME_LENGTH}
                 />
               </div>
-            )}
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+              <div className="space-y-1.5">
+                <Label htmlFor="new-rule-description">
+                  Rule Description <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="new-rule-description"
+                  value={newRuleText}
+                  onChange={(e) => setNewRuleText(e.target.value)}
+                  placeholder="Example: Summarize newsletters and remove promotional content. Keep only the key articles and links."
+                  rows={3}
+                  charCount={{ current: newRuleText.length, max: maxRuleLength }}
+                />
+              </div>
 
-            {(newRuleName || newRuleText) && (
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setNewRuleName(''); setNewRuleText('');
-                  setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
-                  setShowNewFilters(false); setError('');
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </div>
+              <div>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                  onClick={() => setShowNewFilters((v) => !v)}
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                  {showNewFilters ? 'Hide filters' : 'Add sender/subject/body filters (optional)'}
+                </button>
+              </div>
 
-          <DrawerFooter>
-            <Button variant="ghost" onClick={() => setAddDrawerOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              loading={submitting}
-              disabled={!newRuleName.trim() || !newRuleText.trim() || newRuleText.length > maxRuleLength}
-            >
-              Add Rule
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+              {showNewFilters && (
+                <div className="space-y-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.
+                  </p>
+                  <Input
+                    label="Sender contains"
+                    value={newMatchSender}
+                    onChange={(e) => setNewMatchSender(e.target.value)}
+                    placeholder="e.g. newsletter@example.com"
+                    maxLength={MAX_PATTERN_LENGTH}
+                  />
+                  <Input
+                    label="Subject contains"
+                    value={newMatchSubject}
+                    onChange={(e) => setNewMatchSubject(e.target.value)}
+                    placeholder="e.g. Weekly Digest"
+                    maxLength={MAX_PATTERN_LENGTH}
+                  />
+                  <Input
+                    label="Body contains"
+                    value={newMatchBody}
+                    onChange={(e) => setNewMatchBody(e.target.value)}
+                    placeholder="e.g. unsubscribe"
+                    maxLength={MAX_PATTERN_LENGTH}
+                  />
+                </div>
+              )}
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  onClick={handleCreate}
+                  loading={submitting}
+                  disabled={!newRuleName.trim() || !newRuleText.trim() || newRuleText.length > maxRuleLength}
+                >
+                  Add Rule
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={resetAddForm}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Rules list */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Your Rules{' '}
-              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                ({rules.filter((r) => r.isActive).length} active)
-              </span>
-            </h2>
-            {rules.length > 1 && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                Rules are applied top to bottom. Use the arrows to change the order.
-              </p>
-            )}
-          </div>
-        </div>
-
         {loading ? (
           <div className="animate-pulse space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -428,55 +425,56 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                      <div>
+                        {/* Top row: order badge + name + active toggle */}
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             {rules.length > 1 && (
                               <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0" title="Processing order">
                                 {index + 1}
                               </span>
                             )}
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{rule.name}</p>
-                            <Badge variant={rule.isActive ? 'success' : 'default'}>
-                              {rule.isActive ? 'Active' : 'Disabled'}
-                            </Badge>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate" title={rule.name}>{rule.name}</p>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{rule.text}</p>
-                          {(rule.matchSender || rule.matchSubject || rule.matchBody) && (
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              {rule.matchSender && (
-                                <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
-                                  <span className="font-medium">Sender:</span> {rule.matchSender}
-                                </span>
-                              )}
-                              {rule.matchSubject && (
-                                <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
-                                  <span className="font-medium">Subject:</span> {rule.matchSubject}
-                                </span>
-                              )}
-                              {rule.matchBody && (
-                                <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
-                                  <span className="font-medium">Body:</span> {rule.matchBody}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                            Updated {formatDate(rule.updatedAt)}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:flex-col sm:items-end">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             <Switch
                               id={`toggle-${rule.id}`}
                               checked={rule.isActive}
                               onCheckedChange={() => handleToggle(rule.id, rule.isActive)}
                             />
-                            <Label htmlFor={`toggle-${rule.id}`} className="text-xs cursor-pointer">
+                            <Label htmlFor={`toggle-${rule.id}`} className="text-xs cursor-pointer whitespace-nowrap">
                               {rule.isActive ? 'Active' : 'Disabled'}
                             </Label>
                           </div>
-                          <Separator className="hidden sm:block" />
+                        </div>
+
+                        {/* Rule body */}
+                        <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap mb-2">{rule.text}</p>
+                        {(rule.matchSender || rule.matchSubject || rule.matchBody) && (
+                          <div className="mb-2 flex flex-wrap gap-1.5">
+                            {rule.matchSender && (
+                              <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                                <span className="font-medium">Sender:</span> {rule.matchSender}
+                              </span>
+                            )}
+                            {rule.matchSubject && (
+                              <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                                <span className="font-medium">Subject:</span> {rule.matchSubject}
+                              </span>
+                            )}
+                            {rule.matchBody && (
+                              <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                                <span className="font-medium">Body:</span> {rule.matchBody}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
+                          Updated {formatDate(rule.updatedAt)}
+                        </p>
+
+                        {/* Bottom row: up/down arrows (left) + edit/delete (right) */}
+                        <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1">
                             <Button
                               size="sm"
@@ -499,7 +497,6 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               <ChevronDown className="h-4 w-4" />
                             </Button>
                           </div>
-                          <Separator className="hidden sm:block" />
                           <div className="flex items-center gap-1.5">
                             <Button size="sm" variant="ghost" onClick={() => startEditing(rule.id)} title="Edit rule">
                               <Pencil className="h-3.5 w-3.5 mr-1" />

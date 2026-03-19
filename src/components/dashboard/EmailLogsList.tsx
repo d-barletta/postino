@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Combobox } from '@/components/ui/Combobox';
+import { NativeSelect } from '@/components/ui/NativeSelect';
 import { formatDate, truncate } from '@/lib/utils';
 import { RefreshCw, ChevronLeft, ChevronRight, Mail, ExternalLink } from 'lucide-react';
 import type { EmailLog } from '@/types';
@@ -69,14 +69,15 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
             <CardTitle>Email History</CardTitle>
             <div className="flex items-center gap-2">
               <div className="w-44">
-                <Combobox
-                  options={STATUS_OPTIONS}
+                <NativeSelect
                   value={statusFilter}
-                  onValueChange={handleStatusFilter}
-                  placeholder="Filter by status"
-                  searchPlaceholder="Search status..."
-                  clearable
-                />
+                  onChange={(e) => handleStatusFilter(e.target.value)}
+                  aria-label="Filter by status"
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </NativeSelect>
               </div>
               {onRefresh && (
                 <Button
