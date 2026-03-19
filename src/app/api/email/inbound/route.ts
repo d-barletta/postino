@@ -210,13 +210,17 @@ export async function POST(request: NextRequest) {
       ? `${appUrl}/email/original/${logRef.id}`
       : null;
 
-    // Use the first matching rule (if any) for the edit link
-    const appliedRule = matchingRules[0];
-    const editRuleUrl = appUrl && appliedRule
-      ? `${appUrl}/dashboard?editRule=${appliedRule.id}`
-      : appUrl
-      ? `${appUrl}/dashboard`
-      : null;
+    // Render each matching rule name as a clickable link to its edit page.
+    // When no rules matched (or no app URL is configured) fall back to plain text.
+    const ruleDisplayHtml =
+      matchingRules.length > 0 && appUrl
+        ? matchingRules
+            .map(
+              (rule) =>
+                `<a href="${escapeHtml(`${appUrl}/dashboard?editRule=${rule.id}`)}" style="font-weight: bold; text-decoration: underline;">${escapeHtml(rule.name)}</a>`
+            )
+            .join(', ')
+        : `<strong>${escapeHtml(result.ruleApplied)}</strong>`;
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -228,7 +232,7 @@ export async function POST(request: NextRequest) {
         <div style="margin-bottom: 8px;">
           Original from: ${escapeHtml(sender)}
         </div>
-        Rule: <strong>${escapeHtml(result.ruleApplied)}</strong>${editRuleUrl ? ` | <a href="${escapeHtml(editRuleUrl)}" style="text-decoration: underline;">Edit rule</a>` : ''}
+        Rule: ${ruleDisplayHtml}
         ${originalEmailUrl ? `<br><a href="${escapeHtml(originalEmailUrl)}" style="text-decoration: underline; margin-top: 4px; display: inline-block;">View original email</a>` : ''}
       </div>
       ${result.body}
