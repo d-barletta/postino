@@ -5,6 +5,7 @@ export interface User {
   createdAt: Date;
   isAdmin: boolean;
   isActive: boolean;
+  isAddressEnabled?: boolean;
   displayName?: string;
 }
 
@@ -21,7 +22,7 @@ export interface Rule {
   isActive: boolean;
 }
 
-export type EmailStatus = 'received' | 'processing' | 'forwarded' | 'error';
+export type EmailStatus = 'received' | 'processing' | 'forwarded' | 'error' | 'skipped';
 
 export interface EmailLog {
   id: string;

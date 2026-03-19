@@ -16,6 +16,7 @@ interface AdminEmailLogChartItem {
 
 interface EmailLogsChartsProps {
   logs: AdminEmailLogChartItem[];
+  loading?: boolean;
 }
 
 const chartConfig = {
@@ -23,11 +24,12 @@ const chartConfig = {
   processing: { label: 'Processing', color: '#f59e0b' },
   forwarded: { label: 'Forwarded', color: '#16a34a' },
   error: { label: 'Error', color: '#dc2626' },
+  skipped: { label: 'Skipped', color: '#6b7280' },
   tokens: { label: 'Tokens', color: '#0ea5e9' },
   cost: { label: 'Cost', color: '#8b5cf6' },
 } satisfies ChartConfig;
 
-const STATUS_ORDER = ['received', 'processing', 'forwarded', 'error'] as const;
+const STATUS_ORDER = ['received', 'processing', 'forwarded', 'error', 'skipped'] as const;
 
 type TimeGranularity = 'hour' | 'day';
 
@@ -48,7 +50,21 @@ function getBucketKey(iso: string | null, granularity: TimeGranularity): string 
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
 }
 
-export function EmailLogsCharts({ logs }: EmailLogsChartsProps) {
+function ChartSkeleton({ height = 'h-56' }: { height?: string }) {
+  return (
+    <div className={`animate-pulse ${height} flex items-end gap-2 px-2 pb-2`}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-t"
+          style={{ height: `${30 + ((i * 17) % 60)}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   const [granularity, setGranularity] = useState<TimeGranularity>('hour');
 
   const byStatus = STATUS_ORDER.map((status) => {
@@ -89,40 +105,51 @@ export function EmailLogsCharts({ logs }: EmailLogsChartsProps) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <Card>
-        <Accordion type="single" defaultValue="status-distribution">
+        <Accordion type="single" collapsible>
           <AccordionItem value="status-distribution" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               Status Distribution
             </AccordionTrigger>
             <AccordionContent>
               <div className="px-4 pb-4 sm:px-6">
-                <ChartContainer config={chartConfig} className="h-56 sm:h-65">
-                  <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent formatter={(v) => Number(v || 0).toLocaleString()} />} />
-                    <Pie
-                      data={pieData.length > 0 ? pieData : [{ status: 'received', count: 0, fill: 'var(--color-received)' }]}
-                      dataKey="count"
-                      nameKey="status"
-                      innerRadius={44}
-                      outerRadius={78}
-                      strokeWidth={0}
-                    >
-                      {(pieData.length > 0 ? pieData : [{ status: 'received', fill: 'var(--color-received)' }]).map((entry) => (
-                        <Cell key={entry.status} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ChartContainer>
+                {loading ? (
+                  <ChartSkeleton height="h-56 sm:h-65" />
+                ) : (
+                  <ChartContainer config={chartConfig} className="h-56 sm:h-65">
+                    <PieChart>
+                      <ChartTooltip content={<ChartTooltipContent formatter={(v) => Number(v || 0).toLocaleString()} />} />
+                      <Pie
+                        data={pieData.length > 0 ? pieData : [{ status: 'received', count: 0, fill: 'var(--color-received)' }]}
+                        dataKey="count"
+                        nameKey="status"
+                        innerRadius={44}
+                        outerRadius={78}
+                        strokeWidth={0}
+                      >
+                        {(pieData.length > 0 ? pieData : [{ status: 'received', fill: 'var(--color-received)' }]).map((entry) => (
+                          <Cell key={entry.status} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
+                )}
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  {byStatus.map((item) => (
-                    <div key={item.status} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
-                      <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[item.status].color }} aria-hidden />
-                        <span>{chartConfig[item.status].label}</span>
+                  {byStatus.map((item) => {
+                    const statusKey = item.status as keyof typeof chartConfig;
+                    return (
+                      <div key={item.status} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[statusKey]?.color }} aria-hidden />
+                          <span>{chartConfig[statusKey]?.label ?? item.status}</span>
+                        </div>
+                        {loading ? (
+                          <div className="mt-0.5 h-4 w-8 animate-pulse bg-gray-200 dark:bg-gray-700 rounded" />
+                        ) : (
+                          <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{item.count.toLocaleString()}</p>
+                        )}
                       </div>
-                      <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{item.count.toLocaleString()}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </AccordionContent>
@@ -138,78 +165,84 @@ export function EmailLogsCharts({ logs }: EmailLogsChartsProps) {
             </AccordionTrigger>
             <AccordionContent>
               <div className="px-4 pb-4 sm:px-6">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Group by:</span>
-                  <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
-                    <button
-                      onClick={() => setGranularity('hour')}
-                      className={`px-3 py-1 transition-colors ${
-                        granularity === 'hour'
-                          ? 'bg-[#EFD957] text-gray-900 font-semibold'
-                          : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
-                      }`}
-                    >
-                      Per Hour
-                    </button>
-                    <button
-                      onClick={() => setGranularity('day')}
-                      className={`px-3 py-1 transition-colors border-l border-gray-200 dark:border-gray-700 ${
-                        granularity === 'day'
-                          ? 'bg-[#EFD957] text-gray-900 font-semibold'
-                          : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
-                      }`}
-                    >
-                      Per Day
-                    </button>
-                  </div>
-                </div>
-                <ChartContainer config={chartConfig}>
-                  <ComposedChart data={timeData} margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-                    <YAxis yAxisId="tokens" allowDecimals={false} tickLine={false} axisLine={false} width={34} tick={{ fontSize: 12 }} />
-                    <YAxis
-                      yAxisId="cost"
-                      orientation="right"
-                      tickLine={false}
-                      axisLine={false}
-                      width={54}
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(v) => `$${Number(v).toFixed(3)}`}
-                    />
-                    <ChartTooltip
-                      content={
-                        <ChartTooltipContent
-                          formatter={(value, name) =>
-                            String(name) === 'cost'
-                              ? `$${Number(value || 0).toFixed(5)}`
-                              : Number(value || 0).toLocaleString()
+                {loading ? (
+                  <ChartSkeleton />
+                ) : (
+                  <>
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Group by:</span>
+                      <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
+                        <button
+                          onClick={() => setGranularity('hour')}
+                          className={`px-3 py-1 transition-colors ${
+                            granularity === 'hour'
+                              ? 'bg-[#EFD957] text-gray-900 font-semibold'
+                              : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
+                          }`}
+                        >
+                          Per Hour
+                        </button>
+                        <button
+                          onClick={() => setGranularity('day')}
+                          className={`px-3 py-1 transition-colors border-l border-gray-200 dark:border-gray-700 ${
+                            granularity === 'day'
+                              ? 'bg-[#EFD957] text-gray-900 font-semibold'
+                              : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
+                          }`}
+                        >
+                          Per Day
+                        </button>
+                      </div>
+                    </div>
+                    <ChartContainer config={chartConfig}>
+                      <ComposedChart data={timeData} margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+                        <YAxis yAxisId="tokens" allowDecimals={false} tickLine={false} axisLine={false} width={34} tick={{ fontSize: 12 }} />
+                        <YAxis
+                          yAxisId="cost"
+                          orientation="right"
+                          tickLine={false}
+                          axisLine={false}
+                          width={54}
+                          tick={{ fontSize: 12 }}
+                          tickFormatter={(v) => `$${Number(v).toFixed(3)}`}
+                        />
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent
+                              formatter={(value, name) =>
+                                String(name) === 'cost'
+                                  ? `$${Number(value || 0).toFixed(5)}`
+                                  : Number(value || 0).toLocaleString()
+                              }
+                            />
                           }
                         />
-                      }
-                    />
-                    <Bar yAxisId="tokens" dataKey="tokens" radius={0} fill="var(--color-tokens)" />
-                    <Line
-                      yAxisId="cost"
-                      type="monotone"
-                      dataKey="cost"
-                      stroke="var(--color-cost)"
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: 'var(--color-cost)' }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </ComposedChart>
-                </ChartContainer>
-                <div className="mt-3 flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden />
-                    Tokens (bar)
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-0.5 w-4 bg-violet-500" aria-hidden />
-                    Cost (line)
-                  </span>
-                </div>
+                        <Bar yAxisId="tokens" dataKey="tokens" radius={0} fill="var(--color-tokens)" />
+                        <Line
+                          yAxisId="cost"
+                          type="monotone"
+                          dataKey="cost"
+                          stroke="var(--color-cost)"
+                          strokeWidth={2.5}
+                          dot={{ r: 3, fill: 'var(--color-cost)' }}
+                          activeDot={{ r: 5 }}
+                        />
+                      </ComposedChart>
+                    </ChartContainer>
+                    <div className="mt-3 flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden />
+                        Tokens (bar)
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-0.5 w-4 bg-violet-500" aria-hidden />
+                        Cost (line)
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>

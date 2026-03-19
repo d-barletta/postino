@@ -12,7 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 
 export default function DashboardPage() {
-  const { user, loading, firebaseUser } = useAuth();
+  const { user, loading, firebaseUser, refreshUser } = useAuth();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
   const [activeTab, setActiveTab] = useState<'rules' | 'emails'>('rules');
   const [logs, setLogs] = useState<EmailLog[]>([]);
@@ -67,11 +67,7 @@ export default function DashboardPage() {
         ]);
         if (logsRes.ok) {
           const data = await logsRes.json();
-          const fetchedLogs: EmailLog[] = data.logs || [];
-          setLogs(fetchedLogs);
-          if (fetchedLogs.length > 0 && !editRuleId) {
-            setActiveTab('emails');
-          }
+          setLogs(data.logs || []);
         }
         if (statsRes.ok) {
           const data = await statsRes.json();
@@ -90,6 +86,17 @@ export default function DashboardPage() {
     finally { setLogsRefreshing(false); }
   }, [fetchLogs, fetchStats]);
 
+  const handleAddressToggle = useCallback(async (enabled: boolean) => {
+    if (!firebaseUser) return;
+    const token = await firebaseUser.getIdToken();
+    await fetch('/api/user/address-toggle', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isAddressEnabled: enabled }),
+    });
+    await refreshUser();
+  }, [firebaseUser, refreshUser]);
+
   if (loading || logsLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -105,7 +112,13 @@ export default function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your Postino address and email rules</p>
       </div>
 
-      {user?.assignedEmail && <AssignedEmailCard assignedEmail={user.assignedEmail} />}
+      {user?.assignedEmail && (
+        <AssignedEmailCard
+          assignedEmail={user.assignedEmail}
+          isAddressEnabled={user.isAddressEnabled !== false}
+          onToggle={handleAddressToggle}
+        />
+      )}
       {userStats && <UserStatsCards stats={userStats} />}
       {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
 

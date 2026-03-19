@@ -153,6 +153,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // If the user has disabled their Postino address, register the email as skipped
+    if (userData.isAddressEnabled === false) {
+      await db.collection('emailLogs').add({
+        toAddress: matchedRecipient,
+        fromAddress: sender,
+        subject,
+        receivedAt: Timestamp.now(),
+        status: 'skipped',
+        userId,
+        originalBody: emailBody,
+        ...(messageId ? { messageId } : {}),
+      });
+      console.log(`User ${userId} has address disabled, email skipped`);
+      return NextResponse.json({ message: 'Address disabled, email skipped' });
+    }
+
     logRef = await db.collection('emailLogs').add({
       toAddress: matchedRecipient,
       fromAddress: sender,

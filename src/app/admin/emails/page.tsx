@@ -24,11 +24,12 @@ interface AdminEmailLog {
   errorMessage: string | null;
 }
 
-const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error'> = {
+const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
   received: 'info',
   processing: 'warning',
   forwarded: 'success',
   error: 'error',
+  skipped: 'default',
 };
 
 const PAGE_SIZE = 20;
@@ -116,7 +117,7 @@ export default function AdminEmailsPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">Details of all emails processed by Postino</p>
       </div>
 
-      {!loading && logs.length > 0 && <EmailLogsCharts logs={logs} />}
+      {<EmailLogsCharts logs={logs} loading={loading} />}
 
       <Card>
         <CardHeader>
