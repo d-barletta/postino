@@ -186,14 +186,23 @@ export async function POST(request: NextRequest) {
       .where('isActive', '==', true)
       .get();
 
-    const allRules = rulesSnap.docs.map((d) => ({
-      id: d.id,
-      name: (d.data().name as string) || d.id,
-      text: d.data().text as string,
-      matchSender: (d.data().matchSender as string) || '',
-      matchSubject: (d.data().matchSubject as string) || '',
-      matchBody: (d.data().matchBody as string) || '',
-    }));
+    // Sort rules by creation time (ascending) so the first rule the user
+    // created is always applied first — this matches user intuition and
+    // produces a deterministic, predictable processing order.
+    const allRules = rulesSnap.docs
+      .sort((a, b) => {
+        const ta = a.data().createdAt?.toMillis?.() ?? 0;
+        const tb = b.data().createdAt?.toMillis?.() ?? 0;
+        return ta - tb;
+      })
+      .map((d) => ({
+        id: d.id,
+        name: (d.data().name as string) || d.id,
+        text: d.data().text as string,
+        matchSender: (d.data().matchSender as string) || '',
+        matchSubject: (d.data().matchSubject as string) || '',
+        matchBody: (d.data().matchBody as string) || '',
+      }));
 
     // Filter rules based on pattern matching against the incoming email
     const matchingRules: RuleForProcessing[] = allRules.filter(
