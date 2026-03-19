@@ -299,9 +299,18 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         </div>
 
         {loading ? (
-          <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-            <div className="inline-block animate-spin h-6 w-6 border-2 border-[#EFD957] border-t-transparent rounded-full mb-2" />
-            <p>Loading rules...</p>
+          <div className="animate-pulse space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="glass-panel rounded-xl px-5 py-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </div>
+                  <div className="h-7 w-14 bg-gray-200 dark:bg-gray-700 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : rules.length === 0 ? (
           <Card>

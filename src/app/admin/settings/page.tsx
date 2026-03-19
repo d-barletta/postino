@@ -136,7 +136,11 @@ export default function AdminSettingsPage() {
   models.forEach((m) => modelOptions.push({ value: m.id, label: `${m.name} (${m.id})` }));
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Loading settings...</div>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin h-8 w-8 border-4 border-[#EFD957] border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
   return (
