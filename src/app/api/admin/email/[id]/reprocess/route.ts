@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { processEmailWithRules, RuleForProcessing } from '@/lib/openrouter';
+import { processEmailWithAgent } from '@/lib/agent';
+import type { RuleForProcessing } from '@/lib/openrouter';
 
 async function verifyAdmin(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
@@ -67,7 +68,9 @@ export async function POST(
     // Detect whether the original body is HTML
     const isHtml = /<[a-z][\s\S]*>/i.test(originalBody);
 
-    const result = await processEmailWithRules(
+    const result = await processEmailWithAgent(
+      userId,
+      id,
       emailFrom,
       emailSubject,
       originalBody,

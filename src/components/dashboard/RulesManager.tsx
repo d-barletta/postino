@@ -5,22 +5,23 @@ import { useRules } from '@/hooks/useRules';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
 import { Label } from '@/components/ui/Label';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog';
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/Drawer';
 import { Separator } from '@/components/ui/Separator';
 import { formatDate } from '@/lib/utils';
-import { Plus, Filter, ChevronDown, ChevronRight, Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Filter, Pencil, Trash2, AlertCircle } from 'lucide-react';
 
 const DEFAULT_MAX_LENGTH = 1000;
 const MAX_RULE_NAME_LENGTH = 100;
@@ -52,7 +53,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [addDrawerOpen, setAddDrawerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -96,7 +97,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       );
       setNewRuleName(''); setNewRuleText('');
       setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
-      setShowNewFilters(false); setShowAddForm(false);
+      setShowNewFilters(false); setAddDrawerOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create rule');
     } finally {
@@ -158,132 +159,133 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
 
   return (
     <div className="space-y-6">
-      {/* Add Rule Card */}
-      <Card>
-        <CardHeader
-          className="cursor-pointer select-none"
-          onClick={() => setShowAddForm((v) => !v)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Plus className="h-4 w-4 text-[#a3891f] dark:text-[#f3df79]" />
-              <CardTitle>Add New Rule</CardTitle>
+      <Drawer open={addDrawerOpen} onOpenChange={(open) => { setAddDrawerOpen(open); if (!open) setError(''); }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add New Rule</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Create a new processing rule in a dedicated drawer.
+            </p>
+          </div>
+          <DrawerTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Add New Rule
+            </Button>
+          </DrawerTrigger>
+        </div>
+
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Add New Rule</DrawerTitle>
+            <DrawerDescription>
+              Give your rule a name and describe how you want Postino to process your emails.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-rule-name">
+                Rule Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="new-rule-name"
+                value={newRuleName}
+                onChange={(e) => setNewRuleName(e.target.value)}
+                placeholder="e.g. Newsletter Summarizer"
+                maxLength={MAX_RULE_NAME_LENGTH}
+              />
             </div>
-            {showAddForm ? (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-gray-400" />
+
+            <div className="space-y-1.5">
+              <Label htmlFor="new-rule-description">
+                Rule Description <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="new-rule-description"
+                value={newRuleText}
+                onChange={(e) => setNewRuleText(e.target.value)}
+                placeholder="Example: Summarize newsletters and remove promotional content. Keep only the key articles and links."
+                rows={3}
+                charCount={{ current: newRuleText.length, max: maxRuleLength }}
+              />
+            </div>
+
+            <div>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                onClick={() => setShowNewFilters((v) => !v)}
+              >
+                <Filter className="h-3.5 w-3.5" />
+                {showNewFilters ? 'Hide filters' : 'Add sender/subject/body filters (optional)'}
+              </button>
+            </div>
+
+            {showNewFilters && (
+              <div className="space-y-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.
+                </p>
+                <Input
+                  label="Sender contains"
+                  value={newMatchSender}
+                  onChange={(e) => setNewMatchSender(e.target.value)}
+                  placeholder="e.g. newsletter@example.com"
+                  maxLength={MAX_PATTERN_LENGTH}
+                />
+                <Input
+                  label="Subject contains"
+                  value={newMatchSubject}
+                  onChange={(e) => setNewMatchSubject(e.target.value)}
+                  placeholder="e.g. Weekly Digest"
+                  maxLength={MAX_PATTERN_LENGTH}
+                />
+                <Input
+                  label="Body contains"
+                  value={newMatchBody}
+                  onChange={(e) => setNewMatchBody(e.target.value)}
+                  placeholder="e.g. unsubscribe"
+                  maxLength={MAX_PATTERN_LENGTH}
+                />
+              </div>
+            )}
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {(newRuleName || newRuleText) && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setNewRuleName(''); setNewRuleText('');
+                  setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
+                  setShowNewFilters(false); setError('');
+                }}
+              >
+                Clear
+              </Button>
             )}
           </div>
-          {!showAddForm && (
-            <CardDescription className="mt-1">
-              Give your rule a name and describe how you want Postino to process your emails.
-            </CardDescription>
-          )}
-        </CardHeader>
 
-        {showAddForm && (
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="new-rule-name">
-                  Rule Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="new-rule-name"
-                  value={newRuleName}
-                  onChange={(e) => setNewRuleName(e.target.value)}
-                  placeholder="e.g. Newsletter Summarizer"
-                  maxLength={MAX_RULE_NAME_LENGTH}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="new-rule-description">
-                  Rule Description <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="new-rule-description"
-                  value={newRuleText}
-                  onChange={(e) => setNewRuleText(e.target.value)}
-                  placeholder="Example: Summarize newsletters and remove promotional content. Keep only the key articles and links."
-                  rows={3}
-                  charCount={{ current: newRuleText.length, max: maxRuleLength }}
-                />
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                  onClick={() => setShowNewFilters((v) => !v)}
-                >
-                  <Filter className="h-3.5 w-3.5" />
-                  {showNewFilters ? 'Hide filters' : 'Add sender/subject/body filters (optional)'}
-                </button>
-              </div>
-
-              {showNewFilters && (
-                <div className="space-y-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.
-                  </p>
-                  <Input
-                    label="Sender contains"
-                    value={newMatchSender}
-                    onChange={(e) => setNewMatchSender(e.target.value)}
-                    placeholder="e.g. newsletter@example.com"
-                    maxLength={MAX_PATTERN_LENGTH}
-                  />
-                  <Input
-                    label="Subject contains"
-                    value={newMatchSubject}
-                    onChange={(e) => setNewMatchSubject(e.target.value)}
-                    placeholder="e.g. Weekly Digest"
-                    maxLength={MAX_PATTERN_LENGTH}
-                  />
-                  <Input
-                    label="Body contains"
-                    value={newMatchBody}
-                    onChange={(e) => setNewMatchBody(e.target.value)}
-                    placeholder="e.g. unsubscribe"
-                    maxLength={MAX_PATTERN_LENGTH}
-                  />
-                </div>
-              )}
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="flex gap-2 pt-1">
-                <Button
-                  onClick={handleCreate}
-                  loading={submitting}
-                  disabled={!newRuleName.trim() || !newRuleText.trim() || newRuleText.length > maxRuleLength}
-                >
-                  Add Rule
-                </Button>
-                {(newRuleName || newRuleText) && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setNewRuleName(''); setNewRuleText('');
-                      setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
-                      setShowNewFilters(false); setError('');
-                    }}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
+          <DrawerFooter>
+            <Button variant="ghost" onClick={() => setAddDrawerOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              loading={submitting}
+              disabled={!newRuleName.trim() || !newRuleText.trim() || newRuleText.length > maxRuleLength}
+            >
+              Add Rule
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       {/* Rules list */}
       <div>
@@ -461,27 +463,27 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete rule</DialogTitle>
-            <DialogDescription>
+      {/* Delete Confirmation Drawer */}
+      <Drawer open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Delete rule</DrawerTitle>
+            <DrawerDescription>
               Are you sure you want to delete{' '}
               <span className="font-semibold text-gray-900 dark:text-gray-100">&ldquo;{deleteRuleName}&rdquo;</span>?
               This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter>
             <Button variant="ghost" onClick={() => setDeleteId(null)} disabled={deleting}>
               Cancel
             </Button>
             <Button variant="danger" onClick={handleDeleteConfirm} loading={deleting}>
               Delete rule
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

@@ -1,7 +1,71 @@
 import OpenAI from 'openai';
 import { jsonrepair } from 'jsonrepair';
+import * as cheerio from 'cheerio';
 import { adminDb } from './firebase-admin';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
+
+interface DomPatch {
+  selector: string;
+  operation: 'prepend' | 'append' | 'before' | 'after' | 'replace_content' | 'replace_element' | 'remove';
+  html: string;
+}
+
+function isDomPatch(value: unknown): value is DomPatch {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  const validOperation =
+    v.operation === 'prepend' ||
+    v.operation === 'append' ||
+    v.operation === 'before' ||
+    v.operation === 'after' ||
+    v.operation === 'replace_content' ||
+    v.operation === 'replace_element' ||
+    v.operation === 'remove';
+  return typeof v.selector === 'string' && validOperation && typeof v.html === 'string';
+}
+
+function applyDomPatches(html: string, patches: DomPatch[]): string {
+  if (patches.length === 0) return html;
+
+  const $ = cheerio.load(html, null, false);
+  for (const patch of patches) {
+    try {
+      const $el = $(patch.selector);
+      if ($el.length === 0) {
+        console.warn(`DOM patch: selector "${patch.selector}" matched no elements, skipping.`);
+        continue;
+      }
+
+      switch (patch.operation) {
+        case 'prepend':
+          $el.prepend(patch.html);
+          break;
+        case 'append':
+          $el.append(patch.html);
+          break;
+        case 'before':
+          $el.before(patch.html);
+          break;
+        case 'after':
+          $el.after(patch.html);
+          break;
+        case 'replace_content':
+          $el.html(patch.html);
+          break;
+        case 'replace_element':
+          $el.replaceWith(patch.html);
+          break;
+        case 'remove':
+          $el.remove();
+          break;
+      }
+    } catch (err) {
+      console.warn(`DOM patch failed for selector "${patch.selector}":`, err);
+    }
+  }
+
+  return $.html();
+}
 
 export interface ProcessEmailResult {
   subject: string;
@@ -42,7 +106,7 @@ export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: st
  * - Removes ASCII control characters
  * - Collapses runs of whitespace so multi-line injections are flattened
  */
-function sanitizeRule(rule: string): string {
+export function sanitizeRule(rule: string): string {
   return rule
     // Remove XML/HTML-like tags (e.g. </user_rules>, <system>, etc.)
     .replace(/<[^>]*>/g, '')
@@ -61,7 +125,7 @@ function sanitizeRule(rule: string): string {
  * - Removes ASCII control characters including CR / LF
  * - Collapses whitespace so multi-line injections are flattened into a single line
  */
-function sanitizeEmailField(value: string): string {
+export function sanitizeEmailField(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -78,7 +142,7 @@ function sanitizeEmailField(value: string): string {
  *   (e.g. prevents </user_rules> or <system> from being interpreted as delimiters)
  * - Removes non-printable control characters (preserves \t, \n, \r for readability)
  */
-function sanitizeEmailBody(body: string): string {
+export function sanitizeEmailBody(body: string): string {
   return body
     // Strip HTML tags so the LLM receives plain text, not raw markup
     .replace(/<[^>]*>/g, ' ')
@@ -110,7 +174,7 @@ function sanitizeEmailBody(body: string): string {
  * into the outgoing email template unescaped — sanitisation of rendered HTML is left
  * to the recipient's mail client, consistent with the rest of the forwarding pipeline.
  */
-function sanitizeHtmlBodyForPrompt(body: string): string {
+export function sanitizeHtmlBodyForPrompt(body: string): string {
   // Remove ASCII control characters (except \t \n \r)
   // eslint-disable-next-line no-control-regex
   let result = body.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
@@ -155,6 +219,12 @@ export async function processEmailWithRules(
   const maxTokens = (typeof settings?.llmMaxTokens === 'number' && settings.llmMaxTokens > 0)
     ? settings.llmMaxTokens
     : 4000;
+  const subjectPrefix =
+    typeof settings?.emailSubjectPrefix === 'string' && settings.emailSubjectPrefix.length > 0
+      ? settings.emailSubjectPrefix
+      : '[Postino]';
+  const buildFallbackSubject = (subjectValue: string) =>
+    subjectPrefix.trim().length > 0 ? `${subjectPrefix} ${subjectValue}`.trim() : subjectValue;
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
   const rulesText = activeRules.length > 0
@@ -172,15 +242,33 @@ ${rulesText}
     ? sanitizeHtmlBodyForPrompt(emailBody)
     : sanitizeEmailBody(emailBody);
 
-  const htmlInstruction = isHtml
-    ? '\nIMPORTANT: The email body below is the original HTML. Preserve ALL original HTML structure, inline styles, CSS classes, and images exactly as-is. Only apply the rule to the specific content it targets; do not rewrite or reformat any other part of the HTML.'
-    : '';
-
-  const userPrompt = `Process this incoming email:
+  const userPrompt = isHtml
+    ? `Process this incoming HTML email using surgical DOM patches.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-${htmlInstruction}
+
+IMPORTANT:
+- Preserve original HTML structure, inline styles, CSS classes, and images exactly as-is.
+- Prefer targeted DOM patches over full-body rewrites.
+- Only set requiresFullBodyReplacement=true when the rule requires translating or fully rewriting the whole message.
+
+BODY:
+${emailBodyForPrompt}
+
+Respond with JSON containing:
+- subject: string
+- requiresFullBodyReplacement: boolean
+- patches: array of patch objects, each with:
+  - selector: CSS selector
+  - operation: one of prepend|append|before|after|replace_content|replace_element|remove
+  - html: HTML snippet (empty string for remove)
+- replacementBody: full HTML only when requiresFullBodyReplacement=true`
+    : `Process this incoming email:
+
+FROM: ${sanitizeEmailField(emailFrom)}
+SUBJECT: ${sanitizeEmailField(emailSubject)}
+
 BODY:
 ${emailBodyForPrompt}
 
@@ -204,7 +292,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
   }
 
   const content = response.choices[0]?.message?.content || '{}';
-  let parsed: { subject?: string; body?: string };
+  let parsed: Record<string, unknown>;
   let parseError: string | undefined;
 
   try {
@@ -220,7 +308,26 @@ Respond with a JSON object containing: subject (processed subject line) and body
     parsed = {
       subject: `📬 ${emailSubject}`,
       body: emailBody,
+      requiresFullBodyReplacement: false,
+      patches: [],
+      replacementBody: '',
     };
+  }
+
+  const subject = typeof parsed.subject === 'string' ? parsed.subject : buildFallbackSubject(emailSubject);
+
+  let body: string;
+  if (isHtml) {
+    const requiresFullBodyReplacement = parsed.requiresFullBodyReplacement === true;
+    const patches = Array.isArray(parsed.patches) ? parsed.patches.filter(isDomPatch) : [];
+    const replacementBody =
+      typeof parsed.replacementBody === 'string' ? parsed.replacementBody : '';
+
+    body = !requiresFullBodyReplacement
+      ? applyDomPatches(emailBody, patches)
+      : (replacementBody || emailBody);
+  } else {
+    body = typeof parsed.body === 'string' ? parsed.body : emailBody;
   }
 
   const tokensUsed = response.usage?.total_tokens || 0;
@@ -228,8 +335,8 @@ Respond with a JSON object containing: subject (processed subject line) and body
   const estimatedCost = (tokensUsed / 1_000_000) * 0.30;
 
   return {
-    subject: parsed.subject || `[Postino] ${emailSubject}`,
-    body: parsed.body || emailBody,
+    subject,
+    body,
     tokensUsed,
     estimatedCost,
     ruleApplied: activeRules.length > 0

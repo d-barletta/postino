@@ -46,6 +46,7 @@ export interface Settings {
   llmApiKey: string;
   llmMaxTokens?: number;
   llmSystemPrompt?: string;
+  emailSubjectPrefix?: string;
   smtpHost: string;
   smtpPort: number;
   smtpUser: string;
@@ -83,4 +84,24 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+export interface EmailMemoryEntry {
+  /** ID of the corresponding emailLog document */
+  logId: string;
+  /** Date in YYYY-MM-DD format (UTC) */
+  date: string;
+  /** Full ISO timestamp */
+  timestamp: string;
+  fromAddress: string;
+  subject: string;
+  ruleApplied?: string;
+  wasSummarized: boolean;
+}
+
+export interface UserMemory {
+  userId: string;
+  /** Chronologically ordered memory entries (oldest first) */
+  entries: EmailMemoryEntry[];
+  updatedAt: Date;
 }
