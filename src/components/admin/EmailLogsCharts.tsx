@@ -89,7 +89,7 @@ export function EmailLogsCharts({ logs }: EmailLogsChartsProps) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <Card>
-        <Accordion type="single" collapsible defaultValue="status-distribution">
+        <Accordion type="single" defaultValue="status-distribution">
           <AccordionItem value="status-distribution" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               Status Distribution

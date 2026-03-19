@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
       {user?.assignedEmail && <AssignedEmailCard assignedEmail={user.assignedEmail} />}
       {userStats && <UserStatsCards stats={userStats} />}
-      {userStats && <UserOverviewCharts stats={userStats} />}
+      {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'rules' | 'emails')}>
         <TabsList>
