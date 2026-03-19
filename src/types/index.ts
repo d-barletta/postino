@@ -69,6 +69,7 @@ export interface Stats {
   totalEmailsReceived: number;
   totalEmailsForwarded: number;
   totalEmailsError: number;
+  totalEmailsSkipped: number;
   totalTokensUsed: number;
   totalEstimatedCost: number;
 }

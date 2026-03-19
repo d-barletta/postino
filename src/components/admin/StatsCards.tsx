@@ -12,6 +12,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
     { label: 'Emails Received', value: stats.totalEmailsReceived, color: 'text-blue-600 dark:text-blue-400' },
     { label: 'Emails Forwarded', value: stats.totalEmailsForwarded, color: 'text-purple-600 dark:text-purple-400' },
     { label: 'Emails Errored', value: stats.totalEmailsError, color: 'text-red-600 dark:text-red-400' },
+    { label: 'Emails Skipped', value: stats.totalEmailsSkipped, color: 'text-gray-500 dark:text-gray-400' },
     {
       label: 'Tokens Used',
       value: stats.totalTokensUsed.toLocaleString(),
