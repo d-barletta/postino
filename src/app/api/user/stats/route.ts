@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       totalEmailsReceived: logs.length,
       totalEmailsForwarded: logs.filter((l) => l.status === 'forwarded').length,
       totalEmailsError: logs.filter((l) => l.status === 'error').length,
+      totalEmailsSkipped: logs.filter((l) => l.status === 'skipped').length,
       totalTokensUsed: logs.reduce((sum, l) => sum + (l.tokensUsed || 0), 0),
       totalEstimatedCost: logs.reduce((sum, l) => sum + (l.estimatedCost || 0), 0),
     };
