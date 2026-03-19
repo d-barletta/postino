@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { processEmailWithRules, RuleForProcessing } from '@/lib/openrouter';
+import { processEmailWithAgent } from '@/lib/agent';
+import type { RuleForProcessing } from '@/lib/openrouter';
 import { sendEmail, verifyMailgunSignature, EmailAttachment } from '@/lib/email';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { DocumentReference } from 'firebase-admin/firestore';
@@ -186,7 +187,7 @@ export async function POST(request: NextRequest) {
         matchesPattern(emailBody, r.matchBody)
     );
 
-    const result = await processEmailWithRules(sender, subject, emailBody, matchingRules, bodyHtml !== '');
+    const result = await processEmailWithAgent(userId, logRef.id, sender, subject, emailBody, matchingRules, bodyHtml !== '');
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const originalEmailUrl = appUrl

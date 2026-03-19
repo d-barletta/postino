@@ -42,7 +42,7 @@ export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: st
  * - Removes ASCII control characters
  * - Collapses runs of whitespace so multi-line injections are flattened
  */
-function sanitizeRule(rule: string): string {
+export function sanitizeRule(rule: string): string {
   return rule
     // Remove XML/HTML-like tags (e.g. </user_rules>, <system>, etc.)
     .replace(/<[^>]*>/g, '')
@@ -61,7 +61,7 @@ function sanitizeRule(rule: string): string {
  * - Removes ASCII control characters including CR / LF
  * - Collapses whitespace so multi-line injections are flattened into a single line
  */
-function sanitizeEmailField(value: string): string {
+export function sanitizeEmailField(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -78,7 +78,7 @@ function sanitizeEmailField(value: string): string {
  *   (e.g. prevents </user_rules> or <system> from being interpreted as delimiters)
  * - Removes non-printable control characters (preserves \t, \n, \r for readability)
  */
-function sanitizeEmailBody(body: string): string {
+export function sanitizeEmailBody(body: string): string {
   return body
     // Strip HTML tags so the LLM receives plain text, not raw markup
     .replace(/<[^>]*>/g, ' ')
@@ -110,7 +110,7 @@ function sanitizeEmailBody(body: string): string {
  * into the outgoing email template unescaped — sanitisation of rendered HTML is left
  * to the recipient's mail client, consistent with the rest of the forwarding pipeline.
  */
-function sanitizeHtmlBodyForPrompt(body: string): string {
+export function sanitizeHtmlBodyForPrompt(body: string): string {
   // Remove ASCII control characters (except \t \n \r)
   // eslint-disable-next-line no-control-regex
   let result = body.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
