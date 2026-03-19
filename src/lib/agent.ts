@@ -423,7 +423,7 @@ ${isHtml ? 'The original HTML email structure will be preserved — use targeted
     ? `\nHTML STRUCTURE (top-level DOM outline for selector reference):\n${extractHtmlStructure(originalBody)}\n`
     : '';
 
-  const reducePrompt = `Apply the user rules to the following extracted email content.
+  const reducePrompt = `Apply the user rules to BOTH the SUBJECT line and the following extracted email content. For example, if a rule says to translate, translate the subject too.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
@@ -582,7 +582,7 @@ ${rulesText}
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
 
-Apply the user rules to the HTML email below. Prefer targeted DOM patches over a full body replacement — only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the entire content.
+Apply the user rules to BOTH the SUBJECT line and the HTML email body below. For example, if a rule says to translate, translate the subject too. Prefer targeted DOM patches over a full body replacement — only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the entire content.
 
 FULL EMAIL HTML:
 ${emailBodyForPrompt}`;
@@ -623,7 +623,7 @@ SUBJECT: ${sanitizeEmailField(emailSubject)}
 BODY:
 ${emailBodyForPrompt}
 
-Respond with a JSON object containing: subject (processed subject line) and body (processed email body in HTML format).`;
+Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a rule says to translate, translate the subject too. Respond with a JSON object containing: subject (processed subject line) and body (processed email body in HTML format).`;
 
       const { object, usage } = await generateObject({
         model: openrouterProvider(model),
