@@ -14,7 +14,7 @@ import type { EmailLog, UserStats } from '@/types';
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
-  const [activeTab, setActiveTab] = useState<'rules' | 'emails'>('rules');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'emails'>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsRefreshing, setLogsRefreshing] = useState(false);
@@ -112,21 +112,25 @@ export default function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your Postino address and email rules</p>
       </div>
 
-      {user?.assignedEmail && (
-        <AssignedEmailCard
-          assignedEmail={user.assignedEmail}
-          isAddressEnabled={user.isAddressEnabled !== false}
-          onToggle={handleAddressToggle}
-        />
-      )}
-      {userStats && <UserStatsCards stats={userStats} />}
-      {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
-
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'rules' | 'emails')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'emails')}>
         <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="rules">My Rules</TabsTrigger>
           <TabsTrigger value="emails">Email History</TabsTrigger>
         </TabsList>
+        <TabsContent value="overview">
+          <div className="space-y-6">
+            {user?.assignedEmail && (
+              <AssignedEmailCard
+                assignedEmail={user.assignedEmail}
+                isAddressEnabled={user.isAddressEnabled !== false}
+                onToggle={handleAddressToggle}
+              />
+            )}
+            {userStats && <UserStatsCards stats={userStats} />}
+            {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
+          </div>
+        </TabsContent>
         <TabsContent value="rules">
           <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
         </TabsContent>

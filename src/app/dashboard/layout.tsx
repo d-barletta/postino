@@ -39,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <nav className="glass-panel sticky top-0 z-10 border-b border-white/40 dark:border-white/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <PostinoLogo className="h-6 w-6" />
               <span className="font-bold text-gray-900">Postino</span>
             </Link>
