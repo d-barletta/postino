@@ -11,13 +11,13 @@ import { Switch } from '@/components/ui/Switch';
 import { Label } from '@/components/ui/Label';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog';
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/Drawer';
 import { Separator } from '@/components/ui/Separator';
 import { formatDate } from '@/lib/utils';
 import { Plus, Filter, ChevronDown, ChevronRight, Pencil, Trash2, AlertCircle } from 'lucide-react';
@@ -461,27 +461,27 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete rule</DialogTitle>
-            <DialogDescription>
+      {/* Delete Confirmation Drawer */}
+      <Drawer open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Delete rule</DrawerTitle>
+            <DrawerDescription>
               Are you sure you want to delete{' '}
               <span className="font-semibold text-gray-900 dark:text-gray-100">&ldquo;{deleteRuleName}&rdquo;</span>?
               This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter>
             <Button variant="ghost" onClick={() => setDeleteId(null)} disabled={deleting}>
               Cancel
             </Button>
             <Button variant="danger" onClick={handleDeleteConfirm} loading={deleting}>
               Delete rule
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

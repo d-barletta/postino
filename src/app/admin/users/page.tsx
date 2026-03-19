@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog';
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/Drawer';
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/types';
 
@@ -128,13 +128,13 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{confirmTitle}</DialogTitle>
-            <DialogDescription>{confirmDesc}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+      <Drawer open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{confirmTitle}</DrawerTitle>
+            <DrawerDescription>{confirmDesc}</DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter>
             <Button variant="ghost" onClick={() => setConfirmAction(null)} disabled={confirming}>
               Cancel
             </Button>
@@ -145,9 +145,9 @@ export default function AdminUsersPage() {
             >
               Confirm
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
