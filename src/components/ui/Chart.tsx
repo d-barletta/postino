@@ -41,7 +41,7 @@ function ChartContainer({ id, className, config, children, ...props }: ChartCont
         data-slot="chart"
         data-chart={resolvedId}
         className={cn(
-          'h-70 w-full',
+          'h-60 w-full sm:h-70',
           '[&_.recharts-cartesian-grid_line[stroke="#ccc"]]:stroke-gray-200',
           'dark:[&_.recharts-cartesian-grid_line[stroke="#ccc"]]:stroke-gray-700',
           '[&_.recharts-legend-item-text]:text-gray-600 dark:[&_.recharts-legend-item-text]:text-gray-300',
