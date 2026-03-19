@@ -742,19 +742,34 @@ export async function processEmailWithAgent(
   const rulesToProcess: Array<RuleForProcessing | null> =
     activeRules.length > 0 ? activeRules : [null];
 
-  for (const rule of rulesToProcess) {
+  for (let passIndex = 0; passIndex < rulesToProcess.length; passIndex++) {
+    const rule = rulesToProcess[passIndex];
+
+    // For passes after the first, extend the base prompt so the LLM knows
+    // the email content has already been transformed by earlier rules and
+    // must not be reverted to its original form.
+    const systemPromptBase =
+      passIndex > 0
+        ? `${basePrompt}\n\nIMPORTANT: The email content shown below has already been processed and modified by previous rules. You MUST preserve those prior transformations — do not revert or ignore them. Apply only the current rule on top of the already-modified content.`
+        : basePrompt;
+
+    // For passes after the first, use the current (already-modified) subject
+    // as the fallback so that a failed or empty LLM response does not silently
+    // discard subject changes made by earlier rule passes.
+    const currentFallbackSubject = passIndex > 0 ? currentSubject : fallbackSubject;
+
     const pass = await runSingleRulePass(
       rule,
       emailFrom,
       currentSubject,
       currentBody,
       currentIsHtml,
-      basePrompt,
+      systemPromptBase,
       memorySection,
       openrouter,
       model,
       maxTokens,
-      fallbackSubject,
+      currentFallbackSubject,
     );
 
     currentSubject = pass.subject;

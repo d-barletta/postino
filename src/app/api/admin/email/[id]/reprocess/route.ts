@@ -48,14 +48,23 @@ export async function POST(
       .where('isActive', '==', true)
       .get();
 
-    const allRules = rulesSnap.docs.map((d) => ({
-      id: d.id,
-      name: (d.data().name as string) || d.id,
-      text: d.data().text as string,
-      matchSender: (d.data().matchSender as string) || '',
-      matchSubject: (d.data().matchSubject as string) || '',
-      matchBody: (d.data().matchBody as string) || '',
-    }));
+    // Sort rules by sortOrder ASC (user-defined), then by createdAt ASC as tiebreaker,
+    // so rules are always applied in a deterministic order that matches what the user sees.
+    const allRules = rulesSnap.docs
+      .sort((a, b) => {
+        const aOrder = typeof a.data().sortOrder === 'number' ? a.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        const bOrder = typeof b.data().sortOrder === 'number' ? b.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
+      })
+      .map((d) => ({
+        id: d.id,
+        name: (d.data().name as string) || d.id,
+        text: d.data().text as string,
+        matchSender: (d.data().matchSender as string) || '',
+        matchSubject: (d.data().matchSubject as string) || '',
+        matchBody: (d.data().matchBody as string) || '',
+      }));
 
     // Filter rules by pattern matching (same logic as the inbound route)
     const matchingRules: RuleForProcessing[] = allRules.filter(

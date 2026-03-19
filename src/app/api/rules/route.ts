@@ -16,15 +16,23 @@ export async function GET(request: NextRequest) {
     const snap = await db
       .collection('rules')
       .where('userId', '==', decoded.uid)
-      .orderBy('createdAt', 'desc')
       .get();
 
-    const rules = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
-      updatedAt: d.data().updatedAt?.toDate?.()?.toISOString() ?? null,
-    }));
+    // Sort rules by sortOrder ASC (user-defined), then by createdAt ASC as tiebreaker.
+    // This keeps the display order consistent with processing order.
+    const rules = snap.docs
+      .sort((a, b) => {
+        const aOrder = typeof a.data().sortOrder === 'number' ? a.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        const bOrder = typeof b.data().sortOrder === 'number' ? b.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
+      })
+      .map((d) => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
+        updatedAt: d.data().updatedAt?.toDate?.()?.toISOString() ?? null,
+      }));
 
     return NextResponse.json({ rules });
   } catch {

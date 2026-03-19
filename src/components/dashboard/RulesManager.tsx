@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/Drawer';
 import { Separator } from '@/components/ui/Separator';
 import { formatDate } from '@/lib/utils';
-import { Plus, Filter, Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Filter, Pencil, Trash2, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 
 const DEFAULT_MAX_LENGTH = 1000;
 const MAX_RULE_NAME_LENGTH = 100;
@@ -33,7 +33,7 @@ interface RulesManagerProps {
 }
 
 export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }: RulesManagerProps) {
-  const { rules, loading, createRule, updateRule, deleteRule } = useRules();
+  const { rules, loading, createRule, updateRule, deleteRule, reorderRules } = useRules();
 
   const [newRuleName, setNewRuleName] = useState('');
   const [newRuleText, setNewRuleText] = useState('');
@@ -52,6 +52,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
   const [addDrawerOpen, setAddDrawerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -140,6 +141,19 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
     setDeleting(true);
     try { await deleteRule(deleteId); }
     finally { setDeleting(false); setDeleteId(null); }
+  };
+
+  const moveRule = async (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= rules.length) return;
+    const newOrder = [...rules];
+    [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
+    setReordering(true);
+    try {
+      await reorderRules(newOrder.map((r) => r.id));
+    } finally {
+      setReordering(false);
+    }
   };
 
   const startEditing = (id: string) => {
@@ -290,12 +304,19 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       {/* Rules list */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Your Rules{' '}
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-              ({rules.filter((r) => r.isActive).length} active)
-            </span>
-          </h2>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Your Rules{' '}
+              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                ({rules.filter((r) => r.isActive).length} active)
+              </span>
+            </h2>
+            {rules.length > 1 && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                Rules are applied top to bottom. Use the arrows to change the order.
+              </p>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -323,7 +344,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
           </Card>
         ) : (
           <div className="space-y-3">
-            {rules.map((rule) => (
+            {rules.map((rule, index) => (
               <div key={rule.id} ref={rule.id === editingId ? editRuleRef : undefined}>
                 <Card className={!rule.isActive ? 'opacity-60' : ''}>
                   <CardContent className="py-4">
@@ -410,6 +431,11 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
+                            {rules.length > 1 && (
+                              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0" title="Processing order">
+                                {index + 1}
+                              </span>
+                            )}
                             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{rule.name}</p>
                             <Badge variant={rule.isActive ? 'success' : 'default'}>
                               {rule.isActive ? 'Active' : 'Disabled'}
@@ -449,6 +475,29 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                             <Label htmlFor={`toggle-${rule.id}`} className="text-xs cursor-pointer">
                               {rule.isActive ? 'Active' : 'Disabled'}
                             </Label>
+                          </div>
+                          <Separator className="hidden sm:block" />
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => moveRule(index, 'up')}
+                              disabled={index === 0 || reordering}
+                              title="Move rule up"
+                              className="px-1.5"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => moveRule(index, 'down')}
+                              disabled={index === rules.length - 1 || reordering}
+                              title="Move rule down"
+                              className="px-1.5"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
                           </div>
                           <Separator className="hidden sm:block" />
                           <div className="flex items-center gap-1.5">
