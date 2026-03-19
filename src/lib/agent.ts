@@ -657,7 +657,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
     console.error('Agent LLM request failed:', message);
     // Fall back to forwarding as-is
     parseError = `LLM request failed: ${message}; email forwarded as-is`;
-    subject = `📬 ${emailSubject}`;
+    subject = `[Postino] ${emailSubject}`;
     body = emailBody;
   }
 
