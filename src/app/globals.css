@@ -97,14 +97,24 @@ textarea::placeholder {
 
 .glass-panel {
   background-color: rgb(255 255 255 / 0.68);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border: 1px solid rgb(255 255 255 / 0.45);
 }
 
 .dark .glass-panel {
   background-color: rgb(17 24 39 / 0.58);
   border-color: rgb(255 255 255 / 0.12);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-panel {
+    background-color: rgb(255 255 255 / 0.9);
+  }
+
+  .dark .glass-panel {
+    background-color: rgb(17 24 39 / 0.86);
+  }
 }
 
 @keyframes fade-up {
@@ -163,6 +173,111 @@ textarea::placeholder {
 .animated-gradient-text {
   background-size: 200% 200%;
   animation: gradient-shift 4.8s ease-in-out infinite;
+}
+
+.home-tree-lines {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* .home-tree-lines::before, */
+.home-tree-lines::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* .home-tree-lines::before {
+  background:
+    repeating-linear-gradient(
+      72deg,
+      rgb(34 48 78 / 14%) 0px,
+      rgb(34 48 78 / 14%) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      108deg,
+      rgb(34 48 78 / 10%) 0px,
+      rgb(34 48 78 / 10%) 1px,
+      transparent 1px,
+      transparent 30px
+    );
+  transform-origin: center;
+  opacity: 0.6;
+  animation: tree-lines-float 5s ease-in-out infinite alternate;
+} */
+
+.home-tree-lines::after {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgb(214 192 67 / 12%) 0px,
+      rgb(214 192 67 / 12%) 1px,
+      transparent 1px,
+      transparent 42px
+    );
+  mix-blend-mode: normal;
+  opacity: 0.6;
+  animation: tree-lines-drift 10s ease-in-out infinite alternate;
+}
+
+.home-tree-lines > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .home-tree-lines::before {
+  background:
+    repeating-linear-gradient(
+      72deg,
+      rgb(181 205 255 / 16%) 0px,
+      rgb(181 205 255 / 16%) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    repeating-linear-gradient(
+      108deg,
+      rgb(181 205 255 / 11%) 0px,
+      rgb(181 205 255 / 11%) 1px,
+      transparent 1px,
+      transparent 30px
+    );
+  opacity: 0.88;
+}
+
+.dark .home-tree-lines::after {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgb(239 217 87 / 15%) 0px,
+      rgb(239 217 87 / 15%) 1px,
+      transparent 1px,
+      transparent 42px
+    );
+  mix-blend-mode: normal;
+  opacity: 0.46;
+}
+
+@keyframes tree-lines-float {
+  0% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(1.5%, 1%, 0) scale(1.03);
+  }
+}
+
+@keyframes tree-lines-drift {
+  0% {
+    transform: translateX(-2%);
+  }
+  100% {
+    transform: translateX(2%);
+  }
 }
 
 /*
@@ -232,5 +347,10 @@ textarea::placeholder {
 
   .looping-hero-word:not(:first-child) {
     display: none;
+  }
+
+  .home-tree-lines::before,
+  .home-tree-lines::after {
+    animation: none !important;
   }
 }
