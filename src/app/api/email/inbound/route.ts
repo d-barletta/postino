@@ -186,14 +186,14 @@ export async function POST(request: NextRequest) {
       .where('isActive', '==', true)
       .get();
 
-    // Sort rules by creation time (ascending) so the first rule the user
-    // created is always applied first — this matches user intuition and
-    // produces a deterministic, predictable processing order.
+    // Sort rules by sortOrder ASC (user-defined), then by createdAt ASC as tiebreaker,
+    // so rules are always applied in a deterministic order that matches what the user sees.
     const allRules = rulesSnap.docs
       .sort((a, b) => {
-        const ta = a.data().createdAt?.toMillis?.() ?? 0;
-        const tb = b.data().createdAt?.toMillis?.() ?? 0;
-        return ta - tb;
+        const aOrder = typeof a.data().sortOrder === 'number' ? a.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        const bOrder = typeof b.data().sortOrder === 'number' ? b.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
       })
       .map((d) => ({
         id: d.id,

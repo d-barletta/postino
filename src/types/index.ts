@@ -20,6 +20,8 @@ export interface Rule {
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
+  /** Optional explicit ordering position. Lower values run first. Defaults to creation order. */
+  sortOrder?: number;
 }
 
 export type EmailStatus = 'received' | 'processing' | 'forwarded' | 'error' | 'skipped';

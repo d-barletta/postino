@@ -84,5 +84,20 @@ export function useRules() {
     await fetchRules();
   };
 
-  return { rules, loading, error, createRule, updateRule, deleteRule, refetch: fetchRules };
+  const reorderRules = async (orderedIds: string[]) => {
+    if (!firebaseUser) return;
+    const token = await firebaseUser.getIdToken();
+    const res = await fetch('/api/rules/reorder', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderedIds }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Failed to reorder rules: ${res.status} ${res.statusText}`);
+    }
+    await fetchRules();
+  };
+
+  return { rules, loading, error, createRule, updateRule, deleteRule, reorderRules, refetch: fetchRules };
 }
