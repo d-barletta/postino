@@ -53,6 +53,22 @@ export function useRules() {
     await fetchRules();
   };
 
+  // Fetches rules in the background without triggering the loading skeleton.
+  const silentFetch = useCallback(async () => {
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/rules', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setRules(data.rules || []);
+    } catch {
+      // Silent — optimistic state is still shown
+    }
+  }, [firebaseUser]);
+
   const updateRule = async (
     id: string,
     name: string,
@@ -63,14 +79,36 @@ export function useRules() {
     matchBody?: string
   ) => {
     if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
-    const res = await fetch(`/api/rules/${id}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, text, isActive, matchSender, matchSubject, matchBody }),
-    });
-    if (!res.ok) throw new Error('Failed to update rule');
-    await fetchRules();
+    const previousRules = rules;
+    // Optimistic update
+    setRules((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              name,
+              text,
+              isActive,
+              matchSender: matchSender ?? r.matchSender,
+              matchSubject: matchSubject ?? r.matchSubject,
+              matchBody: matchBody ?? r.matchBody,
+            }
+          : r
+      )
+    );
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`/api/rules/${id}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, text, isActive, matchSender, matchSubject, matchBody }),
+      });
+      if (!res.ok) throw new Error('Failed to update rule');
+      await silentFetch();
+    } catch (err) {
+      setRules(previousRules);
+      throw err;
+    }
   };
 
   const deleteRule = async (id: string) => {
@@ -86,17 +124,26 @@ export function useRules() {
 
   const reorderRules = async (orderedIds: string[]) => {
     if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
-    const res = await fetch('/api/rules/reorder', {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderedIds }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || `Failed to reorder rules: ${res.status} ${res.statusText}`);
+    const previousRules = rules;
+    // Optimistic reorder
+    const reordered = orderedIds.map((id) => rules.find((r) => r.id === id)).filter(Boolean) as Rule[];
+    setRules(reordered);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/rules/reorder', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to reorder rules: ${res.status} ${res.statusText}`);
+      }
+      await silentFetch();
+    } catch (err) {
+      setRules(previousRules);
+      throw err;
     }
-    await fetchRules();
   };
 
   return { rules, loading, error, createRule, updateRule, deleteRule, reorderRules, refetch: fetchRules };
