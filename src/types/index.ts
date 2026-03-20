@@ -102,6 +102,10 @@ export interface EmailMemoryEntry {
   subject: string;
   ruleApplied?: string;
   wasSummarized: boolean;
+  /** AI-generated 1-2 sentence summary of the email content. */
+  summary?: string;
+  /** Classified type of the email (newsletter, transactional, promotional, personal, notification, automated, other). */
+  emailType?: string;
 }
 
 export interface UserMemory {

@@ -63,6 +63,19 @@ const CHUNK_SIZE_CHARS = 15_000;
 const CHUNK_EXTRACT_MAX_TOKENS = 600;
 
 /**
+ * Maximum output tokens for the pre-analysis classification call.
+ * The schema is small so a tight budget is sufficient.
+ */
+const ANALYSIS_MAX_TOKENS = 300;
+
+/**
+ * Maximum characters of the email body passed to the pre-analysis call.
+ * The first ~2 000 tokens is more than enough to classify an email and
+ * generate a short summary — no need to send the full body.
+ */
+const BODY_ANALYSIS_MAX_CHARS = 8_000;
+
+/**
  * Maximum characters to include from a raw chunk when the LLM extraction call
  * for that chunk fails.  Kept short so the reduce phase still has a usable
  * (if unprocessed) excerpt rather than an oversized raw fragment.
@@ -168,15 +181,25 @@ export function buildMemoryContext(entries: EmailMemoryEntry[], senderEmail: str
     const details = todayEntries
       .map((e) => {
         const time = e.timestamp.slice(11, 16); // HH:MM
+        const type = e.emailType ? ` [${e.emailType}]` : '';
+        const summary = e.summary ? ` — ${e.summary}` : '';
         const rule = e.ruleApplied ? ` (rule: "${e.ruleApplied}")` : '';
-        return `  - ${time} UTC: "${e.subject}"${rule}`;
+        return `  - ${time} UTC: "${e.subject}"${type}${summary}${rule}`;
       })
       .join('\n');
     lines.push(`Today (${today}): ${todayEntries.length} email(s) received\n${details}`);
   }
 
   if (yesterdayEntries.length > 0) {
-    lines.push(`Yesterday: ${yesterdayEntries.length} email(s) received`);
+    const details = yesterdayEntries
+      .map((e) => {
+        const type = e.emailType ? ` [${e.emailType}]` : '';
+        const summary = e.summary ? ` — ${e.summary}` : '';
+        const rule = e.ruleApplied ? ` (rule: "${e.ruleApplied}")` : '';
+        return `  - "${e.subject}"${type}${summary}${rule}`;
+      })
+      .join('\n');
+    lines.push(`Yesterday: ${yesterdayEntries.length} email(s) received\n${details}`);
   }
 
   if (olderCount > 0) {
@@ -294,6 +317,124 @@ function extractHtmlStructure(html: string): string {
     });
   });
   return lines.length > 0 ? lines.join('\n') : '(no structured elements found)';
+}
+
+// ---------------------------------------------------------------------------
+// Pre-analysis (email classification + summarisation)
+// ---------------------------------------------------------------------------
+
+/**
+ * Zod schema for the lightweight pre-analysis pass that runs before rule application.
+ * Kept intentionally minimal so the LLM can respond quickly with a small token budget.
+ */
+const emailAnalysisSchema = z.object({
+  emailType: z.enum([
+    'newsletter',
+    'transactional',
+    'promotional',
+    'personal',
+    'notification',
+    'automated',
+    'other',
+  ]).describe('The primary category of this email'),
+  summary: z.string().describe(
+    'A 1-2 sentence summary of what this email is about. Focus on the actual content, not the metadata.'
+  ),
+  topics: z.array(z.string()).max(3).describe('Up to 3 key topics or themes mentioned in the email'),
+  hasActionItems: z.boolean().describe(
+    'True if this email requests or requires action from the recipient (e.g. click, reply, verify, purchase)'
+  ),
+  isUrgent: z.boolean().describe(
+    'True if this email is explicitly marked as urgent or time-sensitive'
+  ),
+});
+
+type EmailAnalysis = z.infer<typeof emailAnalysisSchema>;
+
+/** Returned by `preAnalyzeEmail`; groups the analysis result with its token costs. */
+interface PreAnalysisResult {
+  analysis: EmailAnalysis | null;
+  tokensUsed: number;
+  promptTokens: number;
+  completionTokens: number;
+}
+
+/**
+ * Lightweight pre-analysis pass: classifies the email and generates a short content
+ * summary before the heavier rule-application passes run.
+ *
+ * The result is used to:
+ *   1. Inject an `<email_analysis>` context block into each rule-application system prompt.
+ *   2. Persist a content summary in the user's memory so future processing has richer
+ *      history context (not just timestamps and subjects).
+ *
+ * Failures are soft-caught; a `null` result means the main processing continues
+ * without the analysis context rather than aborting entirely.
+ */
+async function preAnalyzeEmail(
+  emailFrom: string,
+  emailSubject: string,
+  emailBody: string,
+  isHtml: boolean,
+  openrouterProvider: ReturnType<typeof createOpenAI>,
+  model: string,
+): Promise<PreAnalysisResult> {
+  // Use only an excerpt of the body — full content is not needed for classification.
+  const bodyExcerpt = isHtml
+    ? stripHtmlForChunking(emailBody).slice(0, BODY_ANALYSIS_MAX_CHARS)
+    : emailBody.slice(0, BODY_ANALYSIS_MAX_CHARS);
+
+  try {
+    const { object, usage } = await generateObject({
+      model: openrouterProvider(model),
+      schema: emailAnalysisSchema,
+      system:
+        'You are an email classifier. Analyze the email excerpt and return a concise structured classification. Be brief and accurate.',
+      prompt: `Classify and summarize this email:
+
+FROM: ${sanitizeEmailField(emailFrom)}
+SUBJECT: ${sanitizeEmailField(emailSubject)}
+
+BODY (excerpt):
+${bodyExcerpt}`,
+      maxOutputTokens: ANALYSIS_MAX_TOKENS,
+    });
+
+    return {
+      analysis: object,
+      tokensUsed: usage?.totalTokens ?? 0,
+      promptTokens: usage?.inputTokens ?? 0,
+      completionTokens: usage?.outputTokens ?? 0,
+    };
+  } catch (err) {
+    console.warn('Email pre-analysis failed, continuing without analysis context:', err);
+    return { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
+  }
+}
+
+/**
+ * Formats an `EmailAnalysis` result as an XML-fenced context block for injection
+ * into the LLM system prompt.  Returns an empty string when `analysis` is null.
+ */
+function buildAnalysisSection(analysis: EmailAnalysis | null): string {
+  // No analysis available (pre-analysis call failed or was skipped); return empty string
+  // so the context section is simply omitted from the system prompt without breaking anything.
+  if (!analysis) return '';
+
+  const lines = [
+    `<email_analysis>`,
+    `Type: ${analysis.emailType}`,
+    `Summary: ${analysis.summary}`,
+  ];
+
+  if (analysis.topics.length > 0) {
+    lines.push(`Topics: ${analysis.topics.join(', ')}`);
+  }
+  lines.push(`Has action items: ${analysis.hasActionItems ? 'Yes' : 'No'}`);
+  lines.push(`Is urgent: ${analysis.isUrgent ? 'Yes' : 'No'}`);
+  lines.push(`</email_analysis>`);
+
+  return `\n\n${lines.join('\n')}`;
 }
 
 /**
@@ -658,6 +799,13 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
  * memory as additional context so the LLM can honour rules that depend on
  * prior history (e.g. "already received a newsletter today — summarize it").
  *
+ * Before applying user rules the agent runs a lightweight pre-analysis pass
+ * that classifies the email type and generates a short content summary.  The
+ * classification is injected into each rule-application system prompt as an
+ * `<email_analysis>` block, giving the LLM richer context for decision-making.
+ * The summary is also persisted in the user's memory so future processing has
+ * richer history context (not just timestamps and subjects).
+ *
  * When multiple rules match the email they are applied **sequentially**: the
  * output of each rule pass (subject + body) becomes the input for the next.
  * This ensures every rule is fully applied rather than relying on the LLM to
@@ -707,14 +855,7 @@ export async function processEmailWithAgent(
     subjectPrefix.trim().length > 0 ? `${subjectPrefix} ${subjectValue}`.trim() : subjectValue;
   const fallbackSubject = buildFallbackSubject(emailSubject);
 
-  // 2. Load user memory and build context
-  const memory = await getUserMemory(userId);
-  const memoryContext = buildMemoryContext(memory.entries, emailFrom);
-  const memorySection = memoryContext
-    ? `\n\n<email_history>\n${memoryContext}\n</email_history>`
-    : '';
-
-  // 3. Create OpenRouter provider via Vercel AI SDK
+  // 2. Create OpenRouter provider via Vercel AI SDK
   const openrouter = createOpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey,
@@ -724,7 +865,28 @@ export async function processEmailWithAgent(
     },
   });
 
-  // 4. Apply each rule sequentially so that the output of rule N becomes the
+  // 3. Run pre-analysis and load user memory in parallel — neither depends on
+  //    the other, so launching both concurrently reduces overall latency.
+  const [
+    { analysis, tokensUsed: analysisTotalTokens, promptTokens: analysisPromptTokens, completionTokens: analysisCompletionTokens },
+    memory,
+  ] = await Promise.all([
+    preAnalyzeEmail(emailFrom, emailSubject, emailBody, isHtml, openrouter, model),
+    getUserMemory(userId),
+  ]);
+
+  // 4. Build context sections for rule-application prompts.
+  const memoryContext = buildMemoryContext(memory.entries, emailFrom);
+  const memorySection = memoryContext
+    ? `\n\n<email_history>\n${memoryContext}\n</email_history>`
+    : '';
+
+  // Combine pre-analysis and memory history into a single context block that
+  // is appended to the system prompt for every rule-application pass.
+  const analysisSection = buildAnalysisSection(analysis);
+  const contextSection = `${analysisSection}${memorySection}`;
+
+  // 5. Apply each rule sequentially so that the output of rule N becomes the
   //    input for rule N+1.  This guarantees every rule is fully honoured
   //    instead of competing for attention in a single prompt.
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
@@ -732,9 +894,9 @@ export async function processEmailWithAgent(
   let currentSubject = emailSubject;
   let currentBody = emailBody;
   let currentIsHtml = isHtml;
-  let totalTokensUsed = 0;
-  let totalPromptTokens = 0;
-  let totalCompletionTokens = 0;
+  let totalTokensUsed = analysisTotalTokens;
+  let totalPromptTokens = analysisPromptTokens;
+  let totalCompletionTokens = analysisCompletionTokens;
   let lastParseError: string | undefined;
 
   // Determine which rules to iterate — use a [null] sentinel when there are
@@ -765,7 +927,7 @@ export async function processEmailWithAgent(
       currentBody,
       currentIsHtml,
       systemPromptBase,
-      memorySection,
+      contextSection,
       openrouter,
       model,
       maxTokens,
@@ -785,14 +947,14 @@ export async function processEmailWithAgent(
     if (pass.parseError) lastParseError = pass.parseError;
   }
 
-  // 5. Calculate aggregate cost across all rule passes
+  // 6. Calculate aggregate cost across all passes (pre-analysis + rule passes)
   const pricing = await getModelPricing(model, apiKey);
   const estimatedCost = calculateCost(totalPromptTokens, totalCompletionTokens, pricing);
 
   const ruleApplied =
     activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';
 
-  // 6. Update user memory (fire-and-forget; don't block the response)
+  // 7. Update user memory with enriched entry (fire-and-forget; don't block the response)
   const newEntry: EmailMemoryEntry = {
     logId,
     date: todayUtc(),
@@ -801,6 +963,9 @@ export async function processEmailWithAgent(
     subject: emailSubject,
     ruleApplied: activeRules.length > 0 ? ruleApplied : undefined,
     wasSummarized: !lastParseError && activeRules.length > 0,
+    // Persist analysis results so future memory context is richer
+    ...(analysis?.summary ? { summary: analysis.summary } : {}),
+    ...(analysis?.emailType ? { emailType: analysis.emailType } : {}),
   };
 
   saveUserMemory({
