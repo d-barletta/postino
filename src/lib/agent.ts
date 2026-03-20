@@ -237,13 +237,22 @@ interface DomPatch {
   operation: 'prepend' | 'append' | 'before' | 'after' | 'replace_content' | 'replace_element' | 'remove';
   /** HTML content for the operation; empty string for 'remove'. */
   html: string;
+  /**
+   * 0-based index of the matched element to operate on when the selector
+   * matches more than one element.  Defaults to 0 (first match).
+   * Use this when you cannot write a fully unique CSS selector and need to
+   * target, say, the second `<tr>` in a table or the third `<p>` in a section.
+   */
+  targetIndex?: number;
 }
 
 /** Zod schema for a single DOM patch — shared by both the standard and map-reduce LLM call schemas. */
 const domPatchSchema = z.object({
   selector: z.string().describe(
-    'CSS selector targeting the element(s) to modify, e.g. "body", "h1", ".article", "#preview". ' +
-    'Use the most specific selector inferrable from the HTML structure.'
+    'CSS selector for the element to modify. MUST be as specific as possible to match exactly one element. ' +
+    'Prefer: element ID (#id), child combinator (parent > child), attribute selectors ([data-x="y"]), ' +
+    'or :nth-of-type(n) pseudo-class over generic tag names like "p", "td", "div", "span". ' +
+    'AVOID broad selectors that would match many elements unintentionally.'
   ),
   operation: z.enum([
     'prepend',         // insert as first child
@@ -253,25 +262,59 @@ const domPatchSchema = z.object({
     'replace_content', // replace innerHTML
     'replace_element', // replace outerHTML
     'remove',          // remove the element entirely
-  ]).describe('DOM operation to apply to the matched element(s)'),
+  ]).describe('DOM operation to apply to the targeted element'),
   html: z.string().describe('HTML to inject. Use an empty string for "remove".'),
+  targetIndex: z.number().int().min(0).optional().describe(
+    'Optional 0-based index used when the selector inevitably matches multiple elements. ' +
+    'The operation is applied only to the element at this index. Defaults to 0 (first match). ' +
+    'Use this as a fallback when a perfectly unique selector cannot be written.'
+  ),
 });
 
 /**
  * Applies a list of DOM patch operations to an HTML document using Cheerio.
- * Patches that match no elements are skipped with a warning; individual patch
- * errors are caught so a bad selector cannot abort the whole operation.
+ *
+ * Safety guarantees:
+ *  - Patches that match no elements are skipped with a warning.
+ *  - When a selector matches more than one element the operation is applied
+ *    only to the element at `patch.targetIndex` (defaults to 0, i.e. first
+ *    match). A warning is logged so broad/ambiguous selectors are visible.
+ *  - Individual patch errors are caught so a bad selector cannot abort the
+ *    entire operation.
  */
 function applyDomPatches(html: string, patches: DomPatch[]): string {
   if (patches.length === 0) return html;
   const $ = cheerio.load(html, null, false);
   for (const patch of patches) {
     try {
-      const $el = $(patch.selector);
-      if ($el.length === 0) {
+      const $all = $(patch.selector);
+      if ($all.length === 0) {
         console.warn(`DOM patch: selector "${patch.selector}" matched no elements, skipping.`);
         continue;
       }
+
+      // Resolve the single target element.
+      // When the selector matches multiple elements we warn and narrow to a
+      // single one using targetIndex (default 0) so that operations like
+      // replace_content or remove don't accidentally affect every match.
+      let $el = $all;
+      if ($all.length > 1) {
+        const targetIdx = typeof patch.targetIndex === 'number' ? patch.targetIndex : 0;
+        const safeIdx = Math.min(targetIdx, $all.length - 1);
+        if (safeIdx !== targetIdx) {
+          console.warn(
+            `DOM patch: targetIndex ${targetIdx} out of bounds for selector "${patch.selector}" ` +
+            `(matched ${$all.length}), clamping to ${safeIdx}.`
+          );
+        } else {
+          console.warn(
+            `DOM patch: selector "${patch.selector}" matched ${$all.length} elements; ` +
+            `applying "${patch.operation}" to element at index ${safeIdx} only.`
+          );
+        }
+        $el = $all.eq(safeIdx);
+      }
+
       switch (patch.operation) {
         case 'prepend':          $el.prepend(patch.html);      break;
         case 'append':           $el.append(patch.html);       break;
@@ -289,33 +332,132 @@ function applyDomPatches(html: string, patches: DomPatch[]): string {
 }
 
 /**
- * Extracts a concise two-level structural outline of the HTML document body:
- * tag names, IDs and up to 3 CSS classes per element.
+ * Extracts a rich structural outline of the HTML document body (up to 3 levels
+ * deep) with enough detail for the LLM to construct unique, targeted CSS selectors.
  *
- * Passed to the map-reduce reduce phase so the LLM can propose meaningful CSS
- * selectors for DOM patches without needing to read all of the email content.
+ * For each element the output shows:
+ *  - Tag name, ID (if any), first 2 CSS classes
+ *  - [n/total] positional label when sibling elements share the same tag name,
+ *    so the LLM knows to use `:nth-of-type(n)` or `targetIndex`
+ *  - A short text preview (≤ 60 chars of direct text) to help identify elements
+ *    by their visible content
+ *
+ * Passed to the LLM so it can propose meaningful, unique CSS selectors for DOM
+ * patches without needing to read the full email content.
  */
 function extractHtmlStructure(html: string): string {
+  // isDocument=false puts cheerio into fragment mode: html/body wrappers are
+  // stripped, so top-level content elements are direct children of $.root().
+  // This matches how email bodies arrive (HTML fragment, not a full document).
   const $ = cheerio.load(html, null, false);
+
+  /** Returns "tag[#id][.class1][.class2]" label for an element. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function label(el: any): string {
+    const id  = el.attribs?.id ? `#${el.attribs.id}` : '';
+    const cls = (el.attribs?.class ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((c: string) => `.${c}`).join('');
+    return `${el.name}${id}${cls}`;
+  }
+
+  /**
+   * Returns first ≤60 chars of text content.  First tries direct text nodes;
+   * if those are empty (e.g. a `<tr>` whose text lives in child `<td>`s) falls
+   * back to the element's full descendant text so the preview is never blank
+   * for elements with visible content.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function textSnippet(el: any): string {
+    // Direct text nodes first
+    const direct = $(el)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .contents().filter((_: number, n: any) => n.type === 'text')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((_: number, n: any) => (n.data as string).replace(/\s+/g, ' ').trim())
+      .get()
+      .filter(Boolean)
+      .join(' ')
+      .slice(0, 60);
+    if (direct) return ` "${direct}"`;
+    // Fall back to full descendant text for elements like <tr> or <li>
+    const deep = $(el).text().replace(/\s+/g, ' ').trim().slice(0, 60);
+    return deep ? ` "${deep}"` : '';
+  }
+
+  /**
+   * Counts how many direct children of `parent` share each tag name.
+   * Used to decide when [n/total] positional labels are needed.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function tagCounts(parent: any): Record<string, number> {
+    const counts: Record<string, number> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    $(parent).children().each((_: number, child: any) => {
+      if (child.type === 'tag') counts[child.name] = (counts[child.name] ?? 0) + 1;
+    });
+    return counts;
+  }
+
   const lines: string[] = [];
   let topCount = 0;
+
+  // Count top-level tags for nth labelling at the root level
+  const topTagCounts: Record<string, number> = {};
+  const topTagIndex: Record<string, number> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  $('body > *').each((_: number, el: any) => {
+  $.root().children().each((_: number, el: any) => {
+    if (el.type === 'tag') topTagCounts[el.name] = (topTagCounts[el.name] ?? 0) + 1;
+  });
+
+  // In cheerio fragment mode (isDocument=false), html/body wrappers are stripped,
+  // so $.root().children() gives us the actual top-level content elements.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  $.root().children().each((_: number, el: any) => {
     if (++topCount > 24) return false;
     if (el.type !== 'tag') return;
-    const id  = el.attribs?.id ? `#${el.attribs.id}` : '';
-    const cls = (el.attribs?.class ?? '').split(/\s+/).filter(Boolean).slice(0, 3).map((c: string) => `.${c}`).join('');
-    lines.push(`<${el.name}${id}${cls}>`);
-    let childCount = 0;
+
+    topTagIndex[el.name] = (topTagIndex[el.name] ?? 0) + 1;
+    const topNth = topTagCounts[el.name] > 1
+      ? ` [${topTagIndex[el.name]}/${topTagCounts[el.name]}]`
+      : '';
+    lines.push(`${label(el)}${topNth}${textSnippet(el)}`);
+
+    // --- Level 2 (direct children) ---
+    const lvl2Counts = tagCounts(el);
+    const lvl2Index: Record<string, number> = {};
+    let lvl2Count = 0;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     $(el).children().each((_2: number, child: any) => {
-      if (++childCount > 8) return false;
+      if (++lvl2Count > 12) return false;
       if (child.type !== 'tag') return;
-      const cid  = child.attribs?.id ? `#${child.attribs.id}` : '';
-      const ccls = (child.attribs?.class ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((c: string) => `.${c}`).join('');
-      lines.push(`  <${child.name}${cid}${ccls}>`);
+
+      lvl2Index[child.name] = (lvl2Index[child.name] ?? 0) + 1;
+      const nth2 = lvl2Counts[child.name] > 1
+        ? ` [${lvl2Index[child.name]}/${lvl2Counts[child.name]}]`
+        : '';
+
+      lines.push(`  ${label(child)}${nth2}${textSnippet(child)}`);
+
+      // --- Level 3 (grandchildren) ---
+      const lvl3Counts = tagCounts(child);
+      const lvl3Index: Record<string, number> = {};
+      let lvl3Count = 0;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      $(child).children().each((_3: number, gc: any) => {
+        if (++lvl3Count > 8) return false;
+        if (gc.type !== 'tag') return;
+
+        lvl3Index[gc.name] = (lvl3Index[gc.name] ?? 0) + 1;
+        const nth3 = lvl3Counts[gc.name] > 1
+          ? ` [${lvl3Index[gc.name]}/${lvl3Counts[gc.name]}]`
+          : '';
+
+        lines.push(`    ${label(gc)}${nth3}${textSnippet(gc)}`);
+      });
     });
   });
+
   return lines.length > 0 ? lines.join('\n') : '(no structured elements found)';
 }
 
@@ -561,7 +703,7 @@ Note: This email was too large to process in a single pass. It was split into ${
 ${isHtml ? 'The original HTML email structure will be preserved — use targeted DOM patches (selector + operation + html) for surgical changes. Only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the whole content.' : ''}`.trim();
 
   const htmlStructureSection = isHtml
-    ? `\nHTML STRUCTURE (top-level DOM outline for selector reference):\n${extractHtmlStructure(originalBody)}\n`
+    ? `\nHTML STRUCTURE (use this to choose unique selectors — [n/total] shows nth-of-type position):\n${extractHtmlStructure(originalBody)}\n`
     : '';
 
   const reducePrompt = `Apply the user rules to BOTH the SUBJECT line and the following extracted email content. For example, if a rule says to translate, translate the subject too.
@@ -569,7 +711,13 @@ ${isHtml ? 'The original HTML email structure will be preserved — use targeted
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
 ${htmlStructureSection}
-EXTRACTED CONTENT (${chunks.length} chunks combined):
+${isHtml ? `SELECTOR RULES:
+- Each patch MUST target exactly one element. Use the structure above to pick a unique selector.
+- Prefer: ID selectors (#id), child combinators (parent > child), :nth-of-type(n), [attribute] selectors.
+- AVOID generic tag selectors (p, td, div, span) unless they are unique in the document.
+- If your best selector still matches multiple elements, set targetIndex to the 0-based position of the correct one.
+
+` : ''}EXTRACTED CONTENT (${chunks.length} chunks combined):
 ${combinedContent}
 
 <user_rules>
@@ -718,12 +866,20 @@ ${rulesText}
       promptTokens = result.promptTokens;
       completionTokens = result.completionTokens;
     } else if (isHtml) {
+      const htmlStructureSection = `\nHTML STRUCTURE (use this to choose unique selectors):\n${extractHtmlStructure(emailBody)}\n`;
+
       const userPrompt = `Process this incoming email using surgical DOM patches.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
+${htmlStructureSection}
+SELECTOR RULES:
+- Each patch MUST target exactly one element. Use the structure above to pick a unique selector.
+- Prefer: ID selectors (#id), child combinators (parent > child), :nth-of-type(n), [attribute] selectors.
+- AVOID generic tag selectors (p, td, div, span) unless they are unique in the document.
+- If your best selector still matches multiple elements, set targetIndex to the 0-based position of the correct one.
 
-Apply the user rules to BOTH the SUBJECT line and the HTML email body below. For example, if a rule says to translate, translate the subject too. Prefer targeted DOM patches over a full body replacement — only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the entire content.
+Apply the user rules to BOTH the SUBJECT line and the HTML email body below. Prefer targeted DOM patches over a full body replacement — only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the entire content.
 
 FULL EMAIL HTML:
 ${emailBodyForPrompt}`;
