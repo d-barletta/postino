@@ -13,6 +13,8 @@ async function verifyAdmin(request: NextRequest) {
   return decoded;
 }
 
+const VALID_STATUSES = new Set(['received', 'processing', 'forwarded', 'error', 'skipped']);
+
 export async function GET(request: NextRequest) {
   try {
     await verifyAdmin(request);
@@ -22,11 +24,16 @@ export async function GET(request: NextRequest) {
     const pageSizeParam = parseInt(searchParams.get('pageSize') || '20', 10);
     const pageSize = Math.min(Math.max(pageSizeParam, 1), 100);
     const cursor = searchParams.get('cursor');
+    const statusParam = searchParams.get('status');
+    const status = statusParam && VALID_STATUSES.has(statusParam) ? statusParam : null;
 
-    let query = db
-      .collection('emailLogs')
-      .orderBy('receivedAt', 'desc')
-      .limit(pageSize + 1);
+    let baseQuery = db.collection('emailLogs').orderBy('receivedAt', 'desc');
+
+    if (status) {
+      baseQuery = baseQuery.where('status', '==', status) as typeof baseQuery;
+    }
+
+    let query = baseQuery.limit(pageSize + 1);
 
     if (cursor) {
       const cursorDoc = await db.collection('emailLogs').doc(cursor).get();
