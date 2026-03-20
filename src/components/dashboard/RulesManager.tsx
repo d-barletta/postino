@@ -126,9 +126,9 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       const rule = rules.find((r) => r.id === id);
       await updateRule(
         id, editName.trim(), editText.trim(), rule?.isActive ?? true,
-        editMatchSender.trim() || undefined,
-        editMatchSubject.trim() || undefined,
-        editMatchBody.trim() || undefined
+        editMatchSender.trim(),
+        editMatchSubject.trim(),
+        editMatchBody.trim()
       );
       setEditingId(null);
     } catch (err) {
