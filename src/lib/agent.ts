@@ -240,10 +240,11 @@ interface DomPatch {
   /**
    * 0-based index of the matched element to operate on when the selector
    * matches more than one element.  Defaults to 0 (first match).
-   * Use this when you cannot write a fully unique CSS selector and need to
-   * target, say, the second `<tr>` in a table or the third `<p>` in a section.
+   * Use null when targeting the first (or only) match.
+   * Use a positive integer when you cannot write a fully unique CSS selector
+   * and need to target, say, the second `<tr>` in a table or the third `<p>`.
    */
-  targetIndex?: number;
+  targetIndex: number | null;
 }
 
 /** Zod schema for a single DOM patch — shared by both the standard and map-reduce LLM call schemas. */
@@ -264,10 +265,11 @@ const domPatchSchema = z.object({
     'remove',          // remove the element entirely
   ]).describe('DOM operation to apply to the targeted element'),
   html: z.string().describe('HTML to inject. Use an empty string for "remove".'),
-  targetIndex: z.number().int().min(0).optional().describe(
-    'Optional 0-based index used when the selector inevitably matches multiple elements. ' +
-    'The operation is applied only to the element at this index. Defaults to 0 (first match). ' +
-    'Use this as a fallback when a perfectly unique selector cannot be written.'
+  targetIndex: z.number().int().min(0).nullable().describe(
+    'Set to null when targeting the first (or only) match. ' +
+    'Set to a non-negative 0-based index when the selector inevitably matches multiple elements and ' +
+    'you need to target a specific occurrence (e.g. 1 for the second match). ' +
+    'Use this as a last resort when a perfectly unique selector cannot be written.'
   ),
 });
 
