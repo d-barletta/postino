@@ -5,12 +5,20 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { NativeSelect } from '@/components/ui/NativeSelect';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select';
 import { formatDate, truncate } from '@/lib/utils';
 import { RefreshCw, ChevronLeft, ChevronRight, Mail, ExternalLink } from 'lucide-react';
 import type { EmailLog } from '@/types';
 
 const PAGE_SIZE = 10;
+const ALL_STATUS_VALUE = '__all__';
 
 interface EmailLogsListProps {
   logs: EmailLog[];
@@ -19,7 +27,7 @@ interface EmailLogsListProps {
 }
 
 const STATUS_OPTIONS = [
-  { value: '', label: 'All statuses' },
+  { value: ALL_STATUS_VALUE, label: 'All statuses' },
   { value: 'received', label: 'Received' },
   { value: 'processing', label: 'Processing' },
   { value: 'forwarded', label: 'Forwarded' },
@@ -69,15 +77,25 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
             <CardTitle>Email History</CardTitle>
             <div className="flex items-center gap-2">
               <div className="w-44">
-                <NativeSelect
-                  value={statusFilter}
-                  onChange={(e) => handleStatusFilter(e.target.value)}
-                  aria-label="Filter by status"
+                <Select
+                  value={statusFilter || ALL_STATUS_VALUE}
+                  onValueChange={(value) =>
+                    handleStatusFilter(value === ALL_STATUS_VALUE ? '' : value)
+                  }
                 >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </NativeSelect>
+                  <SelectTrigger aria-label="Filter by status">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
               {onRefresh && (
                 <Button
