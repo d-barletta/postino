@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 
 interface OriginalEmail {
   id: string;
@@ -175,110 +176,57 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
         </div>
 
         <Card>
-          <CardHeader>
-            <h2 className="font-semibold text-gray-900 dark:text-white">Original Email</h2>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-              <dt className="text-gray-500 dark:text-gray-400 font-medium">From:</dt>
-              <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.fromAddress}</dd>
-              <dt className="text-gray-500 dark:text-gray-400 font-medium">To:</dt>
-              <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.toAddress}</dd>
-              <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
-              <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{email.subject}</dd>
-              <dt className="text-gray-500 dark:text-gray-400 font-medium">Received:</dt>
-              <dd className="text-gray-800 dark:text-gray-200">{receivedDate}</dd>
-            </dl>
-          </CardContent>
+          <Accordion type="single" collapsible defaultValue="original-email" className="px-6">
+            <AccordionItem value="original-email" className="border-b-0">
+              <AccordionTrigger className="py-5 font-semibold text-gray-900 hover:text-gray-900 dark:text-white dark:hover:text-white">
+                Original Email
+              </AccordionTrigger>
+              <AccordionContent>
+                <CardContent className="p-0 pb-5 space-y-3 text-sm">
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">From:</dt>
+                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.fromAddress}</dd>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">To:</dt>
+                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.toAddress}</dd>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
+                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{email.subject}</dd>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">Received:</dt>
+                    <dd className="text-gray-800 dark:text-gray-200">{receivedDate}</dd>
+                  </dl>
+                </CardContent>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </Card>
 
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900 dark:text-white">Email Content</h2>
-              {email.originalBody && !isFullscreen && (
-                <button
-                  onClick={toggleFullscreen}
-                  className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  title="Open full page view"
-                  aria-label="Open email in full page view"
-                >
-                  <i className="bi bi-fullscreen" aria-hidden="true" />
-                </button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {email.originalBody ? (
-              <div className="relative">
-                <iframe
-                  sandbox=""
-                  srcDoc={email.originalBody}
-                  className="w-full border-0 rounded-b-xl"
-                  style={{ minHeight: '300px' }}
-                  title="Original email content"
-                  onLoad={(e) => {
-                    const iframe = e.currentTarget;
-                    const height = iframe.contentDocument?.documentElement?.scrollHeight;
-                    if (height) iframe.style.height = `${height + 20}px`;
-                  }}
-                />
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-sm px-6 py-4">No original content stored.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {user?.isAdmin && email.originalBody && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 dark:text-white">Current setup</h2>
-                <button
-                  onClick={handleReprocess}
-                  disabled={reprocessing}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#EFD957] hover:bg-[#d0b53f] text-gray-900 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {reprocessing ? (
-                    <>
-                      <div className="animate-spin h-3.5 w-3.5 border-2 border-gray-900 border-t-transparent rounded-full" />
-                      Processing…
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-arrow-repeat" aria-hidden="true" />
-                      Re-process
-                    </>
-                  )}
-                </button>
-              </div>
-            </CardHeader>
-            {(reprocessResult || reprocessError) && (
-              <CardContent className="space-y-4">
-                {reprocessError && (
-                  <p className="text-sm text-red-500">{reprocessError}</p>
-                )}
-                {reprocessResult && (
-                  <>
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
-                      <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{reprocessResult.subject}</dd>
-                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Rule applied:</dt>
-                      <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.ruleApplied}</dd>
-                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Tokens used:</dt>
-                      <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.tokensUsed.toLocaleString()}</dd>
-                      <dt className="text-gray-500 dark:text-gray-400 font-medium">Est. cost:</dt>
-                      <dd className="text-gray-800 dark:text-gray-200">${reprocessResult.estimatedCost.toFixed(6)}</dd>
-                    </dl>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Processed body:</p>
+          <Accordion type="single" collapsible defaultValue="email-content" className="px-6">
+            <AccordionItem value="email-content" className="border-b-0">
+              <AccordionTrigger className="py-5 font-semibold text-gray-900 hover:text-gray-900 dark:text-white dark:hover:text-white">
+                Email Content
+              </AccordionTrigger>
+              <AccordionContent>
+                <CardContent className="p-0 pb-5">
+                  {email.originalBody ? (
+                    <div className="relative space-y-2">
+                      {!isFullscreen && (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={toggleFullscreen}
+                            className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            title="Open full page view"
+                            aria-label="Open email in full page view"
+                          >
+                            <i className="bi bi-fullscreen" aria-hidden="true" />
+                          </button>
+                        </div>
+                      )}
                       <iframe
                         sandbox=""
-                        srcDoc={reprocessResult.body}
-                        className="w-full border-0 rounded-lg"
+                        srcDoc={email.originalBody}
+                        className="w-full border-0 rounded-xl"
                         style={{ minHeight: '300px' }}
-                        title="Processed email content"
+                        title="Original email content"
                         onLoad={(e) => {
                           const iframe = e.currentTarget;
                           const height = iframe.contentDocument?.documentElement?.scrollHeight;
@@ -286,10 +234,79 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                         }}
                       />
                     </div>
-                  </>
-                )}
-              </CardContent>
-            )}
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-sm py-1">No original content stored.</p>
+                  )}
+                </CardContent>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </Card>
+
+        {user?.isAdmin && email.originalBody && (
+          <Card>
+            <Accordion type="single" collapsible defaultValue="current-setup" className="px-6">
+              <AccordionItem value="current-setup" className="border-b-0">
+                <AccordionTrigger className="py-5 font-semibold text-gray-900 hover:text-gray-900 dark:text-white dark:hover:text-white">
+                  Current setup
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="p-0 pb-5 space-y-4">
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleReprocess}
+                        disabled={reprocessing}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#EFD957] hover:bg-[#d0b53f] text-gray-900 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {reprocessing ? (
+                          <>
+                            <div className="animate-spin h-3.5 w-3.5 border-2 border-gray-900 border-t-transparent rounded-full" />
+                            Processing…
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-arrow-repeat" aria-hidden="true" />
+                            Re-process
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {reprocessError && <p className="text-sm text-red-500">{reprocessError}</p>}
+
+                    {reprocessResult && (
+                      <>
+                        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
+                          <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{reprocessResult.subject}</dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Rule applied:</dt>
+                          <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.ruleApplied}</dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Tokens used:</dt>
+                          <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.tokensUsed.toLocaleString()}</dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Est. cost:</dt>
+                          <dd className="text-gray-800 dark:text-gray-200">${reprocessResult.estimatedCost.toFixed(6)}</dd>
+                        </dl>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Processed body:</p>
+                          <iframe
+                            sandbox=""
+                            srcDoc={reprocessResult.body}
+                            className="w-full border-0 rounded-lg"
+                            style={{ minHeight: '300px' }}
+                            title="Processed email content"
+                            onLoad={(e) => {
+                              const iframe = e.currentTarget;
+                              const height = iframe.contentDocument?.documentElement?.scrollHeight;
+                              if (height) iframe.style.height = `${height + 20}px`;
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </Card>
         )}
       </div>
