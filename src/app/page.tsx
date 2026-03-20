@@ -113,7 +113,7 @@ export default function HomePage() {
                 key={rule}
                 className="flex items-start gap-3 glass-panel rounded-xl p-4"
               >
-                <i className="bi bi-check-circle-fill text-green-500 mt-0.5" aria-hidden="true" />
+                <i className="bi bi-check-circle-fill text-purple-500 mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-gray-700">{rule}</p>
               </div>
             ))}
