@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -20,7 +20,11 @@ interface OpenRouterModel {
   name: string;
 }
 
-export default function AdminSettingsPage() {
+interface AdminSettingsPageProps {
+  showPageHeader?: boolean;
+}
+
+export default function AdminSettingsPage({ showPageHeader = true }: AdminSettingsPageProps) {
   const { firebaseUser } = useAuth();
   const [settings, setSettings] = useState<Partial<Settings>>({
     maxRuleLength: 1000,
@@ -145,48 +149,42 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Platform Settings</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Configure Postino&apos;s core settings</p>
-      </div>
+      {showPageHeader && (
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Platform Settings</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Configure Postino&apos;s core settings</p>
+        </div>
+      )}
 
       <Card>
-        <CardHeader
-          className="select-none"
-        >
-          <CardTitle>Settings Sections</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Accordion type="multiple">
-            <AccordionItem value="maintenance">
-              <AccordionTrigger>Maintenance Mode</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">Maintenance Mode</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                        When enabled, no emails will be forwarded to any user.
-                      </p>
-                    </div>
-                    <Switch
-                      id="maintenance-mode"
-                      checked={!!settings.maintenanceMode}
-                      onCheckedChange={(checked) => setSettings((p) => ({ ...p, maintenanceMode: checked }))}
-                    />
-                  </div>
-                  {settings.maintenanceMode && (
-                    <Alert variant="warning">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Maintenance mode is <strong>ON</strong> — emails are not being forwarded.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Maintenance Mode</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  When enabled, no emails will be forwarded to any user.
+                </p>
+              </div>
+              <Switch
+                id="maintenance-mode"
+                checked={!!settings.maintenanceMode}
+                onCheckedChange={(checked) => setSettings((p) => ({ ...p, maintenanceMode: checked }))}
+              />
+            </div>
+            {settings.maintenanceMode && (
+              <Alert variant="warning">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Maintenance mode is <strong>ON</strong> — emails are not being forwarded.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
 
+          <Separator className="mt-6" />
+
+          <Accordion type="multiple">
             <AccordionItem value="llm">
               <AccordionTrigger>AI / LLM Settings</AccordionTrigger>
               <AccordionContent>

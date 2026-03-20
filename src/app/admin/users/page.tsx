@@ -18,7 +18,11 @@ import type { User } from '@/types';
 
 type ConfirmAction = { uid: string; action: 'admin' | 'active'; current: boolean };
 
-export default function AdminUsersPage() {
+interface AdminUsersPageProps {
+  showPageHeader?: boolean;
+}
+
+export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPageProps) {
   const { firebaseUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,16 +78,17 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {showPageHeader && (
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Users</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{users.length} total users</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage all platform users</p>
         </div>
-      </div>
+      )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>All Users</CardTitle>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{users.length} total users</p>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (

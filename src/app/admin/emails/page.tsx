@@ -46,7 +46,11 @@ function processingTime(receivedAt: string | null, processedAt: string | null): 
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-export default function AdminEmailsPage() {
+interface AdminEmailsPageProps {
+  showPageHeader?: boolean;
+}
+
+export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPageProps) {
   const { firebaseUser } = useAuth();
   const [logs, setLogs] = useState<AdminEmailLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,10 +116,12 @@ export default function AdminEmailsPage() {
 
   return (
     <div className="space-y-6 ui-fade-up">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Logs</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Details of all emails processed by Postino</p>
-      </div>
+      {showPageHeader && (
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Logs</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Details of all emails processed by Postino</p>
+        </div>
+      )}
 
       {<EmailLogsCharts logs={logs} loading={loading} />}
 
@@ -180,13 +186,13 @@ export default function AdminEmailsPage() {
                       >
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{formatDate(log.receivedAt)}</td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          <div className="max-w-[140px] truncate" title={log.userEmail || log.userId}>{log.userEmail || log.userId}</div>
+                          <div className="max-w-35 truncate" title={log.userEmail || log.userId}>{log.userEmail || log.userId}</div>
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          <div className="max-w-[140px] truncate" title={log.fromAddress}>{log.fromAddress}</div>
+                          <div className="max-w-35 truncate" title={log.fromAddress}>{log.fromAddress}</div>
                         </td>
                         <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                          <div className="max-w-[200px] truncate" title={log.subject}>{log.subject}</div>
+                          <div className="max-w-50 truncate" title={log.subject}>{log.subject}</div>
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant={STATUS_VARIANT[log.status] || 'default'}>{log.status}</Badge>
@@ -226,7 +232,7 @@ export default function AdminEmailsPage() {
                               {log.errorMessage && (
                                 <div className="col-span-2 md:col-span-3">
                                   <dt className="font-medium text-red-500 dark:text-red-400">Error</dt>
-                                  <dd className="text-red-600 dark:text-red-400 break-words">{log.errorMessage}</dd>
+                                  <dd className="text-red-600 dark:text-red-400 wrap-break-word">{log.errorMessage}</dd>
                                 </div>
                               )}
                             </dl>
