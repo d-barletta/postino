@@ -16,7 +16,7 @@ AI-powered email redirector: users get a private email address, define rules in 
 
 ## UI Components (Use With Priority)
 
-For any new UI work, use these docs/components as the first choice:
+For any new UI work, use components from these docs as the default and first choice:
 
 - https://ui.shadcn.com/docs/components
 
