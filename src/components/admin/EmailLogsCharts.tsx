@@ -176,7 +176,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                           onClick={() => setGranularity('hour')}
                           className={`px-3 py-1 transition-colors ${
                             granularity === 'hour'
-                              ? 'bg-[#EFD957] text-gray-900 font-semibold'
+                              ? 'bg-[#EFD957] text-gray-900 dark:text-gray-900 font-semibold'
                               : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                           }`}
                         >
@@ -186,7 +186,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                           onClick={() => setGranularity('day')}
                           className={`px-3 py-1 transition-colors border-l border-gray-200 dark:border-gray-700 ${
                             granularity === 'day'
-                              ? 'bg-[#EFD957] text-gray-900 font-semibold'
+                              ? 'bg-[#EFD957] text-gray-900 dark:text-gray-900 font-semibold'
                               : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                           }`}
                         >
