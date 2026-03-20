@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bar, Cell, Pie, PieChart, CartesianGrid, XAxis, YAxis, ComposedChart, Line } from 'recharts';
 import { Card } from '@/components/ui/Card';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
@@ -66,6 +66,12 @@ function ChartSkeleton({ height = 'h-56' }: { height?: string }) {
 
 export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   const [granularity, setGranularity] = useState<TimeGranularity>('hour');
+  const [statusAccordionValue, setStatusAccordionValue] = useState('');
+
+  useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 639px)').matches;
+    setStatusAccordionValue(isMobile ? '' : 'status-distribution');
+  }, []);
 
   const byStatus = STATUS_ORDER.map((status) => {
     const statusLogs = logs.filter((log) => log.status === status);
@@ -105,7 +111,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <Card>
-        <Accordion type="single" collapsible>
+        <Accordion type="single" collapsible value={statusAccordionValue} onValueChange={setStatusAccordionValue}>
           <AccordionItem value="status-distribution" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               Status Distribution
@@ -176,7 +182,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                           onClick={() => setGranularity('hour')}
                           className={`px-3 py-1 transition-colors ${
                             granularity === 'hour'
-                              ? 'bg-[#EFD957] text-gray-900 dark:text-gray-900 font-semibold'
+                              ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
                               : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                           }`}
                         >
@@ -186,7 +192,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                           onClick={() => setGranularity('day')}
                           className={`px-3 py-1 transition-colors border-l border-gray-200 dark:border-gray-700 ${
                             granularity === 'day'
-                              ? 'bg-[#EFD957] text-gray-900 dark:text-gray-900 font-semibold'
+                              ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
                               : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                           }`}
                         >

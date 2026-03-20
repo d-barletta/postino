@@ -131,7 +131,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                     onClick={() => setGranularity('hour')}
                     className={`px-3 py-1 transition-colors ${
                       granularity === 'hour'
-                        ? 'bg-[#EFD957] font-semibold text-gray-900 dark:text-gray-900'
+                        ? 'bg-[#EFD957] dark:bg-violet-600 font-semibold text-gray-900 dark:text-white'
                         : 'bg-white/60 text-gray-600 hover:bg-yellow-50 dark:bg-gray-900/40 dark:text-gray-400 dark:hover:bg-yellow-900/10'
                     }`}
                   >
@@ -141,7 +141,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                     onClick={() => setGranularity('day')}
                     className={`border-l border-gray-200 px-3 py-1 transition-colors dark:border-gray-700 ${
                       granularity === 'day'
-                        ? 'bg-[#EFD957] font-semibold text-gray-900 dark:text-gray-900'
+                        ? 'bg-[#EFD957] dark:bg-violet-600 font-semibold text-gray-900 dark:text-white'
                         : 'bg-white/60 text-gray-600 hover:bg-yellow-50 dark:bg-gray-900/40 dark:text-gray-400 dark:hover:bg-yellow-900/10'
                     }`}
                   >
