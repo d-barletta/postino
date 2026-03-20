@@ -269,7 +269,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   label="Email Domain"
                   value={settings.emailDomain || ''}
                   onChange={(e) => setSettings((p) => ({ ...p, emailDomain: e.target.value }))}
-                  placeholder="sandbox.postino.app"
+                  placeholder="sandbox.postino.pro"
                   hint="Domain used for generating user email addresses"
                 />
               </AccordionContent>
@@ -308,7 +308,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     label="From Address"
                     value={settings.smtpFrom || ''}
                     onChange={(e) => setSettings((p) => ({ ...p, smtpFrom: e.target.value }))}
-                    placeholder="Postino <noreply@postino.app>"
+                    placeholder="Postino <noreply@postino.pro>"
                   />
                 </div>
               </AccordionContent>

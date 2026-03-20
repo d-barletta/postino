@@ -72,7 +72,7 @@ export default function HomePage() {
                 icon: 'bi bi-inbox-fill',
                 step: '1',
                 title: 'Get your address',
-                desc: 'Sign up and get a unique Postino email address like amber-cloud-4829@postino.app',
+                desc: 'Sign up and get a unique Postino email address like amber-cloud-4829@postino.pro',
               },
               {
                 icon: 'bi bi-pencil-square',

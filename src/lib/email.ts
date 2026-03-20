@@ -121,7 +121,7 @@ export async function sendEmail(options: {
     settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
   const fromAddress = stripCrlf(
-    options.from || settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.app'}>`
+    options.from || settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.pro'}>`
   );
   const toAddress = stripCrlf(options.to);
   const subjectLine = stripCrlf(options.subject);

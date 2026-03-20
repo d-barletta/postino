@@ -101,7 +101,7 @@ export async function getModelPricing(model: string, apiKey: string): Promise<Mo
     const response = await fetch('https://openrouter.ai/api/v1/models', {
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.app',
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
         'X-Title': 'Postino Email Redirector',
       },
     });
@@ -162,7 +162,7 @@ export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: st
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: normalizedApiKey,
     defaultHeaders: {
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.app',
+      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
       'X-Title': 'Postino Email Redirector',
     },
   });

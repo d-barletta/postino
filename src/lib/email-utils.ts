@@ -27,7 +27,7 @@ export function resolveAssignedEmailDomain(settings?: DomainSettings): string {
     settings?.mailgunSandboxEmail ||
     settings?.mailgunDomain ||
     process.env.MAILGUN_SANDBOX_EMAIL ||
-    'sandbox.postino.app'
+    'sandbox.postino.pro'
   );
 }
 
@@ -44,7 +44,7 @@ export function isEmailUsingDomain(email: string, domain: string): boolean {
   return emailDomain === normalizedDomain;
 }
 
-export function generateAssignedEmail(domain = 'sandbox.postino.app'): string {
+export function generateAssignedEmail(domain = 'sandbox.postino.pro'): string {
   const wordA = WORD_LIST_A[Math.floor(Math.random() * WORD_LIST_A.length)];
   const wordB = WORD_LIST_B[Math.floor(Math.random() * WORD_LIST_B.length)];
   const digits = String(Math.floor(Math.random() * 9000) + 1000);

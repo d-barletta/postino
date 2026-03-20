@@ -67,11 +67,28 @@ function ChartSkeleton({ height = 'h-56' }: { height?: string }) {
 export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   const [granularity, setGranularity] = useState<TimeGranularity>('hour');
   const [statusAccordionValue, setStatusAccordionValue] = useState('');
+  const [tokensAccordionValue, setTokensAccordionValue] = useState('tokens-cost');
+  const [isMobile, setIsMobile] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    const isMobile = window.matchMedia('(max-width: 639px)').matches;
-    setStatusAccordionValue(isMobile ? '' : 'status-distribution');
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+
+    const syncViewportState = () => {
+      const mobile = mediaQuery.matches;
+      setIsMobile(mobile);
+
+      // On desktop, keep both accordions always expanded.
+      if (!mobile) {
+        setStatusAccordionValue('status-distribution');
+        setTokensAccordionValue('tokens-cost');
+      }
+    };
+
+    syncViewportState();
+
+    mediaQuery.addEventListener('change', syncViewportState);
+    return () => mediaQuery.removeEventListener('change', syncViewportState);
   }, []);
 
   useEffect(() => {
@@ -124,7 +141,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <Card>
-        <Accordion type="single" collapsible value={statusAccordionValue} onValueChange={setStatusAccordionValue}>
+        <Accordion type="single" collapsible={isMobile} value={statusAccordionValue} onValueChange={setStatusAccordionValue}>
           <AccordionItem value="status-distribution" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               Status Distribution
@@ -177,10 +194,10 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
       </Card>
 
       <Card>
-        <Accordion type="single" collapsible defaultValue="tokens-cost">
+        <Accordion type="single" collapsible={isMobile} value={tokensAccordionValue} onValueChange={setTokensAccordionValue}>
           <AccordionItem value="tokens-cost" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
-              Tokens and Estimated Cost
+              Tokens and estimated Cost
             </AccordionTrigger>
             <AccordionContent>
               <div className="px-4 pb-4 sm:px-6">
@@ -213,7 +230,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                         </button>
                       </div>
                     </div>
-                    <ChartContainer config={chartConfig}>
+                    <ChartContainer config={chartConfig} className="h-75 sm:h-85">
                       <ComposedChart data={timeData} margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} interval="preserveStartEnd" />

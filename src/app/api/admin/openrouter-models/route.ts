@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch('https://openrouter.ai/api/v1/models', {
       headers: {
         Authorization: `Bearer ${normalizedApiKey}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.app',
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
         'X-Title': 'Postino Email Redirector',
       },
       cache: 'no-store',
