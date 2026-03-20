@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
@@ -29,34 +29,34 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const [email, setEmail] = useState<OriginalEmail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const emailContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessResult, setReprocessResult] = useState<ReprocessResult | null>(null);
   const [reprocessError, setReprocessError] = useState('');
 
   const toggleFullscreen = () => {
-    const container = emailContainerRef.current;
-    if (!container) return;
-    if (!document.fullscreenElement) {
-      container.requestFullscreen().catch((err) => {
-        console.error('Failed to enter fullscreen:', err);
-      });
-    } else {
-      document.exitFullscreen().catch((err) => {
-        console.error('Failed to exit fullscreen:', err);
-      });
-    }
+    setIsFullscreen((prev) => !prev);
   };
 
   useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+    if (!isFullscreen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFullscreen(false);
+      }
     };
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-  }, []);
+
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isFullscreen]);
 
   const handleBack = () => {
     if (typeof window !== 'undefined' && document.referrer && document.referrer.startsWith(window.location.origin)) {
@@ -185,7 +185,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
               <dt className="text-gray-500 dark:text-gray-400 font-medium">To:</dt>
               <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.toAddress}</dd>
               <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
-              <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-words">{email.subject}</dd>
+              <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{email.subject}</dd>
               <dt className="text-gray-500 dark:text-gray-400 font-medium">Received:</dt>
               <dd className="text-gray-800 dark:text-gray-200">{receivedDate}</dd>
             </dl>
@@ -200,8 +200,8 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                 <button
                   onClick={toggleFullscreen}
                   className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  title="Full screen"
-                  aria-label="View email in full screen"
+                  title="Open full page view"
+                  aria-label="Open email in full page view"
                 >
                   <i className="bi bi-fullscreen" aria-hidden="true" />
                 </button>
@@ -210,29 +210,14 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           </CardHeader>
           <CardContent className="p-0">
             {email.originalBody ? (
-              <div
-                ref={emailContainerRef}
-                className={isFullscreen ? 'bg-white dark:bg-gray-900 w-full h-full overflow-auto relative' : 'relative'}
-              >
-                {isFullscreen && (
-                  <button
-                    onClick={toggleFullscreen}
-                    className="absolute top-2 right-2 z-10 bg-white dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white p-1 rounded shadow transition-colors"
-                    title="Exit full screen"
-                    aria-label="Exit full screen"
-                  >
-                    <i className="bi bi-fullscreen-exit" aria-hidden="true" />
-                  </button>
-                )}
+              <div className="relative">
                 <iframe
-                  ref={iframeRef}
                   sandbox=""
                   srcDoc={email.originalBody}
-                  className={`w-full border-0 ${isFullscreen ? '' : 'rounded-b-xl'}`}
-                  style={isFullscreen ? { width: '100%', height: '100vh' } : { minHeight: '300px' }}
+                  className="w-full border-0 rounded-b-xl"
+                  style={{ minHeight: '300px' }}
                   title="Original email content"
                   onLoad={(e) => {
-                    if (isFullscreen) return;
                     const iframe = e.currentTarget;
                     const height = iframe.contentDocument?.documentElement?.scrollHeight;
                     if (height) iframe.style.height = `${height + 20}px`;
@@ -249,7 +234,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-900 dark:text-white">Re-process</h2>
+                <h2 className="font-semibold text-gray-900 dark:text-white">Current setup</h2>
                 <button
                   onClick={handleReprocess}
                   disabled={reprocessing}
@@ -263,7 +248,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                   ) : (
                     <>
                       <i className="bi bi-arrow-repeat" aria-hidden="true" />
-                      Current LLM
+                      Re-process
                     </>
                   )}
                 </button>
@@ -278,7 +263,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                   <>
                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                       <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
-                      <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-words">{reprocessResult.subject}</dd>
+                      <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{reprocessResult.subject}</dd>
                       <dt className="text-gray-500 dark:text-gray-400 font-medium">Rule applied:</dt>
                       <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.ruleApplied}</dd>
                       <dt className="text-gray-500 dark:text-gray-400 font-medium">Tokens used:</dt>
@@ -308,6 +293,31 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           </Card>
         )}
       </div>
+
+      {isFullscreen && email.originalBody && (
+        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900">
+          <div className="absolute inset-0 flex flex-col">
+            <div className="h-14 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">{email.subject}</p>
+              <button
+                onClick={toggleFullscreen}
+                className="shrink-0 rounded-md p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                title="Close full page view"
+                aria-label="Close full page view"
+              >
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
+            </div>
+            <iframe
+              sandbox=""
+              srcDoc={email.originalBody}
+              className="w-full flex-1 border-0"
+              style={{ minHeight: 'calc(100dvh - 56px)' }}
+              title="Original email content full page"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
