@@ -45,7 +45,7 @@ export default function AdminPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 ui-stagger">
             {[
               { href: '/admin/users', label: 'Users', icon: 'bi bi-people-fill' },
-              { href: '/admin/emails', label: 'Email Logs', icon: 'bi bi-envelope-fill' },
+              { href: '/admin/emails', label: 'Emails', icon: 'bi bi-envelope-fill' },
               { href: '/admin/settings', label: 'Settings', icon: 'bi bi-gear-fill' },
             ].map((item) => (
               <a

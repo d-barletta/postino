@@ -192,14 +192,14 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
           </h2>
           {rules.length > 1 && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              Rules are applied top to bottom. Use the arrows to change the order.
+              Rules are applied top to bottom. <br/>Use the arrows to change the order.
             </p>
           )}
         </div>
         {!showAddForm && (
           <Button onClick={() => { setShowAddForm(true); setError(''); }}>
             <Plus className="h-4 w-4 mr-1.5" />
-            Add New Rule
+            Add a rule
           </Button>
         )}
       </div>
