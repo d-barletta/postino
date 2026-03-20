@@ -19,6 +19,8 @@ interface EmailLogsChartsProps {
   loading?: boolean;
 }
 
+type TimeRange = '24h' | '7d' | '30d';
+
 const chartConfig = {
   received: { label: 'Received', color: '#3b82f6' },
   processing: { label: 'Processing', color: '#f59e0b' },
@@ -31,12 +33,46 @@ const chartConfig = {
 
 const STATUS_ORDER = ['received', 'processing', 'forwarded', 'error', 'skipped'] as const;
 
-type TimeGranularity = 'hour' | 'day';
+type TimeGranularity = 'hour' | 'day' | 'week';
+
+const RANGE_LABELS: Record<TimeRange, string> = {
+  '24h': 'Last 24h',
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+};
+
+const GRANULARITY_LABELS: Record<TimeGranularity, string> = {
+  hour: 'Per Hour',
+  day: 'Per Day',
+  week: 'Per Week',
+};
+
+const AVAILABLE_GRANULARITIES: Record<TimeRange, TimeGranularity[]> = {
+  '24h': ['hour', 'day'],
+  '7d': ['hour', 'day', 'week'],
+  '30d': ['day', 'week'],
+};
+
+const DEFAULT_GRANULARITY: Record<TimeRange, TimeGranularity> = {
+  '24h': 'hour',
+  '7d': 'day',
+  '30d': 'day',
+};
+
+function getRangeCutoff(range: TimeRange): number {
+  const now = Date.now();
+  if (range === '24h') return now - 24 * 60 * 60 * 1000;
+  if (range === '7d') return now - 7 * 24 * 60 * 60 * 1000;
+  return now - 30 * 24 * 60 * 60 * 1000;
+}
 
 function formatBucket(bucket: string, granularity: TimeGranularity): string {
   const date = new Date(bucket);
   if (granularity === 'hour') {
     return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  if (granularity === 'week') {
+    return `Week of ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
   }
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
@@ -46,6 +82,10 @@ function getBucketKey(iso: string | null, granularity: TimeGranularity): string 
   const d = new Date(iso);
   if (granularity === 'hour') {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()).toISOString();
+  }
+  if (granularity === 'week') {
+    const startOfWeek = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
+    return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate()).toISOString();
   }
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
 }
@@ -65,11 +105,19 @@ function ChartSkeleton({ height = 'h-56' }: { height?: string }) {
 }
 
 export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
-  const [granularity, setGranularity] = useState<TimeGranularity>('hour');
+  const [range, setRange] = useState<TimeRange>('7d');
+  const [granularity, setGranularity] = useState<TimeGranularity>(DEFAULT_GRANULARITY['7d']);
   const [statusAccordionValue, setStatusAccordionValue] = useState('');
   const [tokensAccordionValue, setTokensAccordionValue] = useState('tokens-cost');
   const [isMobile, setIsMobile] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const handleRangeChange = (newRange: TimeRange) => {
+    setRange(newRange);
+    if (!AVAILABLE_GRANULARITIES[newRange].includes(granularity)) {
+      setGranularity(DEFAULT_GRANULARITY[newRange]);
+    }
+  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 639px)');
@@ -120,8 +168,15 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   const pieData = byStatus.filter((item) => item.count > 0);
 
   // Build time-bucketed data for tokens/cost chart
+  const cutoff = getRangeCutoff(range);
+  const logsInRange = logs.filter((log) => {
+    if (!log.receivedAt) return false;
+    const ts = new Date(log.receivedAt).getTime();
+    return !Number.isNaN(ts) && ts >= cutoff;
+  });
+
   const bucketMap = new Map<string, { tokens: number; cost: number }>();
-  for (const log of logs) {
+  for (const log of logsInRange) {
     const key = getBucketKey(log.receivedAt, granularity);
     const existing = bucketMap.get(key) ?? { tokens: 0, cost: 0 };
     bucketMap.set(key, {
@@ -205,29 +260,36 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                   <ChartSkeleton />
                 ) : (
                   <>
-                    <div className="mb-8 flex items-center gap-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Group by:</span>
+                    <div className="mb-8 flex flex-wrap items-center gap-3">
                       <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
-                        <button
-                          onClick={() => setGranularity('hour')}
-                          className={`px-3 py-1 transition-colors ${
-                            granularity === 'hour'
-                              ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
-                              : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
-                          }`}
-                        >
-                          Per Hour
-                        </button>
-                        <button
-                          onClick={() => setGranularity('day')}
-                          className={`px-3 py-1 transition-colors border-l border-gray-200 dark:border-gray-700 ${
-                            granularity === 'day'
-                              ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
-                              : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
-                          }`}
-                        >
-                          Per Day
-                        </button>
+                        {(['24h', '7d', '30d'] as TimeRange[]).map((r, idx) => (
+                          <button
+                            key={r}
+                            onClick={() => handleRangeChange(r)}
+                            className={`px-3 py-1 transition-colors ${
+                              range === r
+                                ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
+                                : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
+                            } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
+                          >
+                            {RANGE_LABELS[r]}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
+                        {AVAILABLE_GRANULARITIES[range].map((g, idx) => (
+                          <button
+                            key={g}
+                            onClick={() => setGranularity(g)}
+                            className={`px-3 py-1 transition-colors ${
+                              granularity === g
+                                ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
+                                : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
+                            } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
+                          >
+                            {GRANULARITY_LABELS[g]}
+                          </button>
+                        ))}
                       </div>
                     </div>
                     <ChartContainer config={chartConfig} className="h-75 sm:h-85">

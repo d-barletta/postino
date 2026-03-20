@@ -27,10 +27,14 @@ export async function GET(request: NextRequest) {
     const statusParam = searchParams.get('status');
     const status = statusParam && VALID_STATUSES.has(statusParam) ? statusParam : null;
 
-    let baseQuery = db.collection('emailLogs').orderBy('receivedAt', 'desc');
+    let baseQuery = db.collection('emailLogs') as FirebaseFirestore.Query;
 
     if (status) {
-      baseQuery = baseQuery.where('status', '==', status) as typeof baseQuery;
+      // Keep status-filtered queries index-light to avoid requiring a composite
+      // index on (status, receivedAt) for basic filtering.
+      baseQuery = baseQuery.where('status', '==', status);
+    } else {
+      baseQuery = baseQuery.orderBy('receivedAt', 'desc');
     }
 
     let query = baseQuery.limit(pageSize + 1);
@@ -75,6 +79,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ logs, hasMore, nextCursor });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
-    return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
+    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    return NextResponse.json({ error: msg }, { status: statusCode });
   }
 }

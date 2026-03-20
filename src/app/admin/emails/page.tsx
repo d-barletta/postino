@@ -80,8 +80,15 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
   const fetchPage = useCallback(async (cursor: string | null, status: EmailStatus | null): Promise<boolean> => {
     if (!firebaseUser) return false;
     try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(buildUrl(cursor, status), { headers: { Authorization: `Bearer ${token}` } });
+      let token = await firebaseUser.getIdToken();
+      let res = await fetch(buildUrl(cursor, status), { headers: { Authorization: `Bearer ${token}` } });
+
+      // Retry once with a forced token refresh for transient auth expiration.
+      if (res.status === 401) {
+        token = await firebaseUser.getIdToken(true);
+        res = await fetch(buildUrl(cursor, status), { headers: { Authorization: `Bearer ${token}` } });
+      }
+
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs || []);
@@ -91,7 +98,13 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
         setFetchError('');
         return true;
       } else {
-        setFetchError('Failed to load email logs.');
+        if (res.status === 401) {
+          setFetchError('Unauthorized. Please sign in again.');
+        } else if (res.status === 403) {
+          setFetchError('Forbidden. Admin access is required.');
+        } else {
+          setFetchError('Failed to load email logs.');
+        }
         return false;
       }
     } catch {
