@@ -52,7 +52,7 @@ export default function HomePage() {
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link href="/register">
-              <Button size="lg" className="shadow-lg shadow-yellow-200/70 dark:shadow-yellow-900/30">
+              <Button size="lg" className="shadow-lg shadow-yellow-200/70 dark:shadow-violet-900/40">
                 Start for free
               </Button>
             </Link>
@@ -88,7 +88,7 @@ export default function HomePage() {
               },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-100 text-[#8f7a18] dark:bg-yellow-300/20 dark:text-yellow-200 text-3xl mb-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-100 text-[#8f7a18] dark:bg-violet-400/20 dark:text-violet-200 text-3xl mb-4">
                   <i className={item.icon} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>

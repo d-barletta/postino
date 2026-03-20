@@ -43,9 +43,9 @@ body {
 
 .dark body {
   background:
-    radial-gradient(1000px 520px at 85% -10%, #5a501f 0%, transparent 55%),
-    radial-gradient(900px 420px at 0% 100%, #2d2914 0%, transparent 60%),
-    linear-gradient(135deg, #090f1b 0%, #0f172a 50%, #1f1b0f 100%);
+    radial-gradient(1000px 520px at 85% -10%, #4f2a76 0%, transparent 55%),
+    radial-gradient(900px 420px at 0% 100%, #241436 0%, transparent 60%),
+    linear-gradient(135deg, #090f1b 0%, #0f172a 50%, #221732 100%);
 }
 
 input,
@@ -131,10 +131,10 @@ textarea::placeholder {
 @keyframes soft-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgb(239 217 87 / 0);
+    box-shadow: 0 0 0 0 rgb(177 133 255 / 0);
   }
   50% {
-    box-shadow: 0 0 0 6px rgb(239 217 87 / 0.16);
+    box-shadow: 0 0 0 6px rgb(177 133 255 / 0.2);
   }
 }
 
@@ -215,8 +215,8 @@ textarea::placeholder {
   background:
     repeating-linear-gradient(
       90deg,
-      rgb(214 192 67 / 12%) 0px,
-      rgb(214 192 67 / 12%) 1px,
+      rgb(167 139 250 / 14%) 0px,
+      rgb(167 139 250 / 14%) 1px,
       transparent 1px,
       transparent 42px
     );
@@ -253,8 +253,8 @@ textarea::placeholder {
   background:
     repeating-linear-gradient(
       90deg,
-      rgb(239 217 87 / 15%) 0px,
-      rgb(239 217 87 / 15%) 1px,
+      rgb(177 133 255 / 18%) 0px,
+      rgb(177 133 255 / 18%) 1px,
       transparent 1px,
       transparent 42px
     );
