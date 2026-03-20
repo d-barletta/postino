@@ -1,12 +1,13 @@
 'use client';
 
-import { Fragment, useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { EmailLogsCharts } from '@/components/admin/EmailLogsCharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { RefreshCw, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 
 interface AdminEmailLog {
   id: string;
@@ -31,6 +32,9 @@ const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error' | 
   error: 'error',
   skipped: 'default',
 };
+
+const ALL_STATUSES = ['received', 'processing', 'forwarded', 'error', 'skipped'] as const;
+type EmailStatus = (typeof ALL_STATUSES)[number];
 
 const PAGE_SIZE = 20;
 
@@ -61,14 +65,23 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
-  const fetchPage = useCallback(async (cursor: string | null): Promise<boolean> => {
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<EmailStatus | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const buildUrl = useCallback((cursor: string | null, status: EmailStatus | null) => {
+    const params = new URLSearchParams({ pageSize: String(PAGE_SIZE) });
+    if (cursor) params.set('cursor', cursor);
+    if (status) params.set('status', status);
+    return `/api/admin/emails?${params.toString()}`;
+  }, []);
+
+  const fetchPage = useCallback(async (cursor: string | null, status: EmailStatus | null): Promise<boolean> => {
     if (!firebaseUser) return false;
     try {
       const token = await firebaseUser.getIdToken();
-      const url = cursor
-        ? `/api/admin/emails?pageSize=${PAGE_SIZE}&cursor=${encodeURIComponent(cursor)}`
-        : `/api/admin/emails?pageSize=${PAGE_SIZE}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(buildUrl(cursor, status), { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs || []);
@@ -87,32 +100,63 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, buildUrl]);
 
-  useEffect(() => { fetchPage(null); }, [fetchPage]);
+  useEffect(() => { fetchPage(null, statusFilter); }, [fetchPage, statusFilter]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setCursorStack([]);
-    try { await fetchPage(null); }
+    try { await fetchPage(null, statusFilter); }
     finally { setRefreshing(false); }
-  }, [fetchPage]);
+  }, [fetchPage, statusFilter]);
 
   const handleNextPage = useCallback(async () => {
     if (!nextCursor) return;
-    const success = await fetchPage(nextCursor);
+    const success = await fetchPage(nextCursor, statusFilter);
     if (success) setCursorStack((prev) => [...prev, nextCursor]);
-  }, [nextCursor, fetchPage]);
+  }, [nextCursor, fetchPage, statusFilter]);
 
   const handlePrevPage = useCallback(async () => {
     const newStack = [...cursorStack];
     newStack.pop();
     const prevCursor = newStack.length > 0 ? newStack[newStack.length - 1] : null;
-    const success = await fetchPage(prevCursor);
+    const success = await fetchPage(prevCursor, statusFilter);
     if (success) setCursorStack(newStack);
-  }, [cursorStack, fetchPage]);
+  }, [cursorStack, fetchPage, statusFilter]);
+
+  const handleStatusFilter = useCallback((status: EmailStatus | null) => {
+    setStatusFilter(status);
+    setCursorStack([]);
+    setSearchText('');
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setStatusFilter(null);
+    setSearchText('');
+    setCursorStack([]);
+  }, []);
 
   const currentPage = cursorStack.length + 1;
+  const hasActiveFilters = statusFilter !== null || searchText.trim() !== '';
+
+  // Client-side text search applied on top of server-side status filter
+  const needle = searchText.trim().toLowerCase();
+  const visibleLogs = needle
+    ? logs.filter(
+        (l) =>
+          l.subject?.toLowerCase().includes(needle) ||
+          l.fromAddress?.toLowerCase().includes(needle) ||
+          l.userEmail?.toLowerCase().includes(needle) ||
+          l.toAddress?.toLowerCase().includes(needle),
+      )
+    : logs;
+
+  const btnBase = 'px-3 py-1 text-xs rounded-full transition-colors border whitespace-nowrap';
+  const btnActive = 'font-semibold bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white border-transparent';
+  const btnInactive = 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/10';
+
+  const statusBtnClass = (active: boolean) => cn(btnBase, active ? btnActive : btnInactive);
 
   return (
     <div className="space-y-6 ui-fade-up">
@@ -132,13 +176,62 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
             <div className="flex items-center gap-3">
               {!loading && (
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Page {currentPage} · {logs.length} records
+                  Page {currentPage} · {visibleLogs.length} records
                 </span>
               )}
               <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={loading || refreshing} title="Refresh">
                 <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
               </Button>
             </div>
+          </div>
+
+          {/* Filter toolbar */}
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+            {/* Status pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                className={statusBtnClass(statusFilter === null)}
+                onClick={() => handleStatusFilter(null)}
+              >
+                All
+              </button>
+              {ALL_STATUSES.map((s) => (
+                <button
+                  key={s}
+                  className={statusBtnClass(statusFilter === s)}
+                  onClick={() => handleStatusFilter(s)}
+                >
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" aria-hidden />
+
+            {/* Text search */}
+            <div className="relative flex-1 min-w-36 max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" aria-hidden />
+              <input
+                ref={searchInputRef}
+                type="search"
+                placeholder="Search subject, from, user…"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#EFD957] focus:border-[#EFD957]"
+              />
+            </div>
+
+            {/* Clear button */}
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear
+              </button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -159,8 +252,10 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
             </div>
           ) : fetchError ? (
             <div className="text-center py-12 text-red-500 dark:text-red-400">{fetchError}</div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 dark:text-gray-500">No emails processed yet.</div>
+          ) : visibleLogs.length === 0 ? (
+            <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+              {hasActiveFilters ? 'No emails match the current filters.' : 'No emails processed yet.'}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -177,7 +272,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log) => (
+                  {visibleLogs.map((log) => (
                     <Fragment key={log.id}>
                       <tr
                         className="border-b border-gray-100 dark:border-gray-800 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors"
