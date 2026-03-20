@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { EmailLogsCharts } from '@/components/admin/EmailLogsCharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -178,9 +178,8 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                 </thead>
                 <tbody>
                   {logs.map((log) => (
-                    <>
+                    <Fragment key={log.id}>
                       <tr
-                        key={log.id}
                         className="border-b border-gray-100 dark:border-gray-800 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors"
                         onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                       >
@@ -208,7 +207,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                         </td>
                       </tr>
                       {expanded === log.id && (
-                        <tr key={`${log.id}-detail`} className="bg-yellow-50/40 dark:bg-yellow-900/5">
+                        <tr className="bg-yellow-50/40 dark:bg-yellow-900/5">
                           <td colSpan={8} className="px-6 py-4">
                             <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-xs">
                               <div>
@@ -239,7 +238,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

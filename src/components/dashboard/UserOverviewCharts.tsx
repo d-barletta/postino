@@ -1,6 +1,6 @@
  'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Bar,
   ComposedChart,
@@ -73,6 +73,19 @@ function toDate(value: EmailLog['receivedAt']): Date | null {
 
 export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
   const [granularity, setGranularity] = useState<TimeGranularity>('day');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const syncTheme = () => setIsDarkMode(root.classList.contains('dark'));
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
+    return () => observer.disconnect();
+  }, []);
 
   const volumeData = useMemo<VolumePoint[]>(() => {
     const buckets = new Map<number, VolumePoint>();
@@ -124,7 +137,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
           </AccordionTrigger>
           <AccordionContent>
             <div className="px-4 pb-4 sm:px-6">
-              <div className="mb-3 flex items-center gap-2">
+              <div className="mb-8 flex items-center gap-2">
                 <span className="text-xs text-gray-500 dark:text-gray-400">Group by:</span>
                 <div className="flex overflow-hidden rounded-lg border border-gray-200 text-xs dark:border-gray-700">
                   <button
@@ -183,10 +196,10 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                     yAxisId="cost"
                     type="monotone"
                     dataKey="cost"
-                    stroke="var(--color-cost)"
+                    stroke={isDarkMode ? '#EFD957' : 'var(--color-cost)'}
                     strokeWidth={2.5}
-                    dot={{ r: 3, fill: 'var(--color-cost)' }}
-                    activeDot={{ r: 5 }}
+                    dot={{ r: 3, fill: isDarkMode ? '#EFD957' : 'var(--color-cost)' }}
+                    activeDot={{ r: 5, fill: isDarkMode ? '#EFD957' : 'var(--color-cost)' }}
                   />
                 </ComposedChart>
               </ChartContainer>
