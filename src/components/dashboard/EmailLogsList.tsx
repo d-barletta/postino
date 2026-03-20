@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -42,13 +42,11 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
 
   const filteredLogs = statusFilter ? logs.filter((l) => l.status === statusFilter) : logs;
   const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
-  const paginatedLogs = filteredLogs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  useEffect(() => {
-    if (currentPage > Math.max(1, totalPages)) {
-      setCurrentPage(1);
-    }
-  }, [filteredLogs, currentPage, totalPages]);
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
+  const paginatedLogs = filteredLogs.slice(
+    (safeCurrentPage - 1) * PAGE_SIZE,
+    safeCurrentPage * PAGE_SIZE
+  );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -191,19 +189,19 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
                     variant="ghost"
                     size="sm"
                     onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
+                    disabled={safeCurrentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
                   </Button>
                   <span className="text-xs text-gray-400 dark:text-gray-500">
-                    Page {currentPage} of {totalPages}
+                    Page {safeCurrentPage} of {Math.max(1, totalPages)}
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(Math.min(Math.max(1, totalPages), safeCurrentPage + 1))}
+                    disabled={safeCurrentPage === Math.max(1, totalPages)}
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />

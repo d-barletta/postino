@@ -2,9 +2,76 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { processEmailWithAgent } from '@/lib/agent';
 import type { RuleForProcessing } from '@/lib/openrouter';
-import { sendEmail, verifyMailgunSignature, EmailAttachment } from '@/lib/email';
+import { sendEmail, verifyMailgunSignature, isMailgunTimestampFresh, EmailAttachment } from '@/lib/email';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { DocumentReference } from 'firebase-admin/firestore';
+import crypto from 'crypto';
+
+const MAX_ATTACHMENTS = 10;
+const MAX_ATTACHMENT_BYTES = 7 * 1024 * 1024;
+const MAX_TOTAL_ATTACHMENTS_BYTES = 20 * 1024 * 1024;
+const LOOP_MARKER_HEADER = 'x-postino-processed';
+
+/** Extract a bare email address from `Name <email@example.com>` style headers. */
+function extractEmailAddress(value: string): string {
+  const match = value.match(/<([^>]+)>/);
+  return (match ? match[1] : value).trim().toLowerCase();
+}
+
+function getInboundHeaderMap(formData: FormData): Map<string, string> {
+  const headerMap = new Map<string, string>();
+
+  const keys = ['message-headers', 'Message-Headers', 'Message-headers'];
+  for (const key of keys) {
+    const raw = formData.get(key);
+    if (typeof raw !== 'string' || !raw.trim()) continue;
+
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) continue;
+
+      parsed.forEach((entry) => {
+        if (!Array.isArray(entry) || entry.length < 2) return;
+        const headerName = typeof entry[0] === 'string' ? entry[0].trim().toLowerCase() : '';
+        const headerValue = typeof entry[1] === 'string' ? entry[1] : '';
+        if (headerName && !headerMap.has(headerName)) {
+          headerMap.set(headerName, headerValue);
+        }
+      });
+    } catch {
+      // Ignore malformed `message-headers`; loop detection falls back to explicit fields.
+    }
+  }
+
+  const explicitHeaders = [LOOP_MARKER_HEADER, 'auto-submitted', 'precedence', 'x-auto-response-suppress'];
+  explicitHeaders.forEach((header) => {
+    if (headerMap.has(header)) return;
+    const value = formData.get(header) ?? formData.get(header.toUpperCase());
+    if (typeof value === 'string' && value.trim()) {
+      headerMap.set(header, value);
+    }
+  });
+
+  return headerMap;
+}
+
+function isLikelyMailLoop(formData: FormData, sender: string, recipientUserEmail: string): boolean {
+  const headers = getInboundHeaderMap(formData);
+
+  const loopMarker = (headers.get(LOOP_MARKER_HEADER) || '').trim().toLowerCase();
+  if (loopMarker === 'true' || loopMarker === '1' || loopMarker === 'yes') {
+    return true;
+  }
+
+  const autoSubmitted = (headers.get('auto-submitted') || '').trim().toLowerCase();
+  if (autoSubmitted && autoSubmitted !== 'no') {
+    return true;
+  }
+
+  const senderEmail = extractEmailAddress(sender);
+  const recipientEmail = extractEmailAddress(recipientUserEmail);
+  return Boolean(senderEmail && recipientEmail && senderEmail === recipientEmail);
+}
 
 /** Escape special HTML characters to prevent HTML injection in email templates. */
 function escapeHtml(text: string): string {
@@ -36,6 +103,10 @@ export async function POST(request: NextRequest) {
     const token = formData.get('token') as string;
     const signature = formData.get('signature') as string;
 
+    if (!timestamp || !token || !signature) {
+      return NextResponse.json({ error: 'Missing webhook signature fields' }, { status: 400 });
+    }
+
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data();
@@ -48,8 +119,6 @@ export async function POST(request: NextRequest) {
     const mailgunWebhookSigningKey =
       settings?.mailgunWebhookSigningKey ||
       process.env.MAILGUN_WEBHOOK_SIGNING_KEY ||
-      settings?.mailgunApiKey ||
-      process.env.MAILGUN_API_KEY ||
       '';
     const mailgunDomain =
       settings?.mailgunSandboxEmail ||
@@ -59,10 +128,16 @@ export async function POST(request: NextRequest) {
     const mailgunBaseUrl =
       settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
-    if (
-      mailgunWebhookSigningKey &&
-      !verifyMailgunSignature(timestamp, token, signature, mailgunWebhookSigningKey)
-    ) {
+    if (!mailgunWebhookSigningKey) {
+      console.error('Mailgun webhook signing key is missing; refusing inbound webhook');
+      return NextResponse.json({ error: 'Webhook signature key is not configured' }, { status: 503 });
+    }
+
+    if (!isMailgunTimestampFresh(timestamp)) {
+      return NextResponse.json({ error: 'Stale webhook timestamp' }, { status: 403 });
+    }
+
+    if (!verifyMailgunSignature(timestamp, token, signature, mailgunWebhookSigningKey)) {
       return NextResponse.json(
         {
           error: 'Invalid signature',
@@ -70,6 +145,21 @@ export async function POST(request: NextRequest) {
         },
         { status: 403 }
       );
+    }
+
+    const nonceId = crypto
+      .createHash('sha256')
+      .update(`${timestamp}:${token}`)
+      .digest('hex');
+    try {
+      const nonceExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await db.collection('mailgunWebhookNonces').doc(nonceId).create({
+        timestamp,
+        usedAt: Timestamp.now(),
+        expiresAt: Timestamp.fromDate(nonceExpiry),
+      });
+    } catch {
+      return NextResponse.json({ error: 'Webhook replay detected' }, { status: 409 });
     }
 
     const recipientRaw = (formData.get('recipient') as string) || '';
@@ -90,12 +180,26 @@ export async function POST(request: NextRequest) {
     const emailBody = bodyHtml || bodyPlain;
     const messageId = stripCrlf((formData.get('Message-Id') as string) || '');
     const rawAttachmentCount = parseInt((formData.get('attachment-count') as string) || '0', 10);
-    const attachmentCount = Number.isFinite(rawAttachmentCount) ? rawAttachmentCount : 0;
+    const attachmentCount = Number.isFinite(rawAttachmentCount)
+      ? Math.max(0, rawAttachmentCount)
+      : 0;
+
+    if (attachmentCount > MAX_ATTACHMENTS) {
+      return NextResponse.json({ error: `Too many attachments (max ${MAX_ATTACHMENTS})` }, { status: 413 });
+    }
 
     const attachments: EmailAttachment[] = [];
+    let totalAttachmentBytes = 0;
     for (let i = 1; i <= attachmentCount; i++) {
       const file = formData.get(`attachment-${i}`) as File | null;
       if (file) {
+        if (file.size > MAX_ATTACHMENT_BYTES) {
+          return NextResponse.json({ error: `Attachment too large: ${file.name}` }, { status: 413 });
+        }
+        totalAttachmentBytes += file.size;
+        if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENTS_BYTES) {
+          return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
+        }
         attachments.push({
           filename: file.name,
           content: await file.arrayBuffer(),
@@ -138,6 +242,21 @@ export async function POST(request: NextRequest) {
     const userData = userDoc.data();
     const userId = userDoc.id;
     const matchedRecipient = (userData.assignedEmail as string) || normalizedRecipients[0];
+
+    if (isLikelyMailLoop(formData, sender, (userData.email as string) || '')) {
+      await db.collection('emailLogs').add({
+        toAddress: matchedRecipient,
+        fromAddress: sender,
+        subject,
+        receivedAt: Timestamp.now(),
+        status: 'skipped',
+        userId,
+        originalBody: emailBody,
+        errorMessage: 'Possible mail loop detected; message not forwarded',
+        ...(messageId ? { messageId } : {}),
+      });
+      return NextResponse.json({ message: 'Possible mail loop detected, email skipped' });
+    }
 
     // Deduplicate: if a log entry already exists for this Message-Id, skip reprocessing
     if (messageId) {
@@ -258,6 +377,11 @@ export async function POST(request: NextRequest) {
       html: emailHtml,
       replyTo: replyToHeader || sender,
       attachments: attachments.length > 0 ? attachments : undefined,
+      headers: {
+        'X-Postino-Processed': 'true',
+        'Auto-Submitted': 'auto-generated',
+        'X-Auto-Response-Suppress': 'All',
+      },
     });
 
     await logRef.update({

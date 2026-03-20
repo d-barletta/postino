@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { generateAssignedEmail, resolveAssignedEmailDomain } from '@/lib/email-utils';
+import { generateAssignedEmail, resolveAssignedEmailDomain, isEmailUsingDomain } from '@/lib/email-utils';
+
+const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
 
 function toIsoDate(value: unknown): string | null {
   if (!value) return null;
@@ -24,15 +26,44 @@ export async function GET(request: NextRequest) {
     const decoded = await adminAuth().verifyIdToken(token);
 
     const db = adminDb();
+    const settingsDoc = await db.collection('settings').doc('global').get();
+    const assignedDomain = resolveAssignedEmailDomain(settingsDoc.data());
+    const loginEmail = decoded.email ?? '';
+
+    if (isEmailUsingDomain(loginEmail, assignedDomain)) {
+      return NextResponse.json(
+        { error: "Can't create an account using our email addresses" },
+        { status: 403 }
+      );
+    }
+
     const userRef = db.collection('users').doc(decoded.uid);
     let userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      const settingsSnap = await db.collection('settings').doc('global').get();
-      const domain = resolveAssignedEmailDomain(settingsSnap.data());
+      const domain = resolveAssignedEmailDomain(settingsDoc.data());
+      let assignedEmail = '';
+
+      for (let attempt = 0; attempt < MAX_ASSIGNED_EMAIL_ATTEMPTS; attempt++) {
+        const candidate = generateAssignedEmail(domain);
+        const existing = await db
+          .collection('users')
+          .where('assignedEmail', '==', candidate)
+          .limit(1)
+          .get();
+        if (existing.empty) {
+          assignedEmail = candidate;
+          break;
+        }
+      }
+
+      if (!assignedEmail) {
+        return NextResponse.json({ error: 'Failed to provision assigned email' }, { status: 500 });
+      }
+
       await userRef.set({
         email: decoded.email ?? '',
-        assignedEmail: generateAssignedEmail(domain),
+        assignedEmail,
         createdAt: new Date(),
         isAdmin: false,
         isActive: false,
@@ -49,8 +80,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const domain = resolveAssignedEmailDomain(settingsSnap.data());
+    const domain = resolveAssignedEmailDomain(settingsDoc.data());
     const assignedEmail = userSnap.data()?.assignedEmail as string | undefined;
     const localPart = assignedEmail?.split('@')[0]?.trim();
 

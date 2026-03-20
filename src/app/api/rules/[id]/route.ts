@@ -26,6 +26,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { name, text, isActive, matchSender, matchSubject, matchBody } = await request.json();
 
+    if (isActive !== undefined && typeof isActive !== 'boolean') {
+      return NextResponse.json({ error: 'isActive must be a boolean' }, { status: 400 });
+    }
+
     if (name !== undefined) {
       if (!name || typeof name !== 'string' || !name.trim()) {
         return NextResponse.json({ error: 'Rule name is required' }, { status: 400 });
@@ -48,6 +52,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
+    if (text !== undefined) {
+      if (typeof text !== 'string' || !text.trim()) {
+        return NextResponse.json({ error: 'Rule text must be a non-empty string' }, { status: 400 });
+      }
+
+      const settingsSnap = await db.collection('settings').doc('global').get();
+      const maxRuleLength = settingsSnap.data()?.maxRuleLength ?? 1000;
+      if (text.length > maxRuleLength) {
+        return NextResponse.json({ error: `Rule exceeds maximum length of ${maxRuleLength}` }, { status: 400 });
+      }
+    }
+
     if (matchSender !== undefined && (typeof matchSender !== 'string' || matchSender.length > MAX_PATTERN_LENGTH)) {
       return NextResponse.json({ error: `Sender pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
     }
@@ -60,8 +76,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
     }
 
-    const updateData: Record<string, unknown> = { isActive, updatedAt: Timestamp.now() };
-    if (text !== undefined) updateData.text = text;
+    const updateData: Record<string, unknown> = { updatedAt: Timestamp.now() };
+    if (isActive !== undefined) updateData.isActive = isActive;
+    if (text !== undefined) updateData.text = text.trim();
     if (name !== undefined) updateData.name = name.trim();
     if (matchSender !== undefined) updateData.matchSender = matchSender?.trim() || '';
     if (matchSubject !== undefined) updateData.matchSubject = matchSubject?.trim() || '';

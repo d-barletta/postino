@@ -17,6 +17,10 @@ interface DomainSettings {
   mailgunDomain?: string;
 }
 
+function normalizeDomain(domain: string): string {
+  return domain.trim().toLowerCase().replace(/^@+/, '');
+}
+
 export function resolveAssignedEmailDomain(settings?: DomainSettings): string {
   return (
     settings?.emailDomain ||
@@ -25,6 +29,19 @@ export function resolveAssignedEmailDomain(settings?: DomainSettings): string {
     process.env.MAILGUN_SANDBOX_EMAIL ||
     'sandbox.postino.app'
   );
+}
+
+export function getEmailDomain(email: string): string {
+  const parts = email.trim().toLowerCase().split('@');
+  if (parts.length !== 2) return '';
+  return normalizeDomain(parts[1]);
+}
+
+export function isEmailUsingDomain(email: string, domain: string): boolean {
+  const emailDomain = getEmailDomain(email);
+  const normalizedDomain = normalizeDomain(domain);
+  if (!emailDomain || !normalizedDomain) return false;
+  return emailDomain === normalizedDomain;
 }
 
 export function generateAssignedEmail(domain = 'sandbox.postino.app'): string {

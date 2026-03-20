@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { registerUser } from '@/lib/auth';
+import { isEmailUsingDomain } from '@/lib/email-utils';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { AlertCircle } from 'lucide-react';
+
+const BLOCKED_DOMAIN_ERROR = "Can't create an account using our email addresses";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -16,6 +19,29 @@ export function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [assignedEmailDomain, setAssignedEmailDomain] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPublicSettings = async () => {
+      try {
+        const res = await fetch('/api/settings/public', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = (await res.json()) as { assignedEmailDomain?: string };
+        if (mounted) {
+          setAssignedEmailDomain((data.assignedEmailDomain || '').trim().toLowerCase());
+        }
+      } catch {
+        // If settings fail to load, server-side enforcement still protects the flow.
+      }
+    };
+
+    loadPublicSettings();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +54,12 @@ export function RegisterForm() {
       setError('Password must be at least 8 characters');
       return;
     }
+
+    if (assignedEmailDomain && isEmailUsingDomain(email, assignedEmailDomain)) {
+      setError(BLOCKED_DOMAIN_ERROR);
+      return;
+    }
+
     setLoading(true);
     try {
       await registerUser(email, password);
@@ -38,6 +70,8 @@ export function RegisterForm() {
         setError('An account with this email already exists');
       } else if (firebaseError.code === 'auth/weak-password') {
         setError('Password is too weak');
+      } else if (assignedEmailDomain && isEmailUsingDomain(email, assignedEmailDomain)) {
+        setError(BLOCKED_DOMAIN_ERROR);
       } else {
         setError('Failed to create account. Please try again.');
       }

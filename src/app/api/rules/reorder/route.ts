@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
+const MAX_REORDER_IDS = 200;
+
 async function verifyUser(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
@@ -27,6 +29,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     const orderedIds: string[] = body.orderedIds;
+    if (orderedIds.length > MAX_REORDER_IDS) {
+      return NextResponse.json(
+        { error: `orderedIds cannot exceed ${MAX_REORDER_IDS} items` },
+        { status: 400 }
+      );
+    }
+
+    const uniqueIds = new Set(orderedIds);
+    if (uniqueIds.size !== orderedIds.length) {
+      return NextResponse.json({ error: 'orderedIds cannot contain duplicates' }, { status: 400 });
+    }
+
     const db = adminDb();
 
     // Verify ownership of all provided rule IDs in one batch read.

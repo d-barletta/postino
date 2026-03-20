@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import { adminDb } from './firebase-admin';
 export { generateAssignedEmail } from './email-utils';
 
+const MAILGUN_TIMESTAMP_MAX_SKEW_SECONDS = 5 * 60;
+
 /** Strip CR and LF characters to prevent email header (CRLF) injection. */
 function stripCrlf(value: string): string {
   return value.replace(/[\r\n]/g, '');
@@ -50,6 +52,7 @@ async function sendViaMailgun(options: {
   text: string;
   replyTo?: string;
   attachments?: EmailAttachment[];
+  headers?: Record<string, string>;
   apiKey: string;
   domain: string;
   baseUrl: string;
@@ -65,6 +68,12 @@ async function sendViaMailgun(options: {
 
   if (options.replyTo) {
     body.append('h:Reply-To', stripCrlf(options.replyTo));
+  }
+
+  if (options.headers) {
+    Object.entries(options.headers).forEach(([key, value]) => {
+      body.append(`h:${stripCrlf(key)}`, stripCrlf(String(value)));
+    });
   }
 
   if (options.attachments) {
@@ -96,6 +105,7 @@ export async function sendEmail(options: {
   text?: string;
   replyTo?: string;
   attachments?: EmailAttachment[];
+  headers?: Record<string, string>;
 }): Promise<void> {
   const db = adminDb();
   const settingsSnap = await db.collection('settings').doc('global').get();
@@ -127,6 +137,7 @@ export async function sendEmail(options: {
       text,
       replyTo: options.replyTo,
       attachments: options.attachments,
+      headers: options.headers,
       apiKey: mailgunApiKey,
       domain: mailgunDomain,
       baseUrl: mailgunBaseUrl,
@@ -142,6 +153,7 @@ export async function sendEmail(options: {
     subject: subjectLine,
     html: options.html,
     text,
+    ...(options.headers ? { headers: options.headers } : {}),
     ...(options.replyTo ? { replyTo: stripCrlf(options.replyTo) } : {}),
     ...(options.attachments && options.attachments.length > 0
       ? {
@@ -161,9 +173,24 @@ export function verifyMailgunSignature(
   signature: string,
   apiKey: string
 ): boolean {
+  if (!timestamp || !token || !signature || !apiKey) return false;
+
   const encodedToken = crypto
     .createHmac('sha256', apiKey)
     .update(timestamp + token)
     .digest('hex');
-  return encodedToken === signature;
+
+  const expected = Buffer.from(encodedToken, 'utf8');
+  const received = Buffer.from(signature, 'utf8');
+  if (expected.length !== received.length) return false;
+
+  return crypto.timingSafeEqual(expected, received);
+}
+
+export function isMailgunTimestampFresh(timestamp: string, nowMs = Date.now()): boolean {
+  const timestampSeconds = Number.parseInt(timestamp, 10);
+  if (!Number.isFinite(timestampSeconds) || timestampSeconds <= 0) return false;
+
+  const nowSeconds = Math.floor(nowMs / 1000);
+  return Math.abs(nowSeconds - timestampSeconds) <= MAILGUN_TIMESTAMP_MAX_SKEW_SECONDS;
 }

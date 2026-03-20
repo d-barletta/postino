@@ -27,7 +27,7 @@ export function useAuth() {
 export function useAuthState() {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(auth));
 
   const fetchUserData = useCallback(async (fbUser: FirebaseUser) => {
     try {
@@ -57,7 +57,6 @@ export function useAuthState() {
 
   useEffect(() => {
     if (!auth) {
-      setLoading(false);
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {

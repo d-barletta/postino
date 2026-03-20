@@ -181,7 +181,6 @@ export function sanitizeRule(rule: string): string {
     // Remove XML/HTML-like tags (e.g. </user_rules>, <system>, etc.)
     .replace(/<[^>]*>/g, '')
     // Remove ASCII control characters (except space/tab which are handled next)
-    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     // Collapse runs of whitespace / newlines so multi-line injections are flattened
     .replace(/\s+/g, ' ')
@@ -200,7 +199,6 @@ export function sanitizeEmailField(value: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x1F\x7F]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -226,7 +224,6 @@ export function sanitizeEmailBody(body: string): string {
     // Collapse excess whitespace left by removed tags
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
-    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .trim();
 }
@@ -246,7 +243,6 @@ export function sanitizeEmailBody(body: string): string {
  */
 export function sanitizeHtmlBodyForPrompt(body: string): string {
   // Remove ASCII control characters (except \t \n \r)
-  // eslint-disable-next-line no-control-regex
   let result = body.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // Remove structural-delimiter lookalikes that could confuse the LLM prompt parser

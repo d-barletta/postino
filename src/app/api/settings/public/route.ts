@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
+import { resolveAssignedEmailDomain } from '@/lib/email-utils';
 
 export async function GET() {
   try {
@@ -9,8 +10,12 @@ export async function GET() {
 
     return NextResponse.json({
       maxRuleLength: data?.maxRuleLength ?? 1000,
+      assignedEmailDomain: resolveAssignedEmailDomain(data),
     });
   } catch {
-    return NextResponse.json({ maxRuleLength: 1000 });
+    return NextResponse.json({
+      maxRuleLength: 1000,
+      assignedEmailDomain: resolveAssignedEmailDomain(),
+    });
   }
 }

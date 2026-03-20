@@ -11,8 +11,8 @@ import { PostinoLogo } from '@/components/brand/PostinoLogo';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { firebaseUser, user, loading } = useAuth();
-  const [checking, setChecking] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const checking = loading || Boolean(firebaseUser && !user);
 
   useEffect(() => {
     if (!loading) {
@@ -20,8 +20,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/login');
       } else if (user && !user.isAdmin) {
         router.push('/dashboard');
-      } else if (user) {
-        setChecking(false);
       }
     }
   }, [loading, firebaseUser, user, router]);
