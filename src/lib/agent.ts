@@ -265,7 +265,7 @@ const domPatchSchema = z.object({
     'remove',          // remove the element entirely
   ]).describe('DOM operation to apply to the targeted element'),
   html: z.string().describe('HTML to inject. Use an empty string for "remove".'),
-  targetIndex: z.number().int().min(0).nullable().describe(
+  targetIndex: z.number().nullable().describe(
     'Set to null when targeting the first (or only) match. ' +
     'Set to a non-negative 0-based index when the selector inevitably matches multiple elements and ' +
     'you need to target a specific occurrence (e.g. 1 for the second match). ' +
@@ -484,7 +484,7 @@ const emailAnalysisSchema = z.object({
   summary: z.string().describe(
     'A 1-2 sentence summary of what this email is about. Focus on the actual content, not the metadata.'
   ),
-  topics: z.array(z.string()).max(3).describe('Up to 3 key topics or themes mentioned in the email'),
+  topics: z.array(z.string()).describe('Key topics or themes mentioned in the email'),
   hasActionItems: z.boolean().describe(
     'True if this email requests or requires action from the recipient (e.g. click, reply, verify, purchase)'
   ),
