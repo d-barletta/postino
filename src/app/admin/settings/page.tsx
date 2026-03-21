@@ -216,14 +216,20 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   <Input
                     label="Max Rule Length (characters)"
                     type="number"
-                    value={settings.maxRuleLength || 1000}
-                    onChange={(e) => setSettings((p) => ({ ...p, maxRuleLength: parseInt(e.target.value) }))}
+                    value={settings.maxRuleLength ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({ ...p, maxRuleLength: e.target.value === '' ? undefined : isNaN(n) ? p.maxRuleLength : n }));
+                    }}
                   />
                   <Input
                     label="Max Response Tokens"
                     type="number"
-                    value={settings.llmMaxTokens || 4000}
-                    onChange={(e) => setSettings((p) => ({ ...p, llmMaxTokens: parseInt(e.target.value) }))}
+                    value={settings.llmMaxTokens ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({ ...p, llmMaxTokens: e.target.value === '' ? undefined : isNaN(n) ? p.llmMaxTokens : n }));
+                    }}
                     hint="Maximum number of tokens the LLM can return per email (default: 4000). Increase for long HTML emails."
                   />
                   <Textarea
@@ -289,8 +295,11 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     <Input
                       label="SMTP Port"
                       type="number"
-                      value={settings.smtpPort || 587}
-                      onChange={(e) => setSettings((p) => ({ ...p, smtpPort: parseInt(e.target.value) }))}
+                      value={settings.smtpPort ?? ''}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        setSettings((p) => ({ ...p, smtpPort: e.target.value === '' ? undefined : isNaN(n) ? p.smtpPort : n }));
+                      }}
                     />
                   </div>
                   <Input

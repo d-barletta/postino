@@ -54,7 +54,7 @@ select {
   color: var(--input-text);
   background-color: var(--surface);
   border-color: var(--border);
-  font-size: max(16px, 1em);
+  font-size: 1em;
 }
 
 input::placeholder,
