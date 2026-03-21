@@ -62,6 +62,8 @@ export interface Settings {
   mailgunSandboxEmail?: string;
   mailgunBaseUrl?: string;
   maintenanceMode?: boolean;
+  /** Controls whether matching rules are applied sequentially (output of N feeds into N+1) or all at once in a single LLM call. Defaults to 'sequential'. */
+  rulesExecutionMode?: 'sequential' | 'parallel';
   updatedAt?: Date;
 }
 

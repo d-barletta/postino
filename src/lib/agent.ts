@@ -791,12 +791,14 @@ interface SingleRulePassResult {
 }
 
 /**
- * Run one LLM pass that applies a single rule (or the "no rules" default) to
- * an email body.  The caller is responsible for chaining multiple rules by
- * passing the previous pass's `subject` and `body` as the next `emailSubject`
- * / `emailBody`.
+ * Run one LLM pass that applies one or more rules (or the "no rules" default)
+ * to an email body.  When called with a single rule the caller is responsible
+ * for chaining multiple rules by passing the previous pass's `subject` and
+ * `body` as the next inputs.  When called with multiple rules they are all
+ * applied in a single prompt (combined/parallel mode).  Pass an empty array
+ * to use the "no rules / forward as-is" fallback.
  *
- * @param rule           Rule to apply, or `null` to use the "no rules" fallback.
+ * @param rules          Rules to apply. Empty array triggers the "no rules" fallback.
  * @param emailFrom      Sender address (unchanged throughout the chain).
  * @param emailSubject   Subject to process — may be the output of a prior pass.
  * @param emailBody      Body to process — may be the output of a prior pass.
@@ -809,7 +811,7 @@ interface SingleRulePassResult {
  * @param fallbackSubject  Subject to use when the LLM doesn't return one.
  */
 async function runSingleRulePass(
-  rule: RuleForProcessing | null,
+  rules: RuleForProcessing[],
   emailFrom: string,
   emailSubject: string,
   emailBody: string,
@@ -821,11 +823,10 @@ async function runSingleRulePass(
   maxTokens: number,
   fallbackSubject: string,
 ): Promise<SingleRulePassResult> {
-  // `activeRules` already filters out empty-text rules; `null` is the only
-  // other value passed here (zero-rules sentinel).
+  // Build the rules text: combine multiple rules or use the "no rules" fallback.
   const rulesText =
-    rule !== null
-      ? `Rule "${sanitizeRule(rule.name)}": ${sanitizeRule(rule.text)}`
+    rules.length > 0
+      ? rules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
       : 'No specific rules. Forward the email as-is with a brief summary prepended.';
 
   const systemPrompt = `${systemPromptBase}
@@ -855,7 +856,7 @@ ${rulesText}
         emailBody,
         plainBody,
         isHtml,
-        rule ? [rule] : [],
+        rules,
         systemPrompt,
         openrouterProvider,
         model,
@@ -964,10 +965,12 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
  * The summary is also persisted in the user's memory so future processing has
  * richer history context (not just timestamps and subjects).
  *
- * When multiple rules match the email they are applied **sequentially**: the
- * output of each rule pass (subject + body) becomes the input for the next.
- * This ensures every rule is fully applied rather than relying on the LLM to
- * honour all rules simultaneously in a single prompt.
+ * When multiple rules match the email they are applied sequentially by default:
+ * the output of each rule pass (subject + body) becomes the input for the next.
+ * This ensures every rule is fully honoured rather than relying on the LLM to
+ * honour all rules simultaneously in a single prompt.  Alternatively, when the
+ * `rulesExecutionMode` setting is `'parallel'`, all rules are combined into a
+ * single LLM call, reducing token usage and latency.
  *
  * When the email body exceeds `CHUNK_THRESHOLD_CHARS` the agent automatically
  * switches to a map-reduce chunked processing path to handle emails that would
@@ -982,10 +985,12 @@ export async function processEmailWithAgent(
   emailSubject: string,
   emailBody: string,
   rules: RuleForProcessing[],
-  isHtml = false
+  isHtml = false,
+  modelOverride?: string,
 ): Promise<ProcessEmailResult> {
   // 1. Load settings + OpenRouter client details
-  const { apiKey, model } = await getOpenRouterClient();
+  const { apiKey, model: settingsModel } = await getOpenRouterClient();
+  const model = modelOverride || settingsModel;
 
   if (!apiKey) {
     throw new Error('Missing OpenRouter API key');
@@ -1057,52 +1062,87 @@ export async function processEmailWithAgent(
   let totalCompletionTokens = analysisCompletionTokens;
   let lastParseError: string | undefined;
 
-  // Determine which rules to iterate — use a [null] sentinel when there are
-  // none so we still make the "forward as-is" LLM call exactly once.
-  const rulesToProcess: Array<RuleForProcessing | null> =
-    activeRules.length > 0 ? activeRules : [null];
+  // Determine the rules execution mode from settings (default: sequential).
+  const rulesExecutionMode =
+    settings?.rulesExecutionMode === 'parallel' ? 'parallel' : 'sequential';
 
-  for (let passIndex = 0; passIndex < rulesToProcess.length; passIndex++) {
-    const rule = rulesToProcess[passIndex];
-
-    // For passes after the first, extend the base prompt so the LLM knows
-    // the email content has already been transformed by earlier rules and
-    // must not be reverted to its original form.
-    const systemPromptBase =
-      passIndex > 0
-        ? `${basePrompt}\n\nIMPORTANT: The email content shown below has already been processed and modified by previous rules. You MUST preserve those prior transformations — do not revert or ignore them. Apply only the current rule on top of the already-modified content.`
-        : basePrompt;
-
-    // For passes after the first, use the current (already-modified) subject
-    // as the fallback so that a failed or empty LLM response does not silently
-    // discard subject changes made by earlier rule passes.
-    const currentFallbackSubject = passIndex > 0 ? currentSubject : fallbackSubject;
-
+  if (rulesExecutionMode === 'parallel' && activeRules.length > 0) {
+    // 5a. Combined mode: apply all rules in a single LLM call.
+    //     This reduces token usage and latency when multiple rules match.
     const pass = await runSingleRulePass(
-      rule,
+      activeRules,
       emailFrom,
       currentSubject,
       currentBody,
       currentIsHtml,
-      systemPromptBase,
+      basePrompt,
       contextSection,
       openrouter,
       model,
       maxTokens,
-      currentFallbackSubject,
+      fallbackSubject,
     );
-
     currentSubject = pass.subject;
     currentBody = pass.body;
-    // The LLM always outputs HTML (the schema for plain-text emails explicitly
-    // requests "HTML format", and the HTML path returns DOM-patched HTML).
-    // From the second pass onwards we therefore always use the HTML path so
-    // that DOM-patch operations work correctly on the intermediate output.
     currentIsHtml = true;
     totalTokensUsed += pass.tokensUsed;
     totalPromptTokens += pass.promptTokens;
     totalCompletionTokens += pass.completionTokens;
     if (pass.parseError) lastParseError = pass.parseError;
+  } else {
+    // 5b. Sequential mode (default): apply each rule as a separate LLM call so
+    //     the output of rule N becomes the input for rule N+1.  This guarantees
+    //     every rule is fully honoured instead of competing for attention in a
+    //     single prompt.
+    //
+    //     When there are no active rules we still make a single "forward as-is"
+    //     pass (rules=[]) so the LLM applies the base prompt (e.g. summary).
+
+    const rulesToProcess: Array<RuleForProcessing | undefined> =
+      activeRules.length > 0 ? activeRules : [undefined];
+
+    for (let passIndex = 0; passIndex < rulesToProcess.length; passIndex++) {
+      const rule = rulesToProcess[passIndex];
+
+      // For passes after the first, extend the base prompt so the LLM knows
+      // the email content has already been transformed by earlier rules and
+      // must not be reverted to its original form.
+      const systemPromptBase =
+        passIndex > 0
+          ? `${basePrompt}\n\nIMPORTANT: The email content shown below has already been processed and modified by previous rules. You MUST preserve those prior transformations — do not revert or ignore them. Apply only the current rule on top of the already-modified content.`
+          : basePrompt;
+
+      // For passes after the first, use the current (already-modified) subject
+      // as the fallback so that a failed or empty LLM response does not silently
+      // discard subject changes made by earlier rule passes.
+      const currentFallbackSubject = passIndex > 0 ? currentSubject : fallbackSubject;
+
+      const pass = await runSingleRulePass(
+        rule !== undefined ? [rule] : [],
+        emailFrom,
+        currentSubject,
+        currentBody,
+        currentIsHtml,
+        systemPromptBase,
+        contextSection,
+        openrouter,
+        model,
+        maxTokens,
+        currentFallbackSubject,
+      );
+
+      currentSubject = pass.subject;
+      currentBody = pass.body;
+      // The LLM always outputs HTML (the schema for plain-text emails explicitly
+      // requests "HTML format", and the HTML path returns DOM-patched HTML).
+      // From the second pass onwards we therefore always use the HTML path so
+      // that DOM-patch operations work correctly on the intermediate output.
+      currentIsHtml = true;
+      totalTokensUsed += pass.tokensUsed;
+      totalPromptTokens += pass.promptTokens;
+      totalCompletionTokens += pass.completionTokens;
+      if (pass.parseError) lastParseError = pass.parseError;
+    }
   }
 
   // 6. Apply the configured subject prefix to the final processed subject so that
