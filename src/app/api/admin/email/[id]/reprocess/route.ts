@@ -35,6 +35,17 @@ export async function POST(
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
+    // Parse optional model override from request body
+    let modelOverride: string | undefined;
+    try {
+      const body = await request.json();
+      if (typeof body?.model === 'string' && body.model.trim()) {
+        modelOverride = body.model.trim();
+      }
+    } catch {
+      // No body or invalid JSON — proceed without model override
+    }
+
     const data = logSnap.data()!;
     const userId = data.userId as string;
     const emailFrom = (data.fromAddress as string) || '';
@@ -84,7 +95,8 @@ export async function POST(
       emailSubject,
       originalBody,
       matchingRules,
-      isHtml
+      isHtml,
+      modelOverride,
     );
 
     return NextResponse.json({

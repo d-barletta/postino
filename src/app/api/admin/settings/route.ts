@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest) {
       'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
       'emailDomain',
       'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
-      'maintenanceMode',
+      'maintenanceMode', 'rulesExecutionMode',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
+import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 
 interface OriginalEmail {
   id: string;
@@ -23,6 +24,11 @@ interface ReprocessResult {
   ruleApplied: string;
 }
 
+interface OpenRouterModel {
+  id: string;
+  name: string;
+}
+
 export default function OriginalEmailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -34,10 +40,26 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessResult, setReprocessResult] = useState<ReprocessResult | null>(null);
   const [reprocessError, setReprocessError] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [models, setModels] = useState<OpenRouterModel[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
 
   const toggleFullscreen = () => {
     setIsFullscreen((prev) => !prev);
   };
+
+  // Load available models for admin users
+  useEffect(() => {
+    if (!firebaseUser || !user?.isAdmin) return;
+    setModelsLoading(true);
+    firebaseUser.getIdToken().then((token) =>
+      fetch('/api/admin/openrouter-models', { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((data) => setModels((data.models || []) as OpenRouterModel[]))
+        .catch(() => setModels([]))
+        .finally(() => setModelsLoading(false))
+    );
+  }, [firebaseUser, user?.isAdmin]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -76,7 +98,8 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
       const token = await firebaseUser.getIdToken();
       const res = await fetch(`/api/admin/email/${id}/reprocess`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(selectedModel ? { model: selectedModel } : {}),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -252,7 +275,18 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="p-0 pb-5 space-y-4">
-                    <div className="flex justify-end">
+                    <div className="flex flex-wrap items-center justify-end gap-3">
+                      <div className="flex-1 min-w-48 max-w-xs">
+                        <Combobox
+                          options={models.map((m) => ({ value: m.id, label: `${m.name} (${m.id})` }) as ComboboxOption)}
+                          value={selectedModel}
+                          onValueChange={setSelectedModel}
+                          placeholder={modelsLoading ? 'Loading models…' : 'Default model'}
+                          searchPlaceholder="Search models..."
+                          emptyText="No models found."
+                          disabled={modelsLoading}
+                        />
+                      </div>
                       <button
                         onClick={handleReprocess}
                         disabled={reprocessing}

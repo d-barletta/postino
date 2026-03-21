@@ -46,6 +46,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     mailgunSandboxEmail: '',
     mailgunBaseUrl: 'https://api.mailgun.net',
     maintenanceMode: false,
+    rulesExecutionMode: 'sequential',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -264,6 +265,22 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
                     hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
                   />
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Parallel Rule Execution</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        When enabled, all matching rules are applied in a single LLM call instead of one call per rule.
+                        Reduces token usage and latency, but the LLM must honour all rules simultaneously.
+                      </p>
+                    </div>
+                    <Switch
+                      id="rules-execution-mode"
+                      checked={settings.rulesExecutionMode === 'parallel'}
+                      onCheckedChange={(checked) =>
+                        setSettings((p) => ({ ...p, rulesExecutionMode: checked ? 'parallel' : 'sequential' }))
+                      }
+                    />
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
