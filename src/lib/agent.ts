@@ -1006,11 +1006,11 @@ export async function processEmailWithAgent(
       : 4000;
 
   const subjectPrefix =
-    typeof settings?.emailSubjectPrefix === 'string' && settings.emailSubjectPrefix.length > 0
-      ? settings.emailSubjectPrefix
+    typeof settings?.emailSubjectPrefix === 'string'
+      ? settings.emailSubjectPrefix.trim()
       : '[Postino]';
   const buildFallbackSubject = (subjectValue: string) =>
-    subjectPrefix.trim().length > 0 ? `${subjectPrefix} ${subjectValue}`.trim() : subjectValue;
+    subjectPrefix.length > 0 ? `${subjectPrefix} ${subjectValue}`.trim() : subjectValue;
   const fallbackSubject = buildFallbackSubject(emailSubject);
 
   // 2. Create OpenRouter provider via Vercel AI SDK
@@ -1105,14 +1105,21 @@ export async function processEmailWithAgent(
     if (pass.parseError) lastParseError = pass.parseError;
   }
 
-  // 6. Calculate aggregate cost across all passes (pre-analysis + rule passes)
+  // 6. Apply the configured subject prefix to the final processed subject so that
+  //    every outgoing email carries the prefix regardless of whether the LLM
+  //    included it.  Skip if the prefix is empty (disabled) or already present.
+  if (subjectPrefix.length > 0 && !currentSubject.startsWith(subjectPrefix)) {
+    currentSubject = `${subjectPrefix} ${currentSubject}`.trim();
+  }
+
+  // 7. Calculate aggregate cost across all passes (pre-analysis + rule passes)
   const pricing = await getModelPricing(model, apiKey);
   const estimatedCost = calculateCost(totalPromptTokens, totalCompletionTokens, pricing);
 
   const ruleApplied =
     activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';
 
-  // 7. Update user memory with enriched entry (fire-and-forget; don't block the response)
+  // 8. Update user memory with enriched entry (fire-and-forget; don't block the response)
   const newEntry: EmailMemoryEntry = {
     logId,
     date: todayUtc(),
