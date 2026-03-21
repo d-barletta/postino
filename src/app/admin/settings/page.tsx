@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 import { Separator } from '@/components/ui/Separator';
 import { AlertCircle, CheckCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { Settings } from '@/types';
 
 interface OpenRouterModel {
@@ -189,13 +190,36 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
               <AccordionTrigger>AI / LLM Settings</AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4">
-                  <Input
-                    label="OpenRouter API Key"
-                    type="password"
-                    value={settings.llmApiKey || ''}
-                    onChange={(e) => setSettings((p) => ({ ...p, llmApiKey: e.target.value }))}
-                    placeholder="sk-or-..."
-                  />
+                  <div className="space-y-1.5">
+                    <label htmlFor="llm-api-key" className="text-sm font-medium leading-none text-gray-700 dark:text-gray-300">
+                      OpenRouter API Key
+                    </label>
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1 min-w-0">
+                        <Input
+                          id="llm-api-key"
+                          type="password"
+                          value={settings.llmApiKey || ''}
+                          onChange={(e) => setSettings((p) => ({ ...p, llmApiKey: e.target.value }))}
+                          placeholder="sk-or-..."
+                        />
+                      </div>
+                      <Button onClick={handleTestLlm} loading={llmTesting} variant="secondary">
+                        Test
+                      </Button>
+                    </div>
+                    {llmTestResult && (
+                      <div className={cn('text-sm flex flex-col gap-0.5', llmTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
+                        <span className="flex items-center gap-1">
+                          {llmTestResult.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                          {llmTestResult.message}
+                        </span>
+                        {llmTestResult.detail && (
+                          <span className="text-xs opacity-75 font-mono">{llmTestResult.detail}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="llm-model">LLM Model</Label>
                     <Combobox
@@ -240,6 +264,21 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
                     hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
                   />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="smtp">
+              <AccordionTrigger>Email Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <Input
+                    label="Email Domain"
+                    value={settings.emailDomain || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, emailDomain: e.target.value }))}
+                    placeholder="sandbox.postino.pro"
+                    hint="Domain used for generating user email addresses"
+                  />
                   <Input
                     label="Default Subject Prefix"
                     value={settings.emailSubjectPrefix || ''}
@@ -247,44 +286,6 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     placeholder="[Postino]"
                     hint="Used when the LLM does not return a subject. Leave empty to disable prefixing."
                   />
-                  <Separator />
-                  <div className="flex items-center gap-3">
-                    <Button onClick={handleTestLlm} loading={llmTesting} variant="secondary">
-                      Test Connection
-                    </Button>
-                    {llmTestResult && (
-                      <div className={`text-sm flex flex-col gap-0.5 ${llmTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        <span className="flex items-center gap-1">
-                          {llmTestResult.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                          {llmTestResult.message}
-                        </span>
-                        {llmTestResult.detail && (
-                          <span className="text-xs opacity-75 font-mono">{llmTestResult.detail}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="domain">
-              <AccordionTrigger>Email Domain</AccordionTrigger>
-              <AccordionContent>
-                <Input
-                  label="Email Domain"
-                  value={settings.emailDomain || ''}
-                  onChange={(e) => setSettings((p) => ({ ...p, emailDomain: e.target.value }))}
-                  placeholder="sandbox.postino.pro"
-                  hint="Domain used for generating user email addresses"
-                />
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="smtp">
-              <AccordionTrigger>SMTP Settings</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       label="SMTP Host"
