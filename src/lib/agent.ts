@@ -16,6 +16,7 @@
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject, generateText } from 'ai';
+import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
 import { adminDb } from './firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -820,6 +821,82 @@ function excerptForTrace(text: string, maxLen = 500): string {
   return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 }
 
+function extractFirstJsonObject(raw: string): string | null {
+  const start = raw.indexOf('{');
+  if (start < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (ch === '\\') {
+        escaping = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === '{') depth += 1;
+    if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return raw.slice(start, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function parseSubjectBodyFromText(raw: string): { subject: string; body: string } | null {
+  const trimmed = raw.trim();
+  const withoutFence = trimmed
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  const candidates = [
+    withoutFence,
+    extractFirstJsonObject(withoutFence) || '',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as { subject?: unknown; body?: unknown };
+      if (typeof parsed.subject === 'string' && typeof parsed.body === 'string') {
+        return { subject: parsed.subject, body: parsed.body };
+      }
+    } catch {
+      // Try repaired JSON next
+    }
+
+    try {
+      const repaired = jsonrepair(candidate);
+      const parsed = JSON.parse(repaired) as { subject?: unknown; body?: unknown };
+      if (typeof parsed.subject === 'string' && typeof parsed.body === 'string') {
+        return { subject: parsed.subject, body: parsed.body };
+      }
+    } catch {
+      // Continue with next candidate
+    }
+  }
+
+  return null;
+}
+
 /**
  * Run one LLM pass that applies one or more rules (or the "no rules" default)
  * to an email body.  When called with a single rule the caller is responsible
@@ -1093,11 +1170,66 @@ ${emailBodyForPrompt}`;
       });
     } catch (fallbackError) {
       const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : 'Unknown error';
-      console.error('Fallback pass also failed:', fallbackMessage);
-      parseError = `LLM request failed: ${message}; fallback failed: ${fallbackMessage}; email forwarded as-is`;
-      subject = fallbackSubject;
-      body = emailBody;
-      pushStep('fallback_pass_failed', 'error', fallbackMessage);
+      console.error('Fallback pass also failed, trying text-recovery fallback:', fallbackMessage);
+      pushStep('fallback_pass_failed', 'warning', fallbackMessage);
+
+      try {
+        const textRecoveryPrompt = `Return ONLY JSON with this exact shape:
+{"subject":"...","body":"..."}
+
+Rules:
+- subject must be a string
+- body must be full HTML string
+- no markdown fences
+- no extra keys
+
+FROM: ${sanitizeEmailField(emailFrom)}
+SUBJECT: ${sanitizeEmailField(emailSubject)}
+
+RULES:
+${rulesText}
+
+EMAIL BODY:
+${emailBodyForPrompt}`;
+
+        const { text, usage } = await generateText({
+          model: openrouterProvider(model),
+          system: `${systemPrompt}\n\nReturn strictly valid JSON only.`,
+          prompt: textRecoveryPrompt,
+          maxOutputTokens: Math.min(maxTokens, agentRuntimeSettings.fallbackPassMaxTokens),
+        });
+
+        const recovered = parseSubjectBodyFromText(text);
+        if (!recovered) {
+          throw new Error('Text-recovery parse failed');
+        }
+
+        subject = recovered.subject || fallbackSubject;
+        body = recovered.body || emailBody;
+        tokensUsed += usage?.totalTokens ?? 0;
+        promptTokens += usage?.inputTokens ?? 0;
+        completionTokens += usage?.outputTokens ?? 0;
+        parseError = `Primary pass failed (${message}); object fallback failed (${fallbackMessage}); recovered via text JSON repair fallback`;
+        pushStep('text_recovery_fallback', 'ok', 'Recovered via text fallback + JSON repair', {
+          subjectPreview: subject.slice(0, 120),
+          recoveryTokensUsed: usage?.totalTokens ?? 0,
+          ...(includeTraceExcerpts
+            ? {
+                promptExcerpt: excerptForTrace(textRecoveryPrompt),
+                responseExcerpt: excerptForTrace(text),
+              }
+            : {}),
+        });
+      } catch (textRecoveryError) {
+        const textRecoveryMessage = textRecoveryError instanceof Error
+          ? textRecoveryError.message
+          : 'Unknown error';
+        console.error('Text-recovery fallback also failed:', textRecoveryMessage);
+        parseError = `LLM request failed: ${message}; fallback failed: ${fallbackMessage}; text-recovery failed: ${textRecoveryMessage}; email forwarded as-is`;
+        subject = fallbackSubject;
+        body = emailBody;
+        pushStep('text_recovery_fallback_failed', 'error', textRecoveryMessage);
+      }
     }
   }
 
