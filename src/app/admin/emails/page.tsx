@@ -205,7 +205,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
     : logs;
 
   const btnBase = 'px-3 py-1 text-xs rounded-full transition-colors border whitespace-nowrap';
-  const btnActive = 'font-semibold bg-[#EFD957] dark:bg-violet-600 text-black dark:text-black border-transparent';
+  const btnActive = 'font-semibold bg-[#EFD957] dark:bg-[#EFD957] text-black dark:text-black border-transparent';
   const btnInactive = 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/10';
 
   const statusBtnClass = (active: boolean) => cn(btnBase, active ? btnActive : btnInactive);
