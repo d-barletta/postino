@@ -39,6 +39,30 @@ function matchesPattern(value: string, pattern?: string): boolean {
   return value.toLowerCase().includes(pattern.toLowerCase());
 }
 
+/**
+ * Recursively strips `undefined` values so payloads are always valid Firestore documents.
+ * Firestore rejects undefined both in objects and arrays.
+ */
+function sanitizeForFirestore<T>(value: T): T {
+  if (value === null) return value;
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => sanitizeForFirestore(item))
+      .filter((item) => item !== undefined) as T;
+  }
+
+  if (typeof value === 'object') {
+    const sanitizedEntries = Object.entries(value as Record<string, unknown>)
+      .map(([key, nested]) => [key, sanitizeForFirestore(nested)] as const)
+      .filter(([, nested]) => nested !== undefined);
+
+    return Object.fromEntries(sanitizedEntries) as T;
+  }
+
+  return value;
+}
+
 export async function processQueuedInboundPayload(
   payload: QueuedInboundPayload,
   attachments?: EmailAttachment[]
@@ -137,6 +161,8 @@ export async function processQueuedInboundPayload(
     },
   });
 
+  const safeTrace = result.trace ? sanitizeForFirestore(result.trace) : undefined;
+
   await logRef.update({
     processedAt: Timestamp.now(),
     status: 'forwarded',
@@ -144,7 +170,7 @@ export async function processQueuedInboundPayload(
     tokensUsed: result.tokensUsed,
     estimatedCost: result.estimatedCost,
     processedBody: result.body,
-    ...(result.trace ? { agentTrace: result.trace } : {}),
+    ...(safeTrace ? { agentTrace: safeTrace } : {}),
     ...(result.parseError ? { errorMessage: result.parseError } : {}),
   });
 }

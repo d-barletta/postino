@@ -79,12 +79,12 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="emails">Emails</TabsTrigger>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="overflow-x-auto whitespace-nowrap">
+          <TabsTrigger value="overview" className="mr-4 sm:mr-6">Overview</TabsTrigger>
+          <TabsTrigger value="users" className="mr-4 sm:mr-6">Users</TabsTrigger>
+          <TabsTrigger value="emails" className="mr-4 sm:mr-6">Emails</TabsTrigger>
+          <TabsTrigger value="jobs" className="mr-4 sm:mr-6">Jobs</TabsTrigger>
+          <TabsTrigger value="settings" className="mr-0">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
