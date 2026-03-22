@@ -94,7 +94,7 @@ function scheduleProcessingTrigger(request: NextRequest): void {
   }
 
   after(async () => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 10_000));
+    await new Promise<void>((resolve) => setTimeout(resolve, 20_000));
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const host = request.headers.get('host') || 'localhost:3000';
