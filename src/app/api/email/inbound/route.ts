@@ -219,6 +219,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Too many attachments (max ${MAX_ATTACHMENTS})` }, { status: 413 });
     }
 
+    // Parse content-id-map to identify inline attachments (e.g. CID-referenced images).
+    // Mailgun sends this as JSON: { "<cid@host>": "attachment-N" } or { "<cid@host>": ["attachment-N"] }
+    // We invert it to a map of field name → stripped content-id for quick lookup.
+    const contentIdFieldMap = new Map<string, string>();
+    const contentIdMapRaw = formData.get('content-id-map') as string | null;
+    if (contentIdMapRaw) {
+      try {
+        const parsed = JSON.parse(contentIdMapRaw) as Record<string, string | string[]>;
+        for (const [cid, fields] of Object.entries(parsed)) {
+          const strippedCid = cid.replace(/^<|>$/, '');
+          const fieldNames = Array.isArray(fields) ? fields : [fields];
+          for (const fieldName of fieldNames) {
+            if (typeof fieldName === 'string') {
+              contentIdFieldMap.set(fieldName, strippedCid);
+            }
+          }
+        }
+      } catch {
+        // Ignore malformed content-id-map; inline images will fall back to regular attachments.
+      }
+    }
+
     const attachments: EmailAttachment[] = [];
     let totalAttachmentBytes = 0;
     for (let i = 1; i <= attachmentCount; i++) {
@@ -234,10 +256,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
       }
 
+      const fieldName = `attachment-${i}`;
+      const contentId = contentIdFieldMap.get(fieldName);
       attachments.push({
         filename: file.name,
         content: await file.arrayBuffer(),
         contentType: file.type || 'application/octet-stream',
+        ...(contentId ? { contentId } : {}),
       });
     }
 
