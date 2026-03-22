@@ -1,4 +1,4 @@
-name: Process Email Jobs
+name: Process Emails Jobs
 
 on:
   schedule:
