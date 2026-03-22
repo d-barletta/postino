@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Switch } from '@/components/ui/Switch';
 
 interface JobCounts {
   pending: number;
@@ -160,18 +161,19 @@ export default function EmailJobsLiveTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setAutoRefresh((v) => !v)}
-              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                autoRefresh
-                  ? 'border-green-400 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/20 dark:text-green-300'
-                  : 'border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-300'
-              }`}
+          <div className="flex flex-wrap items-center gap-3">
+            <label
+              htmlFor="jobs-realtime-toggle"
+              className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-3 py-1 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300"
             >
-              Auto refresh: {autoRefresh ? 'ON' : 'OFF'}
-            </button>
+              <Switch
+                id="jobs-realtime-toggle"
+                checked={autoRefresh}
+                onCheckedChange={setAutoRefresh}
+                aria-label="Enable realtime refresh"
+              />
+              <span>Enable realtime (5s): {autoRefresh ? 'ON' : 'OFF'}</span>
+            </label>
             <Badge variant="info">Last update: {formatDate(data?.latestUpdatedAt ?? null)}</Badge>
           </div>
 
