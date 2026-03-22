@@ -6,8 +6,9 @@ import { EmailLogsCharts } from '@/components/admin/EmailLogsCharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { cn } from '@/lib/utils';
-import { RefreshCw, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { RefreshCw, ChevronLeft, ChevronRight, Search, X, Copy, Filter } from 'lucide-react';
 
 interface AdminEmailLog {
   id: string;
@@ -23,6 +24,31 @@ interface AdminEmailLog {
   tokensUsed: number | null;
   estimatedCost: number | null;
   errorMessage: string | null;
+  agentTrace: unknown | null;
+}
+
+interface AgentTraceStepView {
+  step: string;
+  status: 'ok' | 'warning' | 'error';
+  detail?: string;
+  data?: Record<string, unknown>;
+  ts: string;
+}
+
+interface AgentTraceView {
+  model: string;
+  mode: 'sequential' | 'parallel';
+  isHtmlInput: boolean;
+  startedAt: string;
+  finishedAt: string;
+  steps: AgentTraceStepView[];
+}
+
+function asAgentTrace(value: unknown): AgentTraceView | null {
+  if (!value || typeof value !== 'object') return null;
+  const trace = value as AgentTraceView;
+  if (!Array.isArray(trace.steps)) return null;
+  return trace;
 }
 
 const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
@@ -61,6 +87,8 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [warningsOnly, setWarningsOnly] = useState(false);
+  const [copiedTraceId, setCopiedTraceId] = useState<string | null>(null);
   const [cursorStack, setCursorStack] = useState<string[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -148,6 +176,16 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
     setStatusFilter(null);
     setSearchText('');
     setCursorStack([]);
+  }, []);
+
+  const handleCopyTrace = useCallback(async (logId: string, trace: unknown) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(trace, null, 2));
+      setCopiedTraceId(logId);
+      setTimeout(() => setCopiedTraceId((current) => (current === logId ? null : current)), 1800);
+    } catch {
+      // No-op; clipboard can fail on non-secure contexts.
+    }
   }, []);
 
   const currentPage = cursorStack.length + 1;
@@ -317,32 +355,112 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                       {expanded === log.id && (
                         <tr className="bg-yellow-50/40 dark:bg-yellow-900/5">
                           <td colSpan={8} className="px-6 py-4">
-                            <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-xs">
-                              <div>
-                                <dt className="font-medium text-gray-500 dark:text-gray-400">Email ID</dt>
-                                <dd className="text-gray-700 dark:text-gray-300 font-mono break-all">{log.id}</dd>
-                              </div>
-                              <div>
-                                <dt className="font-medium text-gray-500 dark:text-gray-400">To (Postino address)</dt>
-                                <dd className="text-gray-700 dark:text-gray-300 break-all">{log.toAddress}</dd>
-                              </div>
-                              <div>
-                                <dt className="font-medium text-gray-500 dark:text-gray-400">Processed at</dt>
-                                <dd className="text-gray-700 dark:text-gray-300">{formatDate(log.processedAt)}</dd>
-                              </div>
-                              {log.ruleApplied && (
-                                <div className="col-span-2 md:col-span-3">
-                                  <dt className="font-medium text-gray-500 dark:text-gray-400">Rule applied</dt>
-                                  <dd className="text-gray-700 dark:text-gray-300">{log.ruleApplied}</dd>
-                                </div>
+                            <Tabs defaultValue="details">
+                              <TabsList>
+                                <TabsTrigger value="details">Details</TabsTrigger>
+                                {asAgentTrace(log.agentTrace) && <TabsTrigger value="trace">Trace</TabsTrigger>}
+                              </TabsList>
+
+                              <TabsContent value="details">
+                                <dl className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-xs">
+                                  <div>
+                                    <dt className="font-medium text-gray-500 dark:text-gray-400">Email ID</dt>
+                                    <dd className="text-gray-700 dark:text-gray-300 font-mono break-all">{log.id}</dd>
+                                  </div>
+                                  <div>
+                                    <dt className="font-medium text-gray-500 dark:text-gray-400">To (Postino address)</dt>
+                                    <dd className="text-gray-700 dark:text-gray-300 break-all">{log.toAddress}</dd>
+                                  </div>
+                                  <div>
+                                    <dt className="font-medium text-gray-500 dark:text-gray-400">Processed at</dt>
+                                    <dd className="text-gray-700 dark:text-gray-300">{formatDate(log.processedAt)}</dd>
+                                  </div>
+                                  {log.ruleApplied && (
+                                    <div className="col-span-2 md:col-span-3">
+                                      <dt className="font-medium text-gray-500 dark:text-gray-400">Rule applied</dt>
+                                      <dd className="text-gray-700 dark:text-gray-300">{log.ruleApplied}</dd>
+                                    </div>
+                                  )}
+                                  {log.errorMessage && (
+                                    <div className="col-span-2 md:col-span-3">
+                                      <dt className="font-medium text-red-500 dark:text-red-400">Error</dt>
+                                      <dd className="text-red-600 dark:text-red-400 wrap-break-word">{log.errorMessage}</dd>
+                                    </div>
+                                  )}
+                                </dl>
+                              </TabsContent>
+
+                              {asAgentTrace(log.agentTrace) && (
+                                <TabsContent value="trace">
+                                  {(() => {
+                                    const trace = asAgentTrace(log.agentTrace)!;
+                                    const filteredSteps = warningsOnly
+                                      ? trace.steps.filter((s) => s.status === 'warning' || s.status === 'error')
+                                      : trace.steps;
+
+                                    return (
+                                      <div className="mt-3 space-y-3 text-xs">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Badge variant="info">Model: {trace.model}</Badge>
+                                          <Badge variant="default">Mode: {trace.mode}</Badge>
+                                          <Badge variant="default">HTML input: {trace.isHtmlInput ? 'yes' : 'no'}</Badge>
+                                          <Badge variant="default">Steps: {trace.steps.length}</Badge>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setWarningsOnly((v) => !v)}
+                                          >
+                                            <Filter className="h-3.5 w-3.5 mr-1" />
+                                            {warningsOnly ? 'Show all steps' : 'Only warnings/errors'}
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleCopyTrace(log.id, trace)}
+                                          >
+                                            <Copy className="h-3.5 w-3.5 mr-1" />
+                                            {copiedTraceId === log.id ? 'Copied' : 'Copy trace JSON'}
+                                          </Button>
+                                        </div>
+
+                                        <div className="space-y-2 max-h-64 overflow-auto pr-1">
+                                          {filteredSteps.length === 0 ? (
+                                            <p className="text-gray-500 dark:text-gray-400">No warning/error steps found for this trace.</p>
+                                          ) : (
+                                            filteredSteps.map((step, idx) => (
+                                              <div key={`${step.ts}-${idx}`} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/30 p-2">
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <p className="font-medium text-gray-800 dark:text-gray-100">{step.step}</p>
+                                                  <Badge variant={step.status === 'ok' ? 'success' : step.status === 'warning' ? 'warning' : 'error'}>
+                                                    {step.status}
+                                                  </Badge>
+                                                </div>
+                                                {step.detail && (
+                                                  <p className="mt-1 text-gray-600 dark:text-gray-300 wrap-break-word">{step.detail}</p>
+                                                )}
+                                                <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{formatDate(step.ts)}</p>
+                                              </div>
+                                            ))
+                                          )}
+                                        </div>
+
+                                        <details>
+                                          <summary className="cursor-pointer select-none text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                            View raw JSON
+                                          </summary>
+                                          <pre className="mt-2 max-h-96 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 text-[11px] leading-relaxed whitespace-pre-wrap wrap-break-word">
+                                            {JSON.stringify(trace, null, 2)}
+                                          </pre>
+                                        </details>
+                                      </div>
+                                    );
+                                  })()}
+                                </TabsContent>
                               )}
-                              {log.errorMessage && (
-                                <div className="col-span-2 md:col-span-3">
-                                  <dt className="font-medium text-red-500 dark:text-red-400">Error</dt>
-                                  <dd className="text-red-600 dark:text-red-400 wrap-break-word">{log.errorMessage}</dd>
-                                </div>
-                              )}
-                            </dl>
+                            </Tabs>
                           </td>
                         </tr>
                       )}

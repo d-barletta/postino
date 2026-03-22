@@ -28,6 +28,8 @@ import {
   getOpenRouterClient,
   getModelPricing,
   calculateCost,
+  type AgentTrace,
+  type AgentTraceStep,
 } from './openrouter';
 import type { ProcessEmailResult, RuleForProcessing } from './openrouter';
 import type { EmailMemoryEntry, UserMemory } from '@/types';
@@ -44,43 +46,56 @@ const MAX_MEMORY_ENTRIES = 200;
 const MEMORY_RETENTION_DAYS = 30;
 
 /**
- * Character count of the sanitised email body above which the agent switches
- * to the chunked map-reduce path (~15 000 tokens at 4 chars/token).
+ * Default character threshold above which the agent switches to chunked
+ * map-reduce processing.
  */
 const CHUNK_THRESHOLD_CHARS = 60_000;
 
-/**
- * Target size for each chunk sent to the map phase (~3 750 tokens at 4 chars/token).
- * Kept well below typical context limits so the system prompt and few-shot context
- * all fit comfortably.
- */
+/** Default target size for each map-phase chunk. */
 const CHUNK_SIZE_CHARS = 15_000;
 
-/**
- * Maximum output tokens requested for each chunk-extraction call in the map phase.
- * A compact extraction is enough — the reduce phase will apply the actual rules.
- */
+/** Default max output tokens for each chunk extraction call. */
 const CHUNK_EXTRACT_MAX_TOKENS = 600;
 
-/**
- * Maximum output tokens for the pre-analysis classification call.
- * The schema is small so a tight budget is sufficient.
- */
+/** Default max output tokens for the pre-analysis classification call. */
 const ANALYSIS_MAX_TOKENS = 300;
 
-/**
- * Maximum characters of the email body passed to the pre-analysis call.
- * The first ~2 000 tokens is more than enough to classify an email and
- * generate a short summary — no need to send the full body.
- */
+/** Default max body characters included in pre-analysis. */
 const BODY_ANALYSIS_MAX_CHARS = 8_000;
 
-/**
- * Maximum characters to include from a raw chunk when the LLM extraction call
- * for that chunk fails.  Kept short so the reduce phase still has a usable
- * (if unprocessed) excerpt rather than an oversized raw fragment.
- */
+/** Default max raw characters used when a chunk extraction call fails. */
 const CHUNK_FALLBACK_MAX_CHARS = 2_000;
+
+/** Default max tokens for the simplified fallback pass. */
+const FALLBACK_PASS_MAX_TOKENS = 3_000;
+
+interface AgentRuntimeSettings {
+  chunkThresholdChars: number;
+  chunkSizeChars: number;
+  chunkExtractMaxTokens: number;
+  analysisMaxTokens: number;
+  bodyAnalysisMaxChars: number;
+  chunkFallbackMaxChars: number;
+  fallbackPassMaxTokens: number;
+}
+
+function pickPositiveInt(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : fallback;
+}
+
+function resolveAgentRuntimeSettings(settings: Record<string, unknown> | undefined): AgentRuntimeSettings {
+  return {
+    chunkThresholdChars: pickPositiveInt(settings?.agentChunkThresholdChars, CHUNK_THRESHOLD_CHARS),
+    chunkSizeChars: pickPositiveInt(settings?.agentChunkSizeChars, CHUNK_SIZE_CHARS),
+    chunkExtractMaxTokens: pickPositiveInt(settings?.agentChunkExtractMaxTokens, CHUNK_EXTRACT_MAX_TOKENS),
+    analysisMaxTokens: pickPositiveInt(settings?.agentAnalysisMaxTokens, ANALYSIS_MAX_TOKENS),
+    bodyAnalysisMaxChars: pickPositiveInt(settings?.agentBodyAnalysisMaxChars, BODY_ANALYSIS_MAX_CHARS),
+    chunkFallbackMaxChars: pickPositiveInt(settings?.agentChunkFallbackMaxChars, CHUNK_FALLBACK_MAX_CHARS),
+    fallbackPassMaxTokens: pickPositiveInt(settings?.agentFallbackMaxTokens, FALLBACK_PASS_MAX_TOKENS),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Memory helpers
@@ -265,7 +280,7 @@ const domPatchSchema = z.object({
     'remove',          // remove the element entirely
   ]).describe('DOM operation to apply to the targeted element'),
   html: z.string().describe('HTML to inject. Use an empty string for "remove".'),
-  targetIndex: z.number().nullable().describe(
+  targetIndex: z.number().int().nonnegative().nullable().describe(
     'Set to null when targeting the first (or only) match. ' +
     'Set to a non-negative 0-based index when the selector inevitably matches multiple elements and ' +
     'you need to target a specific occurrence (e.g. 1 for the second match). ' +
@@ -302,7 +317,7 @@ function applyDomPatches(html: string, patches: DomPatch[]): string {
       let $el = $all;
       if ($all.length > 1) {
         const targetIdx = typeof patch.targetIndex === 'number' ? patch.targetIndex : 0;
-        const safeIdx = Math.min(targetIdx, $all.length - 1);
+        const safeIdx = Math.max(0, Math.min(targetIdx, $all.length - 1));
         if (safeIdx !== targetIdx) {
           console.warn(
             `DOM patch: targetIndex ${targetIdx} out of bounds for selector "${patch.selector}" ` +
@@ -522,11 +537,12 @@ async function preAnalyzeEmail(
   isHtml: boolean,
   openrouterProvider: ReturnType<typeof createOpenAI>,
   model: string,
+  agentRuntimeSettings: AgentRuntimeSettings,
 ): Promise<PreAnalysisResult> {
   // Use only an excerpt of the body — full content is not needed for classification.
   const bodyExcerpt = isHtml
-    ? stripHtmlForChunking(emailBody).slice(0, BODY_ANALYSIS_MAX_CHARS)
-    : emailBody.slice(0, BODY_ANALYSIS_MAX_CHARS);
+    ? stripHtmlForChunking(emailBody).slice(0, agentRuntimeSettings.bodyAnalysisMaxChars)
+    : emailBody.slice(0, agentRuntimeSettings.bodyAnalysisMaxChars);
 
   try {
     const { object, usage } = await generateObject({
@@ -541,7 +557,7 @@ SUBJECT: ${sanitizeEmailField(emailSubject)}
 
 BODY (excerpt):
 ${bodyExcerpt}`,
-      maxOutputTokens: ANALYSIS_MAX_TOKENS,
+  maxOutputTokens: agentRuntimeSettings.analysisMaxTokens,
     });
 
     return {
@@ -650,9 +666,10 @@ async function processEmailInChunks(
   openrouterProvider: ReturnType<typeof createOpenAI>,
   model: string,
   maxOutputTokens: number,
-  fallbackSubject: string
+  fallbackSubject: string,
+  agentRuntimeSettings: AgentRuntimeSettings,
 ): Promise<{ subject: string; body: string; tokensUsed: number; promptTokens: number; completionTokens: number }> {
-  const chunks = splitIntoChunks(plainTextBody, CHUNK_SIZE_CHARS);
+  const chunks = splitIntoChunks(plainTextBody, agentRuntimeSettings.chunkSizeChars);
   let totalTokens = 0;
   let totalPromptTokens = 0;
   let totalCompletionTokens = 0;
@@ -676,7 +693,7 @@ ${chunks[i]}`;
         system:
           'You are a content extractor. Your only job is to distil the meaningful text from a section of an email, removing boilerplate. Return plain text.',
         prompt: chunkPrompt,
-        maxOutputTokens: CHUNK_EXTRACT_MAX_TOKENS,
+        maxOutputTokens: agentRuntimeSettings.chunkExtractMaxTokens,
       });
       extractions.push(text.trim());
       totalTokens += usage?.totalTokens ?? 0;
@@ -686,7 +703,7 @@ ${chunks[i]}`;
       // If a single chunk fails, fall back to raw (truncated) text so we
       // still have something to pass to the reduce phase.
       console.error(`Chunk ${i + 1} extraction failed:`, err);
-      extractions.push(chunks[i].slice(0, CHUNK_FALLBACK_MAX_CHARS));
+      extractions.push(chunks[i].slice(0, agentRuntimeSettings.chunkFallbackMaxChars));
     }
   }
 
@@ -697,7 +714,7 @@ ${chunks[i]}`;
   const rulesText =
     activeRules.length > 0
       ? activeRules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
-      : 'No specific rules. Forward the email with a brief summary prepended.';
+      : 'No specific rules. Preserve the original email content and subject unless a global system behavior explicitly requires a minimal, non-destructive cleanup.';
 
   const reduceSystemPrompt = `${systemPrompt}
 
@@ -718,6 +735,14 @@ ${isHtml ? `SELECTOR RULES:
 - Prefer: ID selectors (#id), child combinators (parent > child), :nth-of-type(n), [attribute] selectors.
 - AVOID generic tag selectors (p, td, div, span) unless they are unique in the document.
 - If your best selector still matches multiple elements, set targetIndex to the 0-based position of the correct one.
+
+CHECKLIST BEFORE RETURNING PATCHES:
+1) Selector is unique or targetIndex is provided.
+2) Operation is minimal and does not rewrite unrelated sections.
+3) HTML snippet is valid for the selected node.
+
+EXAMPLE PATCH:
+[{"selector":"table.main > tbody > tr:nth-of-type(2) > td","operation":"replace_content","html":"<p>Updated content</p>","targetIndex":null}]
 
 ` : ''}EXTRACTED CONTENT (${chunks.length} chunks combined):
 ${combinedContent}
@@ -788,6 +813,11 @@ interface SingleRulePassResult {
   promptTokens: number;
   completionTokens: number;
   parseError?: string;
+  traceSteps: AgentTraceStep[];
+}
+
+function excerptForTrace(text: string, maxLen = 500): string {
+  return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 }
 
 /**
@@ -822,12 +852,15 @@ async function runSingleRulePass(
   model: string,
   maxTokens: number,
   fallbackSubject: string,
+  agentRuntimeSettings: AgentRuntimeSettings,
+  tracingEnabled: boolean,
+  includeTraceExcerpts: boolean,
 ): Promise<SingleRulePassResult> {
   // Build the rules text: combine multiple rules or use the "no rules" fallback.
   const rulesText =
     rules.length > 0
       ? rules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
-      : 'No specific rules. Forward the email as-is with a brief summary prepended.';
+      : 'No specific rules. Preserve the original email content and subject unless a global system behavior explicitly requires a minimal, non-destructive cleanup.';
 
   const systemPrompt = `${systemPromptBase}
 
@@ -846,9 +879,25 @@ ${rulesText}
   let promptTokens = 0;
   let completionTokens = 0;
   let parseError: string | undefined;
+  const traceSteps: AgentTraceStep[] = [];
+
+  const pushStep = (
+    step: string,
+    status: AgentTraceStep['status'],
+    detail?: string,
+    data?: Record<string, unknown>
+  ) => {
+    if (!tracingEnabled) return;
+    traceSteps.push({ step, status, detail, data, ts: new Date().toISOString() });
+  };
 
   try {
-    if (emailBodyForPrompt.length > CHUNK_THRESHOLD_CHARS) {
+    if (emailBodyForPrompt.length > agentRuntimeSettings.chunkThresholdChars) {
+      pushStep('pass_mode', 'ok', 'Chunked map-reduce selected', {
+        emailBodyLength: emailBodyForPrompt.length,
+        chunkThreshold: agentRuntimeSettings.chunkThresholdChars,
+        ...(includeTraceExcerpts ? { bodyExcerpt: excerptForTrace(emailBodyForPrompt) } : {}),
+      });
       const plainBody = isHtml ? stripHtmlForChunking(emailBody) : emailBodyForPrompt;
       const result = await processEmailInChunks(
         emailFrom,
@@ -862,13 +911,22 @@ ${rulesText}
         model,
         maxTokens,
         fallbackSubject,
+        agentRuntimeSettings,
       );
       subject = result.subject;
       body = result.body;
       tokensUsed = result.tokensUsed;
       promptTokens = result.promptTokens;
       completionTokens = result.completionTokens;
+      pushStep('chunked_process', 'ok', 'Chunked processing completed', {
+        tokensUsed,
+        promptTokens,
+        completionTokens,
+      });
     } else if (isHtml) {
+      pushStep('pass_mode', 'ok', 'HTML DOM-patch mode selected', {
+        emailBodyLength: emailBodyForPrompt.length,
+      });
       const htmlStructureSection = `\nHTML STRUCTURE (use this to choose unique selectors):\n${extractHtmlStructure(emailBody)}\n`;
 
       const userPrompt = `Process this incoming email using surgical DOM patches.
@@ -881,6 +939,14 @@ SELECTOR RULES:
 - Prefer: ID selectors (#id), child combinators (parent > child), :nth-of-type(n), [attribute] selectors.
 - AVOID generic tag selectors (p, td, div, span) unless they are unique in the document.
 - If your best selector still matches multiple elements, set targetIndex to the 0-based position of the correct one.
+
+CHECKLIST BEFORE RETURNING PATCHES:
+1) Selector is unique or targetIndex is provided.
+2) Operation is minimal and does not rewrite unrelated sections.
+3) HTML snippet is valid for the selected node.
+
+EXAMPLE PATCH:
+[{"selector":"table.main > tbody > tr:nth-of-type(2) > td","operation":"replace_content","html":"<p>Updated content</p>","targetIndex":null}]
 
 Apply the user rules to BOTH the SUBJECT line and the HTML email body below. Prefer targeted DOM patches over a full body replacement — only set requiresFullBodyReplacement=true when the rules require translating or completely rewriting the entire content.
 
@@ -914,7 +980,28 @@ ${emailBodyForPrompt}`;
       tokensUsed = usage?.totalTokens ?? 0;
       promptTokens = usage?.inputTokens ?? 0;
       completionTokens = usage?.outputTokens ?? 0;
+      pushStep('html_llm_response', 'ok', 'HTML pass completed', {
+        requiresFullBodyReplacement: object.requiresFullBodyReplacement,
+        patchesCount: object.patches.length,
+        subjectPreview: (subject || '').slice(0, 120),
+        tokensUsed,
+        ...(includeTraceExcerpts
+          ? {
+              promptExcerpt: excerptForTrace(userPrompt),
+              responseExcerpt: excerptForTrace(
+                JSON.stringify({
+                  subject: object.subject,
+                  requiresFullBodyReplacement: object.requiresFullBodyReplacement,
+                  patchesCount: object.patches.length,
+                })
+              ),
+            }
+          : {}),
+      });
     } else {
+      pushStep('pass_mode', 'ok', 'Plain-text mode selected', {
+        emailBodyLength: emailBodyForPrompt.length,
+      });
       const userPrompt = `Process this incoming email:
 
 FROM: ${sanitizeEmailField(emailFrom)}
@@ -941,16 +1028,80 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
       tokensUsed = usage?.totalTokens ?? 0;
       promptTokens = usage?.inputTokens ?? 0;
       completionTokens = usage?.outputTokens ?? 0;
+      pushStep('text_llm_response', 'ok', 'Plain-text pass completed', {
+        subjectPreview: (subject || '').slice(0, 120),
+        tokensUsed,
+        ...(includeTraceExcerpts
+          ? {
+              promptExcerpt: excerptForTrace(userPrompt),
+              responseExcerpt: excerptForTrace(JSON.stringify({ subject: object.subject, body: object.body })),
+            }
+          : {}),
+      });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Agent LLM request failed:', message);
-    parseError = `LLM request failed: ${message}; email forwarded as-is`;
-    subject = fallbackSubject;
-    body = emailBody;
+    console.error('Agent LLM request failed, trying low-complexity fallback:', message);
+    pushStep('primary_pass_failed', 'warning', message);
+
+    // Second attempt for weaker models: avoid DOM patch schema complexity and
+    // ask for a single full HTML body output.
+    try {
+      const fallbackPrompt = `Process this incoming email using a simple strategy.
+
+FROM: ${sanitizeEmailField(emailFrom)}
+SUBJECT: ${sanitizeEmailField(emailSubject)}
+
+RULES:
+${rulesText}
+
+INSTRUCTIONS:
+- Apply rules to both subject and body.
+- Keep important details intact.
+- Return full email HTML in the body field.
+- Do not return DOM patches.
+
+EMAIL BODY:
+${emailBodyForPrompt}`;
+
+      const { object, usage } = await generateObject({
+        model: openrouterProvider(model),
+        schema: z.object({
+          subject: z.string().describe('Processed subject line'),
+          body: z.string().describe('Full processed email body as HTML'),
+        }),
+        system: `${systemPrompt}\n\nFallback mode: keep output simple and deterministic. Return only subject and body.`,
+        prompt: fallbackPrompt,
+        maxOutputTokens: Math.min(maxTokens, agentRuntimeSettings.fallbackPassMaxTokens),
+      });
+
+      subject = object.subject || fallbackSubject;
+      body = object.body || emailBody;
+      tokensUsed += usage?.totalTokens ?? 0;
+      promptTokens += usage?.inputTokens ?? 0;
+      completionTokens += usage?.outputTokens ?? 0;
+      parseError = `Primary pass failed (${message}); recovered with low-complexity fallback`;
+      pushStep('fallback_pass', 'ok', 'Recovered with low-complexity fallback', {
+        subjectPreview: (subject || '').slice(0, 120),
+        fallbackTokensUsed: usage?.totalTokens ?? 0,
+        ...(includeTraceExcerpts
+          ? {
+              promptExcerpt: excerptForTrace(fallbackPrompt),
+              responseExcerpt: excerptForTrace(JSON.stringify({ subject: object.subject, body: object.body })),
+            }
+          : {}),
+      });
+    } catch (fallbackError) {
+      const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : 'Unknown error';
+      console.error('Fallback pass also failed:', fallbackMessage);
+      parseError = `LLM request failed: ${message}; fallback failed: ${fallbackMessage}; email forwarded as-is`;
+      subject = fallbackSubject;
+      body = emailBody;
+      pushStep('fallback_pass_failed', 'error', fallbackMessage);
+    }
   }
 
-  return { subject, body, tokensUsed, promptTokens, completionTokens, parseError };
+  return { subject, body, tokensUsed, promptTokens, completionTokens, parseError, traceSteps };
 }
 
 /**
@@ -988,6 +1139,19 @@ export async function processEmailWithAgent(
   isHtml = false,
   modelOverride?: string,
 ): Promise<ProcessEmailResult> {
+  const traceStartedAt = new Date().toISOString();
+  const traceSteps: AgentTraceStep[] = [];
+  let tracingEnabled = true;
+  const pushTrace = (
+    step: string,
+    status: AgentTraceStep['status'],
+    detail?: string,
+    data?: Record<string, unknown>
+  ) => {
+    if (!tracingEnabled) return;
+    traceSteps.push({ step, status, detail, data, ts: new Date().toISOString() });
+  };
+
   // 1. Load settings + OpenRouter client details
   const { apiKey, model: settingsModel } = await getOpenRouterClient();
   const model = modelOverride || settingsModel;
@@ -1009,6 +1173,17 @@ export async function processEmailWithAgent(
     typeof settings?.llmMaxTokens === 'number' && settings.llmMaxTokens > 0
       ? settings.llmMaxTokens
       : 4000;
+
+  const agentRuntimeSettings = resolveAgentRuntimeSettings(settings as Record<string, unknown> | undefined);
+  tracingEnabled = settings?.agentTracingEnabled !== false;
+  const includeTraceExcerpts = tracingEnabled && settings?.agentTraceIncludeExcerpts === true;
+  pushTrace('settings_loaded', 'ok', 'Loaded runtime settings', {
+    model,
+    maxTokens,
+    agentRuntimeSettings,
+    tracingEnabled,
+    includeTraceExcerpts,
+  });
 
   const subjectPrefix =
     typeof settings?.emailSubjectPrefix === 'string'
@@ -1034,9 +1209,18 @@ export async function processEmailWithAgent(
     { analysis, tokensUsed: analysisTotalTokens, promptTokens: analysisPromptTokens, completionTokens: analysisCompletionTokens },
     memory,
   ] = await Promise.all([
-    preAnalyzeEmail(emailFrom, emailSubject, emailBody, isHtml, openrouter, model),
+    preAnalyzeEmail(emailFrom, emailSubject, emailBody, isHtml, openrouter, model, agentRuntimeSettings),
     getUserMemory(userId),
   ]);
+  pushTrace('pre_analysis', analysis ? 'ok' : 'warning', analysis ? 'Pre-analysis completed' : 'Pre-analysis unavailable', {
+    emailType: analysis?.emailType,
+    topicsCount: analysis?.topics?.length ?? 0,
+    analysisTokens: analysisTotalTokens,
+    ...(includeTraceExcerpts ? { summaryExcerpt: analysis?.summary ? excerptForTrace(analysis.summary) : '' } : {}),
+  });
+  pushTrace('memory_loaded', 'ok', 'Loaded user memory', {
+    entries: memory.entries.length,
+  });
 
   // 4. Build context sections for rule-application prompts.
   const memoryContext = buildMemoryContext(memory.entries, emailFrom);
@@ -1065,6 +1249,11 @@ export async function processEmailWithAgent(
   // Determine the rules execution mode from settings (default: sequential).
   const rulesExecutionMode =
     settings?.rulesExecutionMode === 'parallel' ? 'parallel' : 'sequential';
+  pushTrace('rules_selected', 'ok', 'Prepared rules for processing', {
+    activeRulesCount: activeRules.length,
+    executionMode: rulesExecutionMode,
+    activeRuleNames: activeRules.map((r) => r.name),
+  });
 
   if (rulesExecutionMode === 'parallel' && activeRules.length > 0) {
     // 5a. Combined mode: apply all rules in a single LLM call.
@@ -1081,6 +1270,9 @@ export async function processEmailWithAgent(
       model,
       maxTokens,
       fallbackSubject,
+      agentRuntimeSettings,
+      tracingEnabled,
+      includeTraceExcerpts,
     );
     currentSubject = pass.subject;
     currentBody = pass.body;
@@ -1089,6 +1281,7 @@ export async function processEmailWithAgent(
     totalPromptTokens += pass.promptTokens;
     totalCompletionTokens += pass.completionTokens;
     if (pass.parseError) lastParseError = pass.parseError;
+    traceSteps.push(...pass.traceSteps);
   } else {
     // 5b. Sequential mode (default): apply each rule as a separate LLM call so
     //     the output of rule N becomes the input for rule N+1.  This guarantees
@@ -1129,6 +1322,9 @@ export async function processEmailWithAgent(
         model,
         maxTokens,
         currentFallbackSubject,
+        agentRuntimeSettings,
+        tracingEnabled,
+        includeTraceExcerpts,
       );
 
       currentSubject = pass.subject;
@@ -1142,6 +1338,11 @@ export async function processEmailWithAgent(
       totalPromptTokens += pass.promptTokens;
       totalCompletionTokens += pass.completionTokens;
       if (pass.parseError) lastParseError = pass.parseError;
+      traceSteps.push(...pass.traceSteps);
+      pushTrace('sequential_pass_complete', 'ok', `Completed pass ${passIndex + 1}/${rulesToProcess.length}`, {
+        subjectPreview: currentSubject.slice(0, 120),
+        passTokens: pass.tokensUsed,
+      });
     }
   }
 
@@ -1155,6 +1356,12 @@ export async function processEmailWithAgent(
   // 7. Calculate aggregate cost across all passes (pre-analysis + rule passes)
   const pricing = await getModelPricing(model, apiKey);
   const estimatedCost = calculateCost(totalPromptTokens, totalCompletionTokens, pricing);
+  pushTrace('cost_calculated', 'ok', 'Calculated total token usage and cost', {
+    totalTokensUsed,
+    totalPromptTokens,
+    totalCompletionTokens,
+    estimatedCost,
+  });
 
   const ruleApplied =
     activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';
@@ -1179,12 +1386,24 @@ export async function processEmailWithAgent(
     updatedAt: new Date(),
   }).catch((err) => console.error('Failed to update user memory:', err));
 
+  const trace: AgentTrace | undefined = tracingEnabled
+    ? {
+        model,
+        mode: rulesExecutionMode,
+        isHtmlInput: isHtml,
+        startedAt: traceStartedAt,
+        finishedAt: new Date().toISOString(),
+        steps: traceSteps,
+      }
+    : undefined;
+
   return {
     subject: currentSubject,
     body: currentBody,
     tokensUsed: totalTokensUsed,
     estimatedCost,
     ruleApplied,
+    ...(trace ? { trace } : {}),
     ...(lastParseError ? { parseError: lastParseError } : {}),
   };
 }

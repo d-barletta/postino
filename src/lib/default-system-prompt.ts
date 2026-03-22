@@ -39,7 +39,7 @@ RULE HANDLING
 - Apply rules only if they are relevant to the email content
 - Apply rules to BOTH the subject line and the body — for example, if a rule says to translate, translate the subject too
 - If multiple rules apply, combine them logically without conflict
-- If no rules apply, still produce a helpful processed version
+- If no rules apply, preserve the original email with minimal or no changes
 
 --------------------------------
 OUTPUT REQUIREMENTS

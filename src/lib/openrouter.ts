@@ -74,6 +74,24 @@ export interface ProcessEmailResult {
   estimatedCost: number;
   ruleApplied: string;
   parseError?: string;
+  trace?: AgentTrace;
+}
+
+export interface AgentTraceStep {
+  step: string;
+  status: 'ok' | 'warning' | 'error';
+  detail?: string;
+  data?: Record<string, unknown>;
+  ts: string;
+}
+
+export interface AgentTrace {
+  model: string;
+  mode: 'sequential' | 'parallel';
+  isHtmlInput: boolean;
+  startedAt: string;
+  finishedAt: string;
+  steps: AgentTraceStep[];
 }
 
 /** Pricing for a specific model (USD per token). */

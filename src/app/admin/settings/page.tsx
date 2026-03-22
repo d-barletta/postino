@@ -25,6 +25,20 @@ interface AdminSettingsPageProps {
   showPageHeader?: boolean;
 }
 
+const AGENT_LIMITS = {
+  chunkThresholdChars: { min: 5000, max: 300000 },
+  chunkSizeChars: { min: 1000, max: 100000 },
+  chunkExtractMaxTokens: { min: 100, max: 4000 },
+  analysisMaxTokens: { min: 100, max: 2000 },
+  bodyAnalysisMaxChars: { min: 500, max: 50000 },
+  chunkFallbackMaxChars: { min: 200, max: 10000 },
+  fallbackPassMaxTokens: { min: 500, max: 6000 },
+} as const;
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(value, max));
+}
+
 export default function AdminSettingsPage({ showPageHeader = true }: AdminSettingsPageProps) {
   const { firebaseUser } = useAuth();
   const [settings, setSettings] = useState<Partial<Settings>>({
@@ -34,6 +48,15 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     llmMaxTokens: 4000,
     llmSystemPrompt: '',
     emailSubjectPrefix: '[Postino]',
+    agentChunkThresholdChars: 60000,
+    agentChunkSizeChars: 15000,
+    agentChunkExtractMaxTokens: 600,
+    agentAnalysisMaxTokens: 300,
+    agentBodyAnalysisMaxChars: 8000,
+    agentChunkFallbackMaxChars: 2000,
+    agentFallbackMaxTokens: 3000,
+    agentTracingEnabled: true,
+    agentTraceIncludeExcerpts: false,
     smtpHost: '',
     smtpPort: 587,
     smtpUser: '',
@@ -51,6 +74,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState('');
@@ -116,7 +140,20 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
 
   const handleSave = async () => {
     if (!firebaseUser) return;
+
+    const threshold = settings.agentChunkThresholdChars;
+    const chunkSize = settings.agentChunkSizeChars;
+    if (
+      typeof threshold === 'number' &&
+      typeof chunkSize === 'number' &&
+      chunkSize >= threshold
+    ) {
+      setSaveError('Agent Settings invalid: Chunk Size must be smaller than Chunk Threshold.');
+      return;
+    }
+
     setSaving(true);
+    setSaveError('');
     try {
       const token = await firebaseUser.getIdToken();
       const res = await fetch('/api/admin/settings', {
@@ -124,7 +161,13 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       });
-      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || 'Failed to save settings');
+      }
     } finally {
       setSaving(false);
     }
@@ -285,6 +328,182 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
               </AccordionContent>
             </AccordionItem>
 
+            <AccordionItem value="agent">
+              <AccordionTrigger>Agent Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable Agent Tracing</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Stores a step-by-step execution trace for each processed email and shows it in Admin Email Logs.
+                      </p>
+                    </div>
+                    <Switch
+                      id="agent-tracing-enabled"
+                      checked={settings.agentTracingEnabled !== false}
+                      onCheckedChange={(checked) => setSettings((p) => ({ ...p, agentTracingEnabled: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Include Prompt/Response Excerpts</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Adds short excerpts of prompts and model outputs to traces for deeper debugging. Disabled by default.
+                      </p>
+                    </div>
+                    <Switch
+                      id="agent-trace-include-excerpts"
+                      checked={settings.agentTraceIncludeExcerpts === true}
+                      onCheckedChange={(checked) => setSettings((p) => ({ ...p, agentTraceIncludeExcerpts: checked }))}
+                    />
+                  </div>
+
+                  <Input
+                    label="Chunk Threshold (chars)"
+                    type="number"
+                    min={AGENT_LIMITS.chunkThresholdChars.min}
+                    max={AGENT_LIMITS.chunkThresholdChars.max}
+                    value={settings.agentChunkThresholdChars ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkThresholdChars:
+                          e.target.value === ''
+                            ? undefined
+                            : isNaN(n)
+                              ? p.agentChunkThresholdChars
+                              : clampNumber(n, AGENT_LIMITS.chunkThresholdChars.min, AGENT_LIMITS.chunkThresholdChars.max),
+                      }));
+                    }}
+                    hint={`If email body length exceeds this value, the agent switches to chunked map-reduce mode (${AGENT_LIMITS.chunkThresholdChars.min}-${AGENT_LIMITS.chunkThresholdChars.max}).`}
+                  />
+                  <Input
+                    label="Chunk Size (chars)"
+                    type="number"
+                    min={AGENT_LIMITS.chunkSizeChars.min}
+                    max={AGENT_LIMITS.chunkSizeChars.max}
+                    value={settings.agentChunkSizeChars ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkSizeChars:
+                          e.target.value === ''
+                            ? undefined
+                            : isNaN(n)
+                              ? p.agentChunkSizeChars
+                              : clampNumber(n, AGENT_LIMITS.chunkSizeChars.min, AGENT_LIMITS.chunkSizeChars.max),
+                      }));
+                    }}
+                    hint={`Target size for each map-phase chunk (${AGENT_LIMITS.chunkSizeChars.min}-${AGENT_LIMITS.chunkSizeChars.max}).`}
+                  />
+                  <Input
+                    label="Chunk Extract Max Tokens"
+                    type="number"
+                    min={AGENT_LIMITS.chunkExtractMaxTokens.min}
+                    max={AGENT_LIMITS.chunkExtractMaxTokens.max}
+                    value={settings.agentChunkExtractMaxTokens ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkExtractMaxTokens:
+                          e.target.value === ''
+                            ? undefined
+                            : isNaN(n)
+                              ? p.agentChunkExtractMaxTokens
+                              : clampNumber(n, AGENT_LIMITS.chunkExtractMaxTokens.min, AGENT_LIMITS.chunkExtractMaxTokens.max),
+                      }));
+                    }}
+                    hint={`Max tokens for each chunk extraction LLM call (${AGENT_LIMITS.chunkExtractMaxTokens.min}-${AGENT_LIMITS.chunkExtractMaxTokens.max}).`}
+                  />
+                  <Input
+                    label="Pre-analysis Max Tokens"
+                    type="number"
+                    min={AGENT_LIMITS.analysisMaxTokens.min}
+                    max={AGENT_LIMITS.analysisMaxTokens.max}
+                    value={settings.agentAnalysisMaxTokens ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({
+                        ...p,
+                        agentAnalysisMaxTokens:
+                          e.target.value === ''
+                            ? undefined
+                            : isNaN(n)
+                              ? p.agentAnalysisMaxTokens
+                              : clampNumber(n, AGENT_LIMITS.analysisMaxTokens.min, AGENT_LIMITS.analysisMaxTokens.max),
+                      }));
+                    }}
+                    hint={`Max tokens for pre-analysis classification call (${AGENT_LIMITS.analysisMaxTokens.min}-${AGENT_LIMITS.analysisMaxTokens.max}).`}
+                  />
+                  <Input
+                    label="Pre-analysis Body Max Chars"
+                    type="number"
+                    min={AGENT_LIMITS.bodyAnalysisMaxChars.min}
+                    max={AGENT_LIMITS.bodyAnalysisMaxChars.max}
+                    value={settings.agentBodyAnalysisMaxChars ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({
+                        ...p,
+                        agentBodyAnalysisMaxChars:
+                          e.target.value === ''
+                            ? undefined
+                            : isNaN(n)
+                              ? p.agentBodyAnalysisMaxChars
+                              : clampNumber(n, AGENT_LIMITS.bodyAnalysisMaxChars.min, AGENT_LIMITS.bodyAnalysisMaxChars.max),
+                      }));
+                    }}
+                    hint={`Max body characters sent to pre-analysis (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}).`}
+                  />
+                  <Input
+                    label="Chunk Fallback Max Chars"
+                    type="number"
+                    min={AGENT_LIMITS.chunkFallbackMaxChars.min}
+                    max={AGENT_LIMITS.chunkFallbackMaxChars.max}
+                    value={settings.agentChunkFallbackMaxChars ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkFallbackMaxChars:
+                          e.target.value === ''
+                            ? undefined
+                            : isNaN(n)
+                              ? p.agentChunkFallbackMaxChars
+                              : clampNumber(n, AGENT_LIMITS.chunkFallbackMaxChars.min, AGENT_LIMITS.chunkFallbackMaxChars.max),
+                      }));
+                    }}
+                    hint={`If chunk extraction fails, raw chunk is truncated to this length (${AGENT_LIMITS.chunkFallbackMaxChars.min}-${AGENT_LIMITS.chunkFallbackMaxChars.max}).`}
+                  />
+                  <Input
+                    label="Fallback Pass Max Tokens"
+                    type="number"
+                    min={AGENT_LIMITS.fallbackPassMaxTokens.min}
+                    max={AGENT_LIMITS.fallbackPassMaxTokens.max}
+                    value={settings.agentFallbackMaxTokens ?? ''}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setSettings((p) => ({
+                        ...p,
+                        agentFallbackMaxTokens:
+                          e.target.value === ''
+                            ? undefined
+                            : isNaN(n)
+                              ? p.agentFallbackMaxTokens
+                              : clampNumber(n, AGENT_LIMITS.fallbackPassMaxTokens.min, AGENT_LIMITS.fallbackPassMaxTokens.max),
+                      }));
+                    }}
+                    hint={`Max tokens used by low-complexity fallback pass after a primary failure (${AGENT_LIMITS.fallbackPassMaxTokens.min}-${AGENT_LIMITS.fallbackPassMaxTokens.max}).`}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
             <AccordionItem value="smtp">
               <AccordionTrigger>Email Settings</AccordionTrigger>
               <AccordionContent>
@@ -396,6 +615,13 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
           </span>
         )}
       </div>
+
+      {saveError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

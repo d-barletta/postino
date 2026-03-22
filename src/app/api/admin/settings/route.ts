@@ -5,6 +5,21 @@ import { resolveAssignedEmailDomain } from '@/lib/email-utils';
 
 const USER_UPDATE_BATCH_SIZE = 400;
 
+const AGENT_LIMITS = {
+  agentChunkThresholdChars: { min: 5000, max: 300000 },
+  agentChunkSizeChars: { min: 1000, max: 100000 },
+  agentChunkExtractMaxTokens: { min: 100, max: 4000 },
+  agentAnalysisMaxTokens: { min: 100, max: 2000 },
+  agentBodyAnalysisMaxChars: { min: 500, max: 50000 },
+  agentChunkFallbackMaxChars: { min: 200, max: 10000 },
+  agentFallbackMaxTokens: { min: 500, max: 6000 },
+} as const;
+
+function clampInt(value: unknown, min: number, max: number): unknown {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return value;
+  return Math.max(min, Math.min(Math.floor(value), max));
+}
+
 async function verifyAdmin(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
@@ -55,6 +70,9 @@ export async function PUT(request: NextRequest) {
       'emailDomain',
       'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
       'maintenanceMode', 'rulesExecutionMode',
+      'agentChunkThresholdChars', 'agentChunkSizeChars', 'agentChunkExtractMaxTokens',
+      'agentAnalysisMaxTokens', 'agentBodyAnalysisMaxChars', 'agentChunkFallbackMaxChars',
+      'agentFallbackMaxTokens', 'agentTracingEnabled', 'agentTraceIncludeExcerpts',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k))
@@ -66,12 +84,65 @@ export async function PUT(request: NextRequest) {
       ])
     );
 
-    const nextSettings = { ...currentSettings, ...normalized };
+    const normalizedWithBounds = {
+      ...normalized,
+      agentChunkThresholdChars: clampInt(
+        normalized.agentChunkThresholdChars,
+        AGENT_LIMITS.agentChunkThresholdChars.min,
+        AGENT_LIMITS.agentChunkThresholdChars.max
+      ),
+      agentChunkSizeChars: clampInt(
+        normalized.agentChunkSizeChars,
+        AGENT_LIMITS.agentChunkSizeChars.min,
+        AGENT_LIMITS.agentChunkSizeChars.max
+      ),
+      agentChunkExtractMaxTokens: clampInt(
+        normalized.agentChunkExtractMaxTokens,
+        AGENT_LIMITS.agentChunkExtractMaxTokens.min,
+        AGENT_LIMITS.agentChunkExtractMaxTokens.max
+      ),
+      agentAnalysisMaxTokens: clampInt(
+        normalized.agentAnalysisMaxTokens,
+        AGENT_LIMITS.agentAnalysisMaxTokens.min,
+        AGENT_LIMITS.agentAnalysisMaxTokens.max
+      ),
+      agentBodyAnalysisMaxChars: clampInt(
+        normalized.agentBodyAnalysisMaxChars,
+        AGENT_LIMITS.agentBodyAnalysisMaxChars.min,
+        AGENT_LIMITS.agentBodyAnalysisMaxChars.max
+      ),
+      agentChunkFallbackMaxChars: clampInt(
+        normalized.agentChunkFallbackMaxChars,
+        AGENT_LIMITS.agentChunkFallbackMaxChars.min,
+        AGENT_LIMITS.agentChunkFallbackMaxChars.max
+      ),
+      agentFallbackMaxTokens: clampInt(
+        normalized.agentFallbackMaxTokens,
+        AGENT_LIMITS.agentFallbackMaxTokens.min,
+        AGENT_LIMITS.agentFallbackMaxTokens.max
+      ),
+    };
+
+    const nextSettings = { ...currentSettings, ...normalizedWithBounds };
+
+    const nextChunkThreshold = nextSettings.agentChunkThresholdChars;
+    const nextChunkSize = nextSettings.agentChunkSizeChars;
+    if (
+      typeof nextChunkThreshold === 'number' &&
+      typeof nextChunkSize === 'number' &&
+      nextChunkSize >= nextChunkThreshold
+    ) {
+      return NextResponse.json(
+        { error: 'Agent Settings invalid: agentChunkSizeChars must be smaller than agentChunkThresholdChars.' },
+        { status: 400 }
+      );
+    }
+
     const previousAssignedEmailDomain = resolveAssignedEmailDomain(currentSettings);
     const nextAssignedEmailDomain = resolveAssignedEmailDomain(nextSettings);
 
     await settingsRef.set(
-      { ...normalized, updatedAt: Timestamp.now() },
+      { ...normalizedWithBounds, updatedAt: Timestamp.now() },
       { merge: true }
     );
 

@@ -391,6 +391,7 @@ export async function POST(request: NextRequest) {
       tokensUsed: result.tokensUsed,
       estimatedCost: result.estimatedCost,
       processedBody: result.body,
+      ...(result.trace ? { agentTrace: result.trace } : {}),
       ...(result.parseError ? { errorMessage: result.parseError } : {}),
     });
 

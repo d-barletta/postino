@@ -64,6 +64,24 @@ export interface Settings {
   maintenanceMode?: boolean;
   /** Controls whether matching rules are applied sequentially (output of N feeds into N+1) or all at once in a single LLM call. Defaults to 'sequential'. */
   rulesExecutionMode?: 'sequential' | 'parallel';
+  /** Character threshold above which the agent switches to map-reduce chunked processing. */
+  agentChunkThresholdChars?: number;
+  /** Target size for each chunk in map-reduce processing. */
+  agentChunkSizeChars?: number;
+  /** Max output tokens for each chunk extraction call. */
+  agentChunkExtractMaxTokens?: number;
+  /** Max output tokens for the pre-analysis classification call. */
+  agentAnalysisMaxTokens?: number;
+  /** Max body characters included in pre-analysis. */
+  agentBodyAnalysisMaxChars?: number;
+  /** Max raw characters used as fallback when a chunk extraction fails. */
+  agentChunkFallbackMaxChars?: number;
+  /** Max output tokens for the simplified low-complexity fallback pass. */
+  agentFallbackMaxTokens?: number;
+  /** Enables/disables collection and persistence of agent execution traces. */
+  agentTracingEnabled?: boolean;
+  /** Includes prompt/response excerpts in trace payloads when tracing is enabled. */
+  agentTraceIncludeExcerpts?: boolean;
   updatedAt?: Date;
 }
 

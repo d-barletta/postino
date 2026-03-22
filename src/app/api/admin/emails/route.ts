@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
         tokensUsed: data.tokensUsed ?? null,
         estimatedCost: data.estimatedCost ?? null,
         errorMessage: data.errorMessage ?? null,
+        agentTrace: data.agentTrace ?? null,
       };
     });
 
