@@ -930,6 +930,7 @@ async function runSingleRulePass(
   maxTokens: number,
   fallbackSubject: string,
   agentRuntimeSettings: AgentRuntimeSettings,
+  htmlDomPatchEnabled: boolean,
   tracingEnabled: boolean,
   includeTraceExcerpts: boolean,
 ): Promise<SingleRulePassResult> {
@@ -1000,7 +1001,7 @@ ${rulesText}
         promptTokens,
         completionTokens,
       });
-    } else if (isHtml) {
+    } else if (isHtml && htmlDomPatchEnabled) {
       pushStep('pass_mode', 'ok', 'HTML DOM-patch mode selected', {
         emailBodyLength: emailBodyForPrompt.length,
       });
@@ -1076,9 +1077,15 @@ ${emailBodyForPrompt}`;
           : {}),
       });
     } else {
+      if (isHtml && !htmlDomPatchEnabled) {
+        pushStep('pass_mode', 'warning', 'HTML full-body mode selected (DOM patch disabled)', {
+          emailBodyLength: emailBodyForPrompt.length,
+        });
+      } else {
       pushStep('pass_mode', 'ok', 'Plain-text mode selected', {
         emailBodyLength: emailBodyForPrompt.length,
       });
+      }
       const userPrompt = `Process this incoming email:
 
 FROM: ${sanitizeEmailField(emailFrom)}
@@ -1307,12 +1314,15 @@ export async function processEmailWithAgent(
       : 4000;
 
   const agentRuntimeSettings = resolveAgentRuntimeSettings(settings as Record<string, unknown> | undefined);
+  // Keep DOM patch mode opt-in because some models/providers are unstable with nested patch schemas.
+  const htmlDomPatchEnabled = settings?.agentHtmlDomPatchEnabled === true;
   tracingEnabled = settings?.agentTracingEnabled !== false;
   const includeTraceExcerpts = tracingEnabled && settings?.agentTraceIncludeExcerpts === true;
   pushTrace('settings_loaded', 'ok', 'Loaded runtime settings', {
     model,
     maxTokens,
     agentRuntimeSettings,
+    htmlDomPatchEnabled,
     tracingEnabled,
     includeTraceExcerpts,
   });
@@ -1403,6 +1413,7 @@ export async function processEmailWithAgent(
       maxTokens,
       fallbackSubject,
       agentRuntimeSettings,
+      htmlDomPatchEnabled,
       tracingEnabled,
       includeTraceExcerpts,
     );
@@ -1455,6 +1466,7 @@ export async function processEmailWithAgent(
         maxTokens,
         currentFallbackSubject,
         agentRuntimeSettings,
+        htmlDomPatchEnabled,
         tracingEnabled,
         includeTraceExcerpts,
       );
