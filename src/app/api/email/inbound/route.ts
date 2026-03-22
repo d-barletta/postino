@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { Timestamp } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 import { adminDb } from '@/lib/firebase-admin';
@@ -10,6 +10,7 @@ const MAX_ATTACHMENTS = 10;
 const MAX_ATTACHMENT_BYTES = 7 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENTS_BYTES = 20 * 1024 * 1024;
 const LOOP_MARKER_HEADER = 'x-postino-processed';
+const ASYNC_TRIGGER_BATCH_SIZE = 1;
 
 /** Extract a bare email address from `Name <email@example.com>` style headers. */
 function extractEmailAddress(value: string): string {
@@ -75,6 +76,50 @@ function isLikelyMailLoop(formData: FormData, sender: string, recipientUserEmail
 /** Strip CR and LF characters to prevent email header (CRLF) injection. */
 function stripCrlf(value: string): string {
   return value.replace(/[\r\n]/g, '');
+}
+
+/**
+ * Schedule a non-blocking call to the email-jobs process endpoint after a short delay.
+ * Uses `after()` so the response is returned immediately; the fetch runs after the
+ * request is complete, with a 10-second delay to give Firestore time to persist the job.
+ */
+function scheduleProcessingTrigger(request: NextRequest): void {
+  const workerSecret = process.env.EMAIL_JOBS_WORKER_SECRET || '';
+  const cronSecret = process.env.CRON_SECRET || '';
+
+  if (!workerSecret && !cronSecret) {
+    // Cannot authorise the internal call — skip silently.
+    // Processing will still occur via the scheduled cron job.
+    return;
+  }
+
+  after(async () => {
+    await new Promise<void>((resolve) => setTimeout(resolve, 20_000));
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+    const host = request.headers.get('host') || 'localhost:3000';
+    const proto =
+      request.headers.get('x-forwarded-proto') ||
+      (host.startsWith('localhost') ? 'http' : 'https');
+    const baseUrl = appUrl || `${proto}://${host}`;
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (workerSecret) {
+      headers['x-worker-secret'] = workerSecret;
+    } else {
+      headers['Authorization'] = `Bearer ${cronSecret}`;
+    }
+
+    try {
+      await fetch(`${baseUrl}/api/internal/email-jobs/process`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ batchSize: ASYNC_TRIGGER_BATCH_SIZE }),
+      });
+    } catch (err) {
+      console.error('Async process trigger failed:', err);
+    }
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -316,6 +361,9 @@ export async function POST(request: NextRequest) {
       // Queue insertion conflict should be rare (nonce already unique), but keep deterministic behavior.
       return NextResponse.json({ message: 'Duplicate job, already queued' });
     }
+
+    // Kick off a background processing pass after a short delay — non-blocking.
+    scheduleProcessingTrigger(request);
 
     return NextResponse.json({ success: true, queued: true });
   } catch (error) {
