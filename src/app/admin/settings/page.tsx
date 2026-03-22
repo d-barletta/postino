@@ -35,8 +35,23 @@ const AGENT_LIMITS = {
   fallbackPassMaxTokens: { min: 500, max: 6000 },
 } as const;
 
-function clampNumber(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(value, max));
+type NumberBounds = {
+  min?: number;
+  max?: number;
+};
+
+function parseOptionalIntegerInput(rawValue: string, previousValue: number | undefined): number | undefined {
+  if (rawValue === '') return undefined;
+  const parsed = Number.parseInt(rawValue, 10);
+  return Number.isNaN(parsed) ? previousValue : parsed;
+}
+
+function normalizeOptionalInteger(value: number | undefined, bounds?: NumberBounds): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  let normalized = Math.floor(value);
+  if (typeof bounds?.min === 'number') normalized = Math.max(bounds.min, normalized);
+  if (typeof bounds?.max === 'number') normalized = Math.min(bounds.max, normalized);
+  return normalized;
 }
 
 export default function AdminSettingsPage({ showPageHeader = true }: AdminSettingsPageProps) {
@@ -141,8 +156,43 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   const handleSave = async () => {
     if (!firebaseUser) return;
 
-    const threshold = settings.agentChunkThresholdChars;
-    const chunkSize = settings.agentChunkSizeChars;
+    const normalizedForSave: Partial<Settings> = {
+      ...settings,
+      maxRuleLength: normalizeOptionalInteger(settings.maxRuleLength, { min: 1 }),
+      llmMaxTokens: normalizeOptionalInteger(settings.llmMaxTokens, { min: 1 }),
+      smtpPort: normalizeOptionalInteger(settings.smtpPort, { min: 1, max: 65535 }),
+      agentChunkThresholdChars: normalizeOptionalInteger(settings.agentChunkThresholdChars, {
+        min: AGENT_LIMITS.chunkThresholdChars.min,
+        max: AGENT_LIMITS.chunkThresholdChars.max,
+      }),
+      agentChunkSizeChars: normalizeOptionalInteger(settings.agentChunkSizeChars, {
+        min: AGENT_LIMITS.chunkSizeChars.min,
+        max: AGENT_LIMITS.chunkSizeChars.max,
+      }),
+      agentChunkExtractMaxTokens: normalizeOptionalInteger(settings.agentChunkExtractMaxTokens, {
+        min: AGENT_LIMITS.chunkExtractMaxTokens.min,
+        max: AGENT_LIMITS.chunkExtractMaxTokens.max,
+      }),
+      agentAnalysisMaxTokens: normalizeOptionalInteger(settings.agentAnalysisMaxTokens, {
+        min: AGENT_LIMITS.analysisMaxTokens.min,
+        max: AGENT_LIMITS.analysisMaxTokens.max,
+      }),
+      agentBodyAnalysisMaxChars: normalizeOptionalInteger(settings.agentBodyAnalysisMaxChars, {
+        min: AGENT_LIMITS.bodyAnalysisMaxChars.min,
+        max: AGENT_LIMITS.bodyAnalysisMaxChars.max,
+      }),
+      agentChunkFallbackMaxChars: normalizeOptionalInteger(settings.agentChunkFallbackMaxChars, {
+        min: AGENT_LIMITS.chunkFallbackMaxChars.min,
+        max: AGENT_LIMITS.chunkFallbackMaxChars.max,
+      }),
+      agentFallbackMaxTokens: normalizeOptionalInteger(settings.agentFallbackMaxTokens, {
+        min: AGENT_LIMITS.fallbackPassMaxTokens.min,
+        max: AGENT_LIMITS.fallbackPassMaxTokens.max,
+      }),
+    };
+
+    const threshold = normalizedForSave.agentChunkThresholdChars;
+    const chunkSize = normalizedForSave.agentChunkSizeChars;
     if (
       typeof threshold === 'number' &&
       typeof chunkSize === 'number' &&
@@ -159,7 +209,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(normalizedForSave),
       });
       if (res.ok) {
         setSaved(true);
@@ -286,8 +336,16 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     type="number"
                     value={settings.maxRuleLength ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
-                      setSettings((p) => ({ ...p, maxRuleLength: e.target.value === '' ? undefined : isNaN(n) ? p.maxRuleLength : n }));
+                      setSettings((p) => ({
+                        ...p,
+                        maxRuleLength: parseOptionalIntegerInput(e.target.value, p.maxRuleLength),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        maxRuleLength: normalizeOptionalInteger(p.maxRuleLength, { min: 1 }),
+                      }));
                     }}
                   />
                   <Input
@@ -295,8 +353,16 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     type="number"
                     value={settings.llmMaxTokens ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
-                      setSettings((p) => ({ ...p, llmMaxTokens: e.target.value === '' ? undefined : isNaN(n) ? p.llmMaxTokens : n }));
+                      setSettings((p) => ({
+                        ...p,
+                        llmMaxTokens: parseOptionalIntegerInput(e.target.value, p.llmMaxTokens),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        llmMaxTokens: normalizeOptionalInteger(p.llmMaxTokens, { min: 1 }),
+                      }));
                     }}
                     hint="Maximum number of tokens the LLM can return per email (default: 4000). Increase for long HTML emails."
                   />
@@ -367,15 +433,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     max={AGENT_LIMITS.chunkThresholdChars.max}
                     value={settings.agentChunkThresholdChars ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
                       setSettings((p) => ({
                         ...p,
-                        agentChunkThresholdChars:
-                          e.target.value === ''
-                            ? undefined
-                            : isNaN(n)
-                              ? p.agentChunkThresholdChars
-                              : clampNumber(n, AGENT_LIMITS.chunkThresholdChars.min, AGENT_LIMITS.chunkThresholdChars.max),
+                        agentChunkThresholdChars: parseOptionalIntegerInput(e.target.value, p.agentChunkThresholdChars),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkThresholdChars: normalizeOptionalInteger(p.agentChunkThresholdChars, {
+                          min: AGENT_LIMITS.chunkThresholdChars.min,
+                          max: AGENT_LIMITS.chunkThresholdChars.max,
+                        }),
                       }));
                     }}
                     hint={`If email body length exceeds this value, the agent switches to chunked map-reduce mode (${AGENT_LIMITS.chunkThresholdChars.min}-${AGENT_LIMITS.chunkThresholdChars.max}).`}
@@ -387,15 +456,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     max={AGENT_LIMITS.chunkSizeChars.max}
                     value={settings.agentChunkSizeChars ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
                       setSettings((p) => ({
                         ...p,
-                        agentChunkSizeChars:
-                          e.target.value === ''
-                            ? undefined
-                            : isNaN(n)
-                              ? p.agentChunkSizeChars
-                              : clampNumber(n, AGENT_LIMITS.chunkSizeChars.min, AGENT_LIMITS.chunkSizeChars.max),
+                        agentChunkSizeChars: parseOptionalIntegerInput(e.target.value, p.agentChunkSizeChars),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkSizeChars: normalizeOptionalInteger(p.agentChunkSizeChars, {
+                          min: AGENT_LIMITS.chunkSizeChars.min,
+                          max: AGENT_LIMITS.chunkSizeChars.max,
+                        }),
                       }));
                     }}
                     hint={`Target size for each map-phase chunk (${AGENT_LIMITS.chunkSizeChars.min}-${AGENT_LIMITS.chunkSizeChars.max}).`}
@@ -407,15 +479,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     max={AGENT_LIMITS.chunkExtractMaxTokens.max}
                     value={settings.agentChunkExtractMaxTokens ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
                       setSettings((p) => ({
                         ...p,
-                        agentChunkExtractMaxTokens:
-                          e.target.value === ''
-                            ? undefined
-                            : isNaN(n)
-                              ? p.agentChunkExtractMaxTokens
-                              : clampNumber(n, AGENT_LIMITS.chunkExtractMaxTokens.min, AGENT_LIMITS.chunkExtractMaxTokens.max),
+                        agentChunkExtractMaxTokens: parseOptionalIntegerInput(e.target.value, p.agentChunkExtractMaxTokens),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkExtractMaxTokens: normalizeOptionalInteger(p.agentChunkExtractMaxTokens, {
+                          min: AGENT_LIMITS.chunkExtractMaxTokens.min,
+                          max: AGENT_LIMITS.chunkExtractMaxTokens.max,
+                        }),
                       }));
                     }}
                     hint={`Max tokens for each chunk extraction LLM call (${AGENT_LIMITS.chunkExtractMaxTokens.min}-${AGENT_LIMITS.chunkExtractMaxTokens.max}).`}
@@ -427,15 +502,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     max={AGENT_LIMITS.analysisMaxTokens.max}
                     value={settings.agentAnalysisMaxTokens ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
                       setSettings((p) => ({
                         ...p,
-                        agentAnalysisMaxTokens:
-                          e.target.value === ''
-                            ? undefined
-                            : isNaN(n)
-                              ? p.agentAnalysisMaxTokens
-                              : clampNumber(n, AGENT_LIMITS.analysisMaxTokens.min, AGENT_LIMITS.analysisMaxTokens.max),
+                        agentAnalysisMaxTokens: parseOptionalIntegerInput(e.target.value, p.agentAnalysisMaxTokens),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        agentAnalysisMaxTokens: normalizeOptionalInteger(p.agentAnalysisMaxTokens, {
+                          min: AGENT_LIMITS.analysisMaxTokens.min,
+                          max: AGENT_LIMITS.analysisMaxTokens.max,
+                        }),
                       }));
                     }}
                     hint={`Max tokens for pre-analysis classification call (${AGENT_LIMITS.analysisMaxTokens.min}-${AGENT_LIMITS.analysisMaxTokens.max}).`}
@@ -447,15 +525,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     max={AGENT_LIMITS.bodyAnalysisMaxChars.max}
                     value={settings.agentBodyAnalysisMaxChars ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
                       setSettings((p) => ({
                         ...p,
-                        agentBodyAnalysisMaxChars:
-                          e.target.value === ''
-                            ? undefined
-                            : isNaN(n)
-                              ? p.agentBodyAnalysisMaxChars
-                              : clampNumber(n, AGENT_LIMITS.bodyAnalysisMaxChars.min, AGENT_LIMITS.bodyAnalysisMaxChars.max),
+                        agentBodyAnalysisMaxChars: parseOptionalIntegerInput(e.target.value, p.agentBodyAnalysisMaxChars),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        agentBodyAnalysisMaxChars: normalizeOptionalInteger(p.agentBodyAnalysisMaxChars, {
+                          min: AGENT_LIMITS.bodyAnalysisMaxChars.min,
+                          max: AGENT_LIMITS.bodyAnalysisMaxChars.max,
+                        }),
                       }));
                     }}
                     hint={`Max body characters sent to pre-analysis (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}).`}
@@ -467,15 +548,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     max={AGENT_LIMITS.chunkFallbackMaxChars.max}
                     value={settings.agentChunkFallbackMaxChars ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
                       setSettings((p) => ({
                         ...p,
-                        agentChunkFallbackMaxChars:
-                          e.target.value === ''
-                            ? undefined
-                            : isNaN(n)
-                              ? p.agentChunkFallbackMaxChars
-                              : clampNumber(n, AGENT_LIMITS.chunkFallbackMaxChars.min, AGENT_LIMITS.chunkFallbackMaxChars.max),
+                        agentChunkFallbackMaxChars: parseOptionalIntegerInput(e.target.value, p.agentChunkFallbackMaxChars),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        agentChunkFallbackMaxChars: normalizeOptionalInteger(p.agentChunkFallbackMaxChars, {
+                          min: AGENT_LIMITS.chunkFallbackMaxChars.min,
+                          max: AGENT_LIMITS.chunkFallbackMaxChars.max,
+                        }),
                       }));
                     }}
                     hint={`If chunk extraction fails, raw chunk is truncated to this length (${AGENT_LIMITS.chunkFallbackMaxChars.min}-${AGENT_LIMITS.chunkFallbackMaxChars.max}).`}
@@ -487,15 +571,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     max={AGENT_LIMITS.fallbackPassMaxTokens.max}
                     value={settings.agentFallbackMaxTokens ?? ''}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
                       setSettings((p) => ({
                         ...p,
-                        agentFallbackMaxTokens:
-                          e.target.value === ''
-                            ? undefined
-                            : isNaN(n)
-                              ? p.agentFallbackMaxTokens
-                              : clampNumber(n, AGENT_LIMITS.fallbackPassMaxTokens.min, AGENT_LIMITS.fallbackPassMaxTokens.max),
+                        agentFallbackMaxTokens: parseOptionalIntegerInput(e.target.value, p.agentFallbackMaxTokens),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        agentFallbackMaxTokens: normalizeOptionalInteger(p.agentFallbackMaxTokens, {
+                          min: AGENT_LIMITS.fallbackPassMaxTokens.min,
+                          max: AGENT_LIMITS.fallbackPassMaxTokens.max,
+                        }),
                       }));
                     }}
                     hint={`Max tokens used by low-complexity fallback pass after a primary failure (${AGENT_LIMITS.fallbackPassMaxTokens.min}-${AGENT_LIMITS.fallbackPassMaxTokens.max}).`}
@@ -532,10 +619,20 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     <Input
                       label="SMTP Port"
                       type="number"
+                      min={1}
+                      max={65535}
                       value={settings.smtpPort ?? ''}
                       onChange={(e) => {
-                        const n = parseInt(e.target.value, 10);
-                        setSettings((p) => ({ ...p, smtpPort: e.target.value === '' ? undefined : isNaN(n) ? p.smtpPort : n }));
+                        setSettings((p) => ({
+                          ...p,
+                          smtpPort: parseOptionalIntegerInput(e.target.value, p.smtpPort),
+                        }));
+                      }}
+                      onBlur={() => {
+                        setSettings((p) => ({
+                          ...p,
+                          smtpPort: normalizeOptionalInteger(p.smtpPort, { min: 1, max: 65535 }),
+                        }));
                       }}
                     />
                   </div>
