@@ -268,7 +268,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                             onClick={() => handleRangeChange(r)}
                             className={`px-3 py-1 transition-colors ${
                               range === r
-                                ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
+                                ? 'bg-[#EFD957] dark:bg-violet-600 text-black dark:text-black font-semibold'
                                 : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                             } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
                           >
@@ -283,7 +283,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                             onClick={() => setGranularity(g)}
                             className={`px-3 py-1 transition-colors ${
                               granularity === g
-                                ? 'bg-[#EFD957] dark:bg-violet-600 text-gray-900 dark:text-white font-semibold'
+                                ? 'bg-[#EFD957] dark:bg-violet-600 text-black dark:text-black font-semibold'
                                 : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                             } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
                           >
