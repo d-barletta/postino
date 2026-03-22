@@ -124,3 +124,19 @@ Incoming email (Mailgun)
 - `rules`
 - `emailLogs`
 - `settings` (global platform configuration)
+
+## Vercel Cron Worker
+
+The async email job worker runs via Vercel Cron against:
+
+- `GET /api/internal/email-jobs/process?batchSize=10`
+
+Setup requirements:
+
+- Add `CRON_SECRET` in Vercel environment variables.
+- Keep the cron entry in `vercel.json` enabled.
+
+Security model:
+
+- The endpoint accepts `Authorization: Bearer <CRON_SECRET>` (Vercel Cron standard).
+- It also accepts `x-worker-secret: <EMAIL_JOBS_WORKER_SECRET>` for manual/internal POST triggers.

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import AdminUsersPage from './users/page';
 import AdminEmailsPage from './emails/page';
 import AdminSettingsPage from './settings/page';
+import EmailJobsLiveTab from '@/components/admin/EmailJobsLiveTab';
 import type { Stats } from '@/types';
 
 export default function AdminPage() {
@@ -82,6 +83,7 @@ export default function AdminPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="emails">Emails</TabsTrigger>
+          <TabsTrigger value="jobs">Jobs</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -95,6 +97,10 @@ export default function AdminPage() {
 
         <TabsContent value="emails">
           <AdminEmailsPage showPageHeader={false} />
+        </TabsContent>
+
+        <TabsContent value="jobs">
+          <EmailJobsLiveTab />
         </TabsContent>
 
         <TabsContent value="settings">
