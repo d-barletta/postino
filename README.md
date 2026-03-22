@@ -73,6 +73,190 @@ For any new UI work, use components from these docs as the default and first cho
 - Mailgun account/domain for inbound email
 - SMTP credentials for outbound email
 
+## Full Deployment Guide (Step by Step)
+
+This section is designed to let you deploy the app from zero with no missing steps.
+
+### 1) Create Required Accounts
+
+- GitHub account (to host the repository)
+- Vercel account (to host the Next.js app)
+- Firebase account/project (Auth + Firestore)
+- OpenRouter account (LLM API)
+- Mailgun account/domain (inbound webhook)
+- SMTP provider account (outbound email)
+
+### 2) Create Cloud Resources
+
+#### Firebase
+
+1. Create a Firebase project.
+2. Enable Authentication.
+3. Enable at least one sign-in method you want to use (for example Google and/or Email/Password).
+4. Enable Firestore database in production mode.
+5. In Firebase console, generate a Web App config and collect:
+  - NEXT_PUBLIC_FIREBASE_API_KEY
+  - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  - NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+  - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+  - NEXT_PUBLIC_FIREBASE_APP_ID
+6. Create a Firebase Admin service account key and collect:
+  - FIREBASE_PROJECT_ID
+  - FIREBASE_CLIENT_EMAIL
+  - FIREBASE_PRIVATE_KEY
+
+#### OpenRouter
+
+1. Create an API key in OpenRouter.
+2. Collect:
+  - OPEN_ROUTER_API_KEY
+  - LLM_MODEL (example: openai/gpt-4o-mini)
+
+#### Mailgun
+
+1. Configure a Mailgun domain or sandbox domain.
+2. Collect:
+  - MAILGUN_API_KEY
+  - MAILGUN_WEBHOOK_SIGNING_KEY
+  - MAILGUN_SANDBOX_EMAIL (or your configured domain)
+  - MAILGUN_BASE_URL (usually https://api.mailgun.net)
+
+#### SMTP
+
+1. Configure SMTP account for outbound forwarding.
+2. Collect:
+  - SMTP_HOST
+  - SMTP_PORT
+  - SMTP_USER
+  - SMTP_PASS
+  - SMTP_FROM
+
+### 3) Prepare the Repository
+
+1. Fork or clone the repository.
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Optionally run local checks:
+
+```bash
+npm run lint
+npm run build
+```
+
+### 4) Create Vercel Project
+
+1. In Vercel, click Add New Project.
+2. Import your GitHub repository.
+3. Keep framework preset as Next.js.
+4. Set Production Branch (usually main).
+
+### 5) Configure Vercel Environment Variables
+
+Set all required variables in Vercel Project Settings -> Environment Variables.
+
+Core app variables:
+
+- NEXT_PUBLIC_FIREBASE_API_KEY
+- NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+- NEXT_PUBLIC_FIREBASE_PROJECT_ID
+- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+- NEXT_PUBLIC_FIREBASE_APP_ID
+- FIREBASE_PROJECT_ID
+- FIREBASE_CLIENT_EMAIL
+- FIREBASE_PRIVATE_KEY
+- OPEN_ROUTER_API_KEY
+- LLM_MODEL
+- SMTP_HOST
+- SMTP_PORT
+- SMTP_USER
+- SMTP_PASS
+- SMTP_FROM
+- MAILGUN_API_KEY
+- MAILGUN_WEBHOOK_SIGNING_KEY
+- MAILGUN_SANDBOX_EMAIL
+- MAILGUN_BASE_URL
+- NEXT_PUBLIC_APP_URL (must be your Vercel production URL)
+
+Job worker and cron variables:
+
+- CRON_SECRET
+- EMAIL_JOBS_WORKER_SECRET
+
+### 6) Configure Mailgun Inbound Webhook
+
+Set Mailgun route/webhook target to:
+
+- https://YOUR_VERCEL_DOMAIN/api/email/inbound
+
+Then verify:
+
+1. MAILGUN_WEBHOOK_SIGNING_KEY in Vercel matches Mailgun webhook signing key.
+2. Webhook events reach the endpoint successfully.
+
+### 7) Configure Job Processing Scheduler
+
+This project supports two schedulers:
+
+1. Vercel Cron (already configured in vercel.json)
+2. GitHub Actions scheduler (recommended for high frequency on Hobby plan)
+
+#### Vercel Hobby limitation
+
+- Hobby allows cron jobs only once per day.
+- This repository uses a daily Vercel cron schedule for compatibility.
+
+#### GitHub Actions scheduler setup (every 5 minutes)
+
+1. Go to GitHub repository -> Settings -> Secrets and variables -> Actions.
+2. Add secret POSTINO_WORKER_URL with value:
+  - https://YOUR_VERCEL_DOMAIN/api/internal/email-jobs/process
+3. Add secret EMAIL_JOBS_WORKER_SECRET with the same value used in Vercel env EMAIL_JOBS_WORKER_SECRET.
+4. Workflow file is already included at .github/workflows/process-email-jobs-cron.yml.
+
+Important:
+
+- POSTINO_WORKER_URL belongs to GitHub Actions secrets, not Vercel environment variables.
+
+### 8) Create First Admin User
+
+After first deploy:
+
+1. Register/login once in the app.
+2. Open Firestore users collection.
+3. Set your user document field isAdmin = true.
+4. Ensure account isActive = true and suspended = false.
+
+### 9) Deploy to Production
+
+1. Push your branch to GitHub.
+2. Trigger deployment from Vercel (or auto-deploy from main).
+3. Wait for successful build.
+
+### 10) Post-Deploy Verification Checklist
+
+1. Can open app URL and login.
+2. Admin page is accessible for admin user.
+3. Admin Jobs tab shows queue data.
+4. Send test email to assigned address.
+5. Confirm emailLogs entries are created.
+6. Confirm jobs move from pending/retrying to done.
+7. Confirm forwarded email arrives in destination mailbox.
+8. Confirm Mailgun webhook requests are accepted (2xx).
+
+### 11) Security and Operations Notes
+
+1. Never commit .env.local with real secrets.
+2. Rotate any secret immediately if exposed.
+3. Keep production and preview secrets separated in Vercel.
+4. Restrict Firebase service account key access.
+5. Monitor failed jobs from the Admin Jobs tab and logs.
+
 ## Local Development
 
 ```bash
@@ -124,32 +308,3 @@ Incoming email (Mailgun)
 - `rules`
 - `emailLogs`
 - `settings` (global platform configuration)
-
-## Vercel Cron Worker
-
-The async email job worker runs via Vercel Cron against:
-
-- `GET /api/internal/email-jobs/process?batchSize=10`
-
-Setup requirements:
-
-- Add `CRON_SECRET` in Vercel environment variables.
-- Keep the cron entry in `vercel.json` enabled.
-
-Hobby plan note:
-
-- Vercel Hobby allows cron jobs that run once per day.
-- This repository sets a daily Vercel cron (`0 3 * * *`) for compatibility.
-- For higher frequency processing, use the GitHub Actions scheduler in `.github/workflows/process-email-jobs-cron.yml`.
-
-GitHub Actions scheduler setup:
-
-- Add repository secret `POSTINO_WORKER_URL` with your production worker endpoint URL.
-  Example: `https://your-app.vercel.app/api/internal/email-jobs/process`
-- Add repository secret `EMAIL_JOBS_WORKER_SECRET` with the same value configured in Vercel env.
-- The workflow runs every 5 minutes and can also be triggered manually (`workflow_dispatch`).
-
-Security model:
-
-- The endpoint accepts `Authorization: Bearer <CRON_SECRET>` (Vercel Cron standard).
-- It also accepts `x-worker-secret: <EMAIL_JOBS_WORKER_SECRET>` for manual/internal POST triggers.
