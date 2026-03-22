@@ -42,6 +42,8 @@ export interface EmailAttachment {
   filename: string;
   content: ArrayBuffer;
   contentType: string;
+  /** Content-ID for inline attachments (e.g. images embedded via `cid:` in HTML). */
+  contentId?: string;
 }
 
 async function sendViaMailgun(options: {
@@ -79,7 +81,14 @@ async function sendViaMailgun(options: {
   if (options.attachments) {
     for (const attachment of options.attachments) {
       const blob = new Blob([attachment.content], { type: attachment.contentType });
-      body.append('attachment', blob, attachment.filename);
+      if (attachment.contentId) {
+        // Inline attachment: Mailgun's send API uses the blob's name as the CID value.
+        // The HTML body already contains `src="cid:<contentId>"` references, so the name
+        // must equal the stripped content-id so Mailgun can match them up correctly.
+        body.append('inline', blob, attachment.contentId);
+      } else {
+        body.append('attachment', blob, attachment.filename);
+      }
     }
   }
 
@@ -161,6 +170,7 @@ export async function sendEmail(options: {
             filename: att.filename,
             content: Buffer.from(att.content),
             contentType: att.contentType,
+            ...(att.contentId ? { cid: att.contentId } : {}),
           })),
         }
       : {}),

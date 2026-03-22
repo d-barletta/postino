@@ -4,6 +4,18 @@ import { processEmailWithAgent } from '@/lib/agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
 
+/**
+ * Attachment serialized for Firestore storage (base64-encoded content).
+ * Used to persist small attachments in queue jobs so they survive retries.
+ */
+export interface SerializedAttachment {
+  filename: string;
+  contentBase64: string;
+  contentType: string;
+  /** Content-ID for inline attachments referenced via `cid:` in the HTML body. */
+  contentId?: string;
+}
+
 export interface QueuedInboundPayload {
   logId: string;
   userId: string;
@@ -16,6 +28,11 @@ export interface QueuedInboundPayload {
   bodyHtml: string;
   bodyPlain: string;
   messageId: string;
+  /**
+   * Small attachments serialized as base64 for Firestore queue storage.
+   * Large attachments are processed on the synchronous path and never stored here.
+   */
+  attachments?: SerializedAttachment[];
 }
 
 /** Escape special HTML characters to prevent HTML injection in email templates. */
@@ -69,6 +86,22 @@ export async function processQueuedInboundPayload(
 ): Promise<void> {
   const db = adminDb();
   const logRef = db.collection('emailLogs').doc(payload.logId);
+
+  // If no attachments were provided directly (queue path), deserialize from payload.
+  const effectiveAttachments: EmailAttachment[] | undefined =
+    attachments ??
+    (payload.attachments && payload.attachments.length > 0
+      ? payload.attachments.map((att) => {
+          const buf = Buffer.from(att.contentBase64, 'base64');
+          const content = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+          return {
+            filename: att.filename,
+            content,
+            contentType: att.contentType,
+            ...(att.contentId ? { contentId: att.contentId } : {}),
+          };
+        })
+      : undefined);
 
   const rulesSnap = await db
     .collection('rules')
@@ -153,7 +186,7 @@ export async function processQueuedInboundPayload(
     subject: stripCrlf(result.subject),
     html: emailHtml,
     replyTo: payload.replyToHeader || payload.sender,
-    attachments: attachments && attachments.length > 0 ? attachments : undefined,
+    attachments: effectiveAttachments && effectiveAttachments.length > 0 ? effectiveAttachments : undefined,
     headers: {
       'X-Postino-Processed': 'true',
       'Auto-Submitted': 'auto-generated',
