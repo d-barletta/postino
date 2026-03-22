@@ -142,8 +142,8 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
                       <div className="min-w-0 flex items-start gap-2">
                         <Mail className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100 break-words">{log.subject}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-words">From: {log.fromAddress}</p>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">{log.subject}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 wrap-break-word">From: {log.fromAddress}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">

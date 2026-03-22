@@ -20,6 +20,14 @@ function clampInt(value: unknown, min: number, max: number): unknown {
   return Math.max(min, Math.min(Math.floor(value), max));
 }
 
+function pickDomainSettings(source: Record<string, unknown>) {
+  return {
+    emailDomain: typeof source.emailDomain === 'string' ? source.emailDomain : undefined,
+    mailgunSandboxEmail: typeof source.mailgunSandboxEmail === 'string' ? source.mailgunSandboxEmail : undefined,
+    mailgunDomain: typeof source.mailgunDomain === 'string' ? source.mailgunDomain : undefined,
+  };
+}
+
 async function verifyAdmin(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
@@ -138,8 +146,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const previousAssignedEmailDomain = resolveAssignedEmailDomain(currentSettings);
-    const nextAssignedEmailDomain = resolveAssignedEmailDomain(nextSettings);
+    const previousAssignedEmailDomain = resolveAssignedEmailDomain(
+      pickDomainSettings(currentSettings as Record<string, unknown>)
+    );
+    const nextAssignedEmailDomain = resolveAssignedEmailDomain(
+      pickDomainSettings(nextSettings as Record<string, unknown>)
+    );
 
     await settingsRef.set(
       { ...normalizedWithBounds, updatedAt: Timestamp.now() },
