@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { cn } from '@/lib/utils';
-import { RefreshCw, ChevronLeft, ChevronRight, Search, X, Copy, Filter } from 'lucide-react';
+import { RefreshCw, ChevronLeft, ChevronRight, Search, X, Copy, Filter, FileJson } from 'lucide-react';
 
 interface AdminEmailLog {
   id: string;
@@ -89,6 +89,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
   const [expanded, setExpanded] = useState<string | null>(null);
   const [warningsOnly, setWarningsOnly] = useState(false);
   const [copiedTraceId, setCopiedTraceId] = useState<string | null>(null);
+  const [rawJsonLogId, setRawJsonLogId] = useState<string | null>(null);
   const [cursorStack, setCursorStack] = useState<string[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -424,6 +425,14 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                             <Copy className="h-3.5 w-3.5 mr-1" />
                                             {copiedTraceId === log.id ? 'Copied' : 'Copy trace JSON'}
                                           </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setRawJsonLogId((v) => (v === log.id ? null : log.id))}
+                                          >
+                                            <FileJson className="h-3.5 w-3.5 mr-1" />
+                                            {rawJsonLogId === log.id ? 'Hide raw JSON' : 'View raw JSON'}
+                                          </Button>
                                         </div>
 
                                         <div className="space-y-2 max-h-64 overflow-auto pr-1">
@@ -447,14 +456,11 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                           )}
                                         </div>
 
-                                        <details>
-                                          <summary className="cursor-pointer select-none text-xs text-blue-600 dark:text-blue-400 hover:underline">
-                                            View raw JSON
-                                          </summary>
+                                        {rawJsonLogId === log.id && (
                                           <pre className="mt-2 max-h-96 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 text-[11px] leading-relaxed whitespace-pre-wrap wrap-break-word">
                                             {JSON.stringify(trace, null, 2)}
                                           </pre>
-                                        </details>
+                                        )}
                                       </div>
                                     );
                                   })()}

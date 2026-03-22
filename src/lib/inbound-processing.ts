@@ -165,7 +165,7 @@ export async function processQueuedInboundPayload(
 
   await logRef.update({
     processedAt: Timestamp.now(),
-    status: 'forwarded',
+    status: result.parseError?.includes('forwarded as-is') ? 'error' : 'forwarded',
     ruleApplied: result.ruleApplied,
     tokensUsed: result.tokensUsed,
     estimatedCost: result.estimatedCost,
