@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/internal/email-jobs/process?batchSize=10",
-      "schedule": "* * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }

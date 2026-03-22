@@ -1,0 +1,26 @@
+name: Process Email Jobs
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  process-email-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger email jobs worker
+        env:
+          WORKER_URL: ${{ secrets.POSTINO_WORKER_URL }}
+          WORKER_SECRET: ${{ secrets.EMAIL_JOBS_WORKER_SECRET }}
+        run: |
+          if [ -z "$WORKER_URL" ] || [ -z "$WORKER_SECRET" ]; then
+            echo "Missing required secrets: POSTINO_WORKER_URL or EMAIL_JOBS_WORKER_SECRET"
+            exit 1
+          fi
+
+          curl --fail --show-error --silent \
+            -X POST "$WORKER_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-worker-secret: $WORKER_SECRET" \
+            -d '{"batchSize":20}'

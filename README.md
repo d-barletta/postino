@@ -136,6 +136,19 @@ Setup requirements:
 - Add `CRON_SECRET` in Vercel environment variables.
 - Keep the cron entry in `vercel.json` enabled.
 
+Hobby plan note:
+
+- Vercel Hobby allows cron jobs that run once per day.
+- This repository sets a daily Vercel cron (`0 3 * * *`) for compatibility.
+- For higher frequency processing, use the GitHub Actions scheduler in `.github/workflows/process-email-jobs-cron.yml`.
+
+GitHub Actions scheduler setup:
+
+- Add repository secret `POSTINO_WORKER_URL` with your production worker endpoint URL.
+  Example: `https://your-app.vercel.app/api/internal/email-jobs/process`
+- Add repository secret `EMAIL_JOBS_WORKER_SECRET` with the same value configured in Vercel env.
+- The workflow runs every 5 minutes and can also be triggered manually (`workflow_dispatch`).
+
 Security model:
 
 - The endpoint accepts `Authorization: Bearer <CRON_SECRET>` (Vercel Cron standard).
