@@ -195,7 +195,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                       onClick={() => handleRangeChange(r)}
                       className={`px-3 py-1 transition-colors ${
                         range === r
-                          ? 'bg-[#EFD957] dark:bg-violet-600 font-semibold text-black dark:text-black'
+                          ? 'bg-[#EFD957] font-semibold text-black'
                           : 'bg-white/60 text-gray-600 hover:bg-yellow-50 dark:bg-gray-900/40 dark:text-gray-400 dark:hover:bg-yellow-900/10'
                       } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
                     >
@@ -210,7 +210,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                       onClick={() => setGranularity(g)}
                       className={`px-3 py-1 transition-colors ${
                         granularity === g
-                          ? 'bg-[#EFD957] dark:bg-violet-600 font-semibold text-black dark:text-black'
+                          ? 'bg-[#EFD957] font-semibold text-black'
                           : 'bg-white/60 text-gray-600 hover:bg-yellow-50 dark:bg-gray-900/40 dark:text-gray-400 dark:hover:bg-yellow-900/10'
                       } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
                     >
