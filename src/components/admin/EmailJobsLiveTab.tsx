@@ -164,7 +164,7 @@ export default function EmailJobsLiveTab() {
           <div className="flex flex-wrap items-center gap-3">
             <label
               htmlFor="jobs-realtime-toggle"
-              className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-3 py-1 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300"
+              className="inline-flex items-center gap-2 px-3 py-1 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300"
             >
               <Switch
                 id="jobs-realtime-toggle"
