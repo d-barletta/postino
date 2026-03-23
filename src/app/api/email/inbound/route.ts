@@ -4,7 +4,12 @@ import crypto from 'crypto';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyMailgunSignature, isMailgunTimestampFresh, type EmailAttachment } from '@/lib/email';
 import { enqueueEmailJob } from '@/lib/email-jobs';
-import { processQueuedInboundPayload, type QueuedInboundPayload, type SerializedAttachment } from '@/lib/inbound-processing';
+import {
+  processQueuedInboundPayload,
+  uploadAttachmentToStorage,
+  type QueuedInboundPayload,
+  type SerializedAttachment,
+} from '@/lib/inbound-processing';
 
 const MAX_ATTACHMENTS = 10;
 const MAX_ATTACHMENT_BYTES = 7 * 1024 * 1024;
@@ -353,25 +358,31 @@ export async function POST(request: NextRequest) {
 
     // Determine whether attachments can be serialized into the Firestore job document.
     // Firestore has a 1 MB per-document limit; we reserve ~500 KB for attachment base64 data.
-    // If the total serialized size exceeds this threshold, fall back to synchronous processing.
+    // Attachments exceeding this threshold are uploaded to Firebase Storage instead.
     const totalBase64Size = attachments.reduce(
       (sum, att) => sum + Math.ceil((att.content.byteLength * 4) / 3),
       0
     );
     const attachmentsTooLargeForQueue = attachments.length > 0 && totalBase64Size > MAX_QUEUE_ATTACHMENT_BYTES;
 
-    // Serialize small attachments (inline and regular) for Firestore queue storage.
-    const serializedAttachments: SerializedAttachment[] | undefined =
-      attachments.length > 0 && !attachmentsTooLargeForQueue
-        ? attachments.map((att) => ({
-            filename: att.filename,
-            contentBase64: Buffer.from(att.content).toString('base64'),
-            contentType: att.contentType,
-            ...(att.contentId ? { contentId: att.contentId } : {}),
-          }))
-        : undefined;
+    // Serialize attachments for queue storage.
+    // Small attachments (≤ MAX_QUEUE_ATTACHMENT_BYTES total) are stored inline as base64.
+    // Large attachments are uploaded to Firebase Storage and referenced by path.
+    let serializedAttachments: SerializedAttachment[] | undefined;
+    if (attachments.length > 0) {
+      if (!attachmentsTooLargeForQueue) {
+        // All attachments fit in Firestore — inline base64.
+        serializedAttachments = attachments.map((att) => ({
+          filename: att.filename,
+          contentBase64: Buffer.from(att.content).toString('base64'),
+          contentType: att.contentType,
+          ...(att.contentId ? { contentId: att.contentId } : {}),
+        }));
+      }
+      // (Large attachments are handled below after the log record is created.)
+    }
 
-    const processingMode = attachmentsTooLargeForQueue ? 'sync-attachments' : 'queued';
+    const processingMode = 'queued';
 
     const logRef = await db.collection('emailLogs').add({
       toAddress: matchedRecipient,
@@ -385,6 +396,49 @@ export async function POST(request: NextRequest) {
       ...(messageId ? { messageId } : {}),
     });
     logId = logRef.id;
+
+    // Upload large attachments to Firebase Storage now that we have the logId for the path.
+    if (attachmentsTooLargeForQueue) {
+      const uploaded: Array<SerializedAttachment | null> = await Promise.all(
+        attachments.map(async (att, i): Promise<SerializedAttachment | null> => {
+          const storagePath = await uploadAttachmentToStorage(att, logRef.id, i);
+          if (!storagePath) {
+            // Storage upload failed — fall back to synchronous processing so the
+            // attachment is not silently dropped.
+            return null;
+          }
+          return {
+            filename: att.filename,
+            contentType: att.contentType,
+            storagePath,
+            ...(att.contentId ? { contentId: att.contentId } : {}),
+          };
+        })
+      );
+
+      const allUploaded = uploaded.every((r) => r !== null);
+      if (!allUploaded) {
+        // One or more uploads failed — process synchronously to avoid data loss.
+        await logRef.update({ status: 'processing', processingStartedAt: Timestamp.now() });
+        const syncPayload: QueuedInboundPayload = {
+          logId: logRef.id,
+          userId,
+          userEmail: (userData.email as string) || '',
+          matchedRecipient,
+          sender,
+          replyToHeader,
+          subject,
+          emailBody,
+          bodyHtml,
+          bodyPlain,
+          messageId,
+        };
+        await processQueuedInboundPayload(syncPayload, attachments);
+        return NextResponse.json({ success: true, mode: 'sync-attachments' });
+      }
+
+      serializedAttachments = uploaded.filter((att): att is SerializedAttachment => att !== null);
+    }
 
     const payload: QueuedInboundPayload = {
       logId: logRef.id,
@@ -400,13 +454,6 @@ export async function POST(request: NextRequest) {
       messageId,
       ...(serializedAttachments ? { attachments: serializedAttachments } : {}),
     };
-
-    // Large attachments cannot be serialised into Firestore — process synchronously.
-    if (attachmentsTooLargeForQueue) {
-      await logRef.update({ status: 'processing', processingStartedAt: Timestamp.now() });
-      await processQueuedInboundPayload(payload, attachments);
-      return NextResponse.json({ success: true, mode: 'sync-attachments' });
-    }
 
     const queued = await enqueueEmailJob(payload, nonceId);
     if (!queued) {

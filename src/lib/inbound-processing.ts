@@ -1,19 +1,26 @@
 import { Timestamp } from 'firebase-admin/firestore';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import { processEmailWithAgent } from '@/lib/agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
 
 /**
- * Attachment serialized for Firestore storage (base64-encoded content).
- * Used to persist small attachments in queue jobs so they survive retries.
+ * Attachment serialized for Firestore storage (base64-encoded content or Firebase Storage ref).
+ * Small attachments are stored inline as base64; large attachments are uploaded to Firebase
+ * Storage and referenced here by `storagePath`.
  */
 export interface SerializedAttachment {
   filename: string;
-  contentBase64: string;
   contentType: string;
   /** Content-ID for inline attachments referenced via `cid:` in the HTML body. */
   contentId?: string;
+  /** Base64-encoded content for small attachments stored directly in Firestore. */
+  contentBase64?: string;
+  /**
+   * Firebase Storage path for large attachments that cannot fit in a Firestore document.
+   * The file is uploaded on inbound and deleted after forwarding.
+   */
+  storagePath?: string;
 }
 
 export interface QueuedInboundPayload {
@@ -29,8 +36,9 @@ export interface QueuedInboundPayload {
   bodyPlain: string;
   messageId: string;
   /**
-   * Small attachments serialized as base64 for Firestore queue storage.
-   * Large attachments are processed on the synchronous path and never stored here.
+   * Attachments for Firestore queue storage.
+   * Small attachments are stored inline as base64 (`contentBase64`).
+   * Large attachments are stored in Firebase Storage and referenced by `storagePath`.
    */
   attachments?: SerializedAttachment[];
 }
@@ -80,6 +88,64 @@ function sanitizeForFirestore<T>(value: T): T {
   return value;
 }
 
+/**
+ * Upload an attachment to Firebase Storage for temporary queue storage.
+ * Returns the storage path that can later be used to retrieve the file.
+ * Falls back gracefully (returns null) when Storage is not configured.
+ */
+export async function uploadAttachmentToStorage(
+  attachment: EmailAttachment,
+  logId: string,
+  index: number
+): Promise<string | null> {
+  try {
+    const storage = adminStorage();
+    const bucket = storage.bucket();
+    const storagePath = `email-attachments/${logId}/${index}-${attachment.filename}`;
+    const file = bucket.file(storagePath);
+    await file.save(Buffer.from(attachment.content), {
+      contentType: attachment.contentType,
+      metadata: { cacheControl: 'no-cache' },
+    });
+    return storagePath;
+  } catch (err) {
+    console.error('Failed to upload attachment to Firebase Storage:', err);
+    return null;
+  }
+}
+
+/**
+ * Download an attachment from Firebase Storage.
+ * Returns null if the download fails.
+ */
+async function downloadAttachmentFromStorage(storagePath: string): Promise<ArrayBuffer | null> {
+  try {
+    const storage = adminStorage();
+    const bucket = storage.bucket();
+    const file = bucket.file(storagePath);
+    const [contents] = await file.download();
+    const buf = Buffer.from(contents);
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+  } catch (err) {
+    console.error(`Failed to download attachment from Firebase Storage (${storagePath}):`, err);
+    return null;
+  }
+}
+
+/**
+ * Delete an attachment from Firebase Storage after it has been forwarded.
+ * Errors are logged but not re-thrown.
+ */
+async function deleteAttachmentFromStorage(storagePath: string): Promise<void> {
+  try {
+    const storage = adminStorage();
+    const bucket = storage.bucket();
+    await bucket.file(storagePath).delete({ ignoreNotFound: true });
+  } catch (err) {
+    console.error(`Failed to delete attachment from Firebase Storage (${storagePath}):`, err);
+  }
+}
+
 export async function processQueuedInboundPayload(
   payload: QueuedInboundPayload,
   attachments?: EmailAttachment[]
@@ -88,20 +154,38 @@ export async function processQueuedInboundPayload(
   const logRef = db.collection('emailLogs').doc(payload.logId);
 
   // If no attachments were provided directly (queue path), deserialize from payload.
-  const effectiveAttachments: EmailAttachment[] | undefined =
-    attachments ??
-    (payload.attachments && payload.attachments.length > 0
-      ? payload.attachments.map((att) => {
+  // Attachments may be stored as inline base64 (small) or in Firebase Storage (large).
+  let effectiveAttachments: EmailAttachment[] | undefined;
+  if (attachments !== undefined) {
+    effectiveAttachments = attachments;
+  } else if (payload.attachments && payload.attachments.length > 0) {
+    const resolved = await Promise.all(
+      payload.attachments.map(async (att) => {
+        let content: ArrayBuffer | null = null;
+
+        if (att.storagePath) {
+          content = await downloadAttachmentFromStorage(att.storagePath);
+        } else if (att.contentBase64) {
           const buf = Buffer.from(att.contentBase64, 'base64');
-          const content = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
-          return {
-            filename: att.filename,
-            content,
-            contentType: att.contentType,
-            ...(att.contentId ? { contentId: att.contentId } : {}),
-          };
-        })
-      : undefined);
+          content = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+        }
+
+        if (!content) {
+          console.warn(`Skipping attachment "${att.filename}": content unavailable`);
+          return null;
+        }
+
+        return {
+          filename: att.filename,
+          content,
+          contentType: att.contentType,
+          ...(att.contentId ? { contentId: att.contentId } : {}),
+        };
+      })
+    );
+    const validAttachments = resolved.filter((a): a is EmailAttachment => a !== null);
+    effectiveAttachments = validAttachments.length > 0 ? validAttachments : undefined;
+  }
 
   const rulesSnap = await db
     .collection('rules')
@@ -160,21 +244,20 @@ export async function processQueuedInboundPayload(
           .join(', ')
       : `<strong>${escapeHtml(result.ruleApplied)}</strong>`;
 
-  const notificationBox = `<div style="font-family: Arial, sans-serif !important; max-width: 600px; margin: 0 auto;">
-        <div class="gmail_signature" style="margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
-          <div style="background: #f0f4ff !important; padding: 12px 16px !important; border-radius: 0px !important; font-size: 13px !important; color: #4b5563 !important; line-height: 1.4 !important;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-              <div>
+  const notificationBox = `<div style="clear: both; margin-top: 24px; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563; line-height: 1.4;">
+        <hr style="border: none; border-top: 2px solid #e5e7eb; margin: 0;">
+        <div style="background: #f0f4ff; padding: 12px 16px; border-left: 3px solid #6366f1;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; margin-bottom: 8px;">
+            <tr>
+              <td style="padding: 0; vertical-align: middle;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-6.4 -6.4 140.8 140.8" width="20" height="20" style="vertical-align: middle; margin-right: 6px;"><path d="M114,106.5H29V36.8h70c13.8,0,25,11.2,25,25v34.7C124,102,119.5,106.5,114,106.5z" fill="#EFD957"/><path d="M99,36.8H29v10h70c13.8,0,25,11.2,25,25v-10C124,48,112.8,36.8,99,36.8z" fill="#E7E7E7"/><path d="M44,106.5H14c-5.5,0-10-4.5-10-10v-35c0-13.8,11.2-25,25-25h0c13.8,0,25,11.2,25,25v35C54,102,49.5,106.5,44,106.5z" fill="#E7E7E7"/><polygon fill="#EFD957" points="71.5,71.5 71.5,21.5 99.7,21.5 99.7,36.5 79.7,36.5 79.7,71.5"/><path d="M14,108h30c6.3,0,11.5-5.2,11.5-11.5v-35c0-10.2-5.8-19.1-14.3-23.5h23.4c0.8,0,1.5-0.7,1.5-1.5S65.5,35,64.7,35H29C14.4,35,2.5,46.9,2.5,61.5v35C2.5,102.8,7.7,108,14,108z M5.5,61.5C5.5,48.5,16,38,29,38s23.5,10.5,23.5,23.5v35c0,4.7-3.8,8.5-8.5,8.5H14c-4.7,0-8.5-3.8-8.5-8.5V61.5z" fill="#494949"/><path d="M14,63h30c0.8,0,1.5-0.7,1.5-1.5S44.8,60,44,60H14c-0.8,0-1.5,0.7-1.5,1.5S13.2,63,14,63z" fill="#494949"/><path d="M101.2,21.5c0-0.8-0.7-1.5-1.5-1.5H71.5c-0.8,0-1.5,0.7-1.5,1.5v45.9c0,3.1,2.5,5.6,5.6,5.6s5.6-2.5,5.6-5.6V38H99c13,0,23.5,10.5,23.5,23.5v35c0,4.7-3.8,8.5-8.5,8.5H59c-0.8,0-1.5,0.7-1.5,1.5s0.7,1.5,1.5,1.5h55c6.3,0,11.5-5.2,11.5-11.5v-35c0-13.9-10.7-25.3-24.3-26.4V21.5z M79.7,35c-0.8,0-1.5,0.7-1.5,1.5v30.9c0,1.4-1.2,2.6-2.6,2.6S73,68.8,73,67.4V23h25.2v12H79.7z" fill="#494949"/></svg>
-                <strong style="color: #4b5563 !important; font-size: 13px !important;">Postino processed this email</strong>
-              </div>
-              ${originalEmailUrl ? `<a href="${escapeHtml(originalEmailUrl)}" style="color: #4b5563 !important; text-decoration: underline !important; white-space: nowrap; margin-left: 12px; font-size: 13px !important;">View original</a>` : ''}
-            </div>
-            <div style="margin-bottom: 8px; color: #4b5563 !important; font-size: 13px !important;">
-              Original from: ${escapeHtml(payload.sender)}
-            </div>
-            <div style="color: #4b5563 !important; font-size: 13px !important;">Rule: ${ruleDisplayHtml}</div>
-          </div>
+                <strong style="color: #4b5563; font-size: 13px;">Postino processed this email</strong>
+              </td>
+              ${originalEmailUrl ? `<td align="right" style="padding: 0; vertical-align: middle; white-space: nowrap;"><a href="${escapeHtml(originalEmailUrl)}" style="color: #4b5563; text-decoration: underline; font-size: 13px;">View original</a></td>` : ''}
+            </tr>
+          </table>
+          <div style="margin-bottom: 6px; color: #4b5563; font-size: 13px;">Original from: ${escapeHtml(payload.sender)}</div>
+          <div style="color: #4b5563; font-size: 13px;">Rule: ${ruleDisplayHtml}</div>
         </div>
       </div>`;
 
@@ -204,6 +287,15 @@ export async function processQueuedInboundPayload(
       'X-Auto-Response-Suppress': 'All',
     },
   });
+
+  // Clean up any attachments stored in Firebase Storage now that they have been forwarded.
+  if (payload.attachments) {
+    await Promise.all(
+      payload.attachments
+        .filter((att) => att.storagePath)
+        .map((att) => deleteAttachmentFromStorage(att.storagePath!))
+    );
+  }
 
   const safeTrace = result.trace ? sanitizeForFirestore(result.trace) : undefined;
 
