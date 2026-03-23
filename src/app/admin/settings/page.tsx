@@ -58,6 +58,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   const { firebaseUser } = useAuth();
   const [settings, setSettings] = useState<Partial<Settings>>({
     maxRuleLength: 1000,
+    maxActiveRules: 3,
     llmModel: 'openai/gpt-4o-mini',
     llmApiKey: '',
     llmMaxTokens: 4000,
@@ -213,6 +214,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     const normalizedForSave: Partial<Settings> = {
       ...settings,
       maxRuleLength: normalizeOptionalInteger(settings.maxRuleLength, { min: 1 }),
+      maxActiveRules: normalizeOptionalInteger(settings.maxActiveRules, { min: 1 }),
       llmMaxTokens: normalizeOptionalInteger(settings.llmMaxTokens, { min: 1 }),
       smtpPort: normalizeOptionalInteger(settings.smtpPort, { min: 1, max: 65535 }),
       agentChunkThresholdChars: normalizeOptionalInteger(settings.agentChunkThresholdChars, {
@@ -423,6 +425,24 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                         maxRuleLength: normalizeOptionalInteger(p.maxRuleLength, { min: 1 }),
                       }));
                     }}
+                  />
+                  <Input
+                    label="Max Active Rules per User"
+                    type="number"
+                    value={settings.maxActiveRules ?? ''}
+                    onChange={(e) => {
+                      setSettings((p) => ({
+                        ...p,
+                        maxActiveRules: parseOptionalIntegerInput(e.target.value, p.maxActiveRules),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        maxActiveRules: normalizeOptionalInteger(p.maxActiveRules, { min: 1 }),
+                      }));
+                    }}
+                    hint="Maximum number of active rules a non-admin user can have (default: 3)."
                   />
                   <Input
                     label="Max Response Tokens"

@@ -45,6 +45,8 @@ export interface EmailLog {
 
 export interface Settings {
   maxRuleLength: number;
+  /** Maximum number of active rules a non-admin user can have. Defaults to 3. */
+  maxActiveRules?: number;
   llmModel: string;
   llmApiKey: string;
   llmMaxTokens?: number;
