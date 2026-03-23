@@ -84,6 +84,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     mailgunSandboxEmail: '',
     mailgunBaseUrl: 'https://api.mailgun.net',
     maintenanceMode: false,
+    signupMaintenanceMode: false,
     rulesExecutionMode: 'sequential',
   });
   const [loading, setLoading] = useState(true);
@@ -325,6 +326,28 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   Maintenance mode is <strong>ON</strong> — emails are not being forwarded.
+                </AlertDescription>
+              </Alert>
+            )}
+            <Separator className="mt-3" />
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Signup Maintenance Mode</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  When enabled, new user registrations are suspended and a warning is shown on the signup page.
+                </p>
+              </div>
+              <Switch
+                id="signup-maintenance-mode"
+                checked={!!settings.signupMaintenanceMode}
+                onCheckedChange={(checked) => setSettings((p) => ({ ...p, signupMaintenanceMode: checked }))}
+              />
+            </div>
+            {settings.signupMaintenanceMode && (
+              <Alert variant="warning">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Signup maintenance mode is <strong>ON</strong> — new user registrations are suspended.
                 </AlertDescription>
               </Alert>
             )}

@@ -11,11 +11,13 @@ export async function GET() {
     return NextResponse.json({
       maxRuleLength: data?.maxRuleLength ?? 1000,
       assignedEmailDomain: resolveAssignedEmailDomain(data),
+      signupMaintenanceMode: data?.signupMaintenanceMode === true,
     });
   } catch {
     return NextResponse.json({
       maxRuleLength: 1000,
       assignedEmailDomain: resolveAssignedEmailDomain(),
+      signupMaintenanceMode: false,
     });
   }
 }

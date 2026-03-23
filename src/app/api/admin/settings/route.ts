@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest) {
       'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
       'emailDomain',
       'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
-      'maintenanceMode', 'rulesExecutionMode',
+      'maintenanceMode', 'signupMaintenanceMode', 'rulesExecutionMode',
       'agentChunkThresholdChars', 'agentChunkSizeChars', 'agentChunkExtractMaxTokens',
       'agentAnalysisMaxTokens', 'agentBodyAnalysisMaxChars', 'agentChunkFallbackMaxChars',
       'agentFallbackMaxTokens', 'agentTracingEnabled', 'agentTraceIncludeExcerpts',
