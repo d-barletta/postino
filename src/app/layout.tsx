@@ -3,6 +3,7 @@ import './globals.css';
 import { ClientProviders } from '@/components/auth/ClientProviders';
 import { AppFooter } from '@/components/layout/AppFooter';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'Postino - AI Email Redirector',
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
         <AppFooter />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
