@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ClientProviders } from '@/components/auth/ClientProviders';
 import { AppFooter } from '@/components/layout/AppFooter';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Postino - AI Email Redirector',
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ClientProviders>{children}</ClientProviders>
         </div>
         <AppFooter />
+        <Analytics />
       </body>
     </html>
   );
