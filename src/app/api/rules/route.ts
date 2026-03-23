@@ -93,6 +93,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Rule exceeds maximum length of ${maxRuleLength}` }, { status: 400 });
     }
 
+    const maxActiveRules = settingsSnap.data()?.maxActiveRules ?? 3;
+    const userSnap = await db.collection('users').doc(decoded.uid).get();
+    const isAdmin = !!userSnap.data()?.isAdmin;
+
+    if (!isAdmin) {
+      const activeRulesSnap = await db
+        .collection('rules')
+        .where('userId', '==', decoded.uid)
+        .where('isActive', '==', true)
+        .get();
+
+      if (activeRulesSnap.size >= maxActiveRules) {
+        return NextResponse.json(
+          { error: `You have reached the maximum of ${maxActiveRules} active rules` },
+          { status: 400 }
+        );
+      }
+    }
+
     const now = Timestamp.now();
     const ref = await db.collection('rules').add({
       userId: decoded.uid,

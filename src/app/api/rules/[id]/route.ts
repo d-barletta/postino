@@ -30,6 +30,28 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'isActive must be a boolean' }, { status: 400 });
     }
 
+    if (isActive === true && !ruleSnap.data()?.isActive) {
+      const settingsSnap = await db.collection('settings').doc('global').get();
+      const maxActiveRules = settingsSnap.data()?.maxActiveRules ?? 3;
+      const userSnap = await db.collection('users').doc(decoded.uid).get();
+      const isUserAdmin = !!userSnap.data()?.isAdmin;
+
+      if (!isUserAdmin) {
+        const activeRulesSnap = await db
+          .collection('rules')
+          .where('userId', '==', decoded.uid)
+          .where('isActive', '==', true)
+          .get();
+
+        if (activeRulesSnap.size >= maxActiveRules) {
+          return NextResponse.json(
+            { error: `You have reached the maximum of ${maxActiveRules} active rules` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     if (name !== undefined) {
       if (!name || typeof name !== 'string' || !name.trim()) {
         return NextResponse.json({ error: 'Rule name is required' }, { status: 400 });
