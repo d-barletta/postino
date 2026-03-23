@@ -750,17 +750,17 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   />
                   <div className="space-y-1.5">
                     <Label htmlFor="mailgun-test-to">Test Recipient Email</Label>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 min-w-0">
-                        <Input
-                          id="mailgun-test-to"
-                          type="email"
-                          value={mailgunTestTo}
-                          onChange={(e) => setMailgunTestTo(e.target.value)}
-                          placeholder="admin@yourdomain.com"
-                          hint="Leave empty to send to the currently logged-in admin email"
-                        />
-                      </div>
+                    <div className="min-w-0">
+                      <Input
+                        id="mailgun-test-to"
+                        type="email"
+                        value={mailgunTestTo}
+                        onChange={(e) => setMailgunTestTo(e.target.value)}
+                        placeholder="admin@yourdomain.com"
+                        hint="Leave empty to send to the currently logged-in admin email"
+                      />
+                    </div>
+                    <div>
                       <Button variant="secondary" onClick={handleTestMailgun} loading={mailgunTesting}>
                         Send test email
                       </Button>
