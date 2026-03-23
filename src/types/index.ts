@@ -62,6 +62,8 @@ export interface Settings {
   mailgunSandboxEmail?: string;
   mailgunBaseUrl?: string;
   maintenanceMode?: boolean;
+  /** When enabled, new user registrations are suspended and a maintenance warning is shown on the signup page. */
+  signupMaintenanceMode?: boolean;
   /** Controls whether matching rules are applied sequentially (output of N feeds into N+1) or all at once in a single LLM call. Defaults to 'sequential'. */
   rulesExecutionMode?: 'sequential' | 'parallel';
   /** Character threshold above which the agent switches to map-reduce chunked processing. */

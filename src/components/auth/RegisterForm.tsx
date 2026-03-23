@@ -20,6 +20,7 @@ export function RegisterForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [assignedEmailDomain, setAssignedEmailDomain] = useState('');
+  const [signupMaintenance, setSignupMaintenance] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -28,9 +29,10 @@ export function RegisterForm() {
       try {
         const res = await fetch('/api/settings/public', { cache: 'no-store' });
         if (!res.ok) return;
-        const data = (await res.json()) as { assignedEmailDomain?: string };
+        const data = (await res.json()) as { assignedEmailDomain?: string; signupMaintenanceMode?: boolean };
         if (mounted) {
           setAssignedEmailDomain((data.assignedEmailDomain || '').trim().toLowerCase());
+          setSignupMaintenance(data.signupMaintenanceMode === true);
         }
       } catch {
         // If settings fail to load, server-side enforcement still protects the flow.
@@ -82,6 +84,14 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {signupMaintenance && (
+        <Alert variant="warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            We&apos;re working on improving the service. New user registrations are suspended during maintenance. Please try again later.
+          </AlertDescription>
+        </Alert>
+      )}
       <Input
         label="Email address"
         type="email"
@@ -90,6 +100,7 @@ export function RegisterForm() {
         required
         autoComplete="email"
         placeholder="you@example.com"
+        disabled={signupMaintenance}
       />
       <Input
         label="Password"
@@ -99,6 +110,7 @@ export function RegisterForm() {
         required
         autoComplete="new-password"
         placeholder="Min. 8 characters"
+        disabled={signupMaintenance}
       />
       <Input
         label="Confirm password"
@@ -108,6 +120,7 @@ export function RegisterForm() {
         required
         autoComplete="new-password"
         placeholder="Repeat password"
+        disabled={signupMaintenance}
       />
       {error && (
         <Alert variant="destructive">
@@ -115,7 +128,7 @@ export function RegisterForm() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button type="submit" loading={loading} className="w-full" size="md">
+      <Button type="submit" loading={loading} className="w-full" size="md" disabled={signupMaintenance}>
         Create account
       </Button>
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
