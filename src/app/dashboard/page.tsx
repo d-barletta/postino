@@ -123,6 +123,7 @@ export default function DashboardPage() {
             {user?.assignedEmail && (
               <AssignedEmailCard
                 assignedEmail={user.assignedEmail}
+                userEmail={user.email}
                 isAddressEnabled={user.isAddressEnabled !== false}
                 onToggle={handleAddressToggle}
               />
