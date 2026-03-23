@@ -160,9 +160,7 @@ export async function processQueuedInboundPayload(
           .join(', ')
       : `<strong>${escapeHtml(result.ruleApplied)}</strong>`;
 
-  const emailHtml = `
-      ${result.body}
-      <div style="font-family: Arial, sans-serif !important; max-width: 600px; margin: 0 auto;">
+  const notificationBox = `<div style="font-family: Arial, sans-serif !important; max-width: 600px; margin: 0 auto;">
         <div class="gmail_signature" style="margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
           <div style="background: #f0f4ff !important; padding: 12px 16px !important; border-radius: 0px !important; font-size: 13px !important; color: #4b5563 !important; line-height: 1.4 !important;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -178,8 +176,21 @@ export async function processQueuedInboundPayload(
             <div style="color: #4b5563 !important; font-size: 13px !important;">Rule: ${ruleDisplayHtml}</div>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
+
+  // Inject the notification box outside the original email HTML body.
+  // If result.body is a complete HTML document (has a closing </body> tag), insert
+  // the box just before </body> so it appears as the last top-level sibling element
+  // inside <body>, outside any tables or containers from the original email.
+  // Appending after </html> would create invalid HTML that email clients may
+  // re-render by moving the box inside the original email's container structures.
+  // For HTML fragments (no </body> tag), append after the fragment as before.
+  // Use case-insensitive matching and target the last occurrence to handle
+  // emails with non-lowercase tags or unusual formatting.
+  const lastBodyClose = [...result.body.matchAll(/<\/body>/gi)].pop();
+  const emailHtml = lastBodyClose
+    ? result.body.slice(0, lastBodyClose.index) + notificationBox + result.body.slice(lastBodyClose.index)
+    : result.body + notificationBox;
 
   await sendEmail({
     to: payload.userEmail,
