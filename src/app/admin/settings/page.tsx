@@ -95,6 +95,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   const [modelsError, setModelsError] = useState('');
   const [llmTesting, setLlmTesting] = useState(false);
   const [llmTestResult, setLlmTestResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
+  const [mailgunTestTo, setMailgunTestTo] = useState('');
+  const [mailgunTesting, setMailgunTesting] = useState(false);
+  const [mailgunTestResult, setMailgunTestResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -150,6 +153,56 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
       setLlmTestResult({ ok: false, message: 'Request failed', detail: err instanceof Error ? err.message : String(err) });
     } finally {
       setLlmTesting(false);
+    }
+  };
+
+  const handleTestMailgun = async () => {
+    if (!firebaseUser) return;
+
+    setMailgunTesting(true);
+    setMailgunTestResult(null);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/admin/test-mailgun', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: mailgunTestTo,
+          mailgunApiKey: settings.mailgunApiKey || '',
+          mailgunDomain: settings.mailgunDomain || '',
+          mailgunSandboxEmail: settings.mailgunSandboxEmail || '',
+          mailgunBaseUrl: settings.mailgunBaseUrl || '',
+          smtpFrom: settings.smtpFrom || '',
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMailgunTestResult({
+          ok: true,
+          message: data.message || 'Test email sent successfully',
+          detail: typeof data.detail === 'string' ? data.detail : undefined,
+        });
+      } else {
+        const detail = typeof data.detail === 'string'
+          ? data.detail
+          : typeof data.error === 'string'
+            ? data.error
+            : 'Request failed';
+        setMailgunTestResult({
+          ok: false,
+          message: typeof data.error === 'string' ? data.error : 'Mailgun test failed',
+          detail,
+        });
+      }
+    } catch (err) {
+      setMailgunTestResult({
+        ok: false,
+        message: 'Request failed',
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setMailgunTesting(false);
     }
   };
 
@@ -695,6 +748,35 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => setSettings((p) => ({ ...p, mailgunBaseUrl: e.target.value }))}
                     placeholder="https://api.mailgun.net"
                   />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="mailgun-test-to">Test Recipient Email</Label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <Input
+                          id="mailgun-test-to"
+                          type="email"
+                          value={mailgunTestTo}
+                          onChange={(e) => setMailgunTestTo(e.target.value)}
+                          placeholder="admin@yourdomain.com"
+                          hint="Leave empty to send to the currently logged-in admin email"
+                        />
+                      </div>
+                      <Button variant="secondary" onClick={handleTestMailgun} loading={mailgunTesting}>
+                        Send test email
+                      </Button>
+                    </div>
+                    {mailgunTestResult && (
+                      <div className={cn('text-sm flex flex-col gap-0.5', mailgunTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
+                        <span className="flex items-center gap-1">
+                          {mailgunTestResult.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                          {mailgunTestResult.message}
+                        </span>
+                        {mailgunTestResult.detail && (
+                          <span className="text-xs opacity-75 font-mono wrap-break-word">{mailgunTestResult.detail}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
