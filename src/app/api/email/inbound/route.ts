@@ -258,7 +258,13 @@ function resolveStoreAttachmentUrl(
     // Restrict to expected API routes to reduce risk of arbitrary fetches.
     if (!resolved.pathname.startsWith('/v3/')) return null;
 
-    return resolved.toString();
+    // Mailgun inbound webhook payloads include attachment URLs that point directly to
+    // regional storage servers (e.g. storage-europe-west1.api.mailgun.net). Those hosts
+    // do not accept HTTP Basic auth with the Mailgun API key – the correct way to fetch
+    // stored attachments is via the configured API base URL (e.g. api.eu.mailgun.net or
+    // api.mailgun.net) using the same path. Route the request through mailgunBaseUrl so
+    // that authentication always succeeds regardless of which storage region was used.
+    return new URL(resolved.pathname + resolved.search, mailgunBaseUrl).toString();
   } catch {
     return null;
   }
