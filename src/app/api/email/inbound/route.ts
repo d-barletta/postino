@@ -532,6 +532,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (settings?.maintenanceMode === true) {
+      console.log('Maintenance mode is active, email not forwarded');
+      await updateWebhookLog({ status: 'skipped', result: 'maintenance-mode', reason: 'Maintenance mode is active' });
+      return NextResponse.json({ message: 'Service is under maintenance. Email not forwarded.' });
+    }
+
     const timestamp = formData.get('timestamp') as string;
     const token = formData.get('token') as string;
     const signature = formData.get('signature') as string;
@@ -539,12 +545,6 @@ export async function POST(request: NextRequest) {
     if (!timestamp || !token || !signature) {
       await updateWebhookLog({ status: 'rejected', result: 'missing-signature-fields', reason: 'Missing webhook signature fields' });
       return NextResponse.json({ error: 'Missing webhook signature fields' }, { status: 400 });
-    }
-
-    if (settings?.maintenanceMode === true) {
-      console.log('Maintenance mode is active, email not forwarded');
-      await updateWebhookLog({ status: 'skipped', result: 'maintenance-mode', reason: 'Maintenance mode is active' });
-      return NextResponse.json({ message: 'Service is under maintenance. Email not forwarded.' });
     }
 
     const mailgunWebhookSigningKey =
