@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { sendEmail, type EmailAttachment } from '@/lib/email';
 
-type MailgunTestPayload = {
+type TestEmailPayload = {
   to?: string;
-  mailgunApiKey?: string;
-  mailgunDomain?: string;
-  mailgunSandboxEmail?: string;
-  mailgunBaseUrl?: string;
-  smtpFrom?: string;
 };
 
 type DecodedAdmin = {
@@ -30,45 +26,20 @@ function trimString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function normalizeMailgunDomain(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-  return trimmed.includes('@') ? trimmed.split('@')[1] || '' : trimmed;
-}
+// Minimal 8×8 red PNG used as the inline test image.
+// Generated with: ImageMagick `convert -size 8x8 xc:red png:- | base64`
+const INLINE_TEST_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFElEQVQI12P8z8BQDwAEgAF/QualIQAAAABJRU5ErkJggg==';
 
-function normalizeBaseUrl(value: string): string {
-  if (!value) return 'https://api.mailgun.net';
-  return value.endsWith('/') ? value.slice(0, -1) : value;
+/** Convert a Node.js Buffer to a plain ArrayBuffer without sharing the underlying pool. */
+function bufferToArrayBuffer(buf: Buffer): ArrayBuffer {
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const admin = await verifyAdmin(request);
-    const body = (await request.json().catch(() => ({}))) as MailgunTestPayload;
-
-    const db = adminDb();
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settings = settingsSnap.data() || {};
-
-    const apiKey =
-      trimString(body.mailgunApiKey) ||
-      trimString(settings.mailgunApiKey) ||
-      trimString(process.env.MAILGUN_API_KEY);
-
-    const domain = normalizeMailgunDomain(
-      trimString(body.mailgunSandboxEmail) ||
-      trimString(body.mailgunDomain) ||
-      trimString(settings.mailgunSandboxEmail) ||
-      trimString(settings.mailgunDomain) ||
-      trimString(process.env.MAILGUN_SANDBOX_EMAIL)
-    );
-
-    const baseUrl = normalizeBaseUrl(
-      trimString(body.mailgunBaseUrl) ||
-      trimString(settings.mailgunBaseUrl) ||
-      trimString(process.env.MAILGUN_BASE_URL) ||
-      'https://api.mailgun.net'
-    );
+    const body = (await request.json().catch(() => ({}))) as TestEmailPayload;
 
     const recipient = trimString(body.to) || admin.email || '';
     if (!recipient) {
@@ -78,66 +49,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!apiKey || !domain) {
-      return NextResponse.json(
-        {
-          error:
-            'Mailgun is not fully configured. Provide Mailgun API Key and Mailgun Domain/Sandbox Email.',
-        },
-        { status: 400 }
-      );
-    }
-
-    const fromAddress =
-      trimString(body.smtpFrom) ||
-      trimString(settings.smtpFrom) ||
-      `Postino <noreply@${domain}>`;
-
     const nowIso = new Date().toISOString();
     const subject = `Postino Mailgun test (${nowIso})`;
-    const textBody = [
-      'This is a Mailgun test email from Postino admin settings.',
-      '',
-      `Time: ${nowIso}`,
-      `Domain: ${domain}`,
-      `Base URL: ${baseUrl}`,
+    const inlineCid = 'postino-test-inline';
+
+    // Regular (non-inline) text attachment — confirms non-inline delivery works.
+    const textAttachment: EmailAttachment = {
+      filename: 'postino-test-attachment.txt',
+      content: bufferToArrayBuffer(
+        Buffer.from(
+          [
+            'Postino attachment delivery test',
+            '',
+            'If you can read this file, non-inline attachments are delivered correctly.',
+            '',
+            `Timestamp: ${nowIso}`,
+          ].join('\n'),
+          'utf-8'
+        )
+      ),
+      contentType: 'text/plain',
+    };
+
+    // Inline PNG attachment — its CID is referenced in the HTML body below.
+    const inlineAttachment: EmailAttachment = {
+      filename: 'postino-inline.png',
+      content: bufferToArrayBuffer(Buffer.from(INLINE_TEST_PNG_BASE64, 'base64')),
+      contentType: 'image/png',
+      contentId: inlineCid,
+    };
+
+    const htmlBody = [
+      '<p>This is a Mailgun test email sent from Postino admin settings using the same',
+      'sending function as real email forwarding.</p>',
+      `<p><strong>Time:</strong> ${nowIso}</p>`,
+      '<p>This email includes:</p>',
+      '<ul>',
+      '<li>A non-inline attachment: <code>postino-test-attachment.txt</code></li>',
+      '<li>An inline image (should appear as a small red square below)</li>',
+      '</ul>',
+      '<p>If either attachment is missing in the received email, check your Mailgun',
+      'configuration and the Postino attachment pipeline.</p>',
+      `<p><img src="cid:${inlineCid}" alt="Postino inline test" width="64" height="64"`,
+      'style="width:64px;height:64px;border:1px solid #ccc;display:block;" /></p>',
     ].join('\n');
 
-    const form = new FormData();
-    form.append('from', fromAddress);
-    form.append('to', recipient);
-    form.append('subject', subject);
-    form.append('text', textBody);
+    const textBody = [
+      'This is a Mailgun test email sent from Postino admin settings using the same',
+      'sending function as real email forwarding.',
+      '',
+      `Time: ${nowIso}`,
+      '',
+      'This email includes:',
+      '  - A non-inline attachment: postino-test-attachment.txt',
+      '  - An inline image',
+      '',
+      'If attachments are missing, check your Mailgun configuration and the Postino',
+      'attachment pipeline.',
+    ].join('\n');
 
-    const res = await fetch(`${baseUrl}/v3/${domain}/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(`api:${apiKey}`).toString('base64')}`,
-      },
-      body: form,
+    await sendEmail({
+      to: recipient,
+      subject,
+      html: htmlBody,
+      text: textBody,
+      attachments: [textAttachment, inlineAttachment],
     });
-
-    const detail = await res.text();
-    if (!res.ok) {
-      return NextResponse.json(
-        {
-          error: `Mailgun test failed (${res.status})`,
-          detail,
-        },
-        { status: 400 }
-      );
-    }
 
     return NextResponse.json({
       success: true,
-      message: `Test email sent to ${recipient}`,
-      detail,
+      message: `Test email with attachments sent to ${recipient}`,
       recipient,
-      domain,
-      baseUrl,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
-    return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
+    if (msg === 'Forbidden' || msg === 'Unauthorized') {
+      return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
+    }
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
