@@ -10,7 +10,7 @@ import {
   getNotificationPermission,
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications,
-  setupForegroundMessageHandler,
+  // setupForegroundMessageHandler,
 } from '@/lib/push-notifications';
 
 export function PushNotificationButton() {
@@ -32,11 +32,11 @@ export function PushNotificationButton() {
   }, []);
 
   // When subscribed, keep a foreground message handler alive.
-  useEffect(() => {
-    if (!subscribed) return;
-    const unsubscribe = setupForegroundMessageHandler();
-    return () => { unsubscribe?.(); };
-  }, [subscribed]);
+  // useEffect(() => {
+  //   if (!subscribed) return;
+  //   const unsubscribe = setupForegroundMessageHandler();
+  //   return () => { unsubscribe?.(); };
+  // }, [subscribed]);
 
   const handleEnable = useCallback(async () => {
     if (!firebaseUser) return;
