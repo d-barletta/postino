@@ -94,7 +94,7 @@ export function PushNotificationButton() {
         ) : (
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {subscribed
-              ? 'You will receive a browser notification each time an email is processed and forwarded.'
+              ? 'You will receive a browser notification each time an email is processed.'
               : 'Enable to receive a browser notification whenever a new email is processed.'}
           </p>
         )}
