@@ -375,6 +375,11 @@ function classifyStoredMessageFetchFailure(statusCode: number): {
   };
 }
 
+function isMessageRetrievalDisabledResponseSnippet(snippet: string): boolean {
+  if (!snippet) return false;
+  return snippet.toLowerCase().includes('message retrieval disabled');
+}
+
 async function uploadWebhookPayloadSnapshot(
   logId: string,
   payload: unknown
@@ -807,6 +812,29 @@ export async function POST(request: NextRequest) {
           const primaryResponseSnippet = await readResponseSnippet(storedMessageResponse);
           const finalStatus = fallbackAttempted && fallbackStatus > 0 ? fallbackStatus : storedMessageResponse.status;
           const failureClass = classifyStoredMessageFetchFailure(finalStatus);
+          const retrievalDisabled =
+            isMessageRetrievalDisabledResponseSnippet(primaryResponseSnippet) ||
+            isMessageRetrievalDisabledResponseSnippet(fallbackResponseSnippet);
+
+          if (retrievalDisabled && effectiveStoreAttachments.length > 0) {
+            await updateWebhookLog({
+              result: 'stored-message-retrieval-disabled-fallback',
+              reason:
+                'Stored message retrieval is disabled for this Mailgun domain; using webhook-provided attachment URLs as fallback',
+              'details.storedMessageFetch': {
+                ...storedMessageLogContext,
+                attempt: 'retrieval-disabled-fallback',
+                failureClass: 'retrieval-disabled',
+                primaryStatus: storedMessageResponse.status,
+                primaryResponseSnippet,
+                fallbackAttempted,
+                fallbackHost: fallbackUrlHost,
+                fallbackPath: fallbackUrlPath,
+                fallbackStatus,
+                fallbackResponseSnippet,
+              },
+            });
+          } else {
           await updateWebhookLog({
             status: 'error',
             result: 'stored-message-fetch-failed',
@@ -825,6 +853,7 @@ export async function POST(request: NextRequest) {
             },
           });
           return NextResponse.json({ error: 'Failed to fetch stored message' }, { status: 502 });
+          }
         }
 
         storedMessageResponse = responseUsed;
