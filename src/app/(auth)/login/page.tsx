@@ -1,7 +1,31 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { DashboardLink } from '@/components/auth/DashboardLink';
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  description: 'Sign in to Postino to manage your AI email rules and inbox processing settings.',
+  alternates: {
+    canonical: '/login',
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: 'Sign In | Postino',
+    description: 'Sign in to your Postino account.',
+    url: '/login',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Sign In | Postino',
+    description: 'Sign in to your Postino account.',
+  },
+};
 
 export default function LoginPage() {
   return (

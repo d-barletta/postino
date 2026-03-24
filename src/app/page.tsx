@@ -1,6 +1,37 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
+
+export const metadata: Metadata = {
+  title: 'Home',
+  description:
+    'Postino gives you a private email address and uses AI to clean, summarize, and forward only the content that matters.',
+  keywords: [
+    'AI email assistant',
+    'email summarizer',
+    'newsletter summarizer',
+    'email filtering',
+    'inbox automation',
+    'Postino',
+  ],
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Postino | AI Email Redirector',
+    description:
+      'Get a private email address and let Postino summarize newsletters, remove noise, and forward clean content to your inbox.',
+    url: '/',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Postino | AI Email Redirector',
+    description:
+      'Get a private email address and let Postino summarize newsletters, remove noise, and forward clean content to your inbox.',
+  },
+};
 
 export default function HomePage() {
   return (

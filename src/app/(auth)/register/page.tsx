@@ -1,7 +1,32 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { DashboardLink } from '@/components/auth/DashboardLink';
+
+export const metadata: Metadata = {
+  title: 'Sign Up',
+  description:
+    'Create a Postino account to get a private address and start automating your inbox with AI rules.',
+  alternates: {
+    canonical: '/register',
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: 'Sign Up | Postino',
+    description: 'Create your Postino account and get your private routing address.',
+    url: '/register',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Sign Up | Postino',
+    description: 'Create your Postino account and get your private routing address.',
+  },
+};
 
 export default function RegisterPage() {
   return (

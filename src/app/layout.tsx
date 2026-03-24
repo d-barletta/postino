@@ -5,12 +5,42 @@ import { AppFooter } from '@/components/layout/AppFooter';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+
 export const metadata: Metadata = {
-  title: 'Postino - AI Email Redirector',
-  description: 'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
+  metadataBase: new URL(appUrl),
+  title: {
+    default: 'Postino | AI Email Redirector',
+    template: '%s | Postino',
+  },
+  description:
+    'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
+  applicationName: 'Postino',
   icons: {
     icon: '/logo.svg',
     apple: '/logo.svg',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'Postino',
+    title: 'Postino | AI Email Redirector',
+    description:
+      'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
+    images: [
+      {
+        url: '/logo.svg',
+        width: 512,
+        height: 512,
+        alt: 'Postino logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Postino | AI Email Redirector',
+    description:
+      'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
+    images: ['/logo.svg'],
   },
 };
 
