@@ -205,7 +205,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
     : logs;
 
   const btnBase = 'px-3 py-1 text-xs rounded-full transition-colors border whitespace-nowrap';
-  const btnActive = 'font-semibold bg-[#EFD957] dark:bg-[#EFD957] text-black dark:text-black border-transparent';
+  const btnActive = 'font-semibold bg-[#efd957] dark:bg-[#efd957] text-black dark:text-black border-transparent';
   const btnInactive = 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/10';
 
   const statusBtnClass = (active: boolean) => cn(btnBase, active ? btnActive : btnInactive);
@@ -270,7 +270,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                 placeholder="Search subject, from, user…"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#EFD957] focus:border-[#EFD957]"
+                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#efd957] focus:border-[#efd957]"
               />
             </div>
 

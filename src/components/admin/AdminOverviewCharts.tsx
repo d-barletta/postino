@@ -92,7 +92,7 @@ function ChartSkeleton() {
   );
 }
 
-const COST_COLOR_DARK = '#EFD957';
+const COST_COLOR_DARK = '#efd957';
 
 export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
   const { firebaseUser } = useAuth();
@@ -153,7 +153,7 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
   }));
 
   const btnBase = 'px-3 py-1 text-xs transition-colors';
-  const btnActive = `bg-[#EFD957] dark:bg-[#EFD957] text-black dark:text-black font-semibold`;
+  const btnActive = `bg-[#efd957] dark:bg-[#efd957] text-black dark:text-black font-semibold`;
   const btnInactive =
     'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10';
   const btnBorder = 'border-l border-gray-200 dark:border-gray-700';

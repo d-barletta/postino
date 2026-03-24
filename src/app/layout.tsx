@@ -19,9 +19,14 @@ export const metadata: Metadata = {
   appleWebApp: {
     title: 'Postino',
   },
+  manifest: '/manifest.json',
   icons: {
-    icon: '/logo.svg',
-    apple: '/logo.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon0.svg', type: 'image/svg+xml' },
+      { url: '/icon1.png', type: 'image/png', sizes: '32x32' },
+    ],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
     type: 'website',
@@ -49,7 +54,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#EFD957' },
+    { media: '(prefers-color-scheme: light)', color: '#efd957' },
     { media: '(prefers-color-scheme: dark)', color: '#d6c043' },
   ],
   colorScheme: 'light dark',

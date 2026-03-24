@@ -156,7 +156,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-[#EFD957] border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-[#efd957] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -290,7 +290,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                       <button
                         onClick={handleReprocess}
                         disabled={reprocessing}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#EFD957] hover:bg-[#d0b53f] text-black rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#efd957] hover:bg-[#d0b53f] text-black rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {reprocessing ? (
                           <>

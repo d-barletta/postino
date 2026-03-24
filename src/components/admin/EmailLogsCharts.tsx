@@ -268,7 +268,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                             onClick={() => handleRangeChange(r)}
                             className={`px-3 py-1 transition-colors ${
                               range === r
-                                ? 'bg-[#EFD957] text-black font-semibold'
+                                ? 'bg-[#efd957] text-black font-semibold'
                                 : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                             } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
                           >
@@ -283,7 +283,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                             onClick={() => setGranularity(g)}
                             className={`px-3 py-1 transition-colors ${
                               granularity === g
-                                ? 'bg-[#EFD957] text-black font-semibold'
+                                ? 'bg-[#efd957] text-black font-semibold'
                                 : 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10'
                             } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
                           >
@@ -322,10 +322,10 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                           yAxisId="cost"
                           type="monotone"
                           dataKey="cost"
-                          stroke={isDarkMode ? '#EFD957' : 'var(--color-cost)'}
+                          stroke={isDarkMode ? '#efd957' : 'var(--color-cost)'}
                           strokeWidth={2.5}
-                          dot={{ r: 3, fill: isDarkMode ? '#EFD957' : 'var(--color-cost)' }}
-                          activeDot={{ r: 5, fill: isDarkMode ? '#EFD957' : 'var(--color-cost)' }}
+                          dot={{ r: 3, fill: isDarkMode ? '#efd957' : 'var(--color-cost)' }}
+                          activeDot={{ r: 5, fill: isDarkMode ? '#efd957' : 'var(--color-cost)' }}
                         />
                       </ComposedChart>
                     </ChartContainer>
