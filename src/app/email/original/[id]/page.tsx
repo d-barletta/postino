@@ -155,7 +155,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
   if (authLoading || loading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-[#efd957] border-t-transparent rounded-full" />
       </div>
     );
@@ -163,7 +163,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
   if (error) {
     return (
-      <div className="h-full flex items-center justify-center p-4">
+      <div className="min-h-full flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="text-center py-8">
             <i className="bi bi-exclamation-circle text-3xl text-red-500 mb-3" aria-hidden="true" />
@@ -185,7 +185,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const receivedDate = email.receivedAt ? new Date(email.receivedAt).toLocaleString() : '—';
 
   return (
-    <div className="h-full">
+    <div className="min-h-full">
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-3">
           <button
