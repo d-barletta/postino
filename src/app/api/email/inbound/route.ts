@@ -224,12 +224,40 @@ function parseStoreAttachments(formData: FormData): StoreAttachmentRef[] {
   }
 }
 
-function resolveStoreAttachmentUrl(rawUrl: string, mailgunBaseUrl: string): string | null {
+function resolveStoreAttachmentUrl(
+  rawUrl: string,
+  mailgunBaseUrl: string,
+  envMailgunBaseUrl?: string
+): string | null {
   try {
     const base = new URL(mailgunBaseUrl);
     const resolved = new URL(rawUrl, mailgunBaseUrl);
     if (resolved.protocol !== 'https:') return null;
-    if (resolved.host !== base.host) return null;
+
+    const envBaseHost = (() => {
+      if (!envMailgunBaseUrl || !envMailgunBaseUrl.trim()) return '';
+      try {
+        return new URL(envMailgunBaseUrl).host;
+      } catch {
+        return '';
+      }
+    })();
+
+    const trustedHosts = new Set([
+      base.host,
+      ...(envBaseHost ? [envBaseHost] : []),
+      'api.mailgun.net',
+      'api.eu.mailgun.net',
+    ]);
+    const isTrustedStorageHost =
+      resolved.host.endsWith('.api.mailgun.net') ||
+      resolved.host.endsWith('.api.eu.mailgun.net');
+
+    if (!trustedHosts.has(resolved.host) && !isTrustedStorageHost) return null;
+
+    // Restrict to expected API routes to reduce risk of arbitrary fetches.
+    if (!resolved.pathname.startsWith('/v3/')) return null;
+
     return resolved.toString();
   } catch {
     return null;
@@ -533,7 +561,11 @@ export async function POST(request: NextRequest) {
 
       for (let i = 0; i < storeAttachments.length; i++) {
         const attachmentRef = storeAttachments[i];
-        const safeUrl = resolveStoreAttachmentUrl(attachmentRef.url, mailgunBaseUrl);
+        const safeUrl = resolveStoreAttachmentUrl(
+          attachmentRef.url,
+          mailgunBaseUrl,
+          process.env.MAILGUN_BASE_URL || ''
+        );
         if (!safeUrl) {
           await updateWebhookLog({
             status: 'rejected',

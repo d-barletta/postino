@@ -302,7 +302,7 @@ export default function EmailJobsLiveTab() {
                     <p className="text-xs text-gray-500 dark:text-gray-400">to {row.recipient}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">ip {row.ip}</p>
                     {row.reason ? (
-                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{row.reason}</p>
+                      <p className="mt-1 break-all text-xs text-amber-700 dark:text-amber-300">{row.reason}</p>
                     ) : null}
                   </summary>
 
@@ -313,12 +313,12 @@ export default function EmailJobsLiveTab() {
                       </a>
                     ) : null}
                     {row.jobId ? (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">job id: {row.jobId}</p>
+                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">job id: {row.jobId}</p>
                     ) : null}
                     {row.messageId ? (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">message id: {row.messageId}</p>
+                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">message id: {row.messageId}</p>
                     ) : null}
-                    <p className="text-xs text-gray-500 dark:text-gray-400">user-agent: {row.userAgent || '—'}</p>
+                    <p className="break-all text-xs text-gray-500 dark:text-gray-400">user-agent: {row.userAgent || '—'}</p>
                     <pre className="max-h-80 overflow-auto rounded-md bg-gray-900 p-3 text-[11px] leading-5 text-gray-100">
                       {toPrettyJson(row.details)}
                     </pre>
@@ -359,7 +359,7 @@ export default function EmailJobsLiveTab() {
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{row.subject}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">from {row.sender}</p>
                   {row.userEmail ? <p className="text-xs text-gray-500 dark:text-gray-400">to user {row.userEmail}</p> : null}
-                  <p className="mt-2 text-xs text-red-700 dark:text-red-300">
+                  <p className="mt-2 break-all text-xs text-red-700 dark:text-red-300">
                     <AlertTriangle className="mr-1 inline-block h-3.5 w-3.5" />
                     {compactError(row.error)}
                   </p>
