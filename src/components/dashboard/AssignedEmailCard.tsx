@@ -54,7 +54,7 @@ export function AssignedEmailCard({ assignedEmail, userEmail, isAddressEnabled, 
       <CardContent>
         <p className="text-sm text-gray-500 mb-3">
           {isAddressEnabled
-            ? <>Send emails to this address and they&rsquo;ll be processed according to your rules, then forwarded to your email <span className={cn('inline-block font-mono text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5')}>{userEmail}</span>.</>
+            ? <>Send emails to this address and they&rsquo;ll be processed according to your rules, then forwarded to your email <span className={cn('inline-block font-mono text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5')}>{userEmail}</span></>
             : 'Your Postino address is disabled. Incoming emails will be registered as skipped and not forwarded.'}
         </p>
         <div className="flex items-center gap-2">
