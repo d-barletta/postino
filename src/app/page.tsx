@@ -52,7 +52,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="min-h-full">
-      <nav className="glass-panel sticky top-0 z-10 border-b border-white/40 dark:border-white/10">
+      <nav className="glass-panel sticky top-0 z-10 border-b border-white/40 dark:border-white/10 border-0!">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <PostinoLogo className="h-7 w-7" />
@@ -122,7 +122,7 @@ export default function HomePage() {
                 desc: 'Sign up and get a unique Postino email address like amber-2026@postino.pro',
               },
               {
-                icon: 'bi bi-pencil-square',
+                icon: 'bi bi-pencil',
                 step: '2',
                 title: 'Write your rules',
                 desc: 'Tell Postino what to do in plain English: "Summarize newsletters", "Remove promotional content", etc.',
@@ -135,7 +135,7 @@ export default function HomePage() {
               },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-100 text-[#8f7a18] dark:bg-violet-400/20 dark:text-violet-200 text-3xl mb-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-100 text-[#8f7a18] dark:bg-violet-400/20 dark:text-violet-200 text-2xl mb-4">
                   <i className={item.icon} aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
