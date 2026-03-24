@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Play, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Play, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -83,6 +83,7 @@ export default function EmailJobsLiveTab() {
   const [error, setError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loggingSaving, setLoggingSaving] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
 
   const fetchOverview = useCallback(async (silent = false) => {
     if (!firebaseUser) return;
@@ -175,6 +176,38 @@ export default function EmailJobsLiveTab() {
       setLoggingSaving(false);
     }
   }, [firebaseUser, fetchOverview]);
+
+  const handleClearWebhookLogs = useCallback(async () => {
+    if (!firebaseUser || clearingLogs) return;
+
+    const confirmed = window.confirm(
+      'Delete all Mailgun inbound webhook request logs? This action cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    setClearingLogs(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/admin/email-jobs', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        setError('Failed to clear Mailgun webhook request logs');
+        return;
+      }
+
+      setError('');
+      await fetchOverview(true);
+    } catch {
+      setError('Failed to clear Mailgun webhook request logs');
+    } finally {
+      setClearingLogs(false);
+    }
+  }, [clearingLogs, firebaseUser, fetchOverview]);
 
   const cards = useMemo(() => {
     const counts = data?.counts;
@@ -278,6 +311,16 @@ export default function EmailJobsLiveTab() {
                 {loggingSaving ? ' (saving...)' : ''}
               </span>
             </label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearWebhookLogs}
+              disabled={loading || clearingLogs || !data || data.recentWebhookRequests.length === 0}
+              loading={clearingLogs}
+            >
+              <Trash2 />
+              Clear all logs
+            </Button>
           </div>
         </CardHeader>
         <CardContent>

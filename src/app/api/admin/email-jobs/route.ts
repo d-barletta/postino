@@ -231,3 +231,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: msg }, { status: statusCode });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await verifyAdmin(request);
+
+    const db = adminDb();
+    const query = db.collection('mailgunWebhookLogs').orderBy('receivedAt', 'desc');
+    let deletedCount = 0;
+
+    // Delete in chunks to stay within Firestore batch operation limits.
+    while (true) {
+      const snap = await query.limit(500).get();
+      if (snap.empty) break;
+
+      const batch = db.batch();
+      for (const doc of snap.docs) {
+        batch.delete(doc.ref);
+      }
+      await batch.commit();
+      deletedCount += snap.size;
+    }
+
+    return NextResponse.json({ success: true, deletedCount });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error';
+    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    return NextResponse.json({ error: msg }, { status: statusCode });
+  }
+}

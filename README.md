@@ -203,7 +203,7 @@ Job worker and cron variables:
 
 ### 6) Configure Mailgun Inbound Webhook
 
-Suggested Mailgun route action: `store()` with `notify` to this webhook URL.
+Suggested Mailgun route action: `forward()` to this webhook URL (free tier friendly).
 
 Set Mailgun route/webhook target to:
 
@@ -211,8 +211,8 @@ Set Mailgun route/webhook target to:
 
 Notes:
 
-- Recommended for this project: **Store and notify** (attachments are retrieved from Mailgun storage URLs).
-- Direct multipart forward webhooks are also supported, but Store and notify is the preferred setup.
+- Recommended for this project: **Forward** (Mailgun route action) to keep inbound routing on the free option.
+- Use `forward("https://YOUR_VERCEL_DOMAIN/api/email/inbound")` for the route action.
 
 Then verify:
 
