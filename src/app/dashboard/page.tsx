@@ -121,7 +121,7 @@ export default function DashboardPage() {
 
   if (loading || logsLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
+      <div className="flex items-center justify-center min-h-[calc(100svh-8rem)]">
         <div className="animate-spin h-8 w-8 border-4 border-[#efd957] border-t-transparent rounded-full" />
       </div>
     );
