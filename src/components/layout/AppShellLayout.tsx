@@ -38,7 +38,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
 
   if (checking) {
     return (
-      <div className="min-h-full flex items-center justify-center">
+      <div className="min-h-svh flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-[#efd957] border-t-transparent rounded-full" />
       </div>
     );
