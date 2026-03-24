@@ -177,7 +177,7 @@ textarea::placeholder {
 .home-tree-lines {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 /* .home-tree-lines::before, */
