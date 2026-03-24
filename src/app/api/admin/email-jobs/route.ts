@@ -15,6 +15,25 @@ async function verifyAdmin(request: NextRequest) {
 
 const STATUSES = ['pending', 'processing', 'retrying', 'done', 'failed'] as const;
 
+interface MailgunWebhookLogSummary {
+  id: string;
+  receivedAt: string | null;
+  updatedAt: string | null;
+  status: string;
+  result: string;
+  reason: string | null;
+  sender: string;
+  recipient: string;
+  subject: string;
+  messageId: string;
+  attachmentCount: number;
+  ip: string;
+  userAgent: string;
+  emailLogId: string | null;
+  jobId: string | null;
+  details: unknown;
+}
+
 interface JobCounts {
   pending: number;
   processing: number;
@@ -81,6 +100,71 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .get();
 
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const webhookLoggingEnabled = Boolean(settingsSnap.data()?.mailgunWebhookLoggingEnabled);
+
+    const recentWebhookLogsSnap = await db
+      .collection('mailgunWebhookLogs')
+      .orderBy('receivedAt', 'desc')
+      .get();
+
+    const recentWebhookRequests: MailgunWebhookLogSummary[] = recentWebhookLogsSnap.docs.map((doc) => {
+      const data = doc.data() as {
+        receivedAt?: { toDate?: () => Date };
+        updatedAt?: { toDate?: () => Date };
+        status?: string;
+        result?: string;
+        reason?: string;
+        parsed?: {
+          sender?: string;
+          recipient?: string;
+          subject?: string;
+          messageId?: string;
+          attachmentCount?: number;
+        };
+        request?: {
+          ip?: string;
+          userAgent?: string;
+          method?: string;
+          url?: string;
+          host?: string;
+          contentType?: string;
+          headers?: Record<string, string>;
+          payloadStoragePath?: string | null;
+        };
+        linked?: {
+          emailLogId?: string;
+          jobId?: string;
+        };
+        details?: unknown;
+      };
+
+      return {
+        id: doc.id,
+        receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
+        status: data.status || 'received',
+        result: data.result || 'pending',
+        reason: data.reason || null,
+        sender: data.parsed?.sender || 'Unknown sender',
+        recipient: data.parsed?.recipient || 'Unknown recipient',
+        subject: data.parsed?.subject || '(no subject)',
+        messageId: data.parsed?.messageId || '',
+        attachmentCount:
+          typeof data.parsed?.attachmentCount === 'number' ? data.parsed.attachmentCount : 0,
+        ip: data.request?.ip || '—',
+        userAgent: data.request?.userAgent || '—',
+        emailLogId: data.linked?.emailLogId || null,
+        jobId: data.linked?.jobId || null,
+        details: {
+          request: data.request ?? null,
+          parsed: data.parsed ?? null,
+          linked: data.linked ?? null,
+          details: data.details ?? null,
+        },
+      };
+    });
+
     const latestUpdatedAt = recentUpdatedSnap.empty
       ? null
       : recentUpdatedSnap.docs[0].data().updatedAt?.toDate?.()?.toISOString() ?? null;
@@ -90,7 +174,40 @@ export async function GET(request: NextRequest) {
       backlog: counts.pending + counts.retrying,
       latestUpdatedAt,
       recentFailures,
+      webhookLoggingEnabled,
+      recentWebhookRequests,
     });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error';
+    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    return NextResponse.json({ error: msg }, { status: statusCode });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await verifyAdmin(request);
+
+    const body = (await request.json().catch(() => ({}))) as {
+      webhookLoggingEnabled?: boolean;
+    };
+
+    if (typeof body.webhookLoggingEnabled !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Invalid payload: webhookLoggingEnabled must be a boolean' },
+        { status: 400 }
+      );
+    }
+
+    const db = adminDb();
+    await db.collection('settings').doc('global').set(
+      {
+        mailgunWebhookLoggingEnabled: body.webhookLoggingEnabled,
+      },
+      { merge: true }
+    );
+
+    return NextResponse.json({ success: true, webhookLoggingEnabled: body.webhookLoggingEnabled });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;

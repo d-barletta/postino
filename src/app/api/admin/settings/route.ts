@@ -76,7 +76,7 @@ export async function PUT(request: NextRequest) {
       'maxRuleLength', 'maxActiveRules', 'llmModel', 'llmApiKey', 'llmMaxTokens', 'llmSystemPrompt', 'emailSubjectPrefix',
       'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
       'emailDomain',
-      'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
+      'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunWebhookLoggingEnabled', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
       'maintenanceMode', 'signupMaintenanceMode', 'rulesExecutionMode',
       'agentChunkThresholdChars', 'agentChunkSizeChars', 'agentChunkExtractMaxTokens',
       'agentAnalysisMaxTokens', 'agentBodyAnalysisMaxChars', 'agentChunkFallbackMaxChars',

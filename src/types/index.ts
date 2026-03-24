@@ -62,6 +62,8 @@ export interface Settings {
   emailDomain: string;
   mailgunApiKey: string;
   mailgunWebhookSigningKey?: string;
+  /** Enables persistence of detailed inbound Mailgun webhook request logs. */
+  mailgunWebhookLoggingEnabled?: boolean;
   mailgunDomain: string;
   mailgunSandboxEmail?: string;
   mailgunBaseUrl?: string;
