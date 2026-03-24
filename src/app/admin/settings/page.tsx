@@ -98,6 +98,11 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   const [mailgunTestTo, setMailgunTestTo] = useState('');
   const [mailgunTesting, setMailgunTesting] = useState(false);
   const [mailgunTestResult, setMailgunTestResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
+  const normalizedMailgunBaseUrl = (settings.mailgunBaseUrl || '').trim().toLowerCase();
+  const normalizedMailgunDomain = (settings.mailgunDomain || settings.mailgunSandboxEmail || '').trim().toLowerCase();
+  const expectsEuRegion = normalizedMailgunDomain.includes('.eu.') || normalizedMailgunDomain.endsWith('.eu');
+  const usesEuBaseUrl = normalizedMailgunBaseUrl.includes('api.eu.mailgun.net');
+  const showMailgunRegionWarning = expectsEuRegion && normalizedMailgunBaseUrl.length > 0 && !usesEuBaseUrl;
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -747,7 +752,13 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     value={settings.mailgunBaseUrl || ''}
                     onChange={(e) => setSettings((p) => ({ ...p, mailgunBaseUrl: e.target.value }))}
                     placeholder="https://api.mailgun.net"
+                    hint="US region: https://api.mailgun.net · EU region: https://api.eu.mailgun.net"
                   />
+                  {showMailgunRegionWarning && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      Domain appears to be EU-based. Use https://api.eu.mailgun.net as Mailgun Base URL to avoid stored message fetch failures.
+                    </p>
+                  )}
                   <div className="space-y-1.5">
                     <Label htmlFor="mailgun-test-to">Test Recipient Email</Label>
                     <div className="min-w-0">

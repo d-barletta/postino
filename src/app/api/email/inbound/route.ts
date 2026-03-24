@@ -301,6 +301,80 @@ function resolveStoreAttachmentUrl(
   }
 }
 
+function fingerprintSecret(secret: string): string {
+  if (!secret) return '';
+  return crypto.createHash('sha256').update(secret).digest('hex').slice(0, 12);
+}
+
+function getMailgunBaseHost(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).host;
+  } catch {
+    return '';
+  }
+}
+
+function buildCanonicalStoredMessageUrl(
+  rawStoredMessageUrl: string,
+  mailgunBaseUrl: string
+): string | null {
+  try {
+    const parsed = new URL(rawStoredMessageUrl);
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    if (segments.length < 5) return null;
+    if (segments[0] !== 'v3' || segments[1] !== 'domains' || segments[3] !== 'messages') return null;
+
+    const domain = segments[2]?.trim();
+    const storageKey = segments[4]?.trim();
+    if (!domain || !storageKey) return null;
+
+    const base = new URL(mailgunBaseUrl);
+    const canonicalPath = `/v3/domains/${encodeURIComponent(domain)}/messages/${encodeURIComponent(storageKey)}`;
+    return new URL(canonicalPath, base).toString();
+  } catch {
+    return null;
+  }
+}
+
+async function readResponseSnippet(response: Response): Promise<string> {
+  try {
+    const text = await response.text();
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+    return normalized.slice(0, 280);
+  } catch {
+    return '';
+  }
+}
+
+function classifyStoredMessageFetchFailure(statusCode: number): {
+  classCode: 'auth-config' | 'missing-or-expired' | 'rate-limited' | 'upstream-error';
+  message: string;
+} {
+  if (statusCode === 401 || statusCode === 403) {
+    return {
+      classCode: 'auth-config',
+      message: 'Mailgun auth/config error (check API key, domain region, and base URL)',
+    };
+  }
+  if (statusCode === 404) {
+    return {
+      classCode: 'missing-or-expired',
+      message: 'Stored message not found (possibly expired or unavailable in this region endpoint)',
+    };
+  }
+  if (statusCode === 429) {
+    return {
+      classCode: 'rate-limited',
+      message: 'Mailgun rate limit reached while fetching stored message',
+    };
+  }
+  return {
+    classCode: 'upstream-error',
+    message: 'Mailgun upstream error while fetching stored message',
+  };
+}
+
 async function uploadWebhookPayloadSnapshot(
   logId: string,
   payload: unknown
@@ -628,6 +702,29 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Invalid message-url' }, { status: 400 });
         }
 
+        const safeMessageHost = (() => {
+          try {
+            return new URL(safeMessageUrl).host;
+          } catch {
+            return '';
+          }
+        })();
+        const safeMessagePath = (() => {
+          try {
+            return new URL(safeMessageUrl).pathname;
+          } catch {
+            return '';
+          }
+        })();
+        const storedMessageLogContext = {
+          messageUrlHost: safeMessageHost,
+          messageUrlPath: safeMessagePath,
+          configuredBaseHost: getMailgunBaseHost(mailgunBaseUrl),
+          settingsHasMailgunBaseUrl: Boolean(settings?.mailgunBaseUrl),
+          apiKeyConfigured: Boolean(mailgunApiKey),
+          apiKeyFingerprint: fingerprintSecret(mailgunApiKey),
+        };
+
         let storedMessageResponse: Response;
         try {
           storedMessageResponse = await fetch(safeMessageUrl, {
@@ -639,18 +736,98 @@ export async function POST(request: NextRequest) {
             status: 'error',
             result: 'stored-message-fetch-error',
             reason: `Failed to fetch stored message: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
+            'details.storedMessageFetch': {
+              ...storedMessageLogContext,
+              attempt: 'primary',
+            },
           });
           return NextResponse.json({ error: 'Failed to fetch stored message' }, { status: 502 });
         }
 
-        if (!storedMessageResponse.ok) {
+        let responseUsed = storedMessageResponse;
+        let fallbackAttempted = false;
+        let fallbackUrlHost = '';
+        let fallbackUrlPath = '';
+        let fallbackStatus = 0;
+        let fallbackResponseSnippet = '';
+
+        if (!storedMessageResponse.ok && storedMessageResponse.status === 404) {
+          const canonicalMessageUrl = buildCanonicalStoredMessageUrl(safeMessageUrl, mailgunBaseUrl);
+          if (canonicalMessageUrl && canonicalMessageUrl !== safeMessageUrl) {
+            const safeCanonicalMessageUrl = resolveStoreAttachmentUrl(
+              canonicalMessageUrl,
+              mailgunBaseUrl,
+              process.env.MAILGUN_BASE_URL || ''
+            );
+
+            if (safeCanonicalMessageUrl) {
+              fallbackAttempted = true;
+              try {
+                const parsedFallbackUrl = new URL(safeCanonicalMessageUrl);
+                fallbackUrlHost = parsedFallbackUrl.host;
+                fallbackUrlPath = parsedFallbackUrl.pathname;
+              } catch {
+                fallbackUrlHost = '';
+                fallbackUrlPath = '';
+              }
+
+              try {
+                const fallbackResponse = await fetch(safeCanonicalMessageUrl, {
+                  method: 'GET',
+                  headers: { Authorization: authHeader },
+                });
+                fallbackStatus = fallbackResponse.status;
+                if (fallbackResponse.ok) {
+                  responseUsed = fallbackResponse;
+                } else {
+                  fallbackResponseSnippet = await readResponseSnippet(fallbackResponse);
+                }
+              } catch (fallbackErr) {
+                fallbackResponseSnippet =
+                  fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+              }
+            }
+          }
+        }
+
+        if (responseUsed !== storedMessageResponse && responseUsed.ok) {
+          await updateWebhookLog({
+            'details.storedMessageFetch': {
+              ...storedMessageLogContext,
+              attempt: 'fallback-success',
+              primaryStatus: storedMessageResponse.status,
+              fallbackHost: fallbackUrlHost,
+              fallbackPath: fallbackUrlPath,
+              fallbackStatus,
+            },
+          });
+        }
+
+        if (!responseUsed.ok) {
+          const primaryResponseSnippet = await readResponseSnippet(storedMessageResponse);
+          const finalStatus = fallbackAttempted && fallbackStatus > 0 ? fallbackStatus : storedMessageResponse.status;
+          const failureClass = classifyStoredMessageFetchFailure(finalStatus);
           await updateWebhookLog({
             status: 'error',
             result: 'stored-message-fetch-failed',
-            reason: `Stored message fetch failed (${storedMessageResponse.status}) for ${safeMessageUrl}`,
+            reason: `Stored message fetch failed: ${failureClass.message} (primary=${storedMessageResponse.status}${fallbackAttempted ? `, fallback=${fallbackStatus || 'none'}` : ''}) for ${safeMessageUrl}`,
+            'details.storedMessageFetch': {
+              ...storedMessageLogContext,
+              attempt: 'failed',
+              failureClass: failureClass.classCode,
+              primaryStatus: storedMessageResponse.status,
+              primaryResponseSnippet,
+              fallbackAttempted,
+              fallbackHost: fallbackUrlHost,
+              fallbackPath: fallbackUrlPath,
+              fallbackStatus,
+              fallbackResponseSnippet,
+            },
           });
           return NextResponse.json({ error: 'Failed to fetch stored message' }, { status: 502 });
         }
+
+        storedMessageResponse = responseUsed;
 
         try {
           const messageData = await storedMessageResponse.json() as unknown;
