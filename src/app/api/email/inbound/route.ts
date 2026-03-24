@@ -35,6 +35,13 @@ interface WebhookFormSnapshot {
   truncatedFields: string[];
 }
 
+interface StoreAttachmentRef {
+  url: string;
+  name?: string;
+  contentType?: string;
+  size?: number;
+}
+
 /** Extract a bare email address from `Name <email@example.com>` style headers. */
 function extractEmailAddress(value: string): string {
   const match = value.match(/<([^>]+)>/);
@@ -184,6 +191,51 @@ function snapshotWebhookFormData(formData: FormData): WebhookFormSnapshot {
   };
 }
 
+function parseStoreAttachments(formData: FormData): StoreAttachmentRef[] {
+  const raw = formData.get('attachments');
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((entry): StoreAttachmentRef | null => {
+        if (!entry || typeof entry !== 'object') return null;
+        const record = entry as Record<string, unknown>;
+        const rawUrl = typeof record.url === 'string' ? record.url.trim() : '';
+        if (!rawUrl) return null;
+        const rawName = typeof record.name === 'string' ? record.name.trim() : '';
+        const rawType = typeof record['content-type'] === 'string' ? record['content-type'].trim() : '';
+        const rawSize = typeof record.size === 'number' && Number.isFinite(record.size)
+          ? Math.max(0, Math.floor(record.size))
+          : undefined;
+
+        return {
+          url: rawUrl,
+          ...(rawName ? { name: rawName } : {}),
+          ...(rawType ? { contentType: rawType } : {}),
+          ...(typeof rawSize === 'number' ? { size: rawSize } : {}),
+        };
+      })
+      .filter((entry): entry is StoreAttachmentRef => entry !== null);
+  } catch {
+    return [];
+  }
+}
+
+function resolveStoreAttachmentUrl(rawUrl: string, mailgunBaseUrl: string): string | null {
+  try {
+    const base = new URL(mailgunBaseUrl);
+    const resolved = new URL(rawUrl, mailgunBaseUrl);
+    if (resolved.protocol !== 'https:') return null;
+    if (resolved.host !== base.host) return null;
+    return resolved.toString();
+  } catch {
+    return null;
+  }
+}
+
 async function uploadWebhookPayloadSnapshot(
   logId: string,
   payload: unknown
@@ -277,8 +329,11 @@ export async function POST(request: NextRequest) {
     const recipientForLog = stripCrlf((formData.get('recipient') as string) || '');
     const subjectForLog = stripCrlf((formData.get('subject') as string) || '');
     const messageIdForLog = stripCrlf((formData.get('Message-Id') as string) || '');
+    const storeAttachmentsForLog = parseStoreAttachments(formData);
     const rawAttachmentCountForLog = parseInt((formData.get('attachment-count') as string) || '0', 10);
-    const attachmentCountForLog = Number.isFinite(rawAttachmentCountForLog)
+    const attachmentCountForLog = storeAttachmentsForLog.length > 0
+      ? storeAttachmentsForLog.length
+      : Number.isFinite(rawAttachmentCountForLog)
       ? Math.max(0, rawAttachmentCountForLog)
       : 0;
 
@@ -357,6 +412,7 @@ export async function POST(request: NextRequest) {
       settings?.mailgunDomain ||
       process.env.MAILGUN_SANDBOX_EMAIL ||
       '';
+    const mailgunApiKey = settings?.mailgunApiKey || process.env.MAILGUN_API_KEY || '';
     const mailgunBaseUrl =
       settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
@@ -421,9 +477,18 @@ export async function POST(request: NextRequest) {
     const messageId = stripCrlf((formData.get('Message-Id') as string) || '');
 
     const rawAttachmentCount = parseInt((formData.get('attachment-count') as string) || '0', 10);
-    const attachmentCount = Number.isFinite(rawAttachmentCount)
+    const storeAttachments = parseStoreAttachments(formData);
+    const hasStoreAttachments = storeAttachments.length > 0;
+    const attachmentCount = hasStoreAttachments
+      ? storeAttachments.length
+      : Number.isFinite(rawAttachmentCount)
       ? Math.max(0, rawAttachmentCount)
       : 0;
+
+    await updateWebhookLog({
+      'parsed.attachmentCount': attachmentCount,
+      'parsed.attachmentSource': hasStoreAttachments ? 'store' : 'multipart',
+    });
 
     if (attachmentCount > MAX_ATTACHMENTS) {
       await updateWebhookLog({ status: 'rejected', result: 'too-many-attachments', reason: `Too many attachments (max ${MAX_ATTACHMENTS})` });
@@ -431,19 +496,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse content-id-map to identify inline attachments (e.g. CID-referenced images).
-    // Mailgun sends this as JSON: { "<cid@host>": "attachment-N" } or { "<cid@host>": ["attachment-N"] }
-    // We invert it to a map of field name → stripped content-id for quick lookup.
+    // Multipart mode maps CID -> attachment-N fields, while Store mode maps CID -> attachment URLs.
+    // We invert it to a map of reference key (field name or URL) -> stripped content-id.
     const contentIdFieldMap = new Map<string, string>();
     const contentIdMapRaw = formData.get('content-id-map') as string | null;
     if (contentIdMapRaw) {
       try {
         const parsed = JSON.parse(contentIdMapRaw) as Record<string, string | string[]>;
-        for (const [cid, fields] of Object.entries(parsed)) {
+        for (const [cid, refs] of Object.entries(parsed)) {
           const strippedCid = cid.replace(/^<|>$/, '');
-          const fieldNames = Array.isArray(fields) ? fields : [fields];
-          for (const fieldName of fieldNames) {
-            if (typeof fieldName === 'string') {
-              contentIdFieldMap.set(fieldName, strippedCid);
+          const referenceValues = Array.isArray(refs) ? refs : [refs];
+          for (const refValue of referenceValues) {
+            if (typeof refValue === 'string') {
+              contentIdFieldMap.set(refValue, strippedCid);
             }
           }
         }
@@ -454,35 +519,112 @@ export async function POST(request: NextRequest) {
 
     const attachments: EmailAttachment[] = [];
     let totalAttachmentBytes = 0;
-    for (let i = 1; i <= attachmentCount; i++) {
-      const rawFile = formData.get(`attachment-${i}`);
-      // Guard against non-File values (e.g. string URLs returned by Mailgun's Store route).
-      if (!rawFile) continue;
-      if (!(rawFile instanceof File)) {
-        console.warn(`attachment-${i}: expected a File but received ${typeof rawFile}; skipping`);
-        continue;
-      }
-      const file = rawFile;
-
-      if (file.size > MAX_ATTACHMENT_BYTES) {
-        await updateWebhookLog({ status: 'rejected', result: 'attachment-too-large', reason: `Attachment too large: ${file.name}` });
-        return NextResponse.json({ error: `Attachment too large: ${file.name}` }, { status: 413 });
+    if (hasStoreAttachments) {
+      if (!mailgunApiKey) {
+        await updateWebhookLog({
+          status: 'rejected',
+          result: 'missing-mailgun-api-key',
+          reason: 'MAILGUN_API_KEY is required to fetch Store attachment URLs',
+        });
+        return NextResponse.json({ error: 'Mailgun API key is required for Store attachment retrieval' }, { status: 503 });
       }
 
-      totalAttachmentBytes += file.size;
-      if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENTS_BYTES) {
-        await updateWebhookLog({ status: 'rejected', result: 'attachments-total-too-large', reason: 'Total attachment size exceeds allowed limit' });
-        return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
-      }
+      const authHeader = `Basic ${Buffer.from(`api:${mailgunApiKey}`).toString('base64')}`;
 
-      const fieldName = `attachment-${i}`;
-      const contentId = contentIdFieldMap.get(fieldName);
-      attachments.push({
-        filename: file.name,
-        content: await file.arrayBuffer(),
-        contentType: file.type || 'application/octet-stream',
-        ...(contentId ? { contentId } : {}),
-      });
+      for (let i = 0; i < storeAttachments.length; i++) {
+        const attachmentRef = storeAttachments[i];
+        const safeUrl = resolveStoreAttachmentUrl(attachmentRef.url, mailgunBaseUrl);
+        if (!safeUrl) {
+          await updateWebhookLog({
+            status: 'rejected',
+            result: 'invalid-store-attachment-url',
+            reason: `Invalid or untrusted Store attachment URL: ${attachmentRef.url}`,
+          });
+          return NextResponse.json({ error: 'Invalid Store attachment URL' }, { status: 400 });
+        }
+
+        let attachmentResponse: Response;
+        try {
+          attachmentResponse = await fetch(safeUrl, {
+            method: 'GET',
+            headers: {
+              Authorization: authHeader,
+            },
+          });
+        } catch (fetchErr) {
+          await updateWebhookLog({
+            status: 'error',
+            result: 'store-attachment-fetch-error',
+            reason: `Failed to fetch Store attachment: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
+          });
+          return NextResponse.json({ error: 'Failed to fetch Store attachment' }, { status: 502 });
+        }
+
+        if (!attachmentResponse.ok) {
+          await updateWebhookLog({
+            status: 'error',
+            result: 'store-attachment-fetch-failed',
+            reason: `Store attachment fetch failed (${attachmentResponse.status}) for ${safeUrl}`,
+          });
+          return NextResponse.json({ error: 'Failed to fetch Store attachment' }, { status: 502 });
+        }
+
+        const content = await attachmentResponse.arrayBuffer();
+        const attachmentSize = content.byteLength;
+
+        if (attachmentSize > MAX_ATTACHMENT_BYTES) {
+          const attachmentName = attachmentRef.name || `attachment-${i + 1}`;
+          await updateWebhookLog({ status: 'rejected', result: 'attachment-too-large', reason: `Attachment too large: ${attachmentName}` });
+          return NextResponse.json({ error: `Attachment too large: ${attachmentName}` }, { status: 413 });
+        }
+
+        totalAttachmentBytes += attachmentSize;
+        if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENTS_BYTES) {
+          await updateWebhookLog({ status: 'rejected', result: 'attachments-total-too-large', reason: 'Total attachment size exceeds allowed limit' });
+          return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
+        }
+
+        const contentId = contentIdFieldMap.get(attachmentRef.url) || contentIdFieldMap.get(safeUrl);
+        attachments.push({
+          filename: attachmentRef.name || `attachment-${i + 1}`,
+          content,
+          contentType:
+            attachmentRef.contentType ||
+            attachmentResponse.headers.get('content-type') ||
+            'application/octet-stream',
+          ...(contentId ? { contentId } : {}),
+        });
+      }
+    } else {
+      for (let i = 1; i <= attachmentCount; i++) {
+        const rawFile = formData.get(`attachment-${i}`);
+        if (!rawFile) continue;
+        if (!(rawFile instanceof File)) {
+          console.warn(`attachment-${i}: expected a File but received ${typeof rawFile}; skipping`);
+          continue;
+        }
+        const file = rawFile;
+
+        if (file.size > MAX_ATTACHMENT_BYTES) {
+          await updateWebhookLog({ status: 'rejected', result: 'attachment-too-large', reason: `Attachment too large: ${file.name}` });
+          return NextResponse.json({ error: `Attachment too large: ${file.name}` }, { status: 413 });
+        }
+
+        totalAttachmentBytes += file.size;
+        if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENTS_BYTES) {
+          await updateWebhookLog({ status: 'rejected', result: 'attachments-total-too-large', reason: 'Total attachment size exceeds allowed limit' });
+          return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
+        }
+
+        const fieldName = `attachment-${i}`;
+        const contentId = contentIdFieldMap.get(fieldName);
+        attachments.push({
+          filename: file.name,
+          content: await file.arrayBuffer(),
+          contentType: file.type || 'application/octet-stream',
+          ...(contentId ? { contentId } : {}),
+        });
+      }
     }
 
     if (normalizedRecipients.length === 0) {
