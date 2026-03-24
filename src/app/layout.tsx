@@ -22,12 +22,12 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-96x96.png', type: 'image/png', sizes: '96x96' },
+      { url: '/favicon.ico' },
       { url: '/icon0.svg', type: 'image/svg+xml' },
-      { url: '/icon1.png', type: 'image/png', sizes: '96x96' },
+      { url: '/favicon-96x96.png', type: 'image/png', sizes: '96x96' },
     ],
-    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: '/favicon.ico',
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
     type: 'website',
