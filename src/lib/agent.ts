@@ -669,6 +669,7 @@ async function processEmailInChunks(
   maxOutputTokens: number,
   fallbackSubject: string,
   agentRuntimeSettings: AgentRuntimeSettings,
+  attachmentNames?: string[],
 ): Promise<{ subject: string; body: string; tokensUsed: number; promptTokens: number; completionTokens: number }> {
   const chunks = splitIntoChunks(plainTextBody, agentRuntimeSettings.chunkSizeChars);
   let totalTokens = 0;
@@ -726,11 +727,16 @@ ${isHtml ? 'The original HTML email structure will be preserved — use targeted
     ? `\nHTML STRUCTURE (use this to choose unique selectors — [n/total] shows nth-of-type position):\n${extractHtmlStructure(originalBody)}\n`
     : '';
 
+  const attachmentsLine =
+    attachmentNames && attachmentNames.length > 0
+      ? `ATTACHMENTS: ${attachmentNames.join(', ')}\n`
+      : '';
+
   const reducePrompt = `Apply the user rules to BOTH the SUBJECT line and the following extracted email content. For example, if a rule says to translate, translate the subject too.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-${htmlStructureSection}
+${attachmentsLine}${htmlStructureSection}
 ${isHtml ? `SELECTOR RULES:
 - Each patch MUST target exactly one element. Use the structure above to pick a unique selector.
 - Prefer: ID selectors (#id), child combinators (parent > child), :nth-of-type(n), [attribute] selectors.
@@ -933,6 +939,7 @@ async function runSingleRulePass(
   htmlDomPatchEnabled: boolean,
   tracingEnabled: boolean,
   includeTraceExcerpts: boolean,
+  attachmentNames?: string[],
 ): Promise<SingleRulePassResult> {
   // Build the rules text: combine multiple rules or use the "no rules" fallback.
   const rulesText =
@@ -950,6 +957,12 @@ ${rulesText}
   const emailBodyForPrompt = isHtml
     ? sanitizeHtmlBodyForPrompt(emailBody)
     : sanitizeEmailBody(emailBody);
+
+  // Build an attachments line for prompts so the LLM is aware of any attached files.
+  const attachmentsLine =
+    attachmentNames && attachmentNames.length > 0
+      ? `ATTACHMENTS: ${attachmentNames.join(', ')}\n`
+      : '';
 
   let subject: string = fallbackSubject;
   let body: string = emailBody;
@@ -990,6 +1003,7 @@ ${rulesText}
         maxTokens,
         fallbackSubject,
         agentRuntimeSettings,
+        attachmentNames,
       );
       subject = result.subject;
       body = result.body;
@@ -1011,7 +1025,7 @@ ${rulesText}
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-${htmlStructureSection}
+${attachmentsLine}${htmlStructureSection}
 SELECTOR RULES:
 - Each patch MUST target exactly one element. Use the structure above to pick a unique selector.
 - Prefer: ID selectors (#id), child combinators (parent > child), :nth-of-type(n), [attribute] selectors.
@@ -1090,7 +1104,7 @@ ${emailBodyForPrompt}`;
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-
+${attachmentsLine}
 BODY:
 ${emailBodyForPrompt}
 
@@ -1135,7 +1149,7 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-
+${attachmentsLine}
 RULES:
 ${rulesText}
 
@@ -1277,6 +1291,7 @@ export async function processEmailWithAgent(
   rules: RuleForProcessing[],
   isHtml = false,
   modelOverride?: string,
+  attachmentNames?: string[],
 ): Promise<ProcessEmailResult> {
   const traceStartedAt = new Date().toISOString();
   const traceSteps: AgentTraceStep[] = [];
@@ -1416,6 +1431,7 @@ export async function processEmailWithAgent(
       htmlDomPatchEnabled,
       tracingEnabled,
       includeTraceExcerpts,
+      attachmentNames,
     );
     currentSubject = pass.subject;
     currentBody = pass.body;
@@ -1469,6 +1485,7 @@ export async function processEmailWithAgent(
         htmlDomPatchEnabled,
         tracingEnabled,
         includeTraceExcerpts,
+        attachmentNames,
       );
 
       currentSubject = pass.subject;

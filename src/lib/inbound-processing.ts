@@ -219,6 +219,11 @@ export async function processQueuedInboundPayload(
       matchesPattern(payload.emailBody, r.matchBody)
   );
 
+  // Collect attachment names for the LLM prompt and the notification box.
+  const attachmentNames = effectiveAttachments && effectiveAttachments.length > 0
+    ? effectiveAttachments.map((att) => att.filename).filter((name): name is string => Boolean(name))
+    : undefined;
+
   const result = await processEmailWithAgent(
     payload.userId,
     payload.logId,
@@ -226,7 +231,9 @@ export async function processQueuedInboundPayload(
     payload.subject,
     payload.emailBody,
     matchingRules,
-    payload.bodyHtml !== ''
+    payload.bodyHtml !== '',
+    undefined,
+    attachmentNames?.length ? attachmentNames : undefined,
   );
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
@@ -244,6 +251,12 @@ export async function processQueuedInboundPayload(
           .join(', ')
       : `<strong>${escapeHtml(result.ruleApplied)}</strong>`;
 
+  // Build an attachment line for the notification box when the email has attachments.
+  const attachmentDisplayHtml =
+    attachmentNames && attachmentNames.length > 0
+      ? `<div style="color: #4b5563; font-size: 13px; margin-top: 4px;">Attachments: ${attachmentNames.map((n) => `<span style="font-weight: bold;">${escapeHtml(n)}</span>`).join(', ')}</div>`
+      : '';
+
   const notificationBox = `<div style="clear: both; margin-top: 24px; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563; line-height: 1.4;">
         <hr style="border: none; border-top: 2px solid #e5e7eb; margin: 0;">
         <div style="background: #f0f4ff; padding: 12px 16px; border-left: 3px solid #6366f1;">
@@ -258,6 +271,7 @@ export async function processQueuedInboundPayload(
           </table>
           <div style="margin-bottom: 6px; color: #4b5563; font-size: 13px;">Original from: ${escapeHtml(payload.sender)}</div>
           <div style="color: #4b5563; font-size: 13px;">Rule: ${ruleDisplayHtml}</div>
+          ${attachmentDisplayHtml}
         </div>
       </div>`;
 
@@ -288,15 +302,6 @@ export async function processQueuedInboundPayload(
     },
   });
 
-  // Clean up any attachments stored in Firebase Storage now that they have been forwarded.
-  if (payload.attachments) {
-    await Promise.all(
-      payload.attachments
-        .filter((att) => att.storagePath)
-        .map((att) => deleteAttachmentFromStorage(att.storagePath!))
-    );
-  }
-
   const safeTrace = result.trace ? sanitizeForFirestore(result.trace) : undefined;
 
   await logRef.update({
@@ -309,4 +314,15 @@ export async function processQueuedInboundPayload(
     ...(safeTrace ? { agentTrace: safeTrace } : {}),
     ...(result.parseError ? { errorMessage: result.parseError } : {}),
   });
+
+  // Clean up any attachments stored in Firebase Storage now that they have been forwarded
+  // and the log has been successfully updated. Deleting only after the log update ensures
+  // that if the update fails and the job is retried, the attachments are still available.
+  if (payload.attachments) {
+    await Promise.all(
+      payload.attachments
+        .filter((att) => att.storagePath)
+        .map((att) => deleteAttachmentFromStorage(att.storagePath!))
+    );
+  }
 }
