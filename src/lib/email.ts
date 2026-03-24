@@ -1,7 +1,5 @@
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
-import FormData from 'form-data';
-import Mailgun from 'mailgun.js';
 import { adminDb } from './firebase-admin';
 export { generateAssignedEmail } from './email-utils';
 
@@ -61,68 +59,54 @@ async function sendViaMailgun(options: {
   domain: string;
   baseUrl: string;
 }): Promise<void> {
-  const mailgun = new Mailgun(FormData);
-  const client = mailgun.client({
-    username: 'api',
-    key: options.apiKey,
-    url: options.baseUrl,
-  });
+  const url = `${options.baseUrl}/v3/${options.domain}/messages`;
 
-  const messageData: Parameters<typeof client.messages.create>[1] = {
-    from: stripCrlf(options.from),
-    to: [stripCrlf(options.to)],
-    subject: stripCrlf(options.subject),
-    html: options.html,
-    text: options.text,
-  };
+  const body = new FormData();
+  body.append('from', stripCrlf(options.from));
+  body.append('to', stripCrlf(options.to));
+  body.append('subject', stripCrlf(options.subject));
+  body.append('html', options.html);
+  body.append('text', options.text);
 
   if (options.replyTo) {
-    messageData['h:Reply-To'] = stripCrlf(options.replyTo);
+    body.append('h:Reply-To', stripCrlf(options.replyTo));
   }
 
   if (options.headers) {
     Object.entries(options.headers).forEach(([key, value]) => {
-      messageData[`h:${stripCrlf(key)}`] = stripCrlf(String(value));
+      body.append(`h:${stripCrlf(key)}`, stripCrlf(String(value)));
     });
   }
 
-  if (options.attachments && options.attachments.length > 0) {
-    const regularAttachments: Array<{ data: Buffer; filename: string; contentType: string }> = [];
-    const inlineAttachments: Array<{ data: Buffer; filename: string; contentType: string }> = [];
-
+  if (options.attachments) {
     for (const attachment of options.attachments) {
-      // Keep inline CID filenames aligned with cid: references used in HTML.
-      const normalized = {
-        data: Buffer.from(attachment.content),
-        filename: attachment.contentId || attachment.filename || 'attachment',
-        contentType: attachment.contentType,
-      };
-
+      // Convert ArrayBuffer to Buffer first for reliable binary serialization in Node.js.
+      const buf = Buffer.from(attachment.content);
+      const blob = new Blob([buf], { type: attachment.contentType });
       if (attachment.contentId) {
-        inlineAttachments.push(normalized);
+        // Inline attachment: Mailgun's send API uses the blob's name as the CID value.
+        // The HTML body already contains `src="cid:<contentId>"` references, so the name
+        // must equal the stripped content-id so Mailgun can match them up correctly.
+        body.append('inline', blob, attachment.contentId);
       } else {
-        regularAttachments.push(normalized);
+        // Non-inline attachment: use the filename, falling back to a generic name to
+        // prevent Mailgun from silently dropping attachments that have no filename.
+        body.append('attachment', blob, attachment.filename || 'attachment');
       }
-    }
-
-    if (regularAttachments.length === 1) {
-      messageData.attachment = regularAttachments[0];
-    } else if (regularAttachments.length > 1) {
-      messageData.attachment = regularAttachments;
-    }
-
-    if (inlineAttachments.length === 1) {
-      messageData.inline = inlineAttachments[0];
-    } else if (inlineAttachments.length > 1) {
-      messageData.inline = inlineAttachments;
     }
   }
 
-  try {
-    await client.messages.create(options.domain, messageData);
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Mailgun send failed: ${detail}`);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`api:${options.apiKey}`).toString('base64')}`,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Mailgun send failed (${response.status}): ${detail}`);
   }
 }
 
