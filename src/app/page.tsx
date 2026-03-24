@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen home-tree-lines">
+    <div className="h-full home-tree-lines">
       <nav className="glass-panel sticky top-0 z-10 border-b border-white/40 dark:border-white/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2">

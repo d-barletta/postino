@@ -64,13 +64,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased min-h-screen flex flex-col" suppressHydrationWarning>
+      <body className="font-sans antialiased min-h-svh flex flex-col" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d)){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})();`,
           }}
         />
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           <ClientProviders>{children}</ClientProviders>
         </div>
         <AppFooter />
