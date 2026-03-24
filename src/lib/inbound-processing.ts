@@ -1,5 +1,5 @@
-import { Timestamp } from 'firebase-admin/firestore';
-import { adminDb, adminStorage } from '@/lib/firebase-admin';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { adminDb, adminStorage, adminMessaging } from '@/lib/firebase-admin';
 import { processEmailWithAgent } from '@/lib/agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
@@ -143,6 +143,67 @@ async function deleteAttachmentFromStorage(storagePath: string): Promise<void> {
     await bucket.file(storagePath).delete({ ignoreNotFound: true });
   } catch (err) {
     console.error(`Failed to delete attachment from Firebase Storage (${storagePath}):`, err);
+  }
+}
+
+/**
+ * Send a web push notification to all of a user's registered FCM tokens.
+ * Stale tokens that are rejected by FCM are removed from Firestore automatically.
+ * Errors are caught and logged so they never block the main email-processing flow.
+ */
+async function sendEmailPushNotification(
+  userId: string,
+  sender: string,
+  subject: string
+): Promise<void> {
+  try {
+    const db = adminDb();
+    const userSnap = await db.collection('users').doc(userId).get();
+    const fcmTokens = userSnap.data()?.fcmTokens as string[] | undefined;
+    if (!fcmTokens || fcmTokens.length === 0) return;
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+    const iconUrl = appUrl ? `${appUrl}/web-app-manifest-192x192.png` : '/web-app-manifest-192x192.png';
+
+    const response = await adminMessaging().sendEachForMulticast({
+      notification: {
+        title: `New email from ${sender}`,
+        body: subject,
+      },
+      webpush: {
+        notification: {
+          icon: iconUrl,
+          badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
+          tag: 'postino-email',
+        },
+        fcmOptions: { link: `${appUrl}/dashboard` },
+      },
+      data: { url: '/dashboard' },
+      tokens: fcmTokens,
+    });
+
+    // Remove tokens that FCM reports as invalid so they don't accumulate.
+    if (response.failureCount > 0) {
+      const invalidTokens: string[] = [];
+      response.responses.forEach((r, i) => {
+        const code = r.error?.code ?? '';
+        if (
+          !r.success &&
+          (code === 'messaging/registration-token-not-registered' ||
+            code === 'messaging/invalid-registration-token')
+        ) {
+          invalidTokens.push(fcmTokens[i]);
+        }
+      });
+      if (invalidTokens.length > 0) {
+        await db
+          .collection('users')
+          .doc(userId)
+          .update({ fcmTokens: FieldValue.arrayRemove(...invalidTokens) });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to send push notification:', err);
   }
 }
 
@@ -325,4 +386,8 @@ export async function processQueuedInboundPayload(
         .map((att) => deleteAttachmentFromStorage(att.storagePath!))
     );
   }
+
+  // Fire-and-forget push notification — runs after the log update and storage cleanup
+  // so that a notification failure never blocks or rolls back the email-processing result.
+  await sendEmailPushNotification(payload.userId, payload.sender, result.subject);
 }

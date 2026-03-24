@@ -6,6 +6,7 @@ import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
+import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -128,6 +129,7 @@ export default function DashboardPage() {
                 onToggle={handleAddressToggle}
               />
             )}
+            <PushNotificationButton />
             {userStats && <UserStatsCards stats={userStats} />}
             {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
           </div>

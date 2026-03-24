@@ -1,0 +1,70 @@
+import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * Serves the Firebase Cloud Messaging service worker as a dynamic route so that
+ * Firebase client config values (which are Next.js NEXT_PUBLIC_ env vars) can be
+ * embedded into the service worker script at request time without needing a static
+ * build step.
+ *
+ * The service worker is registered at the root scope (`/`) so that it can intercept
+ * push messages for the entire application.  The `Service-Worker-Allowed: /` header
+ * grants that expanded scope even though the script URL path is
+ * `/firebase-messaging-sw.js`.
+ */
+export async function GET() {
+  const config = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? '',
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
+  };
+
+  const swContent = `importScripts('https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.1/firebase-messaging-compat.js');
+
+firebase.initializeApp(${JSON.stringify(config)});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage(function(payload) {
+  var notificationTitle = (payload.notification && payload.notification.title) || 'New Email';
+  var notificationOptions = {
+    body: (payload.notification && payload.notification.body) || '',
+    icon: (payload.notification && payload.notification.icon) || '/web-app-manifest-192x192.png',
+    badge: '/favicon-96x96.png',
+    data: payload.data || {},
+    tag: 'postino-email',
+  };
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  var url = (event.notification.data && event.notification.data.url) || '/dashboard';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+      // Focus any already-open app window rather than opening a duplicate.
+      if (windowClients.length > 0 && 'focus' in windowClients[0]) {
+        return windowClients[0].focus();
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
+`;
+
+  return new NextResponse(swContent, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Service-Worker-Allowed': '/',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+    },
+  });
+}

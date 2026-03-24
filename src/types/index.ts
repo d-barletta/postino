@@ -7,6 +7,8 @@ export interface User {
   isActive: boolean;
   isAddressEnabled?: boolean;
   displayName?: string;
+  /** FCM registration tokens for web push notifications (one per browser/device). */
+  fcmTokens?: string[];
 }
 
 export interface Rule {
