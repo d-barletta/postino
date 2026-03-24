@@ -105,6 +105,10 @@ This section is designed to let you deploy the app from zero with no missing ste
   - FIREBASE_PROJECT_ID
   - FIREBASE_CLIENT_EMAIL
   - FIREBASE_PRIVATE_KEY
+7. Enable Cloud Messaging and generate a VAPID key pair for web push:
+  - Go to Firebase Console → Project Settings → Cloud Messaging → Web configuration.
+  - Click **Generate key pair** (or use an existing pair).
+  - Copy the **Key pair** value — this is your `NEXT_PUBLIC_FIREBASE_VAPID_KEY`.
 
 #### OpenRouter
 
@@ -167,6 +171,7 @@ Core app variables:
 - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 - NEXT_PUBLIC_FIREBASE_APP_ID
+- NEXT_PUBLIC_FIREBASE_VAPID_KEY (web push VAPID key — see Firebase setup step 7)
 - FIREBASE_PROJECT_ID
 - FIREBASE_CLIENT_EMAIL
 - FIREBASE_PRIVATE_KEY
