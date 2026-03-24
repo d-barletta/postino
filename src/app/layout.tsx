@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   description:
     'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
   applicationName: 'Postino',
+  appleWebApp: {
+    title: 'Postino',
+  },
   icons: {
     icon: '/logo.svg',
     apple: '/logo.svg',
