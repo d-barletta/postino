@@ -224,6 +224,38 @@ function parseStoreAttachments(formData: FormData): StoreAttachmentRef[] {
   }
 }
 
+/**
+ * Parse the `attachments` array from a Mailgun stored-message API response.
+ * The stored message endpoint (GET /v3/domains/{domain}/messages/{key}) returns
+ * attachment metadata including the authoritative download URLs.
+ */
+function parseAttachmentsFromStoredMessage(data: unknown): StoreAttachmentRef[] {
+  if (!data || typeof data !== 'object') return [];
+  const obj = data as Record<string, unknown>;
+  if (!Array.isArray(obj.attachments)) return [];
+
+  return obj.attachments
+    .map((entry): StoreAttachmentRef | null => {
+      if (!entry || typeof entry !== 'object') return null;
+      const record = entry as Record<string, unknown>;
+      const rawUrl = typeof record.url === 'string' ? record.url.trim() : '';
+      if (!rawUrl) return null;
+      const rawName = typeof record.name === 'string' ? record.name.trim() : '';
+      const rawType = typeof record['content-type'] === 'string' ? record['content-type'].trim() : '';
+      const rawSize = typeof record.size === 'number' && Number.isFinite(record.size)
+        ? Math.max(0, Math.floor(record.size))
+        : undefined;
+
+      return {
+        url: rawUrl,
+        ...(rawName ? { name: rawName } : {}),
+        ...(rawType ? { contentType: rawType } : {}),
+        ...(typeof rawSize === 'number' ? { size: rawSize } : {}),
+      };
+    })
+    .filter((entry): entry is StoreAttachmentRef => entry !== null);
+}
+
 function resolveStoreAttachmentUrl(
   rawUrl: string,
   mailgunBaseUrl: string,
@@ -510,9 +542,13 @@ export async function POST(request: NextRequest) {
     const messageId = stripCrlf((formData.get('Message-Id') as string) || '');
 
     const rawAttachmentCount = parseInt((formData.get('attachment-count') as string) || '0', 10);
+    // `message-url` is provided by Mailgun's store() route action and points to the stored message.
+    // It is the canonical source for fetching the full message and its attachment download URLs.
+    const rawMessageUrl = ((formData.get('message-url') as string) || '').trim();
     const storeAttachments = parseStoreAttachments(formData);
-    const hasStoreAttachments = storeAttachments.length > 0;
-    const attachmentCount = hasStoreAttachments
+    // Treat as store-mode when message-url is present (even if the webhook attachments JSON is absent).
+    const hasStoreAttachments = storeAttachments.length > 0 || rawMessageUrl.length > 0;
+    const attachmentCount = storeAttachments.length > 0
       ? storeAttachments.length
       : Number.isFinite(rawAttachmentCount)
       ? Math.max(0, rawAttachmentCount)
@@ -520,7 +556,11 @@ export async function POST(request: NextRequest) {
 
     await updateWebhookLog({
       'parsed.attachmentCount': attachmentCount,
-      'parsed.attachmentSource': hasStoreAttachments ? 'store' : 'multipart',
+      'parsed.attachmentSource': rawMessageUrl
+        ? 'store-message-url'
+        : hasStoreAttachments
+        ? 'store'
+        : 'multipart',
     });
 
     if (attachmentCount > MAX_ATTACHMENTS) {
@@ -564,8 +604,74 @@ export async function POST(request: NextRequest) {
 
       const authHeader = `Basic ${Buffer.from(`api:${mailgunApiKey}`).toString('base64')}`;
 
-      for (let i = 0; i < storeAttachments.length; i++) {
-        const attachmentRef = storeAttachments[i];
+      // Determine the effective attachment list.
+      // When Mailgun's store() action is used, the webhook provides a `message-url` pointing to
+      // the stored message.  Fetching it first yields authoritative attachment metadata
+      // (including the correct download URLs), which is the documented Mailgun workflow:
+      //   store() → GET /v3/domains/{domain}/messages/{storage_key} → extract attachment URLs → download.
+      // Fall back to the attachment URLs already present in the webhook payload when message-url
+      // is not available.
+      let effectiveStoreAttachments = storeAttachments;
+
+      if (rawMessageUrl) {
+        const safeMessageUrl = resolveStoreAttachmentUrl(
+          rawMessageUrl,
+          mailgunBaseUrl,
+          process.env.MAILGUN_BASE_URL || ''
+        );
+        if (!safeMessageUrl) {
+          await updateWebhookLog({
+            status: 'rejected',
+            result: 'invalid-message-url',
+            reason: `Invalid or untrusted message-url: ${rawMessageUrl}`,
+          });
+          return NextResponse.json({ error: 'Invalid message-url' }, { status: 400 });
+        }
+
+        let storedMessageResponse: Response;
+        try {
+          storedMessageResponse = await fetch(safeMessageUrl, {
+            method: 'GET',
+            headers: { Authorization: authHeader },
+          });
+        } catch (fetchErr) {
+          await updateWebhookLog({
+            status: 'error',
+            result: 'stored-message-fetch-error',
+            reason: `Failed to fetch stored message: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
+          });
+          return NextResponse.json({ error: 'Failed to fetch stored message' }, { status: 502 });
+        }
+
+        if (!storedMessageResponse.ok) {
+          await updateWebhookLog({
+            status: 'error',
+            result: 'stored-message-fetch-failed',
+            reason: `Stored message fetch failed (${storedMessageResponse.status}) for ${safeMessageUrl}`,
+          });
+          return NextResponse.json({ error: 'Failed to fetch stored message' }, { status: 502 });
+        }
+
+        try {
+          const messageData = await storedMessageResponse.json() as unknown;
+          const messageAttachments = parseAttachmentsFromStoredMessage(messageData);
+          if (messageAttachments.length > 0) {
+            effectiveStoreAttachments = messageAttachments;
+          }
+        } catch (parseErr) {
+          // JSON parse error — fall back to webhook attachment list, if any.
+          console.warn('Failed to parse stored message JSON; falling back to webhook attachment list:', parseErr);
+        }
+
+        // Re-validate count using the authoritative list from the stored message.
+        if (effectiveStoreAttachments.length > MAX_ATTACHMENTS) {
+          await updateWebhookLog({ status: 'rejected', result: 'too-many-attachments', reason: `Too many attachments (max ${MAX_ATTACHMENTS})` });
+          return NextResponse.json({ error: `Too many attachments (max ${MAX_ATTACHMENTS})` }, { status: 413 });
+        }
+      }
+
+      for (let i = 0; i < effectiveStoreAttachments.length; i++) {
+        const attachmentRef = effectiveStoreAttachments[i];
         const safeUrl = resolveStoreAttachmentUrl(
           attachmentRef.url,
           mailgunBaseUrl,
