@@ -90,6 +90,24 @@ export default function DashboardPage() {
     finally { setLogsRefreshing(false); }
   }, [fetchLogs, fetchStats]);
 
+  // Refresh email list when a push notification is clicked. The service worker
+  // broadcasts an 'EMAIL_NOTIFICATION_CLICK' message via BroadcastChannel so that
+  // any open dashboard window re-fetches without requiring a full page reload.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window) || !firebaseUser) return;
+    const channel = new BroadcastChannel('postino-refresh');
+    const handleMessage = (event: MessageEvent) => {
+      if ((event.data as { type?: string })?.type === 'EMAIL_NOTIFICATION_CLICK') {
+        handleLogsRefresh();
+      }
+    };
+    channel.addEventListener('message', handleMessage);
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+    };
+  }, [firebaseUser, handleLogsRefresh]);
+
   const handleAddressToggle = useCallback(async (enabled: boolean) => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();

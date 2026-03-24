@@ -31,13 +31,17 @@ firebase.initializeApp(${JSON.stringify(config)});
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function(payload) {
-  var notificationTitle = (payload.notification && payload.notification.title) || 'New Email';
+  // All notification content is carried in payload.data (data-only message) so that
+  // the browser does not auto-display a notification from the notification field and
+  // then have the service worker show a second one — which would cause duplicates.
+  var data = payload.data || {};
+  var notificationTitle = data.title || (payload.notification && payload.notification.title) || 'New Email';
   var notificationOptions = {
-    body: (payload.notification && payload.notification.body) || '',
-    icon: (payload.notification && payload.notification.icon) || '/web-app-manifest-192x192.png',
-    badge: '/favicon-96x96.png',
+    body: data.body || (payload.notification && payload.notification.body) || '',
+    icon: data.icon || (payload.notification && payload.notification.icon) || '/web-app-manifest-192x192.png',
+    badge: data.badge || '/favicon-96x96.png',
+    tag: data.tag || 'postino-email',
     data: payload.data || {},
-    tag: 'postino-email',
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
@@ -46,6 +50,17 @@ self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   var url = (event.notification.data && event.notification.data.url) || '/dashboard';
   var absoluteUrl = new URL(url, self.location.origin).toString();
+
+  // Broadcast a refresh signal to any open app window so that the email list
+  // is reloaded immediately when the user returns to (or stays on) the dashboard.
+  try {
+    var bc = new BroadcastChannel('postino-refresh');
+    bc.postMessage({ type: 'EMAIL_NOTIFICATION_CLICK' });
+    bc.close();
+  } catch (e) {
+    // BroadcastChannel not supported — dashboard will refresh on next visibility change.
+  }
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
       // Reuse an existing app window when possible, but navigate it to the target URL.

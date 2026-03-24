@@ -175,23 +175,24 @@ async function sendEmailPushNotification(
       skipped: `Email skipped from ${sender}`,
     };
 
+    // Use a data-only message (no top-level `notification` field) so that FCM does not
+    // auto-display a notification in the background. Displaying is handled exclusively by
+    // the service worker's onBackgroundMessage handler, which reads from payload.data.
+    // Combining a `notification` field with an `onBackgroundMessage` handler that also
+    // calls showNotification causes duplicate notifications in the browser.
     const response = await adminMessaging().sendEachForMulticast({
-      notification: {
-        title: titleByStatus[status],
-        body: subject,
-      },
       webpush: {
-        notification: {
-          icon: iconUrl,
-          badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
-          tag: `postino-email-${logId}`,
-        },
         ...(absoluteEmailUrl ? { fcmOptions: { link: absoluteEmailUrl } } : {}),
       },
       data: {
         url: relativeEmailUrl,
         logId,
         status,
+        title: titleByStatus[status],
+        body: subject,
+        icon: iconUrl,
+        badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
+        tag: `postino-email-${logId}`,
       },
       tokens: fcmTokens,
     });
@@ -232,7 +233,7 @@ export async function processQueuedInboundPayload(
   // Attachments may be stored as inline base64 (small) or in Firebase Storage (large).
   let effectiveAttachments: EmailAttachment[] | undefined;
   if (attachments !== undefined) {
-    effectiveAttachments = attachments;
+    effectiveAttachments = attachments.length > 0 ? attachments : undefined;
   } else if (payload.attachments && payload.attachments.length > 0) {
     const resolved = await Promise.all(
       payload.attachments.map(async (att) => {
@@ -240,9 +241,24 @@ export async function processQueuedInboundPayload(
 
         if (att.storagePath) {
           content = await downloadAttachmentFromStorage(att.storagePath);
+          if (!content) {
+            console.error(
+              `Failed to download attachment "${att.filename}" from Firebase Storage (path: ${att.storagePath}). ` +
+              'Ensure FIREBASE_STORAGE_BUCKET is configured and the storage bucket exists.'
+            );
+          }
         } else if (att.contentBase64) {
-          const buf = Buffer.from(att.contentBase64, 'base64');
-          content = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+          try {
+            const buf = Buffer.from(att.contentBase64, 'base64');
+            // buf.buffer is the underlying pool ArrayBuffer; slice() copies only the
+            // relevant segment so the resulting ArrayBuffer is a standalone allocation
+            // with byteOffset === 0 and the correct byteLength.
+            content = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+          } catch (decodeErr) {
+            console.error(`Failed to decode base64 content for attachment "${att.filename}":`, decodeErr);
+          }
+        } else {
+          console.warn(`Attachment "${att.filename}" has neither storagePath nor contentBase64; skipping`);
         }
 
         if (!content) {
@@ -259,6 +275,12 @@ export async function processQueuedInboundPayload(
       })
     );
     const validAttachments = resolved.filter((a): a is EmailAttachment => a !== null);
+    if (validAttachments.length < payload.attachments.length) {
+      console.error(
+        `${payload.attachments.length - validAttachments.length} of ${payload.attachments.length} ` +
+        `attachment(s) could not be deserialized for log ${payload.logId}`
+      );
+    }
     effectiveAttachments = validAttachments.length > 0 ? validAttachments : undefined;
   }
 
@@ -363,6 +385,13 @@ export async function processQueuedInboundPayload(
   const emailHtml = lastBodyClose
     ? result.body.slice(0, lastBodyClose.index) + notificationBox + result.body.slice(lastBodyClose.index)
     : result.body + notificationBox;
+
+  if (effectiveAttachments && effectiveAttachments.length > 0) {
+    console.log(
+      `Forwarding ${effectiveAttachments.length} attachment(s) for log ${payload.logId}: ` +
+      effectiveAttachments.map((a) => `${a.filename} (${a.contentType})`).join(', ')
+    );
+  }
 
   await sendEmail({
     to: payload.userEmail,
