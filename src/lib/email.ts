@@ -80,14 +80,18 @@ async function sendViaMailgun(options: {
 
   if (options.attachments) {
     for (const attachment of options.attachments) {
-      const blob = new Blob([attachment.content], { type: attachment.contentType });
+      // Convert ArrayBuffer to Buffer first for reliable binary serialization in Node.js.
+      const buf = Buffer.from(attachment.content);
+      const blob = new Blob([buf], { type: attachment.contentType });
       if (attachment.contentId) {
         // Inline attachment: Mailgun's send API uses the blob's name as the CID value.
         // The HTML body already contains `src="cid:<contentId>"` references, so the name
         // must equal the stripped content-id so Mailgun can match them up correctly.
         body.append('inline', blob, attachment.contentId);
       } else {
-        body.append('attachment', blob, attachment.filename);
+        // Non-inline attachment: use the filename, falling back to a generic name to
+        // prevent Mailgun from silently dropping attachments that have no filename.
+        body.append('attachment', blob, attachment.filename || 'attachment');
       }
     }
   }
@@ -167,10 +171,19 @@ export async function sendEmail(options: {
     ...(options.attachments && options.attachments.length > 0
       ? {
           attachments: options.attachments.map((att) => ({
-            filename: att.filename,
+            // Provide a fallback filename so SMTP servers never receive a nameless part.
+            filename: att.filename || 'attachment',
             content: Buffer.from(att.content),
             contentType: att.contentType,
-            ...(att.contentId ? { cid: att.contentId } : {}),
+            // Explicitly encode binary attachments as base64 to avoid any ambiguity.
+            encoding: 'base64',
+            ...(att.contentId
+              ? { cid: att.contentId }
+              : {
+                  // Explicitly mark non-inline attachments so all SMTP/email clients
+                  // treat them as downloadable files rather than embedded content.
+                  contentDisposition: 'attachment',
+                }),
           })),
         }
       : {}),
