@@ -264,7 +264,7 @@ export default function EmailJobsLiveTab() {
             </div>
             <label
               htmlFor="mailgun-webhook-logging-toggle"
-              className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300"
+              className="inline-flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300"
             >
               <Switch
                 id="mailgun-webhook-logging-toggle"
