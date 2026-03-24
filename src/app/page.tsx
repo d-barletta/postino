@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 
 export const metadata: Metadata = {
-  title: 'Home',
+  title: 'Postino | AI Email Redirector',
   description:
     'Postino gives you a private email address and uses AI to clean, summarize, and forward only the content that matters.',
   keywords: [
