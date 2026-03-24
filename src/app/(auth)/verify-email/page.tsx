@@ -44,7 +44,7 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-full bg-linear-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="flex-1 from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md text-center">
         <div className="text-6xl mb-6">📧</div>
         <h1 className="text-2xl font-bold text-gray-900 mb-3">Verify your email</h1>
