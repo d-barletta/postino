@@ -18,7 +18,7 @@ AI-powered email redirector: users get a private email address, define rules in 
 
 For any new UI work, use components from these docs as the default and first choice:
 
-- https://ui.shadcn.com/docs/components
+- <https://ui.shadcn.com/docs/components>
 
 ## Main Libraries
 
@@ -95,46 +95,54 @@ This section is designed to let you deploy the app from zero with no missing ste
 3. Enable at least one sign-in method you want to use (for example Google and/or Email/Password).
 4. Enable Firestore database in production mode.
 5. In Firebase console, generate a Web App config and collect:
-  - NEXT_PUBLIC_FIREBASE_API_KEY
-  - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-  - NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-  - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-  - NEXT_PUBLIC_FIREBASE_APP_ID
-6. Create a Firebase Admin service account key and collect:
-  - FIREBASE_PROJECT_ID
-  - FIREBASE_CLIENT_EMAIL
-  - FIREBASE_PRIVATE_KEY
-7. Enable Cloud Messaging and generate a VAPID key pair for web push:
-  - Go to Firebase Console → Project Settings → Cloud Messaging → Web configuration.
-  - Click **Generate key pair** (or use an existing pair).
-  - Copy the **Key pair** value — this is your `NEXT_PUBLIC_FIREBASE_VAPID_KEY`.
+
+- NEXT_PUBLIC_FIREBASE_API_KEY
+- NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+- NEXT_PUBLIC_FIREBASE_PROJECT_ID
+- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+- NEXT_PUBLIC_FIREBASE_APP_ID
+
+1. Create a Firebase Admin service account key and collect:
+
+- FIREBASE_PROJECT_ID
+- FIREBASE_CLIENT_EMAIL
+- FIREBASE_PRIVATE_KEY
+
+1. Enable Cloud Messaging and generate a VAPID key pair for web push:
+
+- Go to Firebase Console → Project Settings → Cloud Messaging → Web configuration.
+- Click **Generate key pair** (or use an existing pair).
+- Copy the **Key pair** value — this is your `NEXT_PUBLIC_FIREBASE_VAPID_KEY`.
 
 #### OpenRouter
 
 1. Create an API key in OpenRouter.
 2. Collect:
-  - OPEN_ROUTER_API_KEY
-  - LLM_MODEL (example: openai/gpt-4o-mini)
+
+- OPEN_ROUTER_API_KEY
+- LLM_MODEL (example: openai/gpt-4o-mini)
 
 #### Mailgun
 
 1. Configure a Mailgun domain or sandbox domain.
 2. Collect:
-  - MAILGUN_API_KEY
-  - MAILGUN_WEBHOOK_SIGNING_KEY
-  - MAILGUN_SANDBOX_EMAIL (or your configured domain)
-  - MAILGUN_BASE_URL (usually https://api.mailgun.net)
+
+- MAILGUN_API_KEY
+- MAILGUN_WEBHOOK_SIGNING_KEY
+- MAILGUN_SANDBOX_EMAIL (or your configured domain)
+- MAILGUN_BASE_URL (usually <https://api.mailgun.net>)
 
 #### SMTP
 
 1. Configure SMTP account for outbound forwarding.
 2. Collect:
-  - SMTP_HOST
-  - SMTP_PORT
-  - SMTP_USER
-  - SMTP_PASS
-  - SMTP_FROM
+
+- SMTP_HOST
+- SMTP_PORT
+- SMTP_USER
+- SMTP_PASS
+- SMTP_FROM
 
 ### 3) Prepare the Repository
 
@@ -145,7 +153,7 @@ This section is designed to let you deploy the app from zero with no missing ste
 npm install
 ```
 
-3. Optionally run local checks:
+1. Optionally run local checks:
 
 ```bash
 npm run lint
@@ -227,9 +235,11 @@ This project supports two schedulers:
 
 1. Go to GitHub repository -> Settings -> Secrets and variables -> Actions.
 2. Add secret POSTINO_WORKER_URL with value:
-  - https://YOUR_VERCEL_DOMAIN/api/internal/email-jobs/process
-3. Add secret EMAIL_JOBS_WORKER_SECRET with the same value used in Vercel env EMAIL_JOBS_WORKER_SECRET.
-4. Workflow file is already included at .github/workflows/process-email-jobs-cron.yml.
+
+- https://YOUR_VERCEL_DOMAIN/api/internal/email-jobs/process
+
+1. Add secret EMAIL_JOBS_WORKER_SECRET with the same value used in Vercel env EMAIL_JOBS_WORKER_SECRET.
+2. Workflow file is already included at .github/workflows/process-email-jobs-cron.yml.
 
 Important:
 
@@ -277,7 +287,7 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000
+Open <http://localhost:3000>
 
 ## Environment Variables
 
