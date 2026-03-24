@@ -154,7 +154,9 @@ async function deleteAttachmentFromStorage(storagePath: string): Promise<void> {
 async function sendEmailPushNotification(
   userId: string,
   sender: string,
-  subject: string
+  subject: string,
+  logId: string,
+  status: 'forwarded' | 'error' | 'skipped'
 ): Promise<void> {
   try {
     const db = adminDb();
@@ -164,21 +166,33 @@ async function sendEmailPushNotification(
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const iconUrl = appUrl ? `${appUrl}/web-app-manifest-192x192.png` : '/web-app-manifest-192x192.png';
+    const relativeEmailUrl = `/dashboard?tab=emails&selectedEmail=${encodeURIComponent(logId)}`;
+    const absoluteEmailUrl = appUrl ? `${appUrl}${relativeEmailUrl}` : '';
+
+    const titleByStatus: Record<'forwarded' | 'error' | 'skipped', string> = {
+      forwarded: `Email forwarded from ${sender}`,
+      error: `Email processing failed for ${sender}`,
+      skipped: `Email skipped from ${sender}`,
+    };
 
     const response = await adminMessaging().sendEachForMulticast({
       notification: {
-        title: `New email from ${sender}`,
+        title: titleByStatus[status],
         body: subject,
       },
       webpush: {
         notification: {
           icon: iconUrl,
           badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
-          tag: 'postino-email',
+          tag: `postino-email-${logId}`,
         },
-        fcmOptions: { link: `${appUrl}/dashboard` },
+        ...(absoluteEmailUrl ? { fcmOptions: { link: absoluteEmailUrl } } : {}),
       },
-      data: { url: '/dashboard' },
+      data: {
+        url: relativeEmailUrl,
+        logId,
+        status,
+      },
       tokens: fcmTokens,
     });
 
@@ -365,9 +379,13 @@ export async function processQueuedInboundPayload(
 
   const safeTrace = result.trace ? sanitizeForFirestore(result.trace) : undefined;
 
+  const finalStatus: 'forwarded' | 'error' = result.parseError?.includes('forwarded as-is')
+    ? 'error'
+    : 'forwarded';
+
   await logRef.update({
     processedAt: Timestamp.now(),
-    status: result.parseError?.includes('forwarded as-is') ? 'error' : 'forwarded',
+    status: finalStatus,
     ruleApplied: result.ruleApplied,
     tokensUsed: result.tokensUsed,
     estimatedCost: result.estimatedCost,
@@ -389,5 +407,15 @@ export async function processQueuedInboundPayload(
 
   // Fire-and-forget push notification — runs after the log update and storage cleanup
   // so that a notification failure never blocks or rolls back the email-processing result.
-  await sendEmailPushNotification(payload.userId, payload.sender, result.subject);
+  await sendEmailPushNotification(payload.userId, payload.sender, result.subject, payload.logId, finalStatus);
+}
+
+export async function sendEmailCompletionPushNotification(
+  userId: string,
+  sender: string,
+  subject: string,
+  logId: string,
+  status: 'forwarded' | 'error' | 'skipped'
+): Promise<void> {
+  await sendEmailPushNotification(userId, sender, subject, logId, status);
 }

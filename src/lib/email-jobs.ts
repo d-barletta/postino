@@ -1,6 +1,10 @@
 import { Timestamp } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase-admin';
-import { processQueuedInboundPayload, type QueuedInboundPayload } from '@/lib/inbound-processing';
+import {
+  processQueuedInboundPayload,
+  sendEmailCompletionPushNotification,
+  type QueuedInboundPayload,
+} from '@/lib/inbound-processing';
 
 export type EmailJobStatus = 'pending' | 'processing' | 'retrying' | 'done' | 'failed';
 
@@ -138,6 +142,14 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
     status: 'error',
     errorMessage: errMsg,
   });
+
+  await sendEmailCompletionPushNotification(
+    job.payload.userId,
+    job.payload.sender,
+    job.payload.subject,
+    job.payload.logId,
+    'error'
+  );
 }
 
 async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> {

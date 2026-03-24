@@ -22,12 +22,15 @@ export default function DashboardPage() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const searchParams = useSearchParams();
   const editRuleId = searchParams.get('editRule');
+  const selectedEmailId = searchParams.get('selectedEmail');
 
   useEffect(() => {
-    if (editRuleId) {
+    if (selectedEmailId) {
+      setActiveTab('emails');
+    } else if (editRuleId) {
       setActiveTab('rules');
     }
-  }, [editRuleId]);
+  }, [selectedEmailId, editRuleId]);
 
   useEffect(() => {
     fetch('/api/settings/public')
@@ -138,7 +141,13 @@ export default function DashboardPage() {
           <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
         </TabsContent>
         <TabsContent value="emails">
-          <EmailLogsList logs={logs} onRefresh={handleLogsRefresh} refreshing={logsRefreshing} />
+          <EmailLogsList
+            key={selectedEmailId ?? 'email-list'}
+            logs={logs}
+            onRefresh={handleLogsRefresh}
+            refreshing={logsRefreshing}
+            selectedEmailId={selectedEmailId ?? undefined}
+          />
         </TabsContent>
       </Tabs>
     </div>

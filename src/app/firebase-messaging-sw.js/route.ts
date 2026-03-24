@@ -45,14 +45,23 @@ messaging.onBackgroundMessage(function(payload) {
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   var url = (event.notification.data && event.notification.data.url) || '/dashboard';
+  var absoluteUrl = new URL(url, self.location.origin).toString();
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
-      // Focus any already-open app window rather than opening a duplicate.
-      if (windowClients.length > 0 && 'focus' in windowClients[0]) {
-        return windowClients[0].focus();
+      // Reuse an existing app window when possible, but navigate it to the target URL.
+      if (windowClients.length > 0) {
+        var client = windowClients[0];
+        if ('navigate' in client) {
+          return client.navigate(absoluteUrl).then(function(navigatedClient) {
+            return navigatedClient ? navigatedClient.focus() : client.focus();
+          });
+        }
+        if ('focus' in client) {
+          return client.focus();
+        }
       }
       if (clients.openWindow) {
-        return clients.openWindow(url);
+        return clients.openWindow(absoluteUrl);
       }
     })
   );

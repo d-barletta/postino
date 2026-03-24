@@ -6,6 +6,7 @@ import { verifyMailgunSignature, isMailgunTimestampFresh, type EmailAttachment }
 import { enqueueEmailJob } from '@/lib/email-jobs';
 import {
   processQueuedInboundPayload,
+  sendEmailCompletionPushNotification,
   uploadAttachmentToStorage,
   type QueuedInboundPayload,
   type SerializedAttachment,
@@ -134,6 +135,9 @@ function scheduleProcessingTrigger(request: NextRequest): void {
 
 export async function POST(request: NextRequest) {
   let logId: string | null = null;
+  let finalUserId: string | null = null;
+  let finalSender = '';
+  let finalSubject = '';
   try {
     const formData = await request.formData();
 
@@ -215,6 +219,8 @@ export async function POST(request: NextRequest) {
     const sender = stripCrlf((formData.get('sender') as string) || '');
     const replyToHeader = stripCrlf((formData.get('Reply-To') as string) || '');
     const subject = stripCrlf((formData.get('subject') as string) || '');
+    finalSender = sender;
+    finalSubject = subject;
     const bodyHtml = (formData.get('body-html') as string) || '';
     const bodyPlain = (formData.get('body-plain') as string) || '';
     const emailBody = bodyHtml || bodyPlain;
@@ -309,10 +315,11 @@ export async function POST(request: NextRequest) {
 
     const userData = userDoc.data();
     const userId = userDoc.id;
+    finalUserId = userId;
     const matchedRecipient = (userData.assignedEmail as string) || normalizedRecipients[0];
 
     if (isLikelyMailLoop(formData, sender, (userData.email as string) || '')) {
-      await db.collection('emailLogs').add({
+      const skippedRef = await db.collection('emailLogs').add({
         toAddress: matchedRecipient,
         fromAddress: sender,
         subject,
@@ -323,6 +330,7 @@ export async function POST(request: NextRequest) {
         errorMessage: 'Possible mail loop detected; message not forwarded',
         ...(messageId ? { messageId } : {}),
       });
+      await sendEmailCompletionPushNotification(userId, sender, subject, skippedRef.id, 'skipped');
       return NextResponse.json({ message: 'Possible mail loop detected, email skipped' });
     }
 
@@ -342,7 +350,7 @@ export async function POST(request: NextRequest) {
 
     // If the user has disabled their Postino address, register the email as skipped
     if (userData.isAddressEnabled === false) {
-      await db.collection('emailLogs').add({
+      const skippedRef = await db.collection('emailLogs').add({
         toAddress: matchedRecipient,
         fromAddress: sender,
         subject,
@@ -352,6 +360,7 @@ export async function POST(request: NextRequest) {
         originalBody: emailBody,
         ...(messageId ? { messageId } : {}),
       });
+      await sendEmailCompletionPushNotification(userId, sender, subject, skippedRef.id, 'skipped');
       console.log(`User ${userId} has address disabled, email skipped`);
       return NextResponse.json({ message: 'Address disabled, email skipped' });
     }
@@ -473,6 +482,9 @@ export async function POST(request: NextRequest) {
           status: 'error',
           errorMessage: error instanceof Error ? error.message : String(error),
         });
+        if (finalUserId) {
+          await sendEmailCompletionPushNotification(finalUserId, finalSender, finalSubject, logId, 'error');
+        }
       } catch (updateError) {
         console.error('Failed to update email log with error status:', updateError);
       }

@@ -24,6 +24,7 @@ interface EmailLogsListProps {
   logs: EmailLog[];
   onRefresh?: () => void;
   refreshing?: boolean;
+  selectedEmailId?: string;
 }
 
 const STATUS_OPTIONS = [
@@ -35,14 +36,32 @@ const STATUS_OPTIONS = [
   { value: 'skipped', label: 'Skipped' },
 ];
 
-export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogsListProps) {
-  const [selected, setSelected] = useState<EmailLog | null>(null);
+export function EmailLogsList({
+  logs,
+  onRefresh,
+  refreshing = false,
+  selectedEmailId,
+}: EmailLogsListProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+  const effectiveStatusFilter = selectedEmailId ? '' : statusFilter;
 
-  const filteredLogs = statusFilter ? logs.filter((l) => l.status === statusFilter) : logs;
+  const filteredLogs = effectiveStatusFilter
+    ? logs.filter((l) => l.status === effectiveStatusFilter)
+    : logs;
+
+  const deepLinkedIndex = selectedEmailId
+    ? filteredLogs.findIndex((l) => l.id === selectedEmailId)
+    : -1;
+  const deepLinkedPage =
+    selectedEmailId && selectedId === selectedEmailId && deepLinkedIndex >= 0
+      ? Math.floor(deepLinkedIndex / PAGE_SIZE) + 1
+      : null;
+
+  const effectiveCurrentPage = deepLinkedPage ?? currentPage;
   const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
+  const safeCurrentPage = Math.min(Math.max(1, effectiveCurrentPage), Math.max(1, totalPages));
   const paginatedLogs = filteredLogs.slice(
     (safeCurrentPage - 1) * PAGE_SIZE,
     safeCurrentPage * PAGE_SIZE
@@ -50,13 +69,13 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setSelected(null);
+    setSelectedId(null);
   };
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
     setCurrentPage(1);
-    setSelected(null);
+    setSelectedId(null);
   };
 
   const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
@@ -135,8 +154,8 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
                 {paginatedLogs.map((log) => (
                   <div
                     key={log.id}
-                    className="px-6 py-4 hover:bg-yellow-50/70 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors"
-                    onClick={() => setSelected(selected?.id === log.id ? null : log)}
+                    className={`px-6 py-4 hover:bg-yellow-50/70 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors ${selectedId === log.id ? 'bg-yellow-50/70 dark:bg-yellow-900/10' : ''}`}
+                    onClick={() => setSelectedId(selectedId === log.id ? null : log.id)}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
                       <div className="min-w-0 flex items-start gap-2">
@@ -151,7 +170,7 @@ export function EmailLogsList({ logs, onRefresh, refreshing = false }: EmailLogs
                         <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt)}</span>
                       </div>
                     </div>
-                    {selected?.id === log.id && (
+                    {selectedId === log.id && (
                       <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2 pl-6">
                         {log.ruleApplied && (
                           <p className="text-xs text-gray-600 dark:text-gray-300">
