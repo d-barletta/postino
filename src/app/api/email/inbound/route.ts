@@ -260,8 +260,14 @@ export async function POST(request: NextRequest) {
     const attachments: EmailAttachment[] = [];
     let totalAttachmentBytes = 0;
     for (let i = 1; i <= attachmentCount; i++) {
-      const file = formData.get(`attachment-${i}`) as File | null;
-      if (!file) continue;
+      const rawFile = formData.get(`attachment-${i}`);
+      // Guard against non-File values (e.g. string URLs returned by Mailgun's Store route).
+      if (!rawFile) continue;
+      if (!(rawFile instanceof File)) {
+        console.warn(`attachment-${i}: expected a File but received ${typeof rawFile}; skipping`);
+        continue;
+      }
+      const file = rawFile;
 
       if (file.size > MAX_ATTACHMENT_BYTES) {
         return NextResponse.json({ error: `Attachment too large: ${file.name}` }, { status: 413 });

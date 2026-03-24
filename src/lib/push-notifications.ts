@@ -123,12 +123,15 @@ export function setupForegroundMessageHandler(): Unsubscribe | null {
   try {
     const messaging = getMessaging(app);
     return onMessage(messaging, (payload) => {
-      const title = payload.notification?.title ?? 'New Email';
+      // Notification content is in payload.data (data-only messages); fall back to
+      // payload.notification for any legacy messages that still carry the field.
+      const data = payload.data ?? {};
+      const title = data.title ?? payload.notification?.title ?? 'New Email';
       const options: NotificationOptions = {
-        body: payload.notification?.body ?? '',
-        icon: payload.notification?.icon ?? '/web-app-manifest-192x192.png',
-        badge: '/favicon-96x96.png',
-        tag: 'postino-email',
+        body: data.body ?? payload.notification?.body ?? '',
+        icon: data.icon ?? payload.notification?.icon ?? '/web-app-manifest-192x192.png',
+        badge: data.badge ?? '/favicon-96x96.png',
+        tag: data.tag ?? 'postino-email',
         data: payload.data ?? {},
       };
 

@@ -173,10 +173,13 @@ export async function sendEmail(options: {
           attachments: options.attachments.map((att) => ({
             // Provide a fallback filename so SMTP servers never receive a nameless part.
             filename: att.filename || 'attachment',
+            // Buffer.from(ArrayBuffer) gives nodemailer the raw binary; it encodes
+            // it as base64 in the MIME transfer layer automatically. Do NOT set
+            // `encoding: 'base64'` here — that field is only for when `content` is
+            // already a base64-encoded string, and setting it on a Buffer causes
+            // some nodemailer versions to double-encode the data.
             content: Buffer.from(att.content),
             contentType: att.contentType,
-            // Explicitly encode binary attachments as base64 to avoid any ambiguity.
-            encoding: 'base64',
             ...(att.contentId
               ? { cid: att.contentId }
               : {
