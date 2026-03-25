@@ -36,3 +36,48 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+  try {
+    await verifyAdmin(request);
+    const { uid } = await params;
+    const db = adminDb();
+
+    const targetSnap = await db.collection('users').doc(uid).get();
+    if (!targetSnap.exists) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    if (targetSnap.data()?.isAdmin) {
+      return NextResponse.json({ error: 'Cannot delete an admin user' }, { status: 400 });
+    }
+
+    // Gather all documents to delete in a single batch
+    const [rulesSnap, logsSnap] = await Promise.all([
+      db.collection('rules').where('userId', '==', uid).get(),
+      db.collection('emailLogs').where('userId', '==', uid).get(),
+    ]);
+
+    const batch = db.batch();
+    rulesSnap.docs.forEach((d) => batch.delete(d.ref));
+    logsSnap.docs.forEach((d) => batch.delete(d.ref));
+    batch.delete(db.collection('userMemory').doc(uid));
+    batch.delete(db.collection('users').doc(uid));
+    await batch.commit();
+
+    // Delete Firebase Auth user
+    try {
+      await adminAuth().deleteUser(uid);
+    } catch (authError) {
+      const code = (authError as { code?: string }).code;
+      if (code !== 'auth/user-not-found') {
+        console.error(`Failed to delete Firebase Auth user ${uid}:`, authError);
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error';
+    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
+    return NextResponse.json({ error: msg }, { status });
+  }
+}

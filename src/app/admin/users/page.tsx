@@ -16,7 +16,9 @@ import {
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/types';
 
-type ConfirmAction = { uid: string; action: 'admin' | 'active'; current: boolean };
+type ConfirmAction =
+  | { uid: string; action: 'admin' | 'active'; current: boolean }
+  | { uid: string; action: 'delete' };
 
 interface AdminUsersPageProps {
   showPageHeader?: boolean;
@@ -50,15 +52,22 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     setConfirming(true);
     try {
       const token = await firebaseUser.getIdToken();
-      const body =
-        confirmAction.action === 'admin'
-          ? { isAdmin: !confirmAction.current }
-          : { isActive: !confirmAction.current };
-      await fetch(`/api/admin/users/${confirmAction.uid}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      if (confirmAction.action === 'delete') {
+        await fetch(`/api/admin/users/${confirmAction.uid}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        const body =
+          confirmAction.action === 'admin'
+            ? { isAdmin: !confirmAction.current }
+            : { isActive: !confirmAction.current };
+        await fetch(`/api/admin/users/${confirmAction.uid}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+      }
       await fetchUsers();
     } finally {
       setConfirming(false);
@@ -68,11 +77,15 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
 
   const confirmUser = users.find((u) => u.uid === confirmAction?.uid);
   const confirmTitle =
-    confirmAction?.action === 'admin'
+    confirmAction?.action === 'delete'
+      ? 'Delete user'
+      : confirmAction?.action === 'admin'
       ? confirmAction.current ? 'Remove admin privileges' : 'Grant admin privileges'
       : confirmAction?.current ? 'Suspend user' : 'Activate user';
   const confirmDesc =
-    confirmAction?.action === 'admin'
+    confirmAction?.action === 'delete'
+      ? `Permanently delete ${confirmUser?.email} and all their data (rules, email logs)? This cannot be undone.`
+      : confirmAction?.action === 'admin'
       ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
       : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
 
@@ -134,6 +147,15 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                       >
                         {user.isActive ? 'Suspend' : 'Activate'}
                       </Button>
+                      {!user.isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => setConfirmAction({ uid: user.uid, action: 'delete' })}
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -154,7 +176,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
               Cancel
             </Button>
             <Button
-              variant={confirmAction?.action === 'active' && confirmAction.current ? 'danger' : 'primary'}
+              variant={confirmAction?.action === 'delete' || (confirmAction?.action === 'active' && confirmAction.current) ? 'danger' : 'primary'}
               onClick={executeAction}
               loading={confirming}
             >
