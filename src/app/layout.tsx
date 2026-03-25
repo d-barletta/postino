@@ -17,7 +17,9 @@ export const metadata: Metadata = {
     'Intelligent email processing powered by AI. Redirect, summarize, and filter your emails with natural language rules.',
   applicationName: 'Postino',
   appleWebApp: {
+    capable: true,
     title: 'Postino',
+    statusBarStyle: 'default',
   },
   manifest: '/manifest.json',
   icons: {
@@ -55,8 +57,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#efd957' },
-    { media: '(prefers-color-scheme: dark)', color: '#d6c043' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b1220' },
   ],
   colorScheme: 'light dark',
   maximumScale: 1,
