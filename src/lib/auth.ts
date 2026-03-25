@@ -1,9 +1,12 @@
 import {
+  confirmPasswordReset,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   sendEmailVerification,
   signOut as firebaseSignOut,
   User as FirebaseUser,
+  verifyPasswordResetCode,
 } from 'firebase/auth';
 import { auth } from './firebase';
 import { getUserById } from './firestore';
@@ -25,6 +28,18 @@ export async function registerUser(email: string, password: string): Promise<Fir
 export async function loginUser(email: string, password: string): Promise<FirebaseUser> {
   const credential = await signInWithEmailAndPassword(getAuth(), email, password);
   return credential.user;
+}
+
+export async function sendPasswordReset(email: string): Promise<void> {
+  await sendPasswordResetEmail(getAuth(), email);
+}
+
+export async function resetPassword(actionCode: string, newPassword: string): Promise<void> {
+  await confirmPasswordReset(getAuth(), actionCode, newPassword);
+}
+
+export async function verifyResetPasswordCode(actionCode: string): Promise<string> {
+  return verifyPasswordResetCode(getAuth(), actionCode);
 }
 
 export async function signOut(): Promise<void> {

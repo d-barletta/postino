@@ -66,6 +66,11 @@ export function LoginForm() {
         autoComplete="current-password"
         placeholder="••••••••"
       />
+      <div className="text-right">
+        <Link href="/forgot-password" className="text-sm text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+          Forgot password?
+        </Link>
+      </div>
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
