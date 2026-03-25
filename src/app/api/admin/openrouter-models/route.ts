@@ -21,6 +21,7 @@ async function verifyAdmin(request: NextRequest) {
   const db = adminDb();
   const userSnap = await db.collection('users').doc(decoded.uid).get();
   if (!userSnap.data()?.isAdmin) throw new Error('Forbidden');
+  return decoded;
 }
 
 export async function GET(request: NextRequest) {

@@ -11,9 +11,12 @@ async function verifyAdmin(request: NextRequest) {
   const db = adminDb();
   const userSnap = await db.collection('users').doc(decoded.uid).get();
   if (!userSnap.data()?.isAdmin) throw new Error('Forbidden');
+  return decoded;
 }
 
 const STATUSES = ['pending', 'processing', 'retrying', 'done', 'failed'] as const;
+
+const MAX_WEBHOOK_LOGS_DISPLAY = 200;
 
 interface MailgunWebhookLogSummary {
   id: string;
@@ -106,6 +109,7 @@ export async function GET(request: NextRequest) {
     const recentWebhookLogsSnap = await db
       .collection('mailgunWebhookLogs')
       .orderBy('receivedAt', 'desc')
+      .limit(MAX_WEBHOOK_LOGS_DISPLAY)
       .get();
 
     const recentWebhookRequests: MailgunWebhookLogSummary[] = recentWebhookLogsSnap.docs.map((doc) => {
