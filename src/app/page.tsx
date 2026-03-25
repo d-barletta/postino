@@ -77,25 +77,25 @@ export default function HomePage() {
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
             Postino
             <br/>
-            <span className="relative inline-grid align-baseline h-[1.35em] min-w-[12ch] leading-[1.2] overflow-hidden">
-              {['intelligently', 'instantly', 'securely', 'beautifully'].map((word) => (
+            <span className="relative inline-grid align-baseline h-[1.55em] min-w-[12ch] leading-[1.2] overflow-hidden">
+              {['summarize', 'organizes', 'translates', 'polishes'].map((word) => (
                 <span
                   key={word}
-                  className="looping-hero-word text-transparent bg-clip-text bg-linear-to-r from-[#7c3aed] via-[#a855f7] to-[#c084fc] dark:from-[#a78bfa] dark:via-[#c084fc] dark:to-[#ddd6fe]"
+                  className="looping-hero-word text-[1.16em] text-transparent bg-clip-text bg-linear-to-r from-[#7c3aed] via-[#a855f7] to-[#c084fc] dark:from-[#a78bfa] dark:via-[#c084fc] dark:to-[#ddd6fe]"
                 >
                   {word}
                 </span>
               ))}
             </span>
             <br/>
-            polishes
-            <br/>
             e-mails <span className="text-[0.62em] align-[0.08em]">&</span> newsletters
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Get a private email address. Write simple rules in natural language. Postino&apos;s AI
-            processes your incoming emails — summarizing newsletters, removing ads, extracting
-            key info — then forwards the result to you.
+            Get a private email address.<br/> 
+            Write simple rules in natural language.<br/> 
+            Postino&apos;s AI processes your incoming emails 
+            — summarizing newsletters, removing ads, extracting
+            key info, translate and much more — then forwards the result to you.
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link href="/register">
@@ -158,9 +158,9 @@ export default function HomePage() {
             ].map((rule) => (
               <div
                 key={rule}
-                className="flex items-start gap-3 glass-panel rounded-xl p-4"
+                className="flex items-center gap-3 glass-panel rounded-xl p-4 border-(--accent)! dark:border-white/12!"
               >
-                <i className="bi bi-check-circle-fill text-purple-500 mt-0.5" aria-hidden="true" />
+                <i className="bi bi-check-circle-fill text-(--accent) mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-gray-700">{rule}</p>
               </div>
             ))}
