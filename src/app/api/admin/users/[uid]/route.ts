@@ -26,6 +26,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     );
 
     if ('isActive' in filtered) {
+      const targetSnap = await db.collection('users').doc(uid).get();
+      if (targetSnap.data()?.isAdmin) {
+        return NextResponse.json({ error: 'Cannot suspend an admin user' }, { status: 400 });
+      }
       filtered.suspended = !filtered.isActive;
     }
 

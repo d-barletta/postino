@@ -140,19 +140,22 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                       >
                         {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant={user.isActive ? 'danger' : 'secondary'}
-                        onClick={() => setConfirmAction({ uid: user.uid, action: 'active', current: user.isActive })}
-                      >
-                        {user.isActive ? 'Suspend' : 'Activate'}
-                      </Button>
+                      {!user.isAdmin && (
+                        <Button
+                          size="sm"
+                          variant={user.isActive ? 'danger' : 'secondary'}
+                          onClick={() => setConfirmAction({ uid: user.uid, action: 'active', current: user.isActive })}
+                        >
+                          {user.isActive ? 'Suspend' : 'Activate'}
+                        </Button>
+                      )}
                       {!user.isAdmin && (
                         <Button
                           size="sm"
                           variant="danger"
                           onClick={() => setConfirmAction({ uid: user.uid, action: 'delete' })}
                         >
+                          <i className="bi bi-trash" aria-hidden="true" />
                           Delete
                         </Button>
                       )}
