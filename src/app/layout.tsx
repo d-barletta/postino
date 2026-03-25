@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   applicationName: 'Postino',
   appleWebApp: {
     capable: true,
-    title: 'Postino',
+    title: 'Postino.pro',
     statusBarStyle: 'default',
   },
   manifest: '/manifest.json',
