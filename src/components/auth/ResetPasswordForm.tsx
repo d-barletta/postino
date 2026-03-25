@@ -150,11 +150,20 @@ export function ResetPasswordForm() {
       </Button>
 
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-        Need a new link?{' '}
-        <Link href="/forgot-password" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
-          Request password reset
+        Back to{' '}
+        <Link href="/login" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+          sign in
         </Link>
       </p>
+
+      {!success && (
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Need a new link?{' '}
+          <Link href="/forgot-password" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+            Request password reset
+          </Link>
+        </p>
+      )}
     </form>
   );
 }
