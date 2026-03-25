@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'Postino',
-    statusBarStyle: 'default',
+    statusBarStyle: 'black',
   },
   manifest: '/manifest.json',
   icons: {
@@ -57,6 +57,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
+    { color: '#0b1220' },
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0b1220' },
   ],
