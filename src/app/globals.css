@@ -3,10 +3,6 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-html {
-  background-color: #0b1220;
-}
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -36,20 +32,28 @@ html {
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  background-color: #ffffff ;
+}
+
+html.dark {
+  background-color: #4f2a76;
+}
+
 body {
   background:
-    radial-gradient(1100px 500px at 85% -10%, #fff0a8 0%, transparent 55%),
-    radial-gradient(900px 420px at 0% 100%, #f7f0cb 0%, transparent 60%),
-    linear-gradient(135deg, #fffdf5 0%, #ffffff 50%, #fff8d4 100%);
+    radial-gradient(1100px 500px at 85% -10%, rgb(255 246 212 / 45%) 0%, transparent 36%),
+    radial-gradient(900px 420px at 0% 100%, #faf5df 0%, transparent 48%),
+    linear-gradient(180deg, #ffffff 0px, #fffef9 120px, #fffbf1 280px, #fff8e9 580px, #ffffff 100%);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
 .dark body {
   background:
-    radial-gradient(1000px 520px at 85% -10%, #4f2a76 0%, transparent 55%),
-    radial-gradient(900px 420px at 0% 100%, #241436 0%, transparent 60%),
-    linear-gradient(135deg, #090f1b 0%, #0f172a 50%, #221732 100%);
+    radial-gradient(1000px 520px at 85% -10%, #4f2a76 0%, transparent 36%),
+    radial-gradient(900px 420px at 0% 100%, #241436 0%, transparent 48%),
+    linear-gradient(180deg, #4f2a76 0px, #3a2158 120px, #2a1b45 280px, #1b1b37 580px, #4f2a76 100%);
 }
 
 input,
