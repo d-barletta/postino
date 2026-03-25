@@ -41,6 +41,13 @@ export async function GET(request: NextRequest) {
     let userSnap = await userRef.get();
 
     if (!userSnap.exists) {
+      if (settingsDoc.data()?.signupMaintenanceMode === true) {
+        return NextResponse.json(
+          { error: 'Signup is temporarily suspended during maintenance' },
+          { status: 403 }
+        );
+      }
+
       const domain = resolveAssignedEmailDomain(settingsDoc.data());
       let assignedEmail = '';
 
