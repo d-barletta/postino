@@ -7,6 +7,7 @@ import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
+import { InstallPwaDrawer } from '@/components/dashboard/InstallPwaDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -168,6 +169,7 @@ export default function DashboardPage() {
           />
         </TabsContent>
       </Tabs>
+      <InstallPwaDrawer />
     </div>
   );
 }
