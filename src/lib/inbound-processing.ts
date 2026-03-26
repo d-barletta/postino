@@ -229,6 +229,10 @@ export async function processQueuedInboundPayload(
   const db = adminDb();
   const logRef = db.collection('emailLogs').doc(payload.logId);
 
+  // Fetch user preferences. isForwardingHeaderEnabled defaults to true when unset.
+  const userSnap = await db.collection('users').doc(payload.userId).get();
+  const isForwardingHeaderEnabled = userSnap.data()?.isForwardingHeaderEnabled !== false;
+
   // If no attachments were provided directly (queue path), deserialize from payload.
   // Attachments may be stored as inline base64 (small) or in Firebase Storage (large).
   let effectiveAttachments: EmailAttachment[] | undefined;
@@ -348,13 +352,7 @@ export async function processQueuedInboundPayload(
           .join(', ')
       : `<strong>${escapeHtml(result.ruleApplied)}</strong>`;
 
-  // Build an attachment line for the notification box when the email has attachments.
-  const attachmentDisplayHtml =
-    attachmentNames && attachmentNames.length > 0
-      ? `<div style="color: #4b5563; font-size: 13px; margin-top: 4px;">Attachments: ${attachmentNames.map((n) => `<span style="font-weight: bold;">${escapeHtml(n)}</span>`).join(', ')}</div>`
-      : '';
-
-  const notificationBox = `<div style="clear: both; margin-top: 24px; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563; line-height: 1.4;">
+  const notificationBox = isForwardingHeaderEnabled ? `<div style="clear: both; margin-top: 24px; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563; line-height: 1.4;">
         <hr style="border: none; border-top: 2px solid #e5e7eb; margin: 0;">
         <div style="background: #f0f4ff; padding: 12px 16px; border-left: 3px solid #6366f1;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; margin-bottom: 8px;">
@@ -368,9 +366,8 @@ export async function processQueuedInboundPayload(
           </table>
           <div style="margin-bottom: 6px; color: #4b5563; font-size: 13px;">Original from: ${escapeHtml(payload.sender)}</div>
           <div style="color: #4b5563; font-size: 13px;">Rule: ${ruleDisplayHtml}</div>
-          ${attachmentDisplayHtml}
         </div>
-      </div>`;
+      </div>` : '';
 
   // Inject the notification box outside the original email HTML body.
   // If result.body is a complete HTML document (has a closing </body> tag), insert

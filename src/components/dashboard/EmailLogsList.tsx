@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Switch } from '@/components/ui/Switch';
 import {
   Select,
   SelectContent,
@@ -25,6 +26,8 @@ interface EmailLogsListProps {
   onRefresh?: () => void;
   refreshing?: boolean;
   selectedEmailId?: string;
+  isForwardingHeaderEnabled?: boolean;
+  onForwardingHeaderToggle?: (enabled: boolean) => Promise<void>;
 }
 
 const STATUS_OPTIONS = [
@@ -41,10 +44,13 @@ export function EmailLogsList({
   onRefresh,
   refreshing = false,
   selectedEmailId,
+  isForwardingHeaderEnabled = true,
+  onForwardingHeaderToggle,
 }: EmailLogsListProps) {
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+  const [headerToggling, setHeaderToggling] = useState(false);
   const effectiveStatusFilter = selectedEmailId ? '' : statusFilter;
 
   const filteredLogs = effectiveStatusFilter
@@ -78,6 +84,16 @@ export function EmailLogsList({
     setSelectedId(null);
   };
 
+  const handleForwardingHeaderToggle = async (checked: boolean) => {
+    if (!onForwardingHeaderToggle) return;
+    setHeaderToggling(true);
+    try {
+      await onForwardingHeaderToggle(checked);
+    } finally {
+      setHeaderToggling(false);
+    }
+  };
+
   const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
     received: 'info',
     processing: 'warning',
@@ -90,42 +106,57 @@ export function EmailLogsList({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle>Email History</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="w-44">
-                <Select
-                  value={statusFilter || ALL_STATUS_VALUE}
-                  onValueChange={(value) =>
-                    handleStatusFilter(value === ALL_STATUS_VALUE ? '' : value)
-                  }
-                >
-                  <SelectTrigger aria-label="Filter by status">
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {STATUS_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle>Email History</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="w-44">
+                  <Select
+                    value={statusFilter || ALL_STATUS_VALUE}
+                    onValueChange={(value) =>
+                      handleStatusFilter(value === ALL_STATUS_VALUE ? '' : value)
+                    }
+                  >
+                    <SelectTrigger aria-label="Filter by status">
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {STATUS_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {onRefresh && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onRefresh}
+                    disabled={refreshing}
+                    title="Refresh"
+                  >
+                    <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
+                  </Button>
+                )}
               </div>
-              {onRefresh && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onRefresh}
-                  disabled={refreshing}
-                  title="Refresh"
-                >
-                  <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
-                </Button>
-              )}
             </div>
+            {onForwardingHeaderToggle && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={isForwardingHeaderEnabled}
+                  onCheckedChange={handleForwardingHeaderToggle}
+                  disabled={headerToggling}
+                  aria-label="Show Postino header in forwarded emails"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Show Postino header in forwarded emails
+                </span>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
