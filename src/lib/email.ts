@@ -117,6 +117,8 @@ export async function sendEmail(options: {
   html: string;
   text?: string;
   replyTo?: string;
+  /** Original sender's display name, used to expand the `{senderName}` placeholder in `smtpFromName`. */
+  senderName?: string;
   attachments?: EmailAttachment[];
   headers?: Record<string, string>;
 }): Promise<void> {
@@ -133,9 +135,21 @@ export async function sendEmail(options: {
   const mailgunBaseUrl =
     settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
 
-  const fromAddress = stripCrlf(
-    options.from || settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.pro'}>`
-  );
+  let resolvedFrom: string;
+  if (options.from) {
+    resolvedFrom = options.from;
+  } else if (settings?.smtpFromEmail) {
+    // Build from address from split name + email fields
+    const rawName: string = settings.smtpFromName || '';
+    const safeSenderName = stripCrlf(options.senderName || '');
+    const expandedName = rawName.replace(/\{senderName\}/g, safeSenderName).trim();
+    const emailPart = settings.smtpFromEmail as string;
+    resolvedFrom = expandedName ? `${expandedName} <${emailPart}>` : emailPart;
+  } else {
+    resolvedFrom =
+      settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.pro'}>`;
+  }
+  const fromAddress = stripCrlf(resolvedFrom);
   const toAddress = stripCrlf(options.to);
   const subjectLine = stripCrlf(options.subject);
 

@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
 
     const allowed = [
       'maxRuleLength', 'maxActiveRules', 'llmModel', 'llmApiKey', 'llmMaxTokens', 'llmSystemPrompt', 'emailSubjectPrefix',
-      'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
+      'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom', 'smtpFromName', 'smtpFromEmail',
       'emailDomain',
       'mailgunApiKey', 'mailgunWebhookSigningKey', 'mailgunWebhookLoggingEnabled', 'mailgunDomain', 'mailgunSandboxEmail', 'mailgunBaseUrl',
       'maintenanceMode', 'signupMaintenanceMode', 'rulesExecutionMode',

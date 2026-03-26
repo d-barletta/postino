@@ -61,6 +61,10 @@ export interface Settings {
   smtpUser: string;
   smtpPass: string;
   smtpFrom: string;
+  /** Display name used in the From header of forwarded emails. Supports `{senderName}` placeholder which is replaced with the original sender's display name. */
+  smtpFromName?: string;
+  /** Email address used in the From header of forwarded emails. Takes precedence over the combined `smtpFrom` field when set. */
+  smtpFromEmail?: string;
   emailDomain: string;
   mailgunApiKey: string;
   mailgunWebhookSigningKey?: string;

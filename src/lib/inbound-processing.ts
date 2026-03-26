@@ -58,6 +58,16 @@ function stripCrlf(value: string): string {
   return value.replace(/[\r\n]/g, '');
 }
 
+/**
+ * Extract the display name from a "Name <email@example.com>" formatted address.
+ * Handles both plain and quoted display names.
+ * Returns an empty string if no display name is present.
+ */
+function extractSenderName(address: string): string {
+  const match = address.match(/^"?([^"<]+)"?\s*<[^>]+>/);
+  return match ? match[1].trim() : '';
+}
+
 /** Returns true if the value contains the pattern (case-insensitive), or if pattern is empty. */
 function matchesPattern(value: string, pattern?: string): boolean {
   if (!pattern || !pattern.trim()) return true;
@@ -395,6 +405,7 @@ export async function processQueuedInboundPayload(
     subject: stripCrlf(result.subject),
     html: emailHtml,
     replyTo: payload.replyToHeader || payload.sender,
+    senderName: extractSenderName(payload.sender),
     attachments: effectiveAttachments && effectiveAttachments.length > 0 ? effectiveAttachments : undefined,
     headers: {
       'X-Postino-Processed': 'true',

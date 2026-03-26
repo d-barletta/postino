@@ -78,6 +78,8 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     smtpUser: '',
     smtpPass: '',
     smtpFrom: '',
+    smtpFromName: '',
+    smtpFromEmail: '',
     emailDomain: '',
     mailgunApiKey: '',
     mailgunWebhookSigningKey: '',
@@ -750,10 +752,18 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => setSettings((p) => ({ ...p, smtpPass: e.target.value }))}
                   />
                   <Input
-                    label="From Address"
-                    value={settings.smtpFrom || ''}
-                    onChange={(e) => setSettings((p) => ({ ...p, smtpFrom: e.target.value }))}
-                    placeholder="Postino <noreply@postino.pro>"
+                    label="Sender Name"
+                    value={settings.smtpFromName || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, smtpFromName: e.target.value }))}
+                    placeholder="📬 Postino"
+                    hint="Use {senderName} to include the original sender's display name, e.g. 📬 Postino x {senderName}"
+                  />
+                  <Input
+                    label="Sender Email Address"
+                    value={settings.smtpFromEmail || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, smtpFromEmail: e.target.value }))}
+                    placeholder="noreply@postino.pro"
+                    hint="The email address shown in the From field. Replaces the legacy From Address setting when provided."
                   />
                 </div>
               </AccordionContent>
