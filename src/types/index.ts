@@ -6,6 +6,8 @@ export interface User {
   isAdmin: boolean;
   isActive: boolean;
   isAddressEnabled?: boolean;
+  /** When false, the Postino notification box is not appended to forwarded emails. Defaults to true. */
+  isForwardingHeaderEnabled?: boolean;
   displayName?: string;
   /** FCM registration tokens for web push notifications (one per browser/device). */
   fcmTokens?: string[];

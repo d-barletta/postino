@@ -120,6 +120,17 @@ export default function DashboardPage() {
     await refreshUser();
   }, [firebaseUser, refreshUser]);
 
+  const handleForwardingHeaderToggle = useCallback(async (enabled: boolean) => {
+    if (!firebaseUser) return;
+    const token = await firebaseUser.getIdToken();
+    await fetch('/api/user/forwarding-header-toggle', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isForwardingHeaderEnabled: enabled }),
+    });
+    await refreshUser();
+  }, [firebaseUser, refreshUser]);
+
   if (loading || logsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100svh-8rem)]">
@@ -166,6 +177,8 @@ export default function DashboardPage() {
             onRefresh={handleLogsRefresh}
             refreshing={logsRefreshing}
             selectedEmailId={selectedEmailId ?? undefined}
+            isForwardingHeaderEnabled={user?.isForwardingHeaderEnabled !== false}
+            onForwardingHeaderToggle={handleForwardingHeaderToggle}
           />
         </TabsContent>
       </Tabs>
