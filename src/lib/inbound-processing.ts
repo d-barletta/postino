@@ -29,6 +29,8 @@ export interface QueuedInboundPayload {
   userEmail: string;
   matchedRecipient: string;
   sender: string;
+  /** The raw `From` header value from the inbound message. May contain display names and multiple comma-separated addresses. */
+  fromHeader?: string;
   replyToHeader: string;
   subject: string;
   emailBody: string;
@@ -56,6 +58,74 @@ function escapeHtml(text: string): string {
 /** Strip CR and LF characters to prevent email header (CRLF) injection. */
 function stripCrlf(value: string): string {
   return value.replace(/[\r\n]/g, '');
+}
+
+/**
+ * Parse a comma-separated RFC 5322 address list into individual address strings,
+ * correctly handling commas that appear inside quoted display names or angle brackets,
+ * and backslash-escaped characters within quoted strings.
+ */
+function parseAddressList(value: string): string[] {
+  const addresses: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let inAngles = false;
+  let i = 0;
+  while (i < value.length) {
+    const ch = value[i];
+    if (ch === '\\' && inQuotes) {
+      // Backslash escape: consume both the backslash and the next character literally
+      current += ch;
+      i++;
+      if (i < value.length) {
+        current += value[i];
+        i++;
+      }
+      continue;
+    }
+    if (ch === '"') inQuotes = !inQuotes;
+    else if (ch === '<' && !inQuotes) inAngles = true;
+    else if (ch === '>' && !inQuotes) inAngles = false;
+    else if (ch === ',' && !inQuotes && !inAngles) {
+      const trimmed = current.trim();
+      if (trimmed) addresses.push(trimmed);
+      current = '';
+      i++;
+      continue;
+    }
+    current += ch;
+    i++;
+  }
+  const trimmed = current.trim();
+  if (trimmed) addresses.push(trimmed);
+  return addresses;
+}
+
+/**
+ * Extract the display name from a single "Name <email@example.com>" formatted address.
+ * Falls back to the bare email address when no display name is present.
+ */
+function extractAddressDisplayName(address: string): string {
+  const nameMatch = address.match(/^"?([^"<]+)"?\s*<[^>]+>/);
+  if (nameMatch) return nameMatch[1].trim();
+  // No display name — extract bare email address as the label
+  const emailMatch = address.match(/<([^>]+)>/);
+  return (emailMatch ? emailMatch[1] : address).trim();
+}
+
+/**
+ * Resolve a human-readable label for the sender(s) to use in the `{senderName}` placeholder.
+ *
+ * - Single sender with display name → display name (e.g. "John Smith")
+ * - Single sender without display name → bare email address (e.g. "john@example.com")
+ * - Multiple senders → "N senders" (e.g. "3 senders")
+ */
+function resolveSenderDisplayValue(fromHeader: string, senderFallback: string): string {
+  const source = fromHeader.trim() || senderFallback.trim();
+  if (!source) return '';
+  const addresses = parseAddressList(source);
+  if (addresses.length > 1) return `${addresses.length} senders`;
+  return extractAddressDisplayName(addresses[0] || source);
 }
 
 /** Returns true if the value contains the pattern (case-insensitive), or if pattern is empty. */
@@ -395,6 +465,7 @@ export async function processQueuedInboundPayload(
     subject: stripCrlf(result.subject),
     html: emailHtml,
     replyTo: payload.replyToHeader || payload.sender,
+    senderName: resolveSenderDisplayValue(payload.fromHeader || '', payload.sender),
     attachments: effectiveAttachments && effectiveAttachments.length > 0 ? effectiveAttachments : undefined,
     headers: {
       'X-Postino-Processed': 'true',
