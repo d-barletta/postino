@@ -11,6 +11,7 @@ import {
   DrawerFooter,
 } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { PostinoLogo } from '@/components/brand/PostinoLogo';
 
 const DISMISSED_KEY = 'postino_pwa_install_dismissed';
 const SHOW_DELAY_MS = 15_000;
@@ -89,6 +90,9 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
     <Drawer open={open} onOpenChange={(value) => { if (!value) handleDismiss(); }}>
       <DrawerContent>
         <DrawerHeader>
+          <div className="flex justify-center mb-2">
+            <PostinoLogo className="h-12 w-12" />
+          </div>
           <DrawerTitle>Add Postino to your home screen</DrawerTitle>
           <DrawerDescription>
             Get faster access and a better experience by installing the app on your device.
