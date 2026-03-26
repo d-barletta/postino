@@ -611,6 +611,7 @@ export async function POST(request: NextRequest) {
     );
 
     const sender = stripCrlf((formData.get('sender') as string) || '');
+    const fromHeader = stripCrlf((formData.get('From') as string) || (formData.get('from') as string) || '');
     const replyToHeader = stripCrlf((formData.get('Reply-To') as string) || '');
     const subject = stripCrlf((formData.get('subject') as string) || '');
     finalSender = sender;
@@ -1140,6 +1141,7 @@ export async function POST(request: NextRequest) {
           userEmail: (userData.email as string) || '',
           matchedRecipient,
           sender,
+          fromHeader: fromHeader || undefined,
           replyToHeader,
           subject,
           emailBody,
@@ -1166,6 +1168,7 @@ export async function POST(request: NextRequest) {
       userEmail: (userData.email as string) || '',
       matchedRecipient,
       sender,
+      fromHeader: fromHeader || undefined,
       replyToHeader,
       subject,
       emailBody,
