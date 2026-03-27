@@ -75,9 +75,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <div className="flex-1 flex flex-col">
-          <ClientProviders>{children}</ClientProviders>
+          <ClientProviders>
+            {children}
+            <AppFooter />
+          </ClientProviders>
         </div>
-        <AppFooter />
         <Analytics />
         <SpeedInsights />
       </body>

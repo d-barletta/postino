@@ -44,16 +44,15 @@ export function LanguageSelector({ compact = false }: LanguageSelectorProps) {
         className={cn(
           'inline-flex items-center gap-1.5 rounded-lg border border-white/50 dark:border-white/10',
           'text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors',
-          compact
-            ? 'h-9 px-2.5 text-xs'
-            : 'h-9 px-2.5 text-xs',
+          'h-9 px-2.5 text-xs',
         )}
       >
         <i className="bi bi-translate text-sm" aria-hidden="true" />
-        {!compact && (
+        {compact ? (
+          <span className="font-medium">{currentLabel}</span>
+        ) : (
           <span className="hidden sm:inline font-medium">{currentLabel}</span>
         )}
-        {compact && <span className="font-medium">{currentLabel}</span>}
         <i className={cn('bi bi-chevron-down text-[10px] transition-transform', open && 'rotate-180')} aria-hidden="true" />
       </button>
 
@@ -62,9 +61,8 @@ export function LanguageSelector({ compact = false }: LanguageSelectorProps) {
           role="listbox"
           aria-label={t.language.select}
           className={cn(
-            'absolute z-50 mt-1 min-w-[140px] rounded-xl border border-white/50 dark:border-white/10',
+            'absolute right-0 z-50 mt-1 min-w-[140px] rounded-xl border border-white/50 dark:border-white/10',
             'bg-white dark:bg-gray-900 shadow-lg py-1 ui-fade-up',
-            compact ? 'right-0' : 'right-0',
           )}
         >
           {SUPPORTED_LOCALES.map((loc) => (
