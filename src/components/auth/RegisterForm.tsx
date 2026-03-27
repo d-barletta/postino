@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { AlertCircle } from 'lucide-react';
-
-const BLOCKED_DOMAIN_ERROR = "Can't create an account using our email addresses";
+import { useI18n } from '@/lib/i18n';
 
 export function RegisterForm() {
   const router = useRouter();
+  const { t } = useI18n();
+  const tr = t.auth.register;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -49,16 +50,16 @@ export function RegisterForm() {
     e.preventDefault();
     setError('');
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(tr.errors.passwordsMismatch);
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(tr.errors.passwordTooShort);
       return;
     }
 
     if (assignedEmailDomain && isEmailUsingDomain(email, assignedEmailDomain)) {
-      setError(BLOCKED_DOMAIN_ERROR);
+      setError(tr.errors.blockedDomain);
       return;
     }
 
@@ -69,13 +70,13 @@ export function RegisterForm() {
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
       if (firebaseError.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists');
+        setError(tr.errors.emailAlreadyInUse);
       } else if (firebaseError.code === 'auth/weak-password') {
-        setError('Password is too weak');
+        setError(tr.errors.weakPassword);
       } else if (assignedEmailDomain && isEmailUsingDomain(email, assignedEmailDomain)) {
-        setError(BLOCKED_DOMAIN_ERROR);
+        setError(tr.errors.blockedDomain);
       } else {
-        setError('Failed to create account. Please try again.');
+        setError(tr.errors.failed);
       }
     } finally {
       setLoading(false);
@@ -87,13 +88,11 @@ export function RegisterForm() {
       {signupMaintenance && (
         <Alert variant="warning">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            We&apos;re working on improving the service. New user registrations are suspended during maintenance. Please try again later.
-          </AlertDescription>
+          <AlertDescription>{tr.maintenanceMessage}</AlertDescription>
         </Alert>
       )}
       <Input
-        label="Email address"
+        label={tr.emailAddress}
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -103,23 +102,23 @@ export function RegisterForm() {
         disabled={signupMaintenance}
       />
       <Input
-        label="Password"
+        label={tr.password}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
         autoComplete="new-password"
-        placeholder="Min. 8 characters"
+        placeholder={tr.minChars}
         disabled={signupMaintenance}
       />
       <Input
-        label="Confirm password"
+        label={tr.confirmPassword}
         type="password"
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         required
         autoComplete="new-password"
-        placeholder="Repeat password"
+        placeholder={tr.repeatPassword}
         disabled={signupMaintenance}
       />
       {error && (
@@ -129,12 +128,12 @@ export function RegisterForm() {
         </Alert>
       )}
       <Button type="submit" loading={loading} className="w-full" size="md" disabled={signupMaintenance}>
-        Create account
+        {tr.button}
       </Button>
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-        Already have an account?{' '}
+        {tr.alreadyHaveAccount}{' '}
         <Link href="/login" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
-          Sign in
+          {tr.signIn}
         </Link>
       </p>
     </form>

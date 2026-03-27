@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { I18nProvider } from '@/lib/i18n';
 
 const AuthProvider = dynamic(
   () => import('./AuthProvider').then((m) => m.AuthProvider),
@@ -8,5 +9,9 @@ const AuthProvider = dynamic(
 );
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <I18nProvider>
+      <AuthProvider>{children}</AuthProvider>
+    </I18nProvider>
+  );
 }

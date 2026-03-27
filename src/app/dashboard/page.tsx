@@ -12,9 +12,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
+import { useI18n } from '@/lib/i18n';
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
+  const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
   const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'emails'>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
@@ -142,15 +144,15 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 ui-fade-up">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your Postino address and email rules</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t.dashboard.title}</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">{t.dashboard.subtitle}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'emails')}>
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="rules">My Rules</TabsTrigger>
-          <TabsTrigger value="emails">Email History</TabsTrigger>
+          <TabsTrigger value="overview">{t.dashboard.tabs.overview}</TabsTrigger>
+          <TabsTrigger value="rules">{t.dashboard.tabs.myRules}</TabsTrigger>
+          <TabsTrigger value="emails">{t.dashboard.tabs.emailHistory}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <div className="space-y-6">

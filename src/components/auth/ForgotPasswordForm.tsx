@@ -7,8 +7,11 @@ import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 export function ForgotPasswordForm() {
+  const { t } = useI18n();
+  const tr = t.auth.forgotPassword;
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,11 +29,11 @@ export function ForgotPasswordForm() {
       const firebaseError = err as { code?: string };
 
       if (firebaseError.code === 'auth/invalid-email') {
-        setError('Invalid email address');
+        setError(tr.errors.invalidEmail);
       } else if (firebaseError.code === 'auth/too-many-requests') {
-        setError('Too many attempts. Please try again later.');
+        setError(tr.errors.tooManyAttempts);
       } else {
-        setError('Failed to send reset email. Please try again.');
+        setError(tr.errors.failed);
       }
     } finally {
       setLoading(false);
@@ -42,14 +45,12 @@ export function ForgotPasswordForm() {
       {sent && (
         <Alert variant="success">
           <CheckCircle2 className="h-4 w-4" />
-          <AlertDescription>
-            If an account exists for this email, we sent you a password reset link.
-          </AlertDescription>
+          <AlertDescription>{tr.successMessage}</AlertDescription>
         </Alert>
       )}
 
       <Input
-        label="Email address"
+        label={tr.emailAddress}
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -67,13 +68,13 @@ export function ForgotPasswordForm() {
       )}
 
       <Button type="submit" loading={loading} className="w-full" size="md" disabled={sent}>
-        Send reset link
+        {tr.sendResetLink}
       </Button>
 
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-        Remembered your password?{' '}
+        {tr.rememberedPassword}{' '}
         <Link href="/login" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
-          Back to sign in
+          {tr.backToSignIn}
         </Link>
       </p>
     </form>
