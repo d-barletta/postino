@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
-import { LanguageSelector } from '@/components/layout/LanguageSelector';
 import { useI18n } from '@/lib/i18n';
 
 export function HomePageContent() {
@@ -25,7 +24,6 @@ export function HomePageContent() {
             <span className="font-bold text-xl text-gray-900">Postino</span>
           </div>
           <div className="flex items-center gap-3">
-            <LanguageSelector />
             <Link href="/login">
               <Button variant="ghost">{t.nav.signIn}</Button>
             </Link>

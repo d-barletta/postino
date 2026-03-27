@@ -7,12 +7,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 // ---------------------------------------------------------------------------
 export type Locale = 'en' | 'it' | 'es' | 'fr' | 'de';
 
-export const SUPPORTED_LOCALES: { code: Locale; label: string }[] = [
-  { code: 'en', label: 'English' },
-  { code: 'it', label: 'Italiano' },
-  { code: 'de', label: 'Deutsch' },
-  { code: 'fr', label: 'Français' },
-  { code: 'es', label: 'Español' },
+export const SUPPORTED_LOCALES: { code: Locale; label: string; flag: string }[] = [
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
 ];
 
 // ---------------------------------------------------------------------------

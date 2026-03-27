@@ -7,7 +7,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
-import { LanguageSelector } from '@/components/layout/LanguageSelector';
 import { useI18n } from '@/lib/i18n';
 
 type AppShellLayoutProps = {
@@ -78,7 +77,6 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-3">
-              <LanguageSelector />
               <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
                 {firebaseUser.email}
               </span>
@@ -100,9 +98,6 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">
             <div className="px-3 pt-1 text-xs text-gray-500 dark:text-gray-400 truncate">{firebaseUser.email}</div>
-            <div className="px-1">
-              <LanguageSelector compact />
-            </div>
             <Button
               variant="ghost"
               size="sm"
