@@ -229,7 +229,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                   id="new-rule-name"
                   value={newRuleName}
                   onChange={(e) => setNewRuleName(e.target.value)}
-                  placeholder="e.g. Newsletter Summarizer"
+                  placeholder={t.dashboard.rules.ruleNamePlaceholder}
                   maxLength={MAX_RULE_NAME_LENGTH}
                 />
               </div>
@@ -242,7 +242,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                   id="new-rule-description"
                   value={newRuleText}
                   onChange={(e) => setNewRuleText(e.target.value)}
-                  placeholder="Example: Summarize newsletters and remove promotional content. Keep only the key articles and links."
+                  placeholder={t.dashboard.rules.ruleDescriptionPlaceholder}
                   rows={3}
                   charCount={{ current: newRuleText.length, max: maxRuleLength }}
                 />
@@ -268,21 +268,21 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                     label={t.dashboard.rules.senderContains}
                     value={newMatchSender}
                     onChange={(e) => setNewMatchSender(e.target.value)}
-                    placeholder="e.g. newsletter@example.com"
+                    placeholder={t.dashboard.rules.senderPlaceholder}
                     maxLength={MAX_PATTERN_LENGTH}
                   />
                   <Input
                     label={t.dashboard.rules.subjectContains}
                     value={newMatchSubject}
                     onChange={(e) => setNewMatchSubject(e.target.value)}
-                    placeholder="e.g. Weekly Digest"
+                    placeholder={t.dashboard.rules.subjectPlaceholder}
                     maxLength={MAX_PATTERN_LENGTH}
                   />
                   <Input
                     label={t.dashboard.rules.bodyContains}
                     value={newMatchBody}
                     onChange={(e) => setNewMatchBody(e.target.value)}
-                    placeholder="e.g. unsubscribe"
+                    placeholder={t.dashboard.rules.bodyPlaceholder}
                     maxLength={MAX_PATTERN_LENGTH}
                   />
                 </div>
@@ -357,7 +357,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                             id={`edit-name-${rule.id}`}
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
-                            placeholder="e.g. Newsletter Summarizer"
+                            placeholder={t.dashboard.rules.ruleNamePlaceholder}
                             maxLength={MAX_RULE_NAME_LENGTH}
                           />
                         </div>
@@ -392,21 +392,21 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               label={t.dashboard.rules.senderContains}
                               value={editMatchSender}
                               onChange={(e) => setEditMatchSender(e.target.value)}
-                              placeholder="e.g. newsletter@example.com"
+                              placeholder={t.dashboard.rules.senderPlaceholder}
                               maxLength={MAX_PATTERN_LENGTH}
                             />
                             <Input
                               label={t.dashboard.rules.subjectContains}
                               value={editMatchSubject}
                               onChange={(e) => setEditMatchSubject(e.target.value)}
-                              placeholder="e.g. Weekly Digest"
+                              placeholder={t.dashboard.rules.subjectPlaceholder}
                               maxLength={MAX_PATTERN_LENGTH}
                             />
                             <Input
                               label={t.dashboard.rules.bodyContains}
                               value={editMatchBody}
                               onChange={(e) => setEditMatchBody(e.target.value)}
-                              placeholder="e.g. unsubscribe"
+                              placeholder={t.dashboard.rules.bodyPlaceholder}
                               maxLength={MAX_PATTERN_LENGTH}
                             />
                           </div>
