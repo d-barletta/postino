@@ -7,6 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
+import { LanguageSelector } from '@/components/layout/LanguageSelector';
+import { useI18n } from '@/lib/i18n';
 
 type AppShellLayoutProps = {
   children: React.ReactNode;
@@ -16,6 +18,7 @@ type AppShellLayoutProps = {
 export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
   const router = useRouter();
   const { firebaseUser, user, loading } = useAuth();
+  const { t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const requiresAdmin = mode === 'admin';
@@ -48,9 +51,9 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
 
   const contextLink =
     mode === 'admin'
-      ? { href: '/dashboard', label: 'Dashboard' }
+      ? { href: '/dashboard', label: t.nav.dashboard }
       : user?.isAdmin
-        ? { href: '/admin', label: 'Admin' }
+        ? { href: '/admin', label: t.nav.admin }
         : null;
 
   return (
@@ -75,11 +78,12 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-3">
+              <LanguageSelector />
               <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
                 {firebaseUser.email}
               </span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                Sign out
+                {t.nav.signOut}
               </Button>
             </div>
             <button
@@ -96,6 +100,9 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">
             <div className="px-3 pt-1 text-xs text-gray-500 dark:text-gray-400 truncate">{firebaseUser.email}</div>
+            <div className="px-1">
+              <LanguageSelector compact />
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -105,7 +112,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
                 await handleSignOut();
               }}
             >
-              Sign out
+              {t.nav.signOut}
             </Button>
           </div>
         )}

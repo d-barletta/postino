@@ -1,23 +1,29 @@
+'use client';
+
 import { Card, CardContent } from '@/components/ui/Card';
 import type { UserStats } from '@/types';
+import { useI18n } from '@/lib/i18n';
 
 interface UserStatsCardsProps {
   stats: UserStats;
 }
 
 export function UserStatsCards({ stats }: UserStatsCardsProps) {
+  const { t } = useI18n();
+  const s = t.dashboard.stats;
+
   const cards = [
-    { label: 'Emails Received', value: stats.totalEmailsReceived, color: 'text-blue-600 dark:text-blue-400' },
-    { label: 'Emails Forwarded', value: stats.totalEmailsForwarded, color: 'text-purple-600 dark:text-purple-400' },
-    { label: 'Emails Errored', value: stats.totalEmailsError, color: 'text-red-600 dark:text-red-400' },
-    { label: 'Emails Skipped', value: stats.totalEmailsSkipped, color: 'text-gray-500 dark:text-gray-400' },
+    { label: s.emailsReceived, value: stats.totalEmailsReceived, color: 'text-blue-600 dark:text-blue-400' },
+    { label: s.emailsForwarded, value: stats.totalEmailsForwarded, color: 'text-purple-600 dark:text-purple-400' },
+    { label: s.emailsErrored, value: stats.totalEmailsError, color: 'text-red-600 dark:text-red-400' },
+    { label: s.emailsSkipped, value: stats.totalEmailsSkipped, color: 'text-gray-500 dark:text-gray-400' },
     {
-      label: 'Tokens Used',
+      label: s.tokensUsed,
       value: stats.totalTokensUsed.toLocaleString(),
       color: 'text-[#b39623] dark:text-[#f1db72]',
     },
     {
-      label: 'Est. Cost',
+      label: s.estCost,
       value: `$${stats.totalEstimatedCost.toFixed(4)}`,
       color: 'text-gray-700 dark:text-gray-200',
     },

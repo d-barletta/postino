@@ -8,9 +8,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { AlertCircle } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 export function LoginForm() {
   const router = useRouter();
+  const { t } = useI18n();
+  const tr = t.auth.login;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,18 +31,18 @@ export function LoginForm() {
       });
       if (res.status === 403) {
         await signOut();
-        setError('Your account has been suspended. Please contact support.');
+        setError(tr.errors.suspended);
         return;
       }
       router.push('/dashboard');
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
       if (firebaseError.code === 'auth/invalid-credential' || firebaseError.code === 'auth/user-not-found') {
-        setError('Invalid email or password');
+        setError(tr.errors.invalidCredential);
       } else if (firebaseError.code === 'auth/too-many-requests') {
-        setError('Too many failed attempts. Please try again later.');
+        setError(tr.errors.tooManyRequests);
       } else {
-        setError('Failed to sign in. Please try again.');
+        setError(tr.errors.failed);
       }
     } finally {
       setLoading(false);
@@ -49,7 +52,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Email address"
+        label={tr.emailAddress}
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -58,7 +61,7 @@ export function LoginForm() {
         placeholder="you@example.com"
       />
       <Input
-        label="Password"
+        label={tr.password}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -68,7 +71,7 @@ export function LoginForm() {
       />
       <div className="text-right">
         <Link href="/forgot-password" className="text-sm text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
-          Forgot password?
+          {tr.forgotPassword}
         </Link>
       </div>
       {error && (
@@ -78,12 +81,12 @@ export function LoginForm() {
         </Alert>
       )}
       <Button type="submit" loading={loading} className="w-full" size="md">
-        Sign in
+        {tr.signIn}
       </Button>
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-        Don&apos;t have an account?{' '}
+        {tr.noAccount}{' '}
         <Link href="/register" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
-          Sign up
+          {tr.signUp}
         </Link>
       </p>
     </form>

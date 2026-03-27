@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { DashboardLink } from '@/components/auth/DashboardLink';
+import { LoginHeading } from '@/components/auth/LoginHeading';
 
 export const metadata: Metadata = {
   title: 'Sign In',
@@ -36,8 +37,7 @@ export default function LoginPage() {
             <PostinoLogo className="h-12 w-12" />
             <span className="font-bold text-3xl text-gray-900 dark:text-white">Postino</span>
           </Link>
-          <h1 className="text-1xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Sign in to your account</p>
+          <LoginHeading />
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
           <LoginForm />
