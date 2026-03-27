@@ -122,6 +122,7 @@ export interface Translations {
       disabledDescription: string;
       copy: string;
       copied: string;
+      toggleAriaLabel: string;
     };
     stats: {
       emailsReceived: string;
@@ -189,6 +190,11 @@ export interface Translations {
       senderContains: string;
       subjectContains: string;
       bodyContains: string;
+      ruleNamePlaceholder: string;
+      ruleDescriptionPlaceholder: string;
+      senderPlaceholder: string;
+      subjectPlaceholder: string;
+      bodyPlaceholder: string;
       addRule: string;
       cancel: string;
       saveChanges: string;
@@ -215,6 +221,19 @@ export interface Translations {
         failedToCreate: string;
         failedToUpdate: string;
       };
+    };
+    pwaInstall: {
+      title: string;
+      description: string;
+      iosTitle: string;
+      iosStep1Pre: string;
+      iosStep1Bold: string;
+      iosStep1Post: string;
+      iosStep2Pre: string;
+      iosStep2Bold: string;
+      iosStep3: string;
+      installButton: string;
+      notNow: string;
     };
   };
 }
@@ -348,6 +367,7 @@ const translations: Record<Locale, Translations> = {
           'Your Postino address is disabled. Incoming emails will be registered as skipped and not forwarded.',
         copy: 'Copy',
         copied: 'Copied',
+        toggleAriaLabel: 'Enable or disable your Postino address',
       },
       stats: {
         emailsReceived: 'Emails Received',
@@ -415,6 +435,11 @@ const translations: Record<Locale, Translations> = {
         senderContains: 'Sender contains',
         subjectContains: 'Subject contains',
         bodyContains: 'Body contains',
+        ruleNamePlaceholder: 'e.g. Newsletter Summarizer',
+        ruleDescriptionPlaceholder: 'Example: Summarize newsletters and remove promotional content. Keep only the key articles and links.',
+        senderPlaceholder: 'e.g. newsletter@example.com',
+        subjectPlaceholder: 'e.g. Weekly Digest',
+        bodyPlaceholder: 'e.g. unsubscribe',
         addRule: 'Add Rule',
         cancel: 'Cancel',
         saveChanges: 'Save changes',
@@ -441,6 +466,19 @@ const translations: Record<Locale, Translations> = {
           failedToCreate: 'Failed to create rule',
           failedToUpdate: 'Failed to update rule',
         },
+      },
+      pwaInstall: {
+        title: 'Add Postino to your home screen',
+        description: 'Get faster access and a better experience by installing the app on your device.',
+        iosTitle: 'To install on iOS:',
+        iosStep1Pre: 'Tap the',
+        iosStep1Bold: 'Share',
+        iosStep1Post: 'button (the box with an arrow pointing up) in the browser toolbar.',
+        iosStep2Pre: 'Scroll down and tap',
+        iosStep2Bold: '"Add to Home Screen"',
+        iosStep3: 'Tap "Add" in the top-right corner to confirm.',
+        installButton: 'Install app',
+        notNow: 'Not now',
       },
     },
   },
@@ -573,6 +611,7 @@ const translations: Record<Locale, Translations> = {
           "Il tuo indirizzo Postino è disabilitato. Le email in arrivo verranno registrate come saltate e non inoltrate.",
         copy: 'Copia',
         copied: 'Copiato',
+        toggleAriaLabel: 'Abilita o disabilita il tuo indirizzo Postino',
       },
       stats: {
         emailsReceived: 'Email ricevute',
@@ -640,6 +679,11 @@ const translations: Record<Locale, Translations> = {
         senderContains: 'Mittente contiene',
         subjectContains: 'Oggetto contiene',
         bodyContains: 'Corpo contiene',
+        ruleNamePlaceholder: 'es. Riepilogo newsletter',
+        ruleDescriptionPlaceholder: 'Esempio: Riassumi le newsletter e rimuovi i contenuti promozionali. Mantieni solo gli articoli e i link principali.',
+        senderPlaceholder: 'es. newsletter@esempio.com',
+        subjectPlaceholder: 'es. Digest settimanale',
+        bodyPlaceholder: 'es. annulla iscrizione',
         addRule: 'Aggiungi regola',
         cancel: 'Annulla',
         saveChanges: 'Salva modifiche',
@@ -667,12 +711,21 @@ const translations: Record<Locale, Translations> = {
           failedToUpdate: 'Aggiornamento regola non riuscito',
         },
       },
+      pwaInstall: {
+        title: 'Aggiungi Postino alla schermata home',
+        description: "Ottieni un accesso più rapido e un'esperienza migliore installando l'app sul tuo dispositivo.",
+        iosTitle: 'Per installare su iOS:',
+        iosStep1Pre: 'Tocca il pulsante',
+        iosStep1Bold: 'Condividi',
+        iosStep1Post: "(la casella con una freccia rivolta verso l'alto) nella barra degli strumenti del browser.",
+        iosStep2Pre: 'Scorri verso il basso e tocca',
+        iosStep2Bold: '"Aggiungi a schermata Home"',
+        iosStep3: "Tocca «Aggiungi» nell'angolo in alto a destra per confermare.",
+        installButton: 'Installa app',
+        notNow: 'Non ora',
+      },
     },
   },
-
-  // -------------------------------------------------------------------------
-  // es – Español
-  // -------------------------------------------------------------------------
   es: {
     nav: {
       signIn: 'Iniciar sesión',
@@ -798,6 +851,7 @@ const translations: Record<Locale, Translations> = {
           'Tu dirección Postino está desactivada. Los correos entrantes se registrarán como omitidos y no se reenviarán.',
         copy: 'Copiar',
         copied: 'Copiado',
+        toggleAriaLabel: 'Habilitar o deshabilitar tu dirección Postino',
       },
       stats: {
         emailsReceived: 'Correos recibidos',
@@ -865,6 +919,11 @@ const translations: Record<Locale, Translations> = {
         senderContains: 'Remitente contiene',
         subjectContains: 'Asunto contiene',
         bodyContains: 'Cuerpo contiene',
+        ruleNamePlaceholder: 'ej. Resumen de newsletter',
+        ruleDescriptionPlaceholder: 'Ejemplo: Resume las newsletters y elimina el contenido promocional. Conserva solo los artículos y enlaces clave.',
+        senderPlaceholder: 'ej. newsletter@ejemplo.com',
+        subjectPlaceholder: 'ej. Resumen semanal',
+        bodyPlaceholder: 'ej. cancelar suscripción',
         addRule: 'Añadir regla',
         cancel: 'Cancelar',
         saveChanges: 'Guardar cambios',
@@ -892,12 +951,21 @@ const translations: Record<Locale, Translations> = {
           failedToUpdate: 'Error al actualizar la regla',
         },
       },
+      pwaInstall: {
+        title: 'Añadir Postino a tu pantalla de inicio',
+        description: 'Obtén un acceso más rápido y una mejor experiencia instalando la app en tu dispositivo.',
+        iosTitle: 'Para instalar en iOS:',
+        iosStep1Pre: 'Toca el botón',
+        iosStep1Bold: 'Compartir',
+        iosStep1Post: '(el cuadro con una flecha apuntando hacia arriba) en la barra de herramientas del navegador.',
+        iosStep2Pre: 'Desplázate hacia abajo y toca',
+        iosStep2Bold: '"Añadir a pantalla de inicio"',
+        iosStep3: 'Toca "Añadir" en la esquina superior derecha para confirmar.',
+        installButton: 'Instalar app',
+        notNow: 'Ahora no',
+      },
     },
   },
-
-  // -------------------------------------------------------------------------
-  // fr – Français
-  // -------------------------------------------------------------------------
   fr: {
     nav: {
       signIn: 'Se connecter',
@@ -1023,6 +1091,7 @@ const translations: Record<Locale, Translations> = {
           "Votre adresse Postino est désactivée. Les e-mails entrants seront enregistrés comme ignorés et ne seront pas transmis.",
         copy: 'Copier',
         copied: 'Copié',
+        toggleAriaLabel: 'Activer ou désactiver votre adresse Postino',
       },
       stats: {
         emailsReceived: 'E-mails reçus',
@@ -1090,6 +1159,11 @@ const translations: Record<Locale, Translations> = {
         senderContains: 'Expéditeur contient',
         subjectContains: 'Objet contient',
         bodyContains: 'Corps contient',
+        ruleNamePlaceholder: 'ex. Résumé de newsletter',
+        ruleDescriptionPlaceholder: "Exemple : Résume les newsletters et supprime le contenu promotionnel. Conserve uniquement les articles et liens essentiels.",
+        senderPlaceholder: 'ex. newsletter@exemple.com',
+        subjectPlaceholder: 'ex. Digest hebdomadaire',
+        bodyPlaceholder: 'ex. se désabonner',
         addRule: 'Ajouter la règle',
         cancel: 'Annuler',
         saveChanges: 'Enregistrer les modifications',
@@ -1117,12 +1191,21 @@ const translations: Record<Locale, Translations> = {
           failedToUpdate: 'Échec de la mise à jour de la règle',
         },
       },
+      pwaInstall: {
+        title: "Ajouter Postino à votre écran d'accueil",
+        description: "Bénéficiez d'un accès plus rapide et d'une meilleure expérience en installant l'application sur votre appareil.",
+        iosTitle: 'Pour installer sur iOS :',
+        iosStep1Pre: 'Appuyez sur le bouton',
+        iosStep1Bold: 'Partager',
+        iosStep1Post: "(la case avec une flèche vers le haut) dans la barre d'outils du navigateur.",
+        iosStep2Pre: 'Faites défiler vers le bas et appuyez sur',
+        iosStep2Bold: "« Sur l'écran d'accueil »",
+        iosStep3: 'Appuyez sur « Ajouter » dans le coin supérieur droit pour confirmer.',
+        installButton: "Installer l'app",
+        notNow: 'Pas maintenant',
+      },
     },
   },
-
-  // -------------------------------------------------------------------------
-  // de – Deutsch
-  // -------------------------------------------------------------------------
   de: {
     nav: {
       signIn: 'Anmelden',
@@ -1248,6 +1331,7 @@ const translations: Record<Locale, Translations> = {
           'Ihre Postino-Adresse ist deaktiviert. Eingehende E-Mails werden als übersprungen registriert und nicht weitergeleitet.',
         copy: 'Kopieren',
         copied: 'Kopiert',
+        toggleAriaLabel: 'Ihre Postino-Adresse aktivieren oder deaktivieren',
       },
       stats: {
         emailsReceived: 'Empfangene E-Mails',
@@ -1315,6 +1399,11 @@ const translations: Record<Locale, Translations> = {
         senderContains: 'Absender enthält',
         subjectContains: 'Betreff enthält',
         bodyContains: 'Text enthält',
+        ruleNamePlaceholder: 'z. B. Newsletter-Zusammenfassung',
+        ruleDescriptionPlaceholder: 'Beispiel: Fasse Newsletter zusammen und entferne Werbeinhalte. Behalte nur die wichtigsten Artikel und Links.',
+        senderPlaceholder: 'z. B. newsletter@beispiel.com',
+        subjectPlaceholder: 'z. B. Wöchentlicher Digest',
+        bodyPlaceholder: 'z. B. abbestellen',
         addRule: 'Regel hinzufügen',
         cancel: 'Abbrechen',
         saveChanges: 'Änderungen speichern',
@@ -1341,6 +1430,19 @@ const translations: Record<Locale, Translations> = {
           failedToCreate: 'Regel konnte nicht erstellt werden',
           failedToUpdate: 'Regel konnte nicht aktualisiert werden',
         },
+      },
+      pwaInstall: {
+        title: 'Postino zum Startbildschirm hinzufügen',
+        description: 'Erhalten Sie schnelleren Zugriff und eine bessere Erfahrung, indem Sie die App auf Ihrem Gerät installieren.',
+        iosTitle: 'So installieren Sie auf iOS:',
+        iosStep1Pre: 'Tippen Sie auf die Schaltfläche',
+        iosStep1Bold: 'Teilen',
+        iosStep1Post: '(das Feld mit einem nach oben zeigenden Pfeil) in der Browser-Symbolleiste.',
+        iosStep2Pre: 'Scrollen Sie nach unten und tippen Sie auf',
+        iosStep2Bold: '„Zum Home-Bildschirm"',
+        iosStep3: 'Tippen Sie zur Bestätigung auf „Hinzufügen" in der oberen rechten Ecke.',
+        installButton: 'App installieren',
+        notNow: 'Nicht jetzt',
       },
     },
   },

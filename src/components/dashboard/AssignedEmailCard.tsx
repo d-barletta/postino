@@ -46,7 +46,7 @@ export function AssignedEmailCard({ assignedEmail, userEmail, isAddressEnabled, 
               checked={isAddressEnabled}
               onCheckedChange={handleToggle}
               disabled={toggling}
-              aria-label="Enable or disable your Postino address"
+              aria-label={tr.toggleAriaLabel}
             />
             <Badge variant={isAddressEnabled ? 'success' : 'default'}>
               {isAddressEnabled ? tr.active : tr.disabled}
