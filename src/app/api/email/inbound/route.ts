@@ -1108,6 +1108,10 @@ export async function POST(request: NextRequest) {
       originalBody: emailBody,
       processingMode,
       ...(messageId ? { messageId } : {}),
+      ...(attachments.length > 0 ? {
+        attachmentCount: attachments.length,
+        attachmentNames: attachments.map((a) => a.filename),
+      } : {}),
     });
     logId = logRef.id;
     await updateWebhookLog({ status: 'accepted', result: 'log-created', linked: { emailLogId: logRef.id } });
