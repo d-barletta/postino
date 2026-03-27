@@ -236,6 +236,38 @@ export interface Translations {
       notNow: string;
     };
   };
+  emailOriginal: {
+    back: string;
+    originalEmail: string;
+    from: string;
+    to: string;
+    subject: string;
+    received: string;
+    emailContent: string;
+    openFullPageView: string;
+    openFullPageViewAria: string;
+    noOriginalContent: string;
+    closeFullPageView: string;
+    errors: {
+      noPermission: string;
+      notFound: string;
+      failedToLoad: string;
+    };
+    admin: {
+      currentSetup: string;
+      loadingModels: string;
+      defaultModel: string;
+      searchModels: string;
+      noModelsFound: string;
+      processing: string;
+      reprocess: string;
+      failedToReprocess: string;
+      ruleApplied: string;
+      tokensUsed: string;
+      estCost: string;
+      processedBody: string;
+    };
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -479,6 +511,38 @@ const translations: Record<Locale, Translations> = {
         iosStep3: 'Tap "Add" in the top-right corner to confirm.',
         installButton: 'Install app',
         notNow: 'Not now',
+      },
+    },
+    emailOriginal: {
+      back: 'Back',
+      originalEmail: 'Original Email',
+      from: 'From:',
+      to: 'To:',
+      subject: 'Subject:',
+      received: 'Received:',
+      emailContent: 'Email Content',
+      openFullPageView: 'Full page',
+      openFullPageViewAria: 'Open email in full page view',
+      noOriginalContent: 'No original content stored.',
+      closeFullPageView: 'Close full page view',
+      errors: {
+        noPermission: 'You do not have permission to view this email.',
+        notFound: 'Email not found.',
+        failedToLoad: 'Failed to load email.',
+      },
+      admin: {
+        currentSetup: 'Current setup',
+        loadingModels: 'Loading models…',
+        defaultModel: 'Default model',
+        searchModels: 'Search models...',
+        noModelsFound: 'No models found.',
+        processing: 'Processing…',
+        reprocess: 'Re-process',
+        failedToReprocess: 'Failed to reprocess email.',
+        ruleApplied: 'Rule applied:',
+        tokensUsed: 'Tokens used:',
+        estCost: 'Est. cost:',
+        processedBody: 'Processed body:',
       },
     },
   },
@@ -725,6 +789,38 @@ const translations: Record<Locale, Translations> = {
         notNow: 'Non ora',
       },
     },
+    emailOriginal: {
+      back: 'Indietro',
+      originalEmail: 'Email originale',
+      from: 'Da:',
+      to: 'A:',
+      subject: 'Oggetto:',
+      received: 'Ricevuta:',
+      emailContent: 'Contenuto email',
+      openFullPageView: 'Pagina intera',
+      openFullPageViewAria: 'Apri email a pagina intera',
+      noOriginalContent: 'Nessun contenuto originale salvato.',
+      closeFullPageView: 'Chiudi vista a pagina intera',
+      errors: {
+        noPermission: 'Non hai i permessi per visualizzare questa email.',
+        notFound: 'Email non trovata.',
+        failedToLoad: "Impossibile caricare l'email.",
+      },
+      admin: {
+        currentSetup: 'Configurazione attuale',
+        loadingModels: 'Caricamento modelli…',
+        defaultModel: 'Modello predefinito',
+        searchModels: 'Cerca modelli...',
+        noModelsFound: 'Nessun modello trovato.',
+        processing: 'Elaborazione…',
+        reprocess: 'Rielabora',
+        failedToReprocess: "Impossibile rielaborare l'email.",
+        ruleApplied: 'Regola applicata:',
+        tokensUsed: 'Token usati:',
+        estCost: 'Costo est.:',
+        processedBody: 'Corpo elaborato:',
+      },
+    },
   },
   es: {
     nav: {
@@ -963,6 +1059,38 @@ const translations: Record<Locale, Translations> = {
         iosStep3: 'Toca "Añadir" en la esquina superior derecha para confirmar.',
         installButton: 'Instalar app',
         notNow: 'Ahora no',
+      },
+    },
+    emailOriginal: {
+      back: 'Volver',
+      originalEmail: 'Correo original',
+      from: 'De:',
+      to: 'Para:',
+      subject: 'Asunto:',
+      received: 'Recibido:',
+      emailContent: 'Contenido del correo',
+      openFullPageView: 'Página completa',
+      openFullPageViewAria: 'Abrir correo en página completa',
+      noOriginalContent: 'No hay contenido original almacenado.',
+      closeFullPageView: 'Cerrar vista de página completa',
+      errors: {
+        noPermission: 'No tienes permiso para ver este correo.',
+        notFound: 'Correo no encontrado.',
+        failedToLoad: 'No se pudo cargar el correo.',
+      },
+      admin: {
+        currentSetup: 'Configuración actual',
+        loadingModels: 'Cargando modelos…',
+        defaultModel: 'Modelo predeterminado',
+        searchModels: 'Buscar modelos...',
+        noModelsFound: 'No se encontraron modelos.',
+        processing: 'Procesando…',
+        reprocess: 'Reprocesar',
+        failedToReprocess: 'No se pudo reprocesar el correo.',
+        ruleApplied: 'Regla aplicada:',
+        tokensUsed: 'Tokens usados:',
+        estCost: 'Coste est.:',
+        processedBody: 'Cuerpo procesado:',
       },
     },
   },
@@ -1205,6 +1333,38 @@ const translations: Record<Locale, Translations> = {
         notNow: 'Pas maintenant',
       },
     },
+    emailOriginal: {
+      back: 'Retour',
+      originalEmail: 'E-mail original',
+      from: 'De :',
+      to: 'À :',
+      subject: 'Objet :',
+      received: 'Reçu :',
+      emailContent: "Contenu de l'e-mail",
+      openFullPageView: 'Pleine page',
+      openFullPageViewAria: "Ouvrir l'e-mail en pleine page",
+      noOriginalContent: 'Aucun contenu original enregistré.',
+      closeFullPageView: 'Fermer la vue pleine page',
+      errors: {
+        noPermission: "Vous n'avez pas la permission de voir cet e-mail.",
+        notFound: 'E-mail introuvable.',
+        failedToLoad: "Impossible de charger l'e-mail.",
+      },
+      admin: {
+        currentSetup: 'Configuration actuelle',
+        loadingModels: 'Chargement des modèles…',
+        defaultModel: 'Modèle par défaut',
+        searchModels: 'Rechercher des modèles...',
+        noModelsFound: 'Aucun modèle trouvé.',
+        processing: 'Traitement…',
+        reprocess: 'Retraiter',
+        failedToReprocess: "Impossible de retraiter l'e-mail.",
+        ruleApplied: 'Règle appliquée :',
+        tokensUsed: 'Tokens utilisés :',
+        estCost: 'Coût est. :',
+        processedBody: 'Corps traité :',
+      },
+    },
   },
   de: {
     nav: {
@@ -1443,6 +1603,38 @@ const translations: Record<Locale, Translations> = {
         iosStep3: 'Tippen Sie zur Bestätigung auf „Hinzufügen" in der oberen rechten Ecke.',
         installButton: 'App installieren',
         notNow: 'Nicht jetzt',
+      },
+    },
+    emailOriginal: {
+      back: 'Zurück',
+      originalEmail: 'Original-E-Mail',
+      from: 'Von:',
+      to: 'An:',
+      subject: 'Betreff:',
+      received: 'Empfangen:',
+      emailContent: 'E-Mail-Inhalt',
+      openFullPageView: 'Vollbild',
+      openFullPageViewAria: 'E-Mail im Vollbild öffnen',
+      noOriginalContent: 'Kein Originalinhalt gespeichert.',
+      closeFullPageView: 'Vollbildansicht schließen',
+      errors: {
+        noPermission: 'Sie haben keine Berechtigung, diese E-Mail anzuzeigen.',
+        notFound: 'E-Mail nicht gefunden.',
+        failedToLoad: 'E-Mail konnte nicht geladen werden.',
+      },
+      admin: {
+        currentSetup: 'Aktuelle Konfiguration',
+        loadingModels: 'Modelle werden geladen…',
+        defaultModel: 'Standardmodell',
+        searchModels: 'Modelle suchen...',
+        noModelsFound: 'Keine Modelle gefunden.',
+        processing: 'Verarbeitung…',
+        reprocess: 'Neu verarbeiten',
+        failedToReprocess: 'E-Mail konnte nicht neu verarbeitet werden.',
+        ruleApplied: 'Angewendete Regel:',
+        tokensUsed: 'Verwendete Tokens:',
+        estCost: 'Gesch. Kosten:',
+        processedBody: 'Verarbeiteter Inhalt:',
       },
     },
   },

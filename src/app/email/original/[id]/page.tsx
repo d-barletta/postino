@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
@@ -33,6 +34,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const router = useRouter();
   const { firebaseUser, user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const [email, setEmail] = useState<OriginalEmail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -103,14 +105,14 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
       });
       if (!res.ok) {
         const data = await res.json();
-        setReprocessError(data.error || 'Failed to reprocess email.');
+        setReprocessError(data.error || t.emailOriginal.admin.failedToReprocess);
         return;
       }
       const data = await res.json();
       setReprocessResult(data);
     } catch (error) {
       console.error('Reprocess error:', error);
-      setReprocessError('Failed to reprocess email.');
+      setReprocessError(t.emailOriginal.admin.failedToReprocess);
     } finally {
       setReprocessing(false);
     }
@@ -130,27 +132,29 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.status === 401 || res.status === 403) {
-          setError('You do not have permission to view this email.');
+          setError(t.emailOriginal.errors.noPermission);
           return;
         }
         if (res.status === 404) {
-          setError('Email not found.');
+          setError(t.emailOriginal.errors.notFound);
           return;
         }
         if (!res.ok) {
-          setError('Failed to load email.');
+          setError(t.emailOriginal.errors.failedToLoad);
           return;
         }
         const data = await res.json();
         setEmail(data);
       } catch {
-        setError('Failed to load email.');
+        setError(t.emailOriginal.errors.failedToLoad);
       } finally {
         setLoading(false);
       }
     };
 
     fetchEmail();
+    // t is intentionally excluded to avoid re-fetching when locale changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, authLoading, id, router]);
 
   if (authLoading || loading) {
@@ -172,7 +176,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
               className="mt-4 text-sm text-[#d0b53f] hover:underline"
               onClick={handleBack}
             >
-              Go back
+              {t.emailOriginal.back}
             </button>
           </CardContent>
         </Card>
@@ -193,7 +197,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
             onClick={handleBack}
           >
             <i className="bi bi-arrow-left" aria-hidden="true" />
-            Back
+            {t.emailOriginal.back}
           </button>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white min-w-0 truncate">{email.subject}</h1>
         </div>
@@ -202,18 +206,18 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <Accordion type="single" collapsible defaultValue="original-email" className="px-6">
             <AccordionItem value="original-email" className="border-b-0">
               <AccordionTrigger className="py-5 font-semibold text-gray-900 hover:text-gray-900 dark:text-white dark:hover:text-white">
-                Original Email
+                {t.emailOriginal.originalEmail}
               </AccordionTrigger>
               <AccordionContent>
                 <CardContent className="p-0 pb-5 space-y-3 text-sm">
                   <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">From:</dt>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.from}</dt>
                     <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.fromAddress}</dd>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">To:</dt>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.to}</dt>
                     <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.toAddress}</dd>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.subject}</dt>
                     <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{email.subject}</dd>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">Received:</dt>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.received}</dt>
                     <dd className="text-gray-800 dark:text-gray-200">{receivedDate}</dd>
                   </dl>
                 </CardContent>
@@ -226,7 +230,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <Accordion type="single" collapsible defaultValue="email-content" className="px-6">
             <AccordionItem value="email-content" className="border-b-0">
               <AccordionTrigger className="py-5 font-semibold text-gray-900 hover:text-gray-900 dark:text-white dark:hover:text-white">
-                Email Content
+                {t.emailOriginal.emailContent}
               </AccordionTrigger>
               <AccordionContent>
                 <CardContent className="p-0 pb-5">
@@ -236,11 +240,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                         <div className="flex justify-end">
                           <button
                             onClick={toggleFullscreen}
-                            className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            title="Open full page view"
-                            aria-label="Open email in full page view"
+                            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            title={t.emailOriginal.openFullPageView}
+                            aria-label={t.emailOriginal.openFullPageViewAria}
                           >
                             <i className="bi bi-fullscreen" aria-hidden="true" />
+                            {t.emailOriginal.openFullPageView}
                           </button>
                         </div>
                       )}
@@ -258,7 +263,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                       />
                     </div>
                   ) : (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm py-1">No original content stored.</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm py-1">{t.emailOriginal.noOriginalContent}</p>
                   )}
                 </CardContent>
               </AccordionContent>
@@ -271,7 +276,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
             <Accordion type="single" collapsible defaultValue="current-setup" className="px-6">
               <AccordionItem value="current-setup" className="border-b-0">
                 <AccordionTrigger className="py-5 font-semibold text-gray-900 hover:text-gray-900 dark:text-white dark:hover:text-white">
-                  Current setup
+                  {t.emailOriginal.admin.currentSetup}
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="p-0 pb-5 space-y-4">
@@ -281,9 +286,9 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                           options={models.map((m) => ({ value: m.id, label: `${m.name} (${m.id})` }) as ComboboxOption)}
                           value={selectedModel}
                           onValueChange={setSelectedModel}
-                          placeholder={modelsLoading ? 'Loading models…' : 'Default model'}
-                          searchPlaceholder="Search models..."
-                          emptyText="No models found."
+                          placeholder={modelsLoading ? t.emailOriginal.admin.loadingModels : t.emailOriginal.admin.defaultModel}
+                          searchPlaceholder={t.emailOriginal.admin.searchModels}
+                          emptyText={t.emailOriginal.admin.noModelsFound}
                           disabled={modelsLoading}
                         />
                       </div>
@@ -295,12 +300,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                         {reprocessing ? (
                           <>
                             <div className="animate-spin h-3.5 w-3.5 border-2 border-gray-900 border-t-transparent rounded-full" />
-                            Processing…
+                            {t.emailOriginal.admin.processing}
                           </>
                         ) : (
                           <>
                             <i className="bi bi-arrow-repeat" aria-hidden="true" />
-                            Re-process
+                            {t.emailOriginal.admin.reprocess}
                           </>
                         )}
                       </button>
@@ -311,17 +316,17 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                     {reprocessResult && (
                       <>
                         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Subject:</dt>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.subject}</dt>
                           <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{reprocessResult.subject}</dd>
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Rule applied:</dt>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.admin.ruleApplied}</dt>
                           <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.ruleApplied}</dd>
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Tokens used:</dt>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.admin.tokensUsed}</dt>
                           <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.tokensUsed.toLocaleString()}</dd>
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">Est. cost:</dt>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.admin.estCost}</dt>
                           <dd className="text-gray-800 dark:text-gray-200">${reprocessResult.estimatedCost.toFixed(6)}</dd>
                         </dl>
                         <div>
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Processed body:</p>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.emailOriginal.admin.processedBody}</p>
                           <iframe
                             sandbox=""
                             srcDoc={reprocessResult.body}
@@ -353,8 +358,8 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
               <button
                 onClick={toggleFullscreen}
                 className="shrink-0 rounded-md p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                title="Close full page view"
-                aria-label="Close full page view"
+                title={t.emailOriginal.closeFullPageView}
+                aria-label={t.emailOriginal.closeFullPageView}
               >
                 <i className="bi bi-x-lg" aria-hidden="true" />
               </button>
