@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { formatDate, truncate } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { RefreshCw, ChevronLeft, ChevronRight, Mail, ExternalLink } from 'lucide-react';
 import type { EmailLog } from '@/types';
 
@@ -30,15 +31,6 @@ interface EmailLogsListProps {
   onForwardingHeaderToggle?: (enabled: boolean) => Promise<void>;
 }
 
-const STATUS_OPTIONS = [
-  { value: ALL_STATUS_VALUE, label: 'All statuses' },
-  { value: 'received', label: 'Received' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'forwarded', label: 'Forwarded' },
-  { value: 'error', label: 'Error' },
-  { value: 'skipped', label: 'Skipped' },
-];
-
 export function EmailLogsList({
   logs,
   onRefresh,
@@ -47,11 +39,29 @@ export function EmailLogsList({
   isForwardingHeaderEnabled = true,
   onForwardingHeaderToggle,
 }: EmailLogsListProps) {
+  const { t } = useI18n();
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [headerToggling, setHeaderToggling] = useState(false);
   const effectiveStatusFilter = selectedEmailId ? '' : statusFilter;
+
+  const STATUS_OPTIONS = [
+    { value: ALL_STATUS_VALUE, label: t.dashboard.emailHistory.allStatuses },
+    { value: 'received', label: t.dashboard.charts.received },
+    { value: 'processing', label: t.dashboard.charts.processing },
+    { value: 'forwarded', label: t.dashboard.charts.forwarded },
+    { value: 'error', label: t.dashboard.charts.error },
+    { value: 'skipped', label: t.dashboard.charts.skipped },
+  ];
+
+  const statusLabel: Record<string, string> = {
+    received: t.dashboard.charts.received,
+    processing: t.dashboard.charts.processing,
+    forwarded: t.dashboard.charts.forwarded,
+    error: t.dashboard.charts.error,
+    skipped: t.dashboard.charts.skipped,
+  };
 
   const filteredLogs = effectiveStatusFilter
     ? logs.filter((l) => l.status === effectiveStatusFilter)
@@ -108,7 +118,7 @@ export function EmailLogsList({
         <CardHeader>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <CardTitle>Email History</CardTitle>
+              <CardTitle>{t.dashboard.tabs.emailHistory}</CardTitle>
               <div className="flex items-center gap-2">
                 <div className="w-44">
                   <Select
@@ -117,8 +127,8 @@ export function EmailLogsList({
                       handleStatusFilter(value === ALL_STATUS_VALUE ? '' : value)
                     }
                   >
-                    <SelectTrigger aria-label="Filter by status">
-                      <SelectValue placeholder="All statuses" />
+                    <SelectTrigger aria-label={t.dashboard.emailHistory.filterByStatus}>
+                      <SelectValue placeholder={t.dashboard.emailHistory.allStatuses} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -137,7 +147,7 @@ export function EmailLogsList({
                     size="icon"
                     onClick={onRefresh}
                     disabled={refreshing}
-                    title="Refresh"
+                    title={t.dashboard.emailHistory.refresh}
                   >
                     <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
                   </Button>
@@ -150,10 +160,10 @@ export function EmailLogsList({
                   checked={isForwardingHeaderEnabled}
                   onCheckedChange={handleForwardingHeaderToggle}
                   disabled={headerToggling}
-                  aria-label="Show Postino header in forwarded emails"
+                  aria-label={t.dashboard.emailHistory.showPostinoHeader}
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Show Postino header in forwarded emails
+                  {t.dashboard.emailHistory.showPostinoHeader}
                 </span>
               </div>
             )}
@@ -164,18 +174,18 @@ export function EmailLogsList({
             <div className="text-center py-10 text-gray-400 dark:text-gray-500">
               {statusFilter ? (
                 <>
-                  <p>No emails with status &ldquo;{statusFilter}&rdquo;.</p>
+                  <p>{t.dashboard.emailHistory.noEmailsWithStatus} &ldquo;{statusLabel[statusFilter] ?? statusFilter}&rdquo;.</p>
                   <button
                     onClick={() => handleStatusFilter('')}
                     className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline"
                   >
-                    Clear filter
+                    {t.dashboard.emailHistory.clearFilter}
                   </button>
                 </>
               ) : (
                 <>
-                  <p>No emails processed yet.</p>
-                  <p className="text-sm mt-1">Send an email to your Postino address to get started!</p>
+                  <p>{t.dashboard.emailHistory.noEmailsYet}</p>
+                  <p className="text-sm mt-1">{t.dashboard.emailHistory.noEmailsYetDesc}</p>
                 </>
               )}
             </div>
@@ -193,11 +203,11 @@ export function EmailLogsList({
                         <Mail className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">{log.subject}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 wrap-break-word">From: {log.fromAddress}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 wrap-break-word">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
-                        <Badge variant={statusVariant[log.status] || 'default'}>{log.status}</Badge>
+                        <Badge variant={statusVariant[log.status] || 'default'}>{statusLabel[log.status] ?? log.status}</Badge>
                         <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt)}</span>
                       </div>
                     </div>
@@ -205,12 +215,12 @@ export function EmailLogsList({
                       <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2 pl-6">
                         {log.ruleApplied && (
                           <p className="text-xs text-gray-600 dark:text-gray-300">
-                            <span className="font-medium">Rule applied:</span> {log.ruleApplied}
+                            <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span> {log.ruleApplied}
                           </p>
                         )}
                         {log.tokensUsed !== undefined && (
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Tokens: {log.tokensUsed} | Est. cost: ${(log.estimatedCost || 0).toFixed(5)}
+                            {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: ${(log.estimatedCost || 0).toFixed(5)}
                           </p>
                         )}
                         {log.processedBody && (
@@ -225,7 +235,7 @@ export function EmailLogsList({
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="h-3 w-3" />
-                            View original email
+                            {t.dashboard.emailHistory.viewOriginal}
                           </Link>
                         </div>
                       </div>
@@ -242,10 +252,10 @@ export function EmailLogsList({
                     disabled={safeCurrentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    {t.dashboard.emailHistory.previous}
                   </Button>
                   <span className="text-xs text-gray-400 dark:text-gray-500">
-                    Page {safeCurrentPage} of {Math.max(1, totalPages)}
+                    {t.dashboard.emailHistory.page} {safeCurrentPage} {t.dashboard.emailHistory.of} {Math.max(1, totalPages)}
                   </span>
                   <Button
                     variant="ghost"
@@ -253,7 +263,7 @@ export function EmailLogsList({
                     onClick={() => handlePageChange(Math.min(Math.max(1, totalPages), safeCurrentPage + 1))}
                     disabled={safeCurrentPage === Math.max(1, totalPages)}
                   >
-                    Next
+                    {t.dashboard.emailHistory.next}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -265,3 +275,4 @@ export function EmailLogsList({
     </div>
   );
 }
+

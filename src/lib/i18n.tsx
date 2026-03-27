@@ -131,6 +131,91 @@ export interface Translations {
       tokensUsed: string;
       estCost: string;
     };
+    pushNotifications: {
+      title: string;
+      enabledDescription: string;
+      disabledDescription: string;
+      blockedDescription: string;
+    };
+    charts: {
+      myEmailVolume: string;
+      received: string;
+      processing: string;
+      forwarded: string;
+      error: string;
+      skipped: string;
+      estimatedCost: string;
+      estCost: string;
+      last24h: string;
+      last7days: string;
+      last30days: string;
+      perHour: string;
+      perDay: string;
+      perWeek: string;
+      weekOf: string;
+    };
+    emailHistory: {
+      allStatuses: string;
+      filterByStatus: string;
+      refresh: string;
+      showPostinoHeader: string;
+      noEmailsWithStatus: string;
+      clearFilter: string;
+      noEmailsYet: string;
+      noEmailsYetDesc: string;
+      from: string;
+      ruleApplied: string;
+      tokens: string;
+      viewOriginal: string;
+      previous: string;
+      next: string;
+      page: string;
+      of: string;
+    };
+    rules: {
+      yourRules: string;
+      active: string;
+      disabled: string;
+      appliedTopToBottom: string;
+      useArrows: string;
+      addARule: string;
+      newRule: string;
+      ruleName: string;
+      ruleDescription: string;
+      hideFilters: string;
+      addFilters: string;
+      editFilters: string;
+      filterHelp: string;
+      senderContains: string;
+      subjectContains: string;
+      bodyContains: string;
+      addRule: string;
+      cancel: string;
+      saveChanges: string;
+      noRulesYet: string;
+      exampleRule: string;
+      sender: string;
+      subject: string;
+      body: string;
+      updated: string;
+      moveRuleUp: string;
+      moveRuleDown: string;
+      processingOrder: string;
+      edit: string;
+      delete: string;
+      deleteRule: string;
+      deleteConfirm: string;
+      cannotBeUndone: string;
+      close: string;
+      errors: {
+        nameRequired: string;
+        textRequired: string;
+        nameTooLong: string;
+        textTooLong: string;
+        failedToCreate: string;
+        failedToUpdate: string;
+      };
+    };
   };
 }
 
@@ -272,6 +357,91 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Tokens Used',
         estCost: 'Est. Cost',
       },
+      pushNotifications: {
+        title: 'Push Notifications',
+        enabledDescription: 'You will receive a browser notification each time an email is processed.',
+        disabledDescription: 'Enable to receive a browser notification whenever a new email is processed.',
+        blockedDescription: "Notifications are blocked by your browser. Open your browser's site settings and allow notifications for this site to enable this feature.",
+      },
+      charts: {
+        myEmailVolume: 'My Email Volume',
+        received: 'Received',
+        processing: 'Processing',
+        forwarded: 'Forwarded',
+        error: 'Error',
+        skipped: 'Skipped',
+        estimatedCost: 'Estimated Cost',
+        estCost: 'Est. Cost',
+        last24h: 'Last 24h',
+        last7days: 'Last 7 days',
+        last30days: 'Last 30 days',
+        perHour: 'Per Hour',
+        perDay: 'Per Day',
+        perWeek: 'Per Week',
+        weekOf: 'Week of',
+      },
+      emailHistory: {
+        allStatuses: 'All statuses',
+        filterByStatus: 'Filter by status',
+        refresh: 'Refresh',
+        showPostinoHeader: 'Show Postino header in forwarded emails',
+        noEmailsWithStatus: 'No emails with status',
+        clearFilter: 'Clear filter',
+        noEmailsYet: 'No emails processed yet.',
+        noEmailsYetDesc: 'Send an email to your Postino address to get started!',
+        from: 'From:',
+        ruleApplied: 'Rule applied:',
+        tokens: 'Tokens:',
+        viewOriginal: 'View original email',
+        previous: 'Previous',
+        next: 'Next',
+        page: 'Page',
+        of: 'of',
+      },
+      rules: {
+        yourRules: 'Your Rules',
+        active: 'Active',
+        disabled: 'Disabled',
+        appliedTopToBottom: 'Rules are applied top to bottom.',
+        useArrows: 'Use the arrows to change the order.',
+        addARule: 'Add a rule',
+        newRule: 'New Rule',
+        ruleName: 'Rule Name',
+        ruleDescription: 'Rule Description',
+        hideFilters: 'Hide filters',
+        addFilters: 'Add sender/subject/body filters (optional)',
+        editFilters: 'Edit sender/subject/body filters (optional)',
+        filterHelp: 'Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.',
+        senderContains: 'Sender contains',
+        subjectContains: 'Subject contains',
+        bodyContains: 'Body contains',
+        addRule: 'Add Rule',
+        cancel: 'Cancel',
+        saveChanges: 'Save changes',
+        noRulesYet: 'No rules yet. Add your first rule above!',
+        exampleRule: 'Example: "Remove ads and summarize newsletters"',
+        sender: 'Sender:',
+        subject: 'Subject:',
+        body: 'Body:',
+        updated: 'Updated',
+        moveRuleUp: 'Move rule up',
+        moveRuleDown: 'Move rule down',
+        processingOrder: 'Processing order',
+        edit: 'Edit',
+        delete: 'Delete',
+        deleteRule: 'Delete rule',
+        deleteConfirm: 'Are you sure you want to delete',
+        cannotBeUndone: 'This action cannot be undone.',
+        close: 'Close',
+        errors: {
+          nameRequired: 'Rule name is required',
+          textRequired: 'Rule text is required',
+          nameTooLong: 'Rule name must be at most {max} characters',
+          textTooLong: 'Rule exceeds maximum length of {max} characters',
+          failedToCreate: 'Failed to create rule',
+          failedToUpdate: 'Failed to update rule',
+        },
+      },
     },
   },
 
@@ -411,6 +581,91 @@ const translations: Record<Locale, Translations> = {
         emailsSkipped: 'Email saltate',
         tokensUsed: 'Token usati',
         estCost: 'Costo stimato',
+      },
+      pushNotifications: {
+        title: 'Notifiche push',
+        enabledDescription: "Riceverai una notifica del browser ogni volta che un'email viene elaborata.",
+        disabledDescription: "Attiva per ricevere una notifica del browser ogni volta che una nuova email viene elaborata.",
+        blockedDescription: "Le notifiche sono bloccate dal browser. Apri le impostazioni del sito nel browser e consenti le notifiche per abilitare questa funzione.",
+      },
+      charts: {
+        myEmailVolume: 'Il mio volume di email',
+        received: 'Ricevute',
+        processing: 'In elaborazione',
+        forwarded: 'Inoltrate',
+        error: 'Errore',
+        skipped: 'Saltate',
+        estimatedCost: 'Costo stimato',
+        estCost: 'Costo est.',
+        last24h: 'Ultime 24h',
+        last7days: 'Ultimi 7 giorni',
+        last30days: 'Ultimi 30 giorni',
+        perHour: "All'ora",
+        perDay: 'Al giorno',
+        perWeek: 'Alla settimana',
+        weekOf: 'Settimana del',
+      },
+      emailHistory: {
+        allStatuses: 'Tutti gli stati',
+        filterByStatus: 'Filtra per stato',
+        refresh: 'Aggiorna',
+        showPostinoHeader: 'Mostra intestazione Postino nelle email inoltrate',
+        noEmailsWithStatus: 'Nessuna email con stato',
+        clearFilter: 'Rimuovi filtro',
+        noEmailsYet: 'Nessuna email elaborata.',
+        noEmailsYetDesc: "Invia un'email al tuo indirizzo Postino per iniziare!",
+        from: 'Da:',
+        ruleApplied: 'Regola applicata:',
+        tokens: 'Token:',
+        viewOriginal: 'Visualizza email originale',
+        previous: 'Precedente',
+        next: 'Successivo',
+        page: 'Pagina',
+        of: 'di',
+      },
+      rules: {
+        yourRules: 'Le tue regole',
+        active: 'Attiva',
+        disabled: 'Disabilitata',
+        appliedTopToBottom: "Le regole vengono applicate dall'alto verso il basso.",
+        useArrows: "Usa le frecce per cambiare l'ordine.",
+        addARule: 'Aggiungi una regola',
+        newRule: 'Nuova regola',
+        ruleName: 'Nome regola',
+        ruleDescription: 'Descrizione regola',
+        hideFilters: 'Nascondi filtri',
+        addFilters: 'Aggiungi filtri mittente/oggetto/corpo (opzionale)',
+        editFilters: 'Modifica filtri mittente/oggetto/corpo (opzionale)',
+        filterHelp: "Applica questa regola solo quando l'email corrisponde a tutti i pattern forniti (contiene, senza distinzione maiuscole/minuscole). Lascia vuoto per applicare a tutte le email.",
+        senderContains: 'Mittente contiene',
+        subjectContains: 'Oggetto contiene',
+        bodyContains: 'Corpo contiene',
+        addRule: 'Aggiungi regola',
+        cancel: 'Annulla',
+        saveChanges: 'Salva modifiche',
+        noRulesYet: 'Nessuna regola. Aggiungi la tua prima regola sopra!',
+        exampleRule: 'Esempio: "Rimuovi annunci e riassumi le newsletter"',
+        sender: 'Mittente:',
+        subject: 'Oggetto:',
+        body: 'Corpo:',
+        updated: 'Aggiornato',
+        moveRuleUp: 'Sposta regola su',
+        moveRuleDown: 'Sposta regola giù',
+        processingOrder: 'Ordine di elaborazione',
+        edit: 'Modifica',
+        delete: 'Elimina',
+        deleteRule: 'Elimina regola',
+        deleteConfirm: 'Sei sicuro di voler eliminare',
+        cannotBeUndone: 'Questa azione non può essere annullata.',
+        close: 'Chiudi',
+        errors: {
+          nameRequired: 'Il nome della regola è obbligatorio',
+          textRequired: 'Il testo della regola è obbligatorio',
+          nameTooLong: 'Il nome della regola deve essere al massimo {max} caratteri',
+          textTooLong: 'La regola supera la lunghezza massima di {max} caratteri',
+          failedToCreate: 'Creazione regola non riuscita',
+          failedToUpdate: 'Aggiornamento regola non riuscito',
+        },
       },
     },
   },
@@ -552,6 +807,91 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Tokens usados',
         estCost: 'Coste est.',
       },
+      pushNotifications: {
+        title: 'Notificaciones push',
+        enabledDescription: 'Recibirás una notificación del navegador cada vez que se procese un correo.',
+        disabledDescription: 'Activa para recibir una notificación del navegador cada vez que se procese un nuevo correo.',
+        blockedDescription: 'Las notificaciones están bloqueadas por tu navegador. Abre la configuración del sitio en tu navegador y permite las notificaciones para habilitar esta función.',
+      },
+      charts: {
+        myEmailVolume: 'Mi volumen de correos',
+        received: 'Recibidos',
+        processing: 'En proceso',
+        forwarded: 'Reenviados',
+        error: 'Error',
+        skipped: 'Omitidos',
+        estimatedCost: 'Coste estimado',
+        estCost: 'Coste est.',
+        last24h: 'Últimas 24h',
+        last7days: 'Últimos 7 días',
+        last30days: 'Últimos 30 días',
+        perHour: 'Por hora',
+        perDay: 'Por día',
+        perWeek: 'Por semana',
+        weekOf: 'Semana del',
+      },
+      emailHistory: {
+        allStatuses: 'Todos los estados',
+        filterByStatus: 'Filtrar por estado',
+        refresh: 'Actualizar',
+        showPostinoHeader: 'Mostrar encabezado Postino en correos reenviados',
+        noEmailsWithStatus: 'No hay correos con estado',
+        clearFilter: 'Borrar filtro',
+        noEmailsYet: 'Aún no se han procesado correos.',
+        noEmailsYetDesc: '¡Envía un correo a tu dirección Postino para empezar!',
+        from: 'De:',
+        ruleApplied: 'Regla aplicada:',
+        tokens: 'Tokens:',
+        viewOriginal: 'Ver correo original',
+        previous: 'Anterior',
+        next: 'Siguiente',
+        page: 'Página',
+        of: 'de',
+      },
+      rules: {
+        yourRules: 'Tus reglas',
+        active: 'Activa',
+        disabled: 'Desactivada',
+        appliedTopToBottom: 'Las reglas se aplican de arriba hacia abajo.',
+        useArrows: 'Usa las flechas para cambiar el orden.',
+        addARule: 'Añadir una regla',
+        newRule: 'Nueva regla',
+        ruleName: 'Nombre de la regla',
+        ruleDescription: 'Descripción de la regla',
+        hideFilters: 'Ocultar filtros',
+        addFilters: 'Añadir filtros de remitente/asunto/cuerpo (opcional)',
+        editFilters: 'Editar filtros de remitente/asunto/cuerpo (opcional)',
+        filterHelp: 'Aplica esta regla solo cuando el correo coincida con todos los patrones proporcionados (contiene, sin distinción de mayúsculas). Deja en blanco para aplicar a todos los correos.',
+        senderContains: 'Remitente contiene',
+        subjectContains: 'Asunto contiene',
+        bodyContains: 'Cuerpo contiene',
+        addRule: 'Añadir regla',
+        cancel: 'Cancelar',
+        saveChanges: 'Guardar cambios',
+        noRulesYet: '¡Aún no hay reglas. Añade tu primera regla arriba!',
+        exampleRule: 'Ejemplo: "Eliminar anuncios y resumir boletines"',
+        sender: 'Remitente:',
+        subject: 'Asunto:',
+        body: 'Cuerpo:',
+        updated: 'Actualizado',
+        moveRuleUp: 'Mover regla arriba',
+        moveRuleDown: 'Mover regla abajo',
+        processingOrder: 'Orden de procesamiento',
+        edit: 'Editar',
+        delete: 'Eliminar',
+        deleteRule: 'Eliminar regla',
+        deleteConfirm: '¿Estás seguro de que quieres eliminar',
+        cannotBeUndone: 'Esta acción no se puede deshacer.',
+        close: 'Cerrar',
+        errors: {
+          nameRequired: 'El nombre de la regla es obligatorio',
+          textRequired: 'El texto de la regla es obligatorio',
+          nameTooLong: 'El nombre de la regla no puede superar {max} caracteres',
+          textTooLong: 'La regla supera la longitud máxima de {max} caracteres',
+          failedToCreate: 'Error al crear la regla',
+          failedToUpdate: 'Error al actualizar la regla',
+        },
+      },
     },
   },
 
@@ -692,6 +1032,91 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Tokens utilisés',
         estCost: 'Coût est.',
       },
+      pushNotifications: {
+        title: 'Notifications push',
+        enabledDescription: "Vous recevrez une notification du navigateur chaque fois qu'un e-mail est traité.",
+        disabledDescription: "Activez pour recevoir une notification du navigateur à chaque nouveau traitement d'e-mail.",
+        blockedDescription: "Les notifications sont bloquées par votre navigateur. Ouvrez les paramètres du site dans votre navigateur et autorisez les notifications pour activer cette fonctionnalité.",
+      },
+      charts: {
+        myEmailVolume: "Mon volume d'e-mails",
+        received: 'Reçus',
+        processing: 'En cours',
+        forwarded: 'Transmis',
+        error: 'Erreur',
+        skipped: 'Ignorés',
+        estimatedCost: 'Coût estimé',
+        estCost: 'Coût est.',
+        last24h: 'Dernières 24h',
+        last7days: '7 derniers jours',
+        last30days: '30 derniers jours',
+        perHour: 'Par heure',
+        perDay: 'Par jour',
+        perWeek: 'Par semaine',
+        weekOf: 'Semaine du',
+      },
+      emailHistory: {
+        allStatuses: 'Tous les statuts',
+        filterByStatus: 'Filtrer par statut',
+        refresh: 'Actualiser',
+        showPostinoHeader: "Afficher l'en-tête Postino dans les e-mails transmis",
+        noEmailsWithStatus: 'Aucun e-mail avec le statut',
+        clearFilter: 'Effacer le filtre',
+        noEmailsYet: "Aucun e-mail traité pour l'instant.",
+        noEmailsYetDesc: 'Envoyez un e-mail à votre adresse Postino pour commencer !',
+        from: 'De :',
+        ruleApplied: 'Règle appliquée :',
+        tokens: 'Tokens :',
+        viewOriginal: "Voir l'e-mail original",
+        previous: 'Précédent',
+        next: 'Suivant',
+        page: 'Page',
+        of: 'sur',
+      },
+      rules: {
+        yourRules: 'Vos règles',
+        active: 'Active',
+        disabled: 'Désactivée',
+        appliedTopToBottom: 'Les règles sont appliquées de haut en bas.',
+        useArrows: "Utilisez les flèches pour changer l'ordre.",
+        addARule: 'Ajouter une règle',
+        newRule: 'Nouvelle règle',
+        ruleName: 'Nom de la règle',
+        ruleDescription: 'Description de la règle',
+        hideFilters: 'Masquer les filtres',
+        addFilters: 'Ajouter des filtres expéditeur/objet/corps (optionnel)',
+        editFilters: 'Modifier les filtres expéditeur/objet/corps (optionnel)',
+        filterHelp: "Appliquer cette règle uniquement lorsque l'e-mail correspond à tous les modèles fournis (contient, insensible à la casse). Laissez vide pour appliquer à tous les e-mails.",
+        senderContains: 'Expéditeur contient',
+        subjectContains: 'Objet contient',
+        bodyContains: 'Corps contient',
+        addRule: 'Ajouter la règle',
+        cancel: 'Annuler',
+        saveChanges: 'Enregistrer les modifications',
+        noRulesYet: 'Aucune règle. Ajoutez votre première règle ci-dessus !',
+        exampleRule: 'Exemple : "Supprimer les publicités et résumer les newsletters"',
+        sender: 'Expéditeur :',
+        subject: 'Objet :',
+        body: 'Corps :',
+        updated: 'Mis à jour',
+        moveRuleUp: 'Déplacer la règle vers le haut',
+        moveRuleDown: 'Déplacer la règle vers le bas',
+        processingOrder: 'Ordre de traitement',
+        edit: 'Modifier',
+        delete: 'Supprimer',
+        deleteRule: 'Supprimer la règle',
+        deleteConfirm: 'Êtes-vous sûr de vouloir supprimer',
+        cannotBeUndone: 'Cette action est irréversible.',
+        close: 'Fermer',
+        errors: {
+          nameRequired: 'Le nom de la règle est obligatoire',
+          textRequired: 'Le texte de la règle est obligatoire',
+          nameTooLong: 'Le nom de la règle ne doit pas dépasser {max} caractères',
+          textTooLong: 'La règle dépasse la longueur maximale de {max} caractères',
+          failedToCreate: 'Échec de la création de la règle',
+          failedToUpdate: 'Échec de la mise à jour de la règle',
+        },
+      },
     },
   },
 
@@ -831,6 +1256,91 @@ const translations: Record<Locale, Translations> = {
         emailsSkipped: 'Übersprungene E-Mails',
         tokensUsed: 'Verwendete Tokens',
         estCost: 'Gesch. Kosten',
+      },
+      pushNotifications: {
+        title: 'Push-Benachrichtigungen',
+        enabledDescription: 'Sie erhalten eine Browserbenachrichtigung, sobald eine E-Mail verarbeitet wird.',
+        disabledDescription: 'Aktivieren Sie, um eine Browserbenachrichtigung bei jeder neuen E-Mail-Verarbeitung zu erhalten.',
+        blockedDescription: 'Benachrichtigungen sind von Ihrem Browser blockiert. Öffnen Sie die Website-Einstellungen in Ihrem Browser und erlauben Sie Benachrichtigungen, um diese Funktion zu aktivieren.',
+      },
+      charts: {
+        myEmailVolume: 'Mein E-Mail-Volumen',
+        received: 'Empfangen',
+        processing: 'In Bearbeitung',
+        forwarded: 'Weitergeleitet',
+        error: 'Fehler',
+        skipped: 'Übersprungen',
+        estimatedCost: 'Geschätzte Kosten',
+        estCost: 'Gesch. Kosten',
+        last24h: 'Letzte 24h',
+        last7days: 'Letzte 7 Tage',
+        last30days: 'Letzte 30 Tage',
+        perHour: 'Pro Stunde',
+        perDay: 'Pro Tag',
+        perWeek: 'Pro Woche',
+        weekOf: 'Woche vom',
+      },
+      emailHistory: {
+        allStatuses: 'Alle Status',
+        filterByStatus: 'Nach Status filtern',
+        refresh: 'Aktualisieren',
+        showPostinoHeader: 'Postino-Kopfzeile in weitergeleiteten E-Mails anzeigen',
+        noEmailsWithStatus: 'Keine E-Mails mit Status',
+        clearFilter: 'Filter löschen',
+        noEmailsYet: 'Noch keine E-Mails verarbeitet.',
+        noEmailsYetDesc: 'Senden Sie eine E-Mail an Ihre Postino-Adresse, um zu beginnen!',
+        from: 'Von:',
+        ruleApplied: 'Angewendete Regel:',
+        tokens: 'Tokens:',
+        viewOriginal: 'Original-E-Mail anzeigen',
+        previous: 'Zurück',
+        next: 'Weiter',
+        page: 'Seite',
+        of: 'von',
+      },
+      rules: {
+        yourRules: 'Ihre Regeln',
+        active: 'Aktiv',
+        disabled: 'Deaktiviert',
+        appliedTopToBottom: 'Regeln werden von oben nach unten angewendet.',
+        useArrows: 'Verwenden Sie die Pfeile, um die Reihenfolge zu ändern.',
+        addARule: 'Regel hinzufügen',
+        newRule: 'Neue Regel',
+        ruleName: 'Regelname',
+        ruleDescription: 'Regelbeschreibung',
+        hideFilters: 'Filter ausblenden',
+        addFilters: 'Absender-/Betreff-/Text-Filter hinzufügen (optional)',
+        editFilters: 'Absender-/Betreff-/Text-Filter bearbeiten (optional)',
+        filterHelp: 'Diese Regel nur anwenden, wenn die eingehende E-Mail allen angegebenen Mustern entspricht (enthält, Groß-/Kleinschreibung ignoriert). Leer lassen, um auf alle E-Mails anzuwenden.',
+        senderContains: 'Absender enthält',
+        subjectContains: 'Betreff enthält',
+        bodyContains: 'Text enthält',
+        addRule: 'Regel hinzufügen',
+        cancel: 'Abbrechen',
+        saveChanges: 'Änderungen speichern',
+        noRulesYet: 'Noch keine Regeln. Fügen Sie Ihre erste Regel oben hinzu!',
+        exampleRule: 'Beispiel: „Werbung entfernen und Newsletter zusammenfassen"',
+        sender: 'Absender:',
+        subject: 'Betreff:',
+        body: 'Text:',
+        updated: 'Aktualisiert',
+        moveRuleUp: 'Regel nach oben verschieben',
+        moveRuleDown: 'Regel nach unten verschieben',
+        processingOrder: 'Verarbeitungsreihenfolge',
+        edit: 'Bearbeiten',
+        delete: 'Löschen',
+        deleteRule: 'Regel löschen',
+        deleteConfirm: 'Sind Sie sicher, dass Sie löschen möchten',
+        cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
+        close: 'Schließen',
+        errors: {
+          nameRequired: 'Regelname ist erforderlich',
+          textRequired: 'Regeltext ist erforderlich',
+          nameTooLong: 'Regelname darf höchstens {max} Zeichen lang sein',
+          textTooLong: 'Regel überschreitet die maximale Länge von {max} Zeichen',
+          failedToCreate: 'Regel konnte nicht erstellt werden',
+          failedToUpdate: 'Regel konnte nicht aktualisiert werden',
+        },
       },
     },
   },
