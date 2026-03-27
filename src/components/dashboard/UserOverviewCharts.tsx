@@ -106,26 +106,26 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
   const [granularity, setGranularity] = useState<TimeGranularity | 'week'>(DEFAULT_GRANULARITY['7d']);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  const chartConfig = useMemo<ChartConfig>(() => ({
+  const chartConfig: ChartConfig = {
     received: { label: t.dashboard.charts.received, color: chartColors.received },
     processing: { label: t.dashboard.charts.processing, color: chartColors.processing },
     forwarded: { label: t.dashboard.charts.forwarded, color: chartColors.forwarded },
     error: { label: t.dashboard.charts.error, color: chartColors.error },
     skipped: { label: t.dashboard.charts.skipped, color: chartColors.skipped },
     cost: { label: t.dashboard.charts.estimatedCost, color: chartColors.cost },
-  }), [t]);
+  };
 
-  const RANGE_LABELS: Record<TimeRange, string> = useMemo(() => ({
+  const RANGE_LABELS: Record<TimeRange, string> = {
     '24h': t.dashboard.charts.last24h,
     '7d': t.dashboard.charts.last7days,
     '30d': t.dashboard.charts.last30days,
-  }), [t]);
+  };
 
-  const GRANULARITY_LABELS: Record<TimeGranularity | 'week', string> = useMemo(() => ({
+  const GRANULARITY_LABELS: Record<TimeGranularity | 'week', string> = {
     hour: t.dashboard.charts.perHour,
     day: t.dashboard.charts.perDay,
     week: t.dashboard.charts.perWeek,
-  }), [t]);
+  };
 
   const handleRangeChange = (newRange: TimeRange) => {
     setRange(newRange);

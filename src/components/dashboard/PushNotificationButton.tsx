@@ -83,7 +83,7 @@ export function PushNotificationButton() {
               aria-label={t.dashboard.pushNotifications.title}
             />
             <Badge variant={subscribed ? 'success' : 'default'}>
-              {subscribed ? t.dashboard.rules.active : t.dashboard.rules.disabled}
+              {subscribed ? t.dashboard.address.active : t.dashboard.address.disabled}
             </Badge>
           </div>
         </div>
