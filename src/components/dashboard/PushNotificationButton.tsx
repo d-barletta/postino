@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';
 import {
   isPushSupported,
   getNotificationPermission,
@@ -15,6 +16,7 @@ import {
 
 export function PushNotificationButton() {
   const { firebaseUser } = useAuth();
+  const { t } = useI18n();
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [subscribed, setSubscribed] = useState(false);
@@ -72,16 +74,16 @@ export function PushNotificationButton() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Push Notifications</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t.dashboard.pushNotifications.title}</h2>
           <div className="flex items-center gap-2">
             <Switch
               checked={subscribed}
               onCheckedChange={(checked) => (checked ? handleEnable() : handleDisable())}
               disabled={loading || denied}
-              aria-label="Enable or disable push notifications"
+              aria-label={t.dashboard.pushNotifications.title}
             />
             <Badge variant={subscribed ? 'success' : 'default'}>
-              {subscribed ? 'Active' : 'Disabled'}
+              {subscribed ? t.dashboard.address.active : t.dashboard.address.disabled}
             </Badge>
           </div>
         </div>
@@ -89,14 +91,13 @@ export function PushNotificationButton() {
       <CardContent>
         {denied ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Notifications are blocked by your browser. Open your browser&rsquo;s site settings and
-            allow notifications for this site to enable this feature.
+            {t.dashboard.pushNotifications.blockedDescription}
           </p>
         ) : (
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {subscribed
-              ? 'You will receive a browser notification each time an email is processed.'
-              : 'Enable to receive a browser notification whenever a new email is processed.'}
+              ? t.dashboard.pushNotifications.enabledDescription
+              : t.dashboard.pushNotifications.disabledDescription}
           </p>
         )}
       </CardContent>

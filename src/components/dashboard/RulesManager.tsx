@@ -18,6 +18,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/Drawer';
 import { formatDate } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { Plus, Filter, Pencil, Trash2, AlertCircle, ChevronUp, ChevronDown, X } from 'lucide-react';
 
 const DEFAULT_MAX_LENGTH = 1000;
@@ -31,6 +32,7 @@ interface RulesManagerProps {
 
 export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }: RulesManagerProps) {
   const { rules, loading, createRule, updateRule, deleteRule, reorderRules } = useRules();
+  const { t } = useI18n();
 
   const [newRuleName, setNewRuleName] = useState('');
   const [newRuleText, setNewRuleText] = useState('');
@@ -87,13 +89,13 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   }, [editRuleId, loading, rules]);
 
   const handleCreate = async () => {
-    if (!newRuleName.trim()) { setError('Rule name is required'); return; }
+    if (!newRuleName.trim()) { setError(t.dashboard.rules.errors.nameRequired); return; }
     if (newRuleName.trim().length > MAX_RULE_NAME_LENGTH) {
-      setError(`Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters`); return;
+      setError(t.dashboard.rules.errors.nameTooLong.replace('{max}', MAX_RULE_NAME_LENGTH.toString())); return;
     }
-    if (!newRuleText.trim()) { setError('Rule text is required'); return; }
+    if (!newRuleText.trim()) { setError(t.dashboard.rules.errors.textRequired); return; }
     if (newRuleText.length > maxRuleLength) {
-      setError(`Rule exceeds maximum length of ${maxRuleLength} characters`); return;
+      setError(t.dashboard.rules.errors.textTooLong.replace('{max}', maxRuleLength.toString())); return;
     }
     setSubmitting(true);
     setError('');
@@ -108,18 +110,18 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
       setShowNewFilters(false); setShowAddForm(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create rule');
+      setError(err instanceof Error ? err.message : t.dashboard.rules.errors.failedToCreate);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleUpdate = async (id: string) => {
-    if (!editName.trim()) { setError('Rule name is required'); return; }
+    if (!editName.trim()) { setError(t.dashboard.rules.errors.nameRequired); return; }
     if (editName.trim().length > MAX_RULE_NAME_LENGTH) {
-      setError(`Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters`); return;
+      setError(t.dashboard.rules.errors.nameTooLong.replace('{max}', MAX_RULE_NAME_LENGTH.toString())); return;
     }
-    if (!editText.trim()) { setError('Rule text is required'); return; }
+    if (!editText.trim()) { setError(t.dashboard.rules.errors.textRequired); return; }
     setSubmitting(true);
     setError('');
     try {
@@ -132,7 +134,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       );
       setEditingId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update rule');
+      setError(err instanceof Error ? err.message : t.dashboard.rules.errors.failedToUpdate);
     } finally {
       setSubmitting(false);
     }
@@ -185,21 +187,21 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       <div className="flex items-center justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Your Rules{' '}
+            {t.dashboard.rules.yourRules}{' '}
             <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-              ({rules.filter((r) => r.isActive).length} active)
+              ({rules.filter((r) => r.isActive).length} {t.dashboard.rules.active.toLowerCase()})
             </span>
           </h2>
           {rules.length > 1 && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              Rules are applied top to bottom. <br/>Use the arrows to change the order.
+              {t.dashboard.rules.appliedTopToBottom} <br/>{t.dashboard.rules.useArrows}
             </p>
           )}
         </div>
         {!showAddForm && (
           <Button onClick={() => { setShowAddForm(true); setError(''); }}>
             <Plus className="h-4 w-4 mr-1.5" />
-            Add a rule
+            {t.dashboard.rules.addARule}
           </Button>
         )}
       </div>
@@ -208,12 +210,12 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         <Card className="mb-3">
           <CardContent className="py-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">New Rule</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t.dashboard.rules.newRule}</h3>
               <button
                 type="button"
                 onClick={resetAddForm}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                title="Close"
+                title={t.dashboard.rules.close}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -221,7 +223,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="new-rule-name">
-                  Rule Name <span className="text-red-500">*</span>
+                  {t.dashboard.rules.ruleName} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="new-rule-name"
@@ -234,7 +236,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
 
               <div className="space-y-1.5">
                 <Label htmlFor="new-rule-description">
-                  Rule Description <span className="text-red-500">*</span>
+                  {t.dashboard.rules.ruleDescription} <span className="text-red-500">*</span>
                 </Label>
                 <Textarea
                   id="new-rule-description"
@@ -253,31 +255,31 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                   onClick={() => setShowNewFilters((v) => !v)}
                 >
                   <Filter className="h-3.5 w-3.5" />
-                  {showNewFilters ? 'Hide filters' : 'Add sender/subject/body filters (optional)'}
+                  {showNewFilters ? t.dashboard.rules.hideFilters : t.dashboard.rules.addFilters}
                 </button>
               </div>
 
               {showNewFilters && (
                 <div className="space-y-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.
+                    {t.dashboard.rules.filterHelp}
                   </p>
                   <Input
-                    label="Sender contains"
+                    label={t.dashboard.rules.senderContains}
                     value={newMatchSender}
                     onChange={(e) => setNewMatchSender(e.target.value)}
                     placeholder="e.g. newsletter@example.com"
                     maxLength={MAX_PATTERN_LENGTH}
                   />
                   <Input
-                    label="Subject contains"
+                    label={t.dashboard.rules.subjectContains}
                     value={newMatchSubject}
                     onChange={(e) => setNewMatchSubject(e.target.value)}
                     placeholder="e.g. Weekly Digest"
                     maxLength={MAX_PATTERN_LENGTH}
                   />
                   <Input
-                    label="Body contains"
+                    label={t.dashboard.rules.bodyContains}
                     value={newMatchBody}
                     onChange={(e) => setNewMatchBody(e.target.value)}
                     placeholder="e.g. unsubscribe"
@@ -299,14 +301,14 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                   loading={submitting}
                   disabled={!newRuleName.trim() || !newRuleText.trim() || newRuleText.length > maxRuleLength}
                 >
-                  Add Rule
+                  {t.dashboard.rules.addRule}
                 </Button>
                 <Button
                   variant="ghost"
                   onClick={resetAddForm}
                   disabled={submitting}
                 >
-                  Cancel
+                  {t.dashboard.rules.cancel}
                 </Button>
               </div>
             </div>
@@ -333,9 +335,9 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         ) : rules.length === 0 ? (
           <Card>
             <CardContent className="text-center py-10">
-              <p className="text-gray-500 dark:text-gray-400">No rules yet. Add your first rule above!</p>
+              <p className="text-gray-500 dark:text-gray-400">{t.dashboard.rules.noRulesYet}</p>
               <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
-                Example: &ldquo;Remove ads and summarize newsletters&rdquo;
+                {t.dashboard.rules.exampleRule}
               </p>
             </CardContent>
           </Card>
@@ -349,7 +351,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                       <div className="space-y-4">
                         <div className="space-y-1.5">
                           <Label htmlFor={`edit-name-${rule.id}`}>
-                            Rule Name <span className="text-red-500">*</span>
+                            {t.dashboard.rules.ruleName} <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id={`edit-name-${rule.id}`}
@@ -361,7 +363,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor={`edit-desc-${rule.id}`}>
-                            Rule Description <span className="text-red-500">*</span>
+                            {t.dashboard.rules.ruleDescription} <span className="text-red-500">*</span>
                           </Label>
                           <Textarea
                             id={`edit-desc-${rule.id}`}
@@ -378,30 +380,30 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                             onClick={() => setShowEditFilters((v) => !v)}
                           >
                             <Filter className="h-3.5 w-3.5" />
-                            {showEditFilters ? 'Hide filters' : 'Edit sender/subject/body filters (optional)'}
+                            {showEditFilters ? t.dashboard.rules.hideFilters : t.dashboard.rules.editFilters}
                           </button>
                         </div>
                         {showEditFilters && (
                           <div className="space-y-3 pl-3 border-l-2 border-indigo-100 dark:border-indigo-900">
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.
+                              {t.dashboard.rules.filterHelp}
                             </p>
                             <Input
-                              label="Sender contains"
+                              label={t.dashboard.rules.senderContains}
                               value={editMatchSender}
                               onChange={(e) => setEditMatchSender(e.target.value)}
                               placeholder="e.g. newsletter@example.com"
                               maxLength={MAX_PATTERN_LENGTH}
                             />
                             <Input
-                              label="Subject contains"
+                              label={t.dashboard.rules.subjectContains}
                               value={editMatchSubject}
                               onChange={(e) => setEditMatchSubject(e.target.value)}
                               placeholder="e.g. Weekly Digest"
                               maxLength={MAX_PATTERN_LENGTH}
                             />
                             <Input
-                              label="Body contains"
+                              label={t.dashboard.rules.bodyContains}
                               value={editMatchBody}
                               onChange={(e) => setEditMatchBody(e.target.value)}
                               placeholder="e.g. unsubscribe"
@@ -417,10 +419,10 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                         )}
                         <div className="flex gap-2 pt-1">
                           <Button size="sm" onClick={() => handleUpdate(rule.id)} loading={submitting}>
-                            Save changes
+                            {t.dashboard.rules.saveChanges}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setError(''); }}>
-                            Cancel
+                            {t.dashboard.rules.cancel}
                           </Button>
                         </div>
                       </div>
@@ -430,7 +432,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0">
                             {rules.length > 1 && (
-                              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0" title="Processing order">
+                              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0" title={t.dashboard.rules.processingOrder}>
                                 {index + 1}
                               </span>
                             )}
@@ -443,7 +445,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               onCheckedChange={() => handleToggle(rule.id, rule.isActive)}
                             />
                             <Label htmlFor={`toggle-${rule.id}`} className="text-xs cursor-pointer whitespace-nowrap">
-                              {rule.isActive ? 'Active' : 'Disabled'}
+                              {rule.isActive ? t.dashboard.rules.active : t.dashboard.rules.disabled}
                             </Label>
                           </div>
                         </div>
@@ -454,23 +456,23 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                           <div className="mb-2 flex flex-wrap gap-1.5">
                             {rule.matchSender && (
                               <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
-                                <span className="font-medium">Sender:</span> {rule.matchSender}
+                                <span className="font-medium">{t.dashboard.rules.sender}</span> {rule.matchSender}
                               </span>
                             )}
                             {rule.matchSubject && (
                               <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
-                                <span className="font-medium">Subject:</span> {rule.matchSubject}
+                                <span className="font-medium">{t.dashboard.rules.subject}</span> {rule.matchSubject}
                               </span>
                             )}
                             {rule.matchBody && (
                               <span className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
-                                <span className="font-medium">Body:</span> {rule.matchBody}
+                                <span className="font-medium">{t.dashboard.rules.body}</span> {rule.matchBody}
                               </span>
                             )}
                           </div>
                         )}
                         <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
-                          Updated {formatDate(rule.updatedAt)}
+                          {t.dashboard.rules.updated} {formatDate(rule.updatedAt)}
                         </p>
 
                         {/* Bottom row: up/down arrows (left) + edit/delete (right) */}
@@ -481,7 +483,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               variant="ghost"
                               onClick={() => moveRule(index, 'up')}
                               disabled={index === 0 || reordering}
-                              title="Move rule up"
+                              title={t.dashboard.rules.moveRuleUp}
                               className="px-1.5"
                             >
                               <ChevronUp className="h-4 w-4" />
@@ -491,20 +493,20 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                               variant="ghost"
                               onClick={() => moveRule(index, 'down')}
                               disabled={index === rules.length - 1 || reordering}
-                              title="Move rule down"
+                              title={t.dashboard.rules.moveRuleDown}
                               className="px-1.5"
                             >
                               <ChevronDown className="h-4 w-4" />
                             </Button>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <Button size="sm" variant="ghost" onClick={() => startEditing(rule.id)} title="Edit rule">
+                            <Button size="sm" variant="ghost" onClick={() => startEditing(rule.id)} title={t.dashboard.rules.edit}>
                               <Pencil className="h-3.5 w-3.5 mr-1" />
-                              Edit
+                              {t.dashboard.rules.edit}
                             </Button>
-                            <Button size="sm" variant="danger" onClick={() => setDeleteId(rule.id)} title="Delete rule">
+                            <Button size="sm" variant="danger" onClick={() => setDeleteId(rule.id)} title={t.dashboard.rules.deleteRule}>
                               <Trash2 className="h-3.5 w-3.5 mr-1" />
-                              Delete
+                              {t.dashboard.rules.delete}
                             </Button>
                           </div>
                         </div>
@@ -522,19 +524,19 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
       <Drawer open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Delete rule</DrawerTitle>
+            <DrawerTitle>{t.dashboard.rules.deleteRule}</DrawerTitle>
             <DrawerDescription>
-              Are you sure you want to delete{' '}
+              {t.dashboard.rules.deleteConfirm}{' '}
               <span className="font-semibold text-gray-900 dark:text-gray-100">&ldquo;{deleteRuleName}&rdquo;</span>?
-              This action cannot be undone.
+              {' '}{t.dashboard.rules.cannotBeUndone}
             </DrawerDescription>
           </DrawerHeader>
           <DrawerFooter>
             <Button variant="ghost" onClick={() => setDeleteId(null)} disabled={deleting}>
-              Cancel
+              {t.dashboard.rules.cancel}
             </Button>
             <Button variant="danger" onClick={handleDeleteConfirm} loading={deleting}>
-              Delete rule
+              {t.dashboard.rules.deleteRule}
             </Button>
           </DrawerFooter>
         </DrawerContent>

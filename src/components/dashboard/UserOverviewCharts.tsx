@@ -12,6 +12,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/Chart';
+import { useI18n } from '@/lib/i18n';
 import type { EmailLog, UserStats } from '@/types';
 
 interface UserOverviewChartsProps {
@@ -19,29 +20,17 @@ interface UserOverviewChartsProps {
   logs: EmailLog[];
 }
 
-const chartConfig = {
-  received: { label: 'Received', color: '#3b82f6' },
-  processing: { label: 'Processing', color: '#f59e0b' },
-  forwarded: { label: 'Forwarded', color: '#16a34a' },
-  error: { label: 'Error', color: '#dc2626' },
-  skipped: { label: 'Skipped', color: '#6b7280' },
-  cost: { label: 'Estimated Cost', color: '#8b5cf6' },
-} satisfies ChartConfig;
+const chartColors = {
+  received: '#3b82f6',
+  processing: '#f59e0b',
+  forwarded: '#16a34a',
+  error: '#dc2626',
+  skipped: '#6b7280',
+  cost: '#8b5cf6',
+} as const;
 
 type TimeGranularity = 'hour' | 'day';
 type TimeRange = '24h' | '7d' | '30d';
-
-const RANGE_LABELS: Record<TimeRange, string> = {
-  '24h': 'Last 24h',
-  '7d': 'Last 7 days',
-  '30d': 'Last 30 days',
-};
-
-const GRANULARITY_LABELS: Record<TimeGranularity | 'week', string> = {
-  hour: 'Per Hour',
-  day: 'Per Day',
-  week: 'Per Week',
-};
 
 const AVAILABLE_GRANULARITIES: Record<TimeRange, Array<TimeGranularity | 'week'>> = {
   '24h': ['hour', 'day'],
@@ -83,7 +72,7 @@ function getBucketStart(date: Date, granularity: TimeGranularity | 'week'): numb
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
-function formatBucketLabel(bucketStart: number, granularity: TimeGranularity | 'week'): string {
+function formatBucketLabel(bucketStart: number, granularity: TimeGranularity | 'week', weekOfLabel: string): string {
   const date = new Date(bucketStart);
   if (granularity === 'hour') {
     return date.toLocaleString(undefined, {
@@ -94,7 +83,7 @@ function formatBucketLabel(bucketStart: number, granularity: TimeGranularity | '
     });
   }
   if (granularity === 'week') {
-    return `Week of ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    return `${weekOfLabel} ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
   }
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
@@ -112,9 +101,31 @@ function toDate(value: EmailLog['receivedAt']): Date | null {
 }
 
 export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
+  const { t } = useI18n();
   const [range, setRange] = useState<TimeRange>('7d');
   const [granularity, setGranularity] = useState<TimeGranularity | 'week'>(DEFAULT_GRANULARITY['7d']);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const chartConfig: ChartConfig = {
+    received: { label: t.dashboard.charts.received, color: chartColors.received },
+    processing: { label: t.dashboard.charts.processing, color: chartColors.processing },
+    forwarded: { label: t.dashboard.charts.forwarded, color: chartColors.forwarded },
+    error: { label: t.dashboard.charts.error, color: chartColors.error },
+    skipped: { label: t.dashboard.charts.skipped, color: chartColors.skipped },
+    cost: { label: t.dashboard.charts.estimatedCost, color: chartColors.cost },
+  };
+
+  const RANGE_LABELS: Record<TimeRange, string> = {
+    '24h': t.dashboard.charts.last24h,
+    '7d': t.dashboard.charts.last7days,
+    '30d': t.dashboard.charts.last30days,
+  };
+
+  const GRANULARITY_LABELS: Record<TimeGranularity | 'week', string> = {
+    hour: t.dashboard.charts.perHour,
+    day: t.dashboard.charts.perDay,
+    week: t.dashboard.charts.perWeek,
+  };
 
   const handleRangeChange = (newRange: TimeRange) => {
     setRange(newRange);
@@ -146,7 +157,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
 
       const bucketStart = getBucketStart(receivedAt, granularity);
       const current = buckets.get(bucketStart) ?? {
-        label: formatBucketLabel(bucketStart, granularity),
+        label: formatBucketLabel(bucketStart, granularity, t.dashboard.charts.weekOf),
         received: 0,
         processing: 0,
         forwarded: 0,
@@ -167,23 +178,23 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
         ...point,
         cost: Number(point.cost.toFixed(5)),
       }));
-  }, [granularity, logs, range]);
+  }, [granularity, logs, range, t]);
 
-  const legendItems = [
-    { key: 'received', label: 'Received', value: stats.totalEmailsReceived },
-    { key: 'processing', label: 'Processing', value: Math.max(stats.totalEmailsReceived - stats.totalEmailsForwarded - stats.totalEmailsError - stats.totalEmailsSkipped, 0) },
-    { key: 'forwarded', label: 'Forwarded', value: stats.totalEmailsForwarded },
-    { key: 'error', label: 'Error', value: stats.totalEmailsError },
-    { key: 'skipped', label: 'Skipped', value: stats.totalEmailsSkipped },
-    { key: 'cost', label: 'Est. Cost', value: `$${stats.totalEstimatedCost.toFixed(5)}` },
-  ] as const;
+  const legendItems = useMemo(() => [
+    { key: 'received' as const, label: t.dashboard.charts.received, value: stats.totalEmailsReceived },
+    { key: 'processing' as const, label: t.dashboard.charts.processing, value: Math.max(stats.totalEmailsReceived - stats.totalEmailsForwarded - stats.totalEmailsError - stats.totalEmailsSkipped, 0) },
+    { key: 'forwarded' as const, label: t.dashboard.charts.forwarded, value: stats.totalEmailsForwarded },
+    { key: 'error' as const, label: t.dashboard.charts.error, value: stats.totalEmailsError },
+    { key: 'skipped' as const, label: t.dashboard.charts.skipped, value: stats.totalEmailsSkipped },
+    { key: 'cost' as const, label: t.dashboard.charts.estCost, value: `$${stats.totalEstimatedCost.toFixed(5)}` },
+  ], [t, stats]);
 
   return (
     <Card>
       <Accordion type="single" collapsible defaultValue="volume">
         <AccordionItem value="volume" className="border-0">
           <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
-            My Email Volume
+            {t.dashboard.charts.myEmailVolume}
           </AccordionTrigger>
           <AccordionContent>
             <div className="px-4 pb-4 sm:px-6">
@@ -264,7 +275,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                 {legendItems.map((item) => (
                   <div key={item.key} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
                     <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[item.key].color }} aria-hidden />
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartColors[item.key] }} aria-hidden />
                       <span>{item.label}</span>
                     </div>
                     <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">
