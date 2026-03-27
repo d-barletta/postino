@@ -45,6 +45,10 @@ export interface EmailLog {
   originalBody?: string;
   processedBody?: string;
   errorMessage?: string;
+  /** Number of attachments in the original email. */
+  attachmentCount?: number;
+  /** Original filenames of attachments in the email. */
+  attachmentNames?: string[];
 }
 
 export interface Settings {

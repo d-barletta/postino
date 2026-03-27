@@ -248,6 +248,8 @@ export interface Translations {
     openFullPageViewAria: string;
     noOriginalContent: string;
     closeFullPageView: string;
+    attachments: string;
+    noAttachments: string;
     errors: {
       noPermission: string;
       notFound: string;
@@ -525,6 +527,8 @@ const translations: Record<Locale, Translations> = {
       openFullPageViewAria: 'Open email in full page view',
       noOriginalContent: 'No original content stored.',
       closeFullPageView: 'Close full page view',
+      attachments: 'Attachments:',
+      noAttachments: 'No attachments.',
       errors: {
         noPermission: 'You do not have permission to view this email.',
         notFound: 'Email not found.',
@@ -801,6 +805,8 @@ const translations: Record<Locale, Translations> = {
       openFullPageViewAria: 'Apri email a pagina intera',
       noOriginalContent: 'Nessun contenuto originale salvato.',
       closeFullPageView: 'Chiudi vista a pagina intera',
+      attachments: 'Allegati:',
+      noAttachments: 'Nessun allegato.',
       errors: {
         noPermission: 'Non hai i permessi per visualizzare questa email.',
         notFound: 'Email non trovata.',
@@ -1073,6 +1079,8 @@ const translations: Record<Locale, Translations> = {
       openFullPageViewAria: 'Abrir correo en página completa',
       noOriginalContent: 'No hay contenido original almacenado.',
       closeFullPageView: 'Cerrar vista de página completa',
+      attachments: 'Archivos adjuntos:',
+      noAttachments: 'Sin archivos adjuntos.',
       errors: {
         noPermission: 'No tienes permiso para ver este correo.',
         notFound: 'Correo no encontrado.',
@@ -1345,6 +1353,8 @@ const translations: Record<Locale, Translations> = {
       openFullPageViewAria: "Ouvrir l'e-mail en pleine page",
       noOriginalContent: 'Aucun contenu original enregistré.',
       closeFullPageView: 'Fermer la vue pleine page',
+      attachments: 'Pièces jointes :',
+      noAttachments: 'Aucune pièce jointe.',
       errors: {
         noPermission: "Vous n'avez pas la permission de voir cet e-mail.",
         notFound: 'E-mail introuvable.',
@@ -1617,6 +1627,8 @@ const translations: Record<Locale, Translations> = {
       openFullPageViewAria: 'E-Mail im Vollbild öffnen',
       noOriginalContent: 'Kein Originalinhalt gespeichert.',
       closeFullPageView: 'Vollbildansicht schließen',
+      attachments: 'Anhänge:',
+      noAttachments: 'Keine Anhänge.',
       errors: {
         noPermission: 'Sie haben keine Berechtigung, diese E-Mail anzuzeigen.',
         notFound: 'E-Mail nicht gefunden.',

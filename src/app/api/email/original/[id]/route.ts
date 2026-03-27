@@ -38,6 +38,8 @@ export async function GET(
       subject: data.subject,
       originalBody: data.originalBody ?? null,
       receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
+      attachmentCount: data.attachmentCount ?? 0,
+      attachmentNames: data.attachmentNames ?? [],
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
