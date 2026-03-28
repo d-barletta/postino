@@ -49,6 +49,7 @@ interface ExpandedEmailData {
   originalBody: string | null;
   toAddress: string;
   ccAddress?: string | null;
+  bccAddress?: string | null;
   attachmentCount: number;
   attachmentNames: string[];
   loading: boolean;
@@ -183,7 +184,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     fetchedExpandedIds.current.add(logId);
     setExpandedData((prev) => ({
       ...prev,
-      [logId]: { originalBody: null, toAddress: '', ccAddress: null, attachmentCount: 0, attachmentNames: [], loading: true },
+      [logId]: { originalBody: null, toAddress: '', ccAddress: null, bccAddress: null, attachmentCount: 0, attachmentNames: [], loading: true },
     }));
     try {
       const token = await firebaseUser.getIdToken();
@@ -198,6 +199,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
             originalBody: data.originalBody ?? null,
             toAddress: data.toAddress || '',
             ccAddress: data.ccAddress ?? null,
+            bccAddress: data.bccAddress ?? null,
             attachmentCount: data.attachmentCount ?? 0,
             attachmentNames: data.attachmentNames ?? [],
             loading: false,
@@ -206,16 +208,24 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
       } else {
         setExpandedData((prev) => ({
           ...prev,
-          [logId]: { originalBody: null, toAddress: '', ccAddress: null, attachmentCount: 0, attachmentNames: [], loading: false, error: 'Failed to load' },
+          [logId]: { originalBody: null, toAddress: '', ccAddress: null, bccAddress: null, attachmentCount: 0, attachmentNames: [], loading: false, error: 'Failed to load' },
         }));
       }
     } catch {
       setExpandedData((prev) => ({
         ...prev,
-        [logId]: { originalBody: null, toAddress: '', ccAddress: null, attachmentCount: 0, attachmentNames: [], loading: false, error: 'Failed to load' },
+        [logId]: { originalBody: null, toAddress: '', ccAddress: null, bccAddress: null, attachmentCount: 0, attachmentNames: [], loading: false, error: 'Failed to load' },
       }));
     }
   }, [firebaseUser]);
+
+  // Auto-expand and fetch email content when opened from a push notification link.
+  // This fires when selectedEmailId is provided as a prop (e.g., ?selectedEmail=xxx in URL).
+  useEffect(() => {
+    if (!selectedEmailId) return;
+    setSelectedId(selectedEmailId);
+    fetchExpandedEmail(selectedEmailId);
+  }, [selectedEmailId, fetchExpandedEmail]);
 
   const handleToggleExpand = (logId: string) => {
     if (selectedId === logId) {
@@ -423,6 +433,12 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                               <>
                                 <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.cc}</dt>
                                 <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.ccAddress}</dd>
+                              </>
+                            )}
+                            {(emailData?.bccAddress) && (
+                              <>
+                                <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.bcc}</dt>
+                                <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.bccAddress}</dd>
                               </>
                             )}
                             <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.attachments}</dt>

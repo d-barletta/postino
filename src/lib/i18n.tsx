@@ -172,6 +172,7 @@ export interface Translations {
       from: string;
       to: string;
       cc: string;
+      bcc: string;
       attachments: string;
       noAttachmentsShort: string;
       ruleApplied: string;
@@ -284,6 +285,7 @@ export interface Translations {
     from: string;
     to: string;
     cc: string;
+    bcc: string;
     subject: string;
     received: string;
     emailContent: string;
@@ -494,6 +496,7 @@ const translations: Record<Locale, Translations> = {
         from: 'From:',
         to: 'To:',
         cc: 'Cc:',
+        bcc: 'Bcc:',
         attachments: 'Attachments:',
         noAttachmentsShort: 'None',
         ruleApplied: 'Rule applied:',
@@ -601,6 +604,7 @@ const translations: Record<Locale, Translations> = {
       from: 'From:',
       to: 'To:',
       cc: 'Cc:',
+      bcc: 'Bcc:',
       subject: 'Subject:',
       received: 'Received:',
       emailContent: 'Email Content',
@@ -810,6 +814,7 @@ const translations: Record<Locale, Translations> = {
         from: 'Da:',
         to: 'A:',
         cc: 'Cc:',
+        bcc: 'Bcc:',
         attachments: 'Allegati:',
         noAttachmentsShort: 'Nessuno',
         ruleApplied: 'Regola applicata:',
@@ -917,6 +922,7 @@ const translations: Record<Locale, Translations> = {
       from: 'Da:',
       to: 'A:',
       cc: 'Cc:',
+      bcc: 'Bcc:',
       subject: 'Oggetto:',
       received: 'Ricevuta:',
       emailContent: 'Contenuto email',
@@ -1122,6 +1128,7 @@ const translations: Record<Locale, Translations> = {
         from: 'De:',
         to: 'Para:',
         cc: 'Cc:',
+        bcc: 'Bcc:',
         attachments: 'Adjuntos:',
         noAttachmentsShort: 'Ninguno',
         ruleApplied: 'Regla aplicada:',
@@ -1229,6 +1236,7 @@ const translations: Record<Locale, Translations> = {
       from: 'De:',
       to: 'Para:',
       cc: 'Cc:',
+      bcc: 'Bcc:',
       subject: 'Asunto:',
       received: 'Recibido:',
       emailContent: 'Contenido del correo',
@@ -1434,6 +1442,7 @@ const translations: Record<Locale, Translations> = {
         from: 'De :',
         to: 'À :',
         cc: 'Cc :',
+        bcc: 'Bcc :',
         attachments: 'Pièces jointes :',
         noAttachmentsShort: 'Aucune',
         ruleApplied: 'Règle appliquée :',
@@ -1541,6 +1550,7 @@ const translations: Record<Locale, Translations> = {
       from: 'De :',
       to: 'À :',
       cc: 'Cc :',
+      bcc: 'Bcc :',
       subject: 'Objet :',
       received: 'Reçu :',
       emailContent: "Contenu de l'e-mail",
@@ -1746,6 +1756,7 @@ const translations: Record<Locale, Translations> = {
         from: 'Von:',
         to: 'An:',
         cc: 'Cc:',
+        bcc: 'Bcc:',
         attachments: 'Anhänge:',
         noAttachmentsShort: 'Keine',
         ruleApplied: 'Angewendete Regel:',
@@ -1853,6 +1864,7 @@ const translations: Record<Locale, Translations> = {
       from: 'Von:',
       to: 'An:',
       cc: 'Cc:',
+      bcc: 'Bcc:',
       subject: 'Betreff:',
       received: 'Empfangen:',
       emailContent: 'E-Mail-Inhalt',

@@ -719,6 +719,7 @@ export async function POST(request: NextRequest) {
     const fromHeader = stripCrlf((formData.get('From') as string) || (formData.get('from') as string) || '');
     const replyToHeader = stripCrlf((formData.get('Reply-To') as string) || '');
     const ccHeader = stripCrlf((formData.get('Cc') as string) || (formData.get('cc') as string) || '');
+    const bccHeader = stripCrlf((formData.get('Bcc') as string) || (formData.get('bcc') as string) || '');
     const subject = stripCrlf((formData.get('subject') as string) || '');
     finalSender = sender;
     finalSubject = subject;
@@ -1226,6 +1227,7 @@ export async function POST(request: NextRequest) {
       originalBody: emailBody,
       processingMode,
       ...(ccHeader ? { ccAddress: ccHeader } : {}),
+      ...(bccHeader ? { bccAddress: bccHeader } : {}),
       ...(messageId ? { messageId } : {}),
       ...(attachments.length > 0 ? {
         attachmentCount: attachments.length,
@@ -1271,6 +1273,8 @@ export async function POST(request: NextRequest) {
           bodyHtml,
           bodyPlain,
           messageId,
+          ...(ccHeader ? { ccAddress: ccHeader } : {}),
+          ...(bccHeader ? { bccAddress: bccHeader } : {}),
         };
         await processQueuedInboundPayload(syncPayload, attachments);
         await updateWebhookLog({
@@ -1298,6 +1302,8 @@ export async function POST(request: NextRequest) {
       bodyHtml,
       bodyPlain,
       messageId,
+      ...(ccHeader ? { ccAddress: ccHeader } : {}),
+      ...(bccHeader ? { bccAddress: bccHeader } : {}),
       ...(serializedAttachments ? { attachments: serializedAttachments } : {}),
     };
 

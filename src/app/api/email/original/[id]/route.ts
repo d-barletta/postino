@@ -36,6 +36,7 @@ export async function GET(
       fromAddress: data.fromAddress,
       toAddress: data.toAddress,
       ccAddress: data.ccAddress ?? null,
+      bccAddress: data.bccAddress ?? null,
       subject: data.subject,
       originalBody: data.originalBody ?? null,
       receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
