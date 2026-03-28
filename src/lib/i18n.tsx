@@ -247,6 +247,20 @@ export interface Translations {
       iosSafariStep2Pre: string;
       iosSafariStep2Bold: string;
       iosSafariStep3: string;
+      // iOS 26 Safari — iPhone (4 steps: ... → Share → More → Add to Home Screen)
+      iosSafari26Step1Pre: string;
+      iosSafari26Step1Post: string;
+      iosSafari26Step2Pre: string;
+      iosSafari26Step2Bold: string;
+      iosSafari26Step2Post: string;
+      iosSafari26Step3Pre: string;
+      iosSafari26Step3Bold: string;
+      iosSafari26Step4Pre: string;
+      iosSafari26Step4Bold: string;
+      iosSafari26Step4Post: string;
+      // iOS 26 Safari — iPad step 1 (Share is already in the toolbar; steps 3+4 reused from above)
+      iosSafari26iPadStep1Pre: string;
+      iosSafari26iPadStep1Post: string;
       // iOS Chrome (dark-gray share button in upper-right corner)
       iosChromeStep1Pre: string;
       iosChromeStep1Post: string;
@@ -554,6 +568,18 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Tap',
         iosSafariStep2Bold: 'Add to Home Screen',
         iosSafariStep3: 'Tap Add in the top-right corner to confirm.',
+        iosSafari26Step1Pre: 'Tap the',
+        iosSafari26Step1Post: 'button in the browser toolbar.',
+        iosSafari26Step2Pre: 'Tap',
+        iosSafari26Step2Bold: 'Share',
+        iosSafari26Step2Post: 'in the menu.',
+        iosSafari26Step3Pre: 'Tap',
+        iosSafari26Step3Bold: 'More',
+        iosSafari26Step4Pre: 'Select',
+        iosSafari26Step4Bold: 'Add to Home Screen',
+        iosSafari26Step4Post: 'from the menu. You may need to scroll down.',
+        iosSafari26iPadStep1Pre: 'Tap the',
+        iosSafari26iPadStep1Post: 'Share button in the browser toolbar.',
         iosChromeStep1Pre: 'Tap the',
         iosChromeStep1Post: 'button in the upper-right corner.',
         iosChromeStep2Pre: 'Select',
@@ -858,6 +884,18 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Tocca',
         iosSafariStep2Bold: 'Aggiungi a schermata Home',
         iosSafariStep3: "Tocca Aggiungi nell'angolo in alto a destra per confermare.",
+        iosSafari26Step1Pre: 'Tocca il',
+        iosSafari26Step1Post: 'pulsante nella barra del browser.',
+        iosSafari26Step2Pre: 'Tocca',
+        iosSafari26Step2Bold: 'Condividi',
+        iosSafari26Step2Post: 'nel menu.',
+        iosSafari26Step3Pre: 'Tocca',
+        iosSafari26Step3Bold: 'Altro',
+        iosSafari26Step4Pre: 'Seleziona',
+        iosSafari26Step4Bold: 'Aggiungi a schermata Home',
+        iosSafari26Step4Post: 'dal menu. Potrebbe essere necessario scorrere verso il basso.',
+        iosSafari26iPadStep1Pre: 'Tocca il',
+        iosSafari26iPadStep1Post: 'pulsante Condividi nella barra del browser.',
         iosChromeStep1Pre: 'Tocca il',
         iosChromeStep1Post: "pulsante nell'angolo in alto a destra.",
         iosChromeStep2Pre: 'Seleziona',
@@ -1158,6 +1196,18 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Toca',
         iosSafariStep2Bold: 'Añadir a pantalla de inicio',
         iosSafariStep3: 'Toca Añadir en la esquina superior derecha para confirmar.',
+        iosSafari26Step1Pre: 'Toca el',
+        iosSafari26Step1Post: 'botón en la barra del navegador.',
+        iosSafari26Step2Pre: 'Toca',
+        iosSafari26Step2Bold: 'Compartir',
+        iosSafari26Step2Post: 'en el menú.',
+        iosSafari26Step3Pre: 'Toca',
+        iosSafari26Step3Bold: 'Más',
+        iosSafari26Step4Pre: 'Selecciona',
+        iosSafari26Step4Bold: 'Añadir a pantalla de inicio',
+        iosSafari26Step4Post: 'del menú. Es posible que debas desplazarte hacia abajo.',
+        iosSafari26iPadStep1Pre: 'Toca el',
+        iosSafari26iPadStep1Post: 'botón Compartir en la barra del navegador.',
         iosChromeStep1Pre: 'Toca el',
         iosChromeStep1Post: 'botón en la esquina superior derecha.',
         iosChromeStep2Pre: 'Selecciona',
@@ -1458,6 +1508,18 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Appuyez sur',
         iosSafariStep2Bold: "Sur l'écran d'accueil",
         iosSafariStep3: "Appuyez sur Ajouter dans le coin supérieur droit pour confirmer.",
+        iosSafari26Step1Pre: 'Appuyez sur le',
+        iosSafari26Step1Post: 'bouton dans la barre du navigateur.',
+        iosSafari26Step2Pre: 'Appuyez sur',
+        iosSafari26Step2Bold: 'Partager',
+        iosSafari26Step2Post: 'dans le menu.',
+        iosSafari26Step3Pre: 'Appuyez sur',
+        iosSafari26Step3Bold: 'Plus',
+        iosSafari26Step4Pre: 'Sélectionnez',
+        iosSafari26Step4Bold: "Sur l'écran d'accueil",
+        iosSafari26Step4Post: 'dans le menu. Faites défiler vers le bas si nécessaire.',
+        iosSafari26iPadStep1Pre: 'Appuyez sur le',
+        iosSafari26iPadStep1Post: 'bouton Partager dans la barre du navigateur.',
         iosChromeStep1Pre: 'Appuyez sur le',
         iosChromeStep1Post: 'bouton dans le coin supérieur droit.',
         iosChromeStep2Pre: 'Sélectionnez',
@@ -1758,6 +1820,18 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Tippen Sie auf',
         iosSafariStep2Bold: 'Zum Home-Bildschirm',
         iosSafariStep3: 'Tippen Sie zur Bestätigung auf Hinzufügen in der oberen rechten Ecke.',
+        iosSafari26Step1Pre: 'Tippen Sie auf die',
+        iosSafari26Step1Post: 'Schaltfläche in der Browser-Symbolleiste.',
+        iosSafari26Step2Pre: 'Tippen Sie auf',
+        iosSafari26Step2Bold: 'Teilen',
+        iosSafari26Step2Post: 'im Menü.',
+        iosSafari26Step3Pre: 'Tippen Sie auf',
+        iosSafari26Step3Bold: 'Mehr',
+        iosSafari26Step4Pre: 'Wählen Sie',
+        iosSafari26Step4Bold: 'Zum Startbildschirm',
+        iosSafari26Step4Post: 'aus dem Menü. Möglicherweise müssen Sie nach unten scrollen.',
+        iosSafari26iPadStep1Pre: 'Tippen Sie auf die',
+        iosSafari26iPadStep1Post: 'Teilen-Schaltfläche in der Browser-Symbolleiste.',
         iosChromeStep1Pre: 'Tippen Sie auf die',
         iosChromeStep1Post: 'Schaltfläche in der oberen rechten Ecke.',
         iosChromeStep2Pre: 'Wählen Sie',

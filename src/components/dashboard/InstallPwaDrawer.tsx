@@ -45,6 +45,31 @@ function getBrowserType(): BrowserType {
   return 'other';
 }
 
+/**
+ * Detects iOS 26+ Safari, matching the library's `isBrowserIOSSafari26()`.
+ * iOS 26 Safari reports `Version/26` (or higher) in its UA string.
+ * Non-Safari iOS browsers (Chrome/Firefox/Edge) are excluded because they
+ * do not have the extra `...` step in their share flow.
+ */
+function detectIOS26Safari(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  // Must be Safari — exclude other iOS browsers by their unique tokens
+  if (!/safari/i.test(ua) || /crios|fxios|edgios|edga\/|opr\/|opt\/|samsungbrowser/i.test(ua)) return false;
+  const match = ua.match(/Version\/(\d+)/);
+  return match ? parseInt(match[1]) >= 26 : false;
+}
+
+/**
+ * Detects iPad (including iPad Pro / iPadOS 13+ which reports Macintosh UA).
+ * Matching the library's `isBrowserIOSIPadSafari()`.
+ */
+function detectIPad(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /ipad/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+}
+
 function isStandalone(): boolean {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(display-mode: standalone)').matches;
@@ -70,7 +95,7 @@ function saveDismissed(): void {
 
 /**
  * iOS Safari share icon — blue, box with upward-pointing arrow.
- * Matches the Share button in Safari's bottom toolbar.
+ * Matches the Share button in Safari's bottom toolbar (and the Share menu item on iOS 26).
  */
 function IosSafariShareIcon() {
   return (
@@ -157,6 +182,27 @@ function ThreeDotsMenuIcon() {
   );
 }
 
+/**
+ * Three horizontal dots — matches the iOS 26 Safari "..." button in the toolbar
+ * and the "More" submenu item that appears in the share sheet.
+ */
+function IosHorizontalDotsIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
+      <svg
+        viewBox="0 0 24 24"
+        className="w-3 h-3"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <circle cx="5" cy="12" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="19" cy="12" r="2" />
+      </svg>
+    </span>
+  );
+}
+
 interface InstallPwaDrawerProps {
   /** External signal that can trigger the drawer early (e.g. user enabled notifications). */
   triggerOpen?: boolean;
@@ -167,6 +213,8 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
   const [open, setOpen] = useState(false);
   const [deviceOS, setDeviceOS] = useState<DeviceOS>('desktop');
   const [browserType, setBrowserType] = useState<BrowserType>('other');
+  const [isIOS26, setIsIOS26] = useState(false);
+  const [isIPad, setIsIPad] = useState(false);
   const { t } = useI18n();
   const tr = t.dashboard.pwaInstall;
 
@@ -178,6 +226,8 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
     const browser = getBrowserType();
     setDeviceOS(os);
     setBrowserType(browser);
+    setIsIOS26(detectIOS26Safari());
+    setIsIPad(detectIPad());
 
     // iOS Firefox cannot add to homescreen — skip entirely.
     if (os === 'ios' && browser === 'firefox') return;
@@ -217,15 +267,22 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
   // Nothing to render on unsupported environments.
   if (!isAvailable && !isManualIos && !isManualAndroid) return null;
 
+  // iOS 26 Safari has an extra `...` step before the Share button.
+  const iosSafari26Variant = isManualIos && browserType === 'safari' && isIOS26;
+  // On iPad the Share button is already in the toolbar, so the first `...` step is skipped.
+  const iosSafari26iPadVariant = iosSafari26Variant && isIPad;
   // iOS Chrome (CriOS) has its share button at the top-right; all other iOS browsers use the bottom toolbar.
   const iosChromeVariant = isManualIos && browserType === 'chrome';
 
   return (
     <Drawer open={open} onOpenChange={(value) => { if (!value) handleDismiss(); }}>
-      <DrawerContent>
+      <DrawerContent className="bg-stone-50 dark:bg-gray-900">
         <DrawerHeader>
-          <div className="flex justify-center mb-2">
-            <PostinoLogo className="h-12 w-12" />
+          <div className="flex justify-center mb-4">
+            {/* White rounded container matches iOS app icon style; keeps logo visible on any bg */}
+            <div className="w-16 h-16 rounded-[22%] bg-white shadow-sm flex items-center justify-center p-2.5">
+              <PostinoLogo className="h-11 w-11" />
+            </div>
           </div>
           <DrawerTitle>{tr.title}</DrawerTitle>
           <DrawerDescription>
@@ -238,7 +295,55 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
           <div className="px-4 pb-2 space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <p className="font-medium text-gray-900 dark:text-gray-100">{tr.howToTitle}</p>
             <ol className="list-decimal list-inside space-y-1.5">
-              {iosChromeVariant ? (
+              {iosSafari26Variant ? (
+                iosSafari26iPadVariant ? (
+                  // iPad iOS 26 Safari — 3 steps: Share is already in the toolbar
+                  <>
+                    <li>
+                      {tr.iosSafari26iPadStep1Pre}
+                      <IosSafariShareIcon />
+                      {tr.iosSafari26iPadStep1Post}
+                    </li>
+                    <li>
+                      {tr.iosSafari26Step3Pre}{' '}
+                      <IosHorizontalDotsIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step3Bold}</span>
+                    </li>
+                    <li>
+                      {tr.iosSafari26Step4Pre}{' '}
+                      <AddToHomeScreenIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step4Bold}</span>
+                      {' '}{tr.iosSafari26Step4Post}
+                    </li>
+                  </>
+                ) : (
+                  // iPhone iOS 26 Safari — 4 steps: tap ..., tap Share, tap More, Add to Home Screen
+                  <>
+                    <li>
+                      {tr.iosSafari26Step1Pre}
+                      <IosHorizontalDotsIcon />
+                      {tr.iosSafari26Step1Post}
+                    </li>
+                    <li>
+                      {tr.iosSafari26Step2Pre}{' '}
+                      <IosSafariShareIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step2Bold}</span>
+                      {' '}{tr.iosSafari26Step2Post}
+                    </li>
+                    <li>
+                      {tr.iosSafari26Step3Pre}{' '}
+                      <IosHorizontalDotsIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step3Bold}</span>
+                    </li>
+                    <li>
+                      {tr.iosSafari26Step4Pre}{' '}
+                      <AddToHomeScreenIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step4Bold}</span>
+                      {' '}{tr.iosSafari26Step4Post}
+                    </li>
+                  </>
+                )
+              ) : iosChromeVariant ? (
                 // iOS Chrome: dark-gray share icon in the upper-right corner
                 <>
                   <li>
