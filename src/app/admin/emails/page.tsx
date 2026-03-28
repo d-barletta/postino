@@ -307,7 +307,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
               </div>
               {!loading && (
                 <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {totalCount !== undefined ? totalCount : logs.length} results
+                  {totalCount != null ? totalCount : logs.length} results
                 </span>
               )}
               {hasActiveFilters && (

@@ -236,11 +236,11 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
                             />
                           }
                         />
-                        <Bar yAxisId="count" dataKey="received" stackId="s" radius={0} fill="var(--color-received)" />
-                        <Bar yAxisId="count" dataKey="processing" stackId="s" radius={0} fill="var(--color-processing)" />
-                        <Bar yAxisId="count" dataKey="forwarded" stackId="s" radius={0} fill="var(--color-forwarded)" />
-                        <Bar yAxisId="count" dataKey="skipped" stackId="s" radius={0} fill="var(--color-skipped)" />
-                        <Bar yAxisId="count" dataKey="error" stackId="s" radius={[2, 2, 0, 0]} fill="var(--color-error)" />
+                        <Bar yAxisId="count" dataKey="received" stackId="s" radius={0} fill="var(--color-received)" isAnimationActive={false} />
+                        <Bar yAxisId="count" dataKey="processing" stackId="s" radius={0} fill="var(--color-processing)" isAnimationActive={false} />
+                        <Bar yAxisId="count" dataKey="forwarded" stackId="s" radius={0} fill="var(--color-forwarded)" isAnimationActive={false} />
+                        <Bar yAxisId="count" dataKey="skipped" stackId="s" radius={0} fill="var(--color-skipped)" isAnimationActive={false} />
+                        <Bar yAxisId="count" dataKey="error" stackId="s" radius={[2, 2, 0, 0]} fill="var(--color-error)" isAnimationActive={false} />
                         <Line
                           yAxisId="cost"
                           type="monotone"
@@ -249,6 +249,7 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
                           strokeWidth={2.5}
                           dot={{ r: 3, fill: isDarkMode ? COST_COLOR_DARK : 'var(--color-cost)' }}
                           activeDot={{ r: 5 }}
+                          isAnimationActive={false}
                         />
                       </ComposedChart>
                     </ChartContainer>
@@ -294,6 +295,7 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
                       innerRadius={44}
                       outerRadius={78}
                       strokeWidth={0}
+                      isAnimationActive={false}
                     >
                       {userSplitData.map((entry) => (
                         <Cell key={entry.name} fill={entry.fill} />
