@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -249,14 +250,6 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
 
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
 
-  if (logsLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin h-8 w-8 border-4 border-[#efd957] border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <Card>
@@ -322,7 +315,25 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {filteredLogs.length === 0 ? (
+          {logsLoading ? (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="px-6 py-4 animate-pulse">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-1 h-4 w-4 rounded bg-gray-200 dark:bg-gray-700 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                      <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/3" />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                      <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800 rounded" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredLogs.length === 0 ? (
             <div className="text-center py-10 text-gray-400 dark:text-gray-500">
               {searchQuery || hasAttachmentsFilter || statusFilter ? (
                 <>
@@ -526,10 +537,10 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
       </Card>
 
       {/* Fullscreen overlay */}
-      {fullscreenEmailId && fullscreenLog?.originalBody && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900">
-          <div className="absolute inset-0 flex flex-col">
-            <div className="h-14 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      {typeof document !== 'undefined' && fullscreenEmailId && fullscreenLog?.originalBody &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col">
+            <div className="h-14 shrink-0 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
                 {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
               </p>
@@ -546,12 +557,12 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
               sandbox=""
               srcDoc={fullscreenLog.originalBody}
               className="w-full flex-1 border-0"
-              style={{ minHeight: 'calc(100dvh - 56px)' }}
               title="Original email content full page"
             />
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 }
