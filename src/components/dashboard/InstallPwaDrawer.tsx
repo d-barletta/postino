@@ -17,9 +17,27 @@ import { useI18n } from '@/lib/i18n';
 const DISMISSED_KEY = 'postino_pwa_install_dismissed';
 const SHOW_DELAY_MS = 15_000;
 
-function isIOS(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+type DeviceOS = 'ios' | 'android' | 'desktop';
+type BrowserType = 'safari' | 'chrome' | 'firefox' | 'samsung' | 'edge' | 'opera' | 'other';
+
+function getDeviceOS(): DeviceOS {
+  if (typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent;
+  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+function getBrowserType(): BrowserType {
+  if (typeof navigator === 'undefined') return 'other';
+  const ua = navigator.userAgent;
+  if (/samsungbrowser/i.test(ua)) return 'samsung';
+  if (/edg\/|edgios|edga\//i.test(ua)) return 'edge';
+  if (/firefox|fxios/i.test(ua)) return 'firefox';
+  if (/opr\/|opt\//i.test(ua)) return 'opera';
+  if (/chrome|chromium|crios/i.test(ua)) return 'chrome';
+  if (/safari/i.test(ua) && !/chrome|chromium|crios/i.test(ua)) return 'safari';
+  return 'other';
 }
 
 function isStandalone(): boolean {
@@ -43,6 +61,87 @@ function saveDismissed(): void {
   }
 }
 
+// --- Platform-specific inline icons ---
+
+/** iOS share icon (box with upward-pointing arrow). Matches the iOS toolbar Share button. */
+function IosShareIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-blue-500 text-white align-middle shrink-0">
+      <svg
+        viewBox="0 0 24 24"
+        className="w-3 h-3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 14v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" />
+        <polyline points="16 6 12 2 8 6" />
+        <line x1="12" y1="2" x2="12" y2="15" />
+      </svg>
+    </span>
+  );
+}
+
+/** Plus icon inside a rounded square. Represents the "Add to Home Screen" action. */
+function AddToHomeScreenIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
+      <svg
+        viewBox="0 0 24 24"
+        className="w-3 h-3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="3" ry="3" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+    </span>
+  );
+}
+
+/** Three vertical dots. Matches the Chrome / Samsung Internet / Edge menu button on Android. */
+function ThreeDotsMenuIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
+      <svg
+        viewBox="0 0 24 24"
+        className="w-3 h-3"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="5" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="19" r="2" />
+      </svg>
+    </span>
+  );
+}
+
+/** Three horizontal lines (hamburger). Matches the Firefox menu button on iOS and Android. */
+function HamburgerMenuIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
+      <svg
+        viewBox="0 0 24 24"
+        className="w-3 h-3"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <rect x="3" y="6" width="18" height="2" rx="1" />
+        <rect x="3" y="11" width="18" height="2" rx="1" />
+        <rect x="3" y="16" width="18" height="2" rx="1" />
+      </svg>
+    </span>
+  );
+}
+
 interface InstallPwaDrawerProps {
   /** External signal that can trigger the drawer early (e.g. user enabled notifications). */
   triggerOpen?: boolean;
@@ -51,7 +150,8 @@ interface InstallPwaDrawerProps {
 export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps) {
   const { isAvailable, install } = usePWAInstall();
   const [open, setOpen] = useState(false);
-  const [ios, setIos] = useState(false);
+  const [deviceOS, setDeviceOS] = useState<DeviceOS>('desktop');
+  const [browserType, setBrowserType] = useState<BrowserType>('other');
   const { t } = useI18n();
   const tr = t.dashboard.pwaInstall;
 
@@ -59,11 +159,14 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
     // All checks are client-only.
     if (isStandalone() || hasDismissed()) return;
 
-    const onIos = isIOS();
-    setIos(onIos);
+    const os = getDeviceOS();
+    const browser = getBrowserType();
+    setDeviceOS(os);
+    setBrowserType(browser);
 
-    // Show only if there is something to display: native prompt available OR iOS fallback.
-    if (!isAvailable && !onIos) return;
+    // Show if native prompt is available, or if manual steps can be shown.
+    const needsManual = os === 'ios' || (os === 'android' && !isAvailable);
+    if (!isAvailable && !needsManual) return;
 
     const timer = setTimeout(() => setOpen(true), SHOW_DELAY_MS);
     return () => clearTimeout(timer);
@@ -72,9 +175,10 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
   // Allow an external trigger (e.g. user just enabled notifications) to open early.
   useEffect(() => {
     if (!triggerOpen || isStandalone() || hasDismissed()) return;
-    if (!isAvailable && !ios) return;
+    const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
+    if (!isAvailable && !needsManual) return;
     setOpen(true);
-  }, [triggerOpen, isAvailable, ios]);
+  }, [triggerOpen, isAvailable, deviceOS]);
 
   const handleDismiss = () => {
     saveDismissed();
@@ -86,8 +190,16 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
     setOpen(false);
   };
 
+  const isManualIos = deviceOS === 'ios';
+  const isManualAndroid = deviceOS === 'android' && !isAvailable;
+
   // Nothing to render on unsupported environments.
-  if (!isAvailable && !ios) return null;
+  if (!isAvailable && !isManualIos && !isManualAndroid) return null;
+
+  // On iOS, Firefox uses a hamburger menu; all other browsers use the share button.
+  const iosUsesMenu = isManualIos && browserType === 'firefox';
+  // On Android without native prompt, Firefox uses a hamburger; others use three dots.
+  const androidUsesHamburger = isManualAndroid && browserType === 'firefox';
 
   return (
     <Drawer open={open} onOpenChange={(value) => { if (!value) handleDismiss(); }}>
@@ -102,26 +214,66 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
           </DrawerDescription>
         </DrawerHeader>
 
-        {ios ? (
+        {/* iOS manual instructions */}
+        {isManualIos && (
           <div className="px-4 pb-2 space-y-3 text-sm text-gray-600 dark:text-gray-400">
-            <p className="font-medium text-gray-900 dark:text-gray-100">{tr.iosTitle}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">{tr.howToTitle}</p>
             <ol className="list-decimal list-inside space-y-1.5">
-              <li>
-                {tr.iosStep1Pre}{' '}
-                <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosStep1Bold}</span>{' '}
-                {tr.iosStep1Post}
-              </li>
-              <li>
-                {tr.iosStep2Pre}{' '}
-                <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosStep2Bold}</span>.
-              </li>
-              <li>{tr.iosStep3}</li>
+              {iosUsesMenu ? (
+                // iOS Firefox: tap hamburger menu button
+                <>
+                  <li>
+                    {tr.iosFirefoxStep1Pre}
+                    <HamburgerMenuIcon />
+                    {tr.iosFirefoxStep1Post}
+                  </li>
+                  <li>
+                    {tr.iosFirefoxStep2Pre}{' '}
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosFirefoxStep2Bold}</span>
+                  </li>
+                  <li>{tr.iosFirefoxStep3}</li>
+                </>
+              ) : (
+                // iOS Safari / Chrome / Edge / Opera: tap share button
+                <>
+                  <li>
+                    {tr.iosSafariStep1Pre}
+                    <IosShareIcon />
+                    {tr.iosSafariStep1Post}
+                  </li>
+                  <li>
+                    {tr.iosSafariStep2Pre}{' '}
+                    <AddToHomeScreenIcon />
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafariStep2Bold}</span>
+                  </li>
+                  <li>{tr.iosSafariStep3}</li>
+                </>
+              )}
             </ol>
           </div>
-        ) : null}
+        )}
+
+        {/* Android manual instructions (when beforeinstallprompt is not available) */}
+        {isManualAndroid && (
+          <div className="px-4 pb-2 space-y-3 text-sm text-gray-600 dark:text-gray-400">
+            <p className="font-medium text-gray-900 dark:text-gray-100">{tr.howToTitle}</p>
+            <ol className="list-decimal list-inside space-y-1.5">
+              <li>
+                {tr.androidStep1Pre}
+                {androidUsesHamburger ? <HamburgerMenuIcon /> : <ThreeDotsMenuIcon />}
+                {tr.androidStep1Post}
+              </li>
+              <li>
+                {tr.androidStep2Pre}{' '}
+                <span className="font-medium text-gray-900 dark:text-gray-100">{tr.androidStep2Bold}</span>
+              </li>
+              <li>{tr.androidStep3}</li>
+            </ol>
+          </div>
+        )}
 
         <DrawerFooter>
-          {!ios && isAvailable && (
+          {isAvailable && (
             <Button onClick={handleInstall} className="w-full">
               {tr.installButton}
             </Button>

@@ -240,13 +240,25 @@ export interface Translations {
     pwaInstall: {
       title: string;
       description: string;
-      iosTitle: string;
-      iosStep1Pre: string;
-      iosStep1Bold: string;
-      iosStep1Post: string;
-      iosStep2Pre: string;
-      iosStep2Bold: string;
-      iosStep3: string;
+      howToTitle: string;
+      // iOS Safari / Chrome / Edge / Opera (share button)
+      iosSafariStep1Pre: string;
+      iosSafariStep1Post: string;
+      iosSafariStep2Pre: string;
+      iosSafariStep2Bold: string;
+      iosSafariStep3: string;
+      // iOS Firefox (hamburger menu)
+      iosFirefoxStep1Pre: string;
+      iosFirefoxStep1Post: string;
+      iosFirefoxStep2Pre: string;
+      iosFirefoxStep2Bold: string;
+      iosFirefoxStep3: string;
+      // Android manual (when beforeinstallprompt is not available)
+      androidStep1Pre: string;
+      androidStep1Post: string;
+      androidStep2Pre: string;
+      androidStep2Bold: string;
+      androidStep3: string;
       installButton: string;
       notNow: string;
     };
@@ -535,13 +547,22 @@ const translations: Record<Locale, Translations> = {
       pwaInstall: {
         title: 'Add Postino to your home screen',
         description: 'Get faster access and a better experience by installing the app on your device.',
-        iosTitle: 'To install on iOS:',
-        iosStep1Pre: 'Tap the',
-        iosStep1Bold: 'Share',
-        iosStep1Post: 'button (the box with an arrow pointing up) in the browser toolbar.',
-        iosStep2Pre: 'Scroll down and tap',
-        iosStep2Bold: '"Add to Home Screen"',
-        iosStep3: 'Tap "Add" in the top-right corner to confirm.',
+        howToTitle: 'How to install:',
+        iosSafariStep1Pre: 'Tap the',
+        iosSafariStep1Post: 'Share button in the browser toolbar.',
+        iosSafariStep2Pre: 'Tap',
+        iosSafariStep2Bold: 'Add to Home Screen',
+        iosSafariStep3: 'Tap Add in the top-right corner to confirm.',
+        iosFirefoxStep1Pre: 'Tap the',
+        iosFirefoxStep1Post: 'menu button in the browser toolbar.',
+        iosFirefoxStep2Pre: 'Tap',
+        iosFirefoxStep2Bold: 'Add to Home Screen',
+        iosFirefoxStep3: 'Tap Add to confirm.',
+        androidStep1Pre: 'Tap the',
+        androidStep1Post: 'menu button in the top-right corner.',
+        androidStep2Pre: 'Tap',
+        androidStep2Bold: 'Add to Home Screen',
+        androidStep3: 'Tap Add to confirm.',
         installButton: 'Install app',
         notNow: 'Not now',
       },
@@ -829,13 +850,22 @@ const translations: Record<Locale, Translations> = {
       pwaInstall: {
         title: 'Aggiungi Postino alla schermata home',
         description: "Ottieni un accesso più rapido e un'esperienza migliore installando l'app sul tuo dispositivo.",
-        iosTitle: 'Per installare su iOS:',
-        iosStep1Pre: 'Tocca il pulsante',
-        iosStep1Bold: 'Condividi',
-        iosStep1Post: "(la casella con una freccia rivolta verso l'alto) nella barra degli strumenti del browser.",
-        iosStep2Pre: 'Scorri verso il basso e tocca',
-        iosStep2Bold: '"Aggiungi a schermata Home"',
-        iosStep3: "Tocca «Aggiungi» nell'angolo in alto a destra per confermare.",
+        howToTitle: 'Come installare:',
+        iosSafariStep1Pre: 'Tocca il',
+        iosSafariStep1Post: 'pulsante Condividi nella barra del browser.',
+        iosSafariStep2Pre: 'Tocca',
+        iosSafariStep2Bold: 'Aggiungi a schermata Home',
+        iosSafariStep3: "Tocca Aggiungi nell'angolo in alto a destra per confermare.",
+        iosFirefoxStep1Pre: 'Tocca il',
+        iosFirefoxStep1Post: 'pulsante menu nella barra del browser.',
+        iosFirefoxStep2Pre: 'Tocca',
+        iosFirefoxStep2Bold: 'Aggiungi a schermata Home',
+        iosFirefoxStep3: 'Tocca Aggiungi per confermare.',
+        androidStep1Pre: 'Tocca il',
+        androidStep1Post: "pulsante menu nell'angolo in alto a destra.",
+        androidStep2Pre: 'Tocca',
+        androidStep2Bold: 'Aggiungi alla schermata Home',
+        androidStep3: 'Tocca Aggiungi per confermare.',
         installButton: 'Installa app',
         notNow: 'Non ora',
       },
@@ -1119,13 +1149,22 @@ const translations: Record<Locale, Translations> = {
       pwaInstall: {
         title: 'Añadir Postino a tu pantalla de inicio',
         description: 'Obtén un acceso más rápido y una mejor experiencia instalando la app en tu dispositivo.',
-        iosTitle: 'Para instalar en iOS:',
-        iosStep1Pre: 'Toca el botón',
-        iosStep1Bold: 'Compartir',
-        iosStep1Post: '(el cuadro con una flecha apuntando hacia arriba) en la barra de herramientas del navegador.',
-        iosStep2Pre: 'Desplázate hacia abajo y toca',
-        iosStep2Bold: '"Añadir a pantalla de inicio"',
-        iosStep3: 'Toca "Añadir" en la esquina superior derecha para confirmar.',
+        howToTitle: 'Cómo instalar:',
+        iosSafariStep1Pre: 'Toca el',
+        iosSafariStep1Post: 'botón Compartir en la barra del navegador.',
+        iosSafariStep2Pre: 'Toca',
+        iosSafariStep2Bold: 'Añadir a pantalla de inicio',
+        iosSafariStep3: 'Toca Añadir en la esquina superior derecha para confirmar.',
+        iosFirefoxStep1Pre: 'Toca el',
+        iosFirefoxStep1Post: 'botón de menú en la barra del navegador.',
+        iosFirefoxStep2Pre: 'Toca',
+        iosFirefoxStep2Bold: 'Añadir a pantalla de inicio',
+        iosFirefoxStep3: 'Toca Añadir para confirmar.',
+        androidStep1Pre: 'Toca el',
+        androidStep1Post: 'botón de menú en la esquina superior derecha.',
+        androidStep2Pre: 'Toca',
+        androidStep2Bold: 'Añadir a pantalla de inicio',
+        androidStep3: 'Toca Añadir para confirmar.',
         installButton: 'Instalar app',
         notNow: 'Ahora no',
       },
@@ -1409,13 +1448,22 @@ const translations: Record<Locale, Translations> = {
       pwaInstall: {
         title: "Ajouter Postino à votre écran d'accueil",
         description: "Bénéficiez d'un accès plus rapide et d'une meilleure expérience en installant l'application sur votre appareil.",
-        iosTitle: 'Pour installer sur iOS :',
-        iosStep1Pre: 'Appuyez sur le bouton',
-        iosStep1Bold: 'Partager',
-        iosStep1Post: "(la case avec une flèche vers le haut) dans la barre d'outils du navigateur.",
-        iosStep2Pre: 'Faites défiler vers le bas et appuyez sur',
-        iosStep2Bold: "« Sur l'écran d'accueil »",
-        iosStep3: 'Appuyez sur « Ajouter » dans le coin supérieur droit pour confirmer.',
+        howToTitle: 'Comment installer :',
+        iosSafariStep1Pre: 'Appuyez sur le',
+        iosSafariStep1Post: "bouton Partager dans la barre du navigateur.",
+        iosSafariStep2Pre: 'Appuyez sur',
+        iosSafariStep2Bold: "Sur l'écran d'accueil",
+        iosSafariStep3: "Appuyez sur Ajouter dans le coin supérieur droit pour confirmer.",
+        iosFirefoxStep1Pre: 'Appuyez sur le',
+        iosFirefoxStep1Post: "bouton de menu dans la barre du navigateur.",
+        iosFirefoxStep2Pre: 'Appuyez sur',
+        iosFirefoxStep2Bold: "Sur l'écran d'accueil",
+        iosFirefoxStep3: 'Appuyez sur Ajouter pour confirmer.',
+        androidStep1Pre: 'Appuyez sur le',
+        androidStep1Post: 'bouton de menu en haut à droite.',
+        androidStep2Pre: 'Appuyez sur',
+        androidStep2Bold: "Ajouter à l'écran d'accueil",
+        androidStep3: 'Appuyez sur Ajouter pour confirmer.',
         installButton: "Installer l'app",
         notNow: 'Pas maintenant',
       },
@@ -1699,13 +1747,22 @@ const translations: Record<Locale, Translations> = {
       pwaInstall: {
         title: 'Postino zum Startbildschirm hinzufügen',
         description: 'Erhalten Sie schnelleren Zugriff und eine bessere Erfahrung, indem Sie die App auf Ihrem Gerät installieren.',
-        iosTitle: 'So installieren Sie auf iOS:',
-        iosStep1Pre: 'Tippen Sie auf die Schaltfläche',
-        iosStep1Bold: 'Teilen',
-        iosStep1Post: '(das Feld mit einem nach oben zeigenden Pfeil) in der Browser-Symbolleiste.',
-        iosStep2Pre: 'Scrollen Sie nach unten und tippen Sie auf',
-        iosStep2Bold: '„Zum Home-Bildschirm"',
-        iosStep3: 'Tippen Sie zur Bestätigung auf „Hinzufügen" in der oberen rechten Ecke.',
+        howToTitle: 'So installieren Sie:',
+        iosSafariStep1Pre: 'Tippen Sie auf die',
+        iosSafariStep1Post: 'Teilen-Schaltfläche in der Browser-Symbolleiste.',
+        iosSafariStep2Pre: 'Tippen Sie auf',
+        iosSafariStep2Bold: 'Zum Home-Bildschirm',
+        iosSafariStep3: 'Tippen Sie zur Bestätigung auf Hinzufügen in der oberen rechten Ecke.',
+        iosFirefoxStep1Pre: 'Tippen Sie auf die',
+        iosFirefoxStep1Post: 'Menü-Schaltfläche in der Browser-Symbolleiste.',
+        iosFirefoxStep2Pre: 'Tippen Sie auf',
+        iosFirefoxStep2Bold: 'Zum Home-Bildschirm',
+        iosFirefoxStep3: 'Tippen Sie auf Hinzufügen zur Bestätigung.',
+        androidStep1Pre: 'Tippen Sie auf die',
+        androidStep1Post: 'Menü-Schaltfläche oben rechts.',
+        androidStep2Pre: 'Tippen Sie auf',
+        androidStep2Bold: 'Zum Startbildschirm hinzufügen',
+        androidStep3: 'Tippen Sie auf Hinzufügen zur Bestätigung.',
         installButton: 'App installieren',
         notNow: 'Nicht jetzt',
       },
