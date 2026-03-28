@@ -7,6 +7,7 @@ import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
+import { ForwardingHeaderCard } from '@/components/dashboard/ForwardingHeaderCard';
 import { InstallPwaDrawer } from '@/components/dashboard/InstallPwaDrawer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
@@ -21,8 +22,8 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'emails'>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
-  const [logsRefreshing, setLogsRefreshing] = useState(false);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [emailListRefreshTrigger, setEmailListRefreshTrigger] = useState(0);
   const searchParams = useSearchParams();
   const editRuleId = searchParams.get('editRule');
   const selectedEmailId = searchParams.get('selectedEmail');
@@ -45,7 +46,7 @@ export default function DashboardPage() {
   const fetchLogs = useCallback(async () => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
-    const res = await fetch('/api/email/logs', { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch('/api/email/logs?pageSize=50', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const data = await res.json();
       setLogs(data.logs || []);
@@ -69,7 +70,7 @@ export default function DashboardPage() {
       try {
         const token = await firebaseUser.getIdToken();
         const [logsRes, statsRes] = await Promise.all([
-          fetch('/api/email/logs', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/email/logs?pageSize=50', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/user/stats', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         if (logsRes.ok) {
@@ -88,9 +89,8 @@ export default function DashboardPage() {
   }, [firebaseUser]);
 
   const handleLogsRefresh = useCallback(async () => {
-    setLogsRefreshing(true);
-    try { await Promise.all([fetchLogs(), fetchStats()]); }
-    finally { setLogsRefreshing(false); }
+    await Promise.all([fetchLogs(), fetchStats()]);
+    setEmailListRefreshTrigger((n) => n + 1);
   }, [fetchLogs, fetchStats]);
 
   // Refresh email list when a push notification is clicked. The service worker
@@ -165,6 +165,10 @@ export default function DashboardPage() {
               />
             )}
             <PushNotificationButton />
+            <ForwardingHeaderCard
+              isEnabled={user?.isForwardingHeaderEnabled !== false}
+              onToggle={handleForwardingHeaderToggle}
+            />
             {userStats && <UserStatsCards stats={userStats} />}
             {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
           </div>
@@ -175,12 +179,8 @@ export default function DashboardPage() {
         <TabsContent value="emails">
           <EmailLogsList
             key={selectedEmailId ?? 'email-list'}
-            logs={logs}
-            onRefresh={handleLogsRefresh}
-            refreshing={logsRefreshing}
             selectedEmailId={selectedEmailId ?? undefined}
-            isForwardingHeaderEnabled={user?.isForwardingHeaderEnabled !== false}
-            onForwardingHeaderToggle={handleForwardingHeaderToggle}
+            refreshTrigger={emailListRefreshTrigger}
           />
         </TabsContent>
       </Tabs>
@@ -188,3 +188,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

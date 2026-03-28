@@ -138,6 +138,11 @@ export interface Translations {
       disabledDescription: string;
       blockedDescription: string;
     };
+    forwardingHeader: {
+      title: string;
+      enabledDescription: string;
+      disabledDescription: string;
+    };
     charts: {
       myEmailVolume: string;
       received: string;
@@ -165,9 +170,19 @@ export interface Translations {
       noEmailsYet: string;
       noEmailsYetDesc: string;
       from: string;
+      to: string;
+      cc: string;
+      attachments: string;
+      noAttachmentsShort: string;
       ruleApplied: string;
       tokens: string;
       viewOriginal: string;
+      viewFullPage: string;
+      loadingEmail: string;
+      searchPlaceholder: string;
+      withAttachments: string;
+      applyFilters: string;
+      results: string;
       previous: string;
       next: string;
       page: string;
@@ -241,6 +256,7 @@ export interface Translations {
     originalEmail: string;
     from: string;
     to: string;
+    cc: string;
     subject: string;
     received: string;
     emailContent: string;
@@ -417,6 +433,11 @@ const translations: Record<Locale, Translations> = {
         disabledDescription: 'Enable to receive a browser notification whenever a new email is processed.',
         blockedDescription: "Notifications are blocked by your browser. Open your browser's site settings and allow notifications for this site to enable this feature.",
       },
+      forwardingHeader: {
+        title: 'Postino Header in Forwarded Emails',
+        enabledDescription: 'A Postino summary box is appended to the bottom of every forwarded email.',
+        disabledDescription: 'The Postino summary box is not appended to forwarded emails.',
+      },
       charts: {
         myEmailVolume: 'My Email Volume',
         received: 'Received',
@@ -440,13 +461,23 @@ const translations: Record<Locale, Translations> = {
         refresh: 'Refresh',
         showPostinoHeader: 'Show Postino header in forwarded emails',
         noEmailsWithStatus: 'No emails with status',
-        clearFilter: 'Clear filter',
+        clearFilter: 'Remove filters',
         noEmailsYet: 'No emails processed yet.',
         noEmailsYetDesc: 'Send an email to your Postino address to get started!',
         from: 'From:',
+        to: 'To:',
+        cc: 'Cc:',
+        attachments: 'Attachments:',
+        noAttachmentsShort: 'None',
         ruleApplied: 'Rule applied:',
         tokens: 'Tokens:',
         viewOriginal: 'View original email',
+        viewFullPage: 'Full page',
+        loadingEmail: 'Loading email…',
+        searchPlaceholder: 'Search emails…',
+        withAttachments: 'With attachments',
+        applyFilters: 'Search',
+        results: 'results',
         previous: 'Previous',
         next: 'Next',
         page: 'Page',
@@ -520,6 +551,7 @@ const translations: Record<Locale, Translations> = {
       originalEmail: 'Original Email',
       from: 'From:',
       to: 'To:',
+      cc: 'Cc:',
       subject: 'Subject:',
       received: 'Received:',
       emailContent: 'Email Content',
@@ -695,6 +727,11 @@ const translations: Record<Locale, Translations> = {
         disabledDescription: "Attiva per ricevere una notifica del browser ogni volta che una nuova email viene elaborata.",
         blockedDescription: "Le notifiche sono bloccate dal browser. Apri le impostazioni del sito nel browser e consenti le notifiche per abilitare questa funzione.",
       },
+      forwardingHeader: {
+        title: 'Intestazione Postino nelle email inoltrate',
+        enabledDescription: 'Un riquadro di riepilogo Postino viene aggiunto in fondo a ogni email inoltrata.',
+        disabledDescription: 'Il riquadro di riepilogo Postino non viene aggiunto alle email inoltrate.',
+      },
       charts: {
         myEmailVolume: 'Il mio volume di email',
         received: 'Ricevute',
@@ -718,13 +755,23 @@ const translations: Record<Locale, Translations> = {
         refresh: 'Aggiorna',
         showPostinoHeader: 'Mostra intestazione Postino nelle email inoltrate',
         noEmailsWithStatus: 'Nessuna email con stato',
-        clearFilter: 'Rimuovi filtro',
+        clearFilter: 'Rimuovi filtri',
         noEmailsYet: 'Nessuna email elaborata.',
         noEmailsYetDesc: "Invia un'email al tuo indirizzo Postino per iniziare!",
         from: 'Da:',
+        to: 'A:',
+        cc: 'Cc:',
+        attachments: 'Allegati:',
+        noAttachmentsShort: 'Nessuno',
         ruleApplied: 'Regola applicata:',
         tokens: 'Token:',
         viewOriginal: 'Visualizza email originale',
+        viewFullPage: 'Pagina intera',
+        loadingEmail: 'Caricamento email…',
+        searchPlaceholder: 'Cerca email…',
+        withAttachments: 'Con allegati',
+        applyFilters: 'Cerca',
+        results: 'risultati',
         previous: 'Precedente',
         next: 'Successivo',
         page: 'Pagina',
@@ -798,6 +845,7 @@ const translations: Record<Locale, Translations> = {
       originalEmail: 'Email originale',
       from: 'Da:',
       to: 'A:',
+      cc: 'Cc:',
       subject: 'Oggetto:',
       received: 'Ricevuta:',
       emailContent: 'Contenuto email',
@@ -969,6 +1017,11 @@ const translations: Record<Locale, Translations> = {
         disabledDescription: 'Activa para recibir una notificación del navegador cada vez que se procese un nuevo correo.',
         blockedDescription: 'Las notificaciones están bloqueadas por tu navegador. Abre la configuración del sitio en tu navegador y permite las notificaciones para habilitar esta función.',
       },
+      forwardingHeader: {
+        title: 'Encabezado Postino en correos reenviados',
+        enabledDescription: 'Un cuadro de resumen de Postino se añade al final de cada correo reenviado.',
+        disabledDescription: 'El cuadro de resumen de Postino no se añade a los correos reenviados.',
+      },
       charts: {
         myEmailVolume: 'Mi volumen de correos',
         received: 'Recibidos',
@@ -992,13 +1045,23 @@ const translations: Record<Locale, Translations> = {
         refresh: 'Actualizar',
         showPostinoHeader: 'Mostrar encabezado Postino en correos reenviados',
         noEmailsWithStatus: 'No hay correos con estado',
-        clearFilter: 'Borrar filtro',
+        clearFilter: 'Borrar filtros',
         noEmailsYet: 'Aún no se han procesado correos.',
         noEmailsYetDesc: '¡Envía un correo a tu dirección Postino para empezar!',
         from: 'De:',
+        to: 'Para:',
+        cc: 'Cc:',
+        attachments: 'Adjuntos:',
+        noAttachmentsShort: 'Ninguno',
         ruleApplied: 'Regla aplicada:',
         tokens: 'Tokens:',
         viewOriginal: 'Ver correo original',
+        viewFullPage: 'Página completa',
+        loadingEmail: 'Cargando correo…',
+        searchPlaceholder: 'Buscar correos…',
+        withAttachments: 'Con adjuntos',
+        applyFilters: 'Buscar',
+        results: 'resultados',
         previous: 'Anterior',
         next: 'Siguiente',
         page: 'Página',
@@ -1072,6 +1135,7 @@ const translations: Record<Locale, Translations> = {
       originalEmail: 'Correo original',
       from: 'De:',
       to: 'Para:',
+      cc: 'Cc:',
       subject: 'Asunto:',
       received: 'Recibido:',
       emailContent: 'Contenido del correo',
@@ -1243,6 +1307,11 @@ const translations: Record<Locale, Translations> = {
         disabledDescription: "Activez pour recevoir une notification du navigateur à chaque nouveau traitement d'e-mail.",
         blockedDescription: "Les notifications sont bloquées par votre navigateur. Ouvrez les paramètres du site dans votre navigateur et autorisez les notifications pour activer cette fonctionnalité.",
       },
+      forwardingHeader: {
+        title: 'En-tête Postino dans les e-mails transmis',
+        enabledDescription: 'Un encadré récapitulatif Postino est ajouté au bas de chaque e-mail transmis.',
+        disabledDescription: "L'encadré récapitulatif Postino n'est pas ajouté aux e-mails transmis.",
+      },
       charts: {
         myEmailVolume: "Mon volume d'e-mails",
         received: 'Reçus',
@@ -1266,13 +1335,23 @@ const translations: Record<Locale, Translations> = {
         refresh: 'Actualiser',
         showPostinoHeader: "Afficher l'en-tête Postino dans les e-mails transmis",
         noEmailsWithStatus: 'Aucun e-mail avec le statut',
-        clearFilter: 'Effacer le filtre',
+        clearFilter: 'Effacer les filtres',
         noEmailsYet: "Aucun e-mail traité pour l'instant.",
         noEmailsYetDesc: 'Envoyez un e-mail à votre adresse Postino pour commencer !',
         from: 'De :',
+        to: 'À :',
+        cc: 'Cc :',
+        attachments: 'Pièces jointes :',
+        noAttachmentsShort: 'Aucune',
         ruleApplied: 'Règle appliquée :',
         tokens: 'Tokens :',
         viewOriginal: "Voir l'e-mail original",
+        viewFullPage: 'Pleine page',
+        loadingEmail: "Chargement de l'e-mail\u2026",
+        searchPlaceholder: 'Rechercher des e-mails…',
+        withAttachments: 'Avec pièces jointes',
+        applyFilters: 'Rechercher',
+        results: 'résultats',
         previous: 'Précédent',
         next: 'Suivant',
         page: 'Page',
@@ -1346,6 +1425,7 @@ const translations: Record<Locale, Translations> = {
       originalEmail: 'E-mail original',
       from: 'De :',
       to: 'À :',
+      cc: 'Cc :',
       subject: 'Objet :',
       received: 'Reçu :',
       emailContent: "Contenu de l'e-mail",
@@ -1517,6 +1597,11 @@ const translations: Record<Locale, Translations> = {
         disabledDescription: 'Aktivieren Sie, um eine Browserbenachrichtigung bei jeder neuen E-Mail-Verarbeitung zu erhalten.',
         blockedDescription: 'Benachrichtigungen sind von Ihrem Browser blockiert. Öffnen Sie die Website-Einstellungen in Ihrem Browser und erlauben Sie Benachrichtigungen, um diese Funktion zu aktivieren.',
       },
+      forwardingHeader: {
+        title: 'Postino-Kopfzeile in weitergeleiteten E-Mails',
+        enabledDescription: 'Eine Postino-Zusammenfassungsbox wird am Ende jeder weitergeleiteten E-Mail eingefügt.',
+        disabledDescription: 'Die Postino-Zusammenfassungsbox wird nicht zu weitergeleiteten E-Mails hinzugefügt.',
+      },
       charts: {
         myEmailVolume: 'Mein E-Mail-Volumen',
         received: 'Empfangen',
@@ -1540,13 +1625,23 @@ const translations: Record<Locale, Translations> = {
         refresh: 'Aktualisieren',
         showPostinoHeader: 'Postino-Kopfzeile in weitergeleiteten E-Mails anzeigen',
         noEmailsWithStatus: 'Keine E-Mails mit Status',
-        clearFilter: 'Filter löschen',
+        clearFilter: 'Filter entfernen',
         noEmailsYet: 'Noch keine E-Mails verarbeitet.',
         noEmailsYetDesc: 'Senden Sie eine E-Mail an Ihre Postino-Adresse, um zu beginnen!',
         from: 'Von:',
+        to: 'An:',
+        cc: 'Cc:',
+        attachments: 'Anhänge:',
+        noAttachmentsShort: 'Keine',
         ruleApplied: 'Angewendete Regel:',
         tokens: 'Tokens:',
         viewOriginal: 'Original-E-Mail anzeigen',
+        viewFullPage: 'Vollbild',
+        loadingEmail: 'E-Mail wird geladen…',
+        searchPlaceholder: 'E-Mails suchen…',
+        withAttachments: 'Mit Anhängen',
+        applyFilters: 'Suchen',
+        results: 'Ergebnisse',
         previous: 'Zurück',
         next: 'Weiter',
         page: 'Seite',
@@ -1620,6 +1715,7 @@ const translations: Record<Locale, Translations> = {
       originalEmail: 'Original-E-Mail',
       from: 'Von:',
       to: 'An:',
+      cc: 'Cc:',
       subject: 'Betreff:',
       received: 'Empfangen:',
       emailContent: 'E-Mail-Inhalt',
