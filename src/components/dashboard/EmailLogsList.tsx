@@ -78,6 +78,8 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Tracks which email IDs have already had their expanded data fetched to avoid duplicate requests. */
+  const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
   const STATUS_OPTIONS = [
     { value: ALL_STATUS_VALUE, label: t.dashboard.emailHistory.allStatuses },
@@ -137,7 +139,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     setPage(1);
     fetchLogs(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firebaseUser, searchQuery, hasAttachmentsFilter, statusFilter, refreshTrigger]);
+  }, [firebaseUser, searchQuery, hasAttachmentsFilter, refreshTrigger]);
 
   // Debounce search input
   const handleSearchChange = (value: string) => {
@@ -172,8 +174,16 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     setSelectedId(null);
   };
 
+  const handleClearFilters = () => {
+    handleStatusFilter(ALL_STATUS_VALUE);
+    setSearchInput('');
+    setSearchQuery('');
+    setHasAttachmentsFilter(false);
+  };
+
   const fetchExpandedEmail = useCallback(async (logId: string) => {
-    if (!firebaseUser || expandedData[logId]) return;
+    if (!firebaseUser || fetchedExpandedIds.current.has(logId)) return;
+    fetchedExpandedIds.current.add(logId);
     setExpandedData((prev) => ({
       ...prev,
       [logId]: { originalBody: null, toAddress: '', ccAddress: null, attachmentCount: 0, attachmentNames: [], loading: true },
@@ -208,7 +218,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         [logId]: { originalBody: null, toAddress: '', ccAddress: null, attachmentCount: 0, attachmentNames: [], loading: false, error: 'Failed to load' },
       }));
     }
-  }, [firebaseUser, expandedData]);
+  }, [firebaseUser]);
 
   const handleToggleExpand = (logId: string) => {
     if (selectedId === logId) {
@@ -318,7 +328,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                 <>
                   <p>{t.dashboard.emailHistory.noEmailsWithStatus} &ldquo;{statusLabel[statusFilter] ?? statusFilter}&rdquo;.</p>
                   <button
-                    onClick={() => { handleStatusFilter(''); setSearchInput(''); setSearchQuery(''); setHasAttachmentsFilter(false); }}
+                    onClick={handleClearFilters}
                     className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline"
                   >
                     {t.dashboard.emailHistory.clearFilter}

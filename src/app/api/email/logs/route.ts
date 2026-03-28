@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import type { Query } from 'firebase-admin/firestore';
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -25,13 +26,13 @@ export async function GET(request: NextRequest) {
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam));
 
     const db = adminDb();
-    let query = db
+    let query: Query = db
       .collection('emailLogs')
       .where('userId', '==', decoded.uid)
       .orderBy('receivedAt', 'desc');
 
     if (hasAttachments) {
-      query = query.where('attachmentCount', '>', 0) as typeof query;
+      query = query.where('attachmentCount', '>', 0);
     }
 
     let snap;
