@@ -613,6 +613,7 @@ export async function POST(request: NextRequest) {
     const sender = stripCrlf((formData.get('sender') as string) || '');
     const fromHeader = stripCrlf((formData.get('From') as string) || (formData.get('from') as string) || '');
     const replyToHeader = stripCrlf((formData.get('Reply-To') as string) || '');
+    const ccHeader = stripCrlf((formData.get('Cc') as string) || (formData.get('cc') as string) || '');
     const subject = stripCrlf((formData.get('subject') as string) || '');
     finalSender = sender;
     finalSubject = subject;
@@ -1107,6 +1108,7 @@ export async function POST(request: NextRequest) {
       userId,
       originalBody: emailBody,
       processingMode,
+      ...(ccHeader ? { ccAddress: ccHeader } : {}),
       ...(messageId ? { messageId } : {}),
       ...(attachments.length > 0 ? {
         attachmentCount: attachments.length,

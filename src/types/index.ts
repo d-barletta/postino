@@ -34,6 +34,8 @@ export interface EmailLog {
   id: string;
   toAddress: string;
   fromAddress: string;
+  /** CC recipients from the original email header. */
+  ccAddress?: string;
   subject: string;
   receivedAt: Date;
   processedAt?: Date;

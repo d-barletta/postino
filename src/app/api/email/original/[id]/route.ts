@@ -35,6 +35,7 @@ export async function GET(
       id: logSnap.id,
       fromAddress: data.fromAddress,
       toAddress: data.toAddress,
+      ccAddress: data.ccAddress ?? null,
       subject: data.subject,
       originalBody: data.originalBody ?? null,
       receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
