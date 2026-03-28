@@ -382,25 +382,33 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {isFullscreen && email.originalBody && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900">
-          <div className="absolute inset-0 flex flex-col">
-            <div className="h-14 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">{email.subject}</p>
-              <button
-                onClick={toggleFullscreen}
-                className="shrink-0 rounded-md p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                title={t.emailOriginal.closeFullPageView}
-                aria-label={t.emailOriginal.closeFullPageView}
-              >
-                <i className="bi bi-x-lg" aria-hidden="true" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
+          <div className="shrink-0 h-14 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">{email.subject}</p>
+            <button
+              onClick={toggleFullscreen}
+              className="shrink-0 rounded-md p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title={t.emailOriginal.closeFullPageView}
+              aria-label={t.emailOriginal.closeFullPageView}
+            >
+              <i className="bi bi-x-lg" aria-hidden="true" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
             <iframe
               sandbox=""
               srcDoc={email.originalBody}
-              className="w-full flex-1 border-0"
-              style={{ minHeight: 'calc(100dvh - 56px)' }}
+              className="w-full border-0"
               title="Original email content full page"
+              onLoad={(e) => {
+                try {
+                  const iframe = e.currentTarget;
+                  const height = iframe.contentDocument?.documentElement?.scrollHeight;
+                  if (height) iframe.style.height = `${height + 20}px`;
+                } catch {
+                  // Ignore cross-origin access errors
+                }
+              }}
             />
           </div>
         </div>
