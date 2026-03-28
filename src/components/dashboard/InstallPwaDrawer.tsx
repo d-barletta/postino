@@ -23,7 +23,11 @@ type BrowserType = 'safari' | 'chrome' | 'firefox' | 'samsung' | 'edge' | 'opera
 function getDeviceOS(): DeviceOS {
   if (typeof navigator === 'undefined') return 'desktop';
   const ua = navigator.userAgent;
-  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
+  // Detect iPadOS devices (iPadOS 13+ reports Macintosh with multiple touch points)
+  if (
+    /iphone|ipad|ipod/i.test(ua) ||
+    (/macintosh/i.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1)
+  ) return 'ios';
   if (/android/i.test(ua)) return 'android';
   return 'desktop';
 }
@@ -35,8 +39,9 @@ function getBrowserType(): BrowserType {
   if (/edg\/|edgios|edga\//i.test(ua)) return 'edge';
   if (/firefox|fxios/i.test(ua)) return 'firefox';
   if (/opr\/|opt\//i.test(ua)) return 'opera';
-  if (/chrome|chromium|crios/i.test(ua)) return 'chrome';
-  if (/safari/i.test(ua) && !/chrome|chromium|crios/i.test(ua)) return 'safari';
+  if (/crios/i.test(ua)) return 'chrome'; // Chrome on iOS uses CriOS token — must check before the generic chrome pattern
+  if (/chrome|chromium/i.test(ua)) return 'chrome';
+  if (/safari/i.test(ua)) return 'safari'; // safe: chrome/samsung/edge checked above
   return 'other';
 }
 
@@ -63,8 +68,11 @@ function saveDismissed(): void {
 
 // --- Platform-specific inline icons ---
 
-/** iOS share icon (box with upward-pointing arrow). Matches the iOS toolbar Share button. */
-function IosShareIcon() {
+/**
+ * iOS Safari share icon — blue, box with upward-pointing arrow.
+ * Matches the Share button in Safari's bottom toolbar.
+ */
+function IosSafariShareIcon() {
   return (
     <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-blue-500 text-white align-middle shrink-0">
       <svg
@@ -85,7 +93,32 @@ function IosShareIcon() {
   );
 }
 
-/** Plus icon inside a rounded square. Represents the "Add to Home Screen" action. */
+/**
+ * iOS Chrome share icon — dark gray, box with upward-pointing arrow.
+ * Matches the Share button in Chrome's top-right toolbar on iOS.
+ */
+function IosChromeShareIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-700 text-white align-middle shrink-0">
+      <svg
+        viewBox="0 0 24 24"
+        className="w-3 h-3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 14v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" />
+        <polyline points="16 6 12 2 8 6" />
+        <line x1="12" y1="2" x2="12" y2="15" />
+      </svg>
+    </span>
+  );
+}
+
+/** Plus icon inside a rounded square. Represents the "Add to Home Screen" action on iOS. */
 function AddToHomeScreenIcon() {
   return (
     <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
@@ -106,7 +139,7 @@ function AddToHomeScreenIcon() {
   );
 }
 
-/** Three vertical dots. Matches the Chrome / Samsung Internet / Edge menu button on Android. */
+/** Three vertical dots. Matches the Chrome / Samsung Internet / Edge / Firefox menu button on Android. */
 function ThreeDotsMenuIcon() {
   return (
     <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
@@ -119,24 +152,6 @@ function ThreeDotsMenuIcon() {
         <circle cx="12" cy="5" r="2" />
         <circle cx="12" cy="12" r="2" />
         <circle cx="12" cy="19" r="2" />
-      </svg>
-    </span>
-  );
-}
-
-/** Three horizontal lines (hamburger). Matches the Firefox menu button on iOS and Android. */
-function HamburgerMenuIcon() {
-  return (
-    <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
-      <svg
-        viewBox="0 0 24 24"
-        className="w-3 h-3"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <rect x="3" y="6" width="18" height="2" rx="1" />
-        <rect x="3" y="11" width="18" height="2" rx="1" />
-        <rect x="3" y="16" width="18" height="2" rx="1" />
       </svg>
     </span>
   );
@@ -164,6 +179,9 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
     setDeviceOS(os);
     setBrowserType(browser);
 
+    // iOS Firefox cannot add to homescreen — skip entirely.
+    if (os === 'ios' && browser === 'firefox') return;
+
     // Show if native prompt is available, or if manual steps can be shown.
     const needsManual = os === 'ios' || (os === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
@@ -175,10 +193,12 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
   // Allow an external trigger (e.g. user just enabled notifications) to open early.
   useEffect(() => {
     if (!triggerOpen || isStandalone() || hasDismissed()) return;
+    // iOS Firefox cannot add to homescreen.
+    if (deviceOS === 'ios' && browserType === 'firefox') return;
     const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
     setOpen(true);
-  }, [triggerOpen, isAvailable, deviceOS]);
+  }, [triggerOpen, isAvailable, deviceOS, browserType]);
 
   const handleDismiss = () => {
     saveDismissed();
@@ -190,16 +210,15 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
     setOpen(false);
   };
 
-  const isManualIos = deviceOS === 'ios';
+  // iOS Firefox cannot add to homescreen — nothing to render.
+  const isManualIos = deviceOS === 'ios' && browserType !== 'firefox';
   const isManualAndroid = deviceOS === 'android' && !isAvailable;
 
   // Nothing to render on unsupported environments.
   if (!isAvailable && !isManualIos && !isManualAndroid) return null;
 
-  // On iOS, Firefox uses a hamburger menu; all other browsers use the share button.
-  const iosUsesMenu = isManualIos && browserType === 'firefox';
-  // On Android without native prompt, Firefox uses a hamburger; others use three dots.
-  const androidUsesHamburger = isManualAndroid && browserType === 'firefox';
+  // iOS Chrome (CriOS) has its share button at the top-right; all other iOS browsers use the bottom toolbar.
+  const iosChromeVariant = isManualIos && browserType === 'chrome';
 
   return (
     <Drawer open={open} onOpenChange={(value) => { if (!value) handleDismiss(); }}>
@@ -219,26 +238,28 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
           <div className="px-4 pb-2 space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <p className="font-medium text-gray-900 dark:text-gray-100">{tr.howToTitle}</p>
             <ol className="list-decimal list-inside space-y-1.5">
-              {iosUsesMenu ? (
-                // iOS Firefox: tap hamburger menu button
+              {iosChromeVariant ? (
+                // iOS Chrome: dark-gray share icon in the upper-right corner
                 <>
                   <li>
-                    {tr.iosFirefoxStep1Pre}
-                    <HamburgerMenuIcon />
-                    {tr.iosFirefoxStep1Post}
+                    {tr.iosChromeStep1Pre}
+                    <IosChromeShareIcon />
+                    {tr.iosChromeStep1Post}
                   </li>
                   <li>
-                    {tr.iosFirefoxStep2Pre}{' '}
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosFirefoxStep2Bold}</span>
+                    {tr.iosChromeStep2Pre}{' '}
+                    <AddToHomeScreenIcon />
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosChromeStep2Bold}</span>
+                    {tr.iosChromeStep2Post}
                   </li>
-                  <li>{tr.iosFirefoxStep3}</li>
+                  <li>{tr.iosChromeStep3}</li>
                 </>
               ) : (
-                // iOS Safari / Chrome / Edge / Opera: tap share button
+                // iOS Safari / Edge / Opera: blue share icon in the bottom toolbar
                 <>
                   <li>
                     {tr.iosSafariStep1Pre}
-                    <IosShareIcon />
+                    <IosSafariShareIcon />
                     {tr.iosSafariStep1Post}
                   </li>
                   <li>
@@ -253,14 +274,15 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
           </div>
         )}
 
-        {/* Android manual instructions (when beforeinstallprompt is not available) */}
+        {/* Android manual instructions (when beforeinstallprompt is not available).
+            All Android browsers (Chrome, Samsung, Edge, Firefox) use the ⋮ three-dot menu. */}
         {isManualAndroid && (
           <div className="px-4 pb-2 space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <p className="font-medium text-gray-900 dark:text-gray-100">{tr.howToTitle}</p>
             <ol className="list-decimal list-inside space-y-1.5">
               <li>
                 {tr.androidStep1Pre}
-                {androidUsesHamburger ? <HamburgerMenuIcon /> : <ThreeDotsMenuIcon />}
+                <ThreeDotsMenuIcon />
                 {tr.androidStep1Post}
               </li>
               <li>

@@ -241,19 +241,20 @@ export interface Translations {
       title: string;
       description: string;
       howToTitle: string;
-      // iOS Safari / Chrome / Edge / Opera (share button)
+      // iOS Safari / Edge / Opera (blue share button in bottom toolbar)
       iosSafariStep1Pre: string;
       iosSafariStep1Post: string;
       iosSafariStep2Pre: string;
       iosSafariStep2Bold: string;
       iosSafariStep3: string;
-      // iOS Firefox (hamburger menu)
-      iosFirefoxStep1Pre: string;
-      iosFirefoxStep1Post: string;
-      iosFirefoxStep2Pre: string;
-      iosFirefoxStep2Bold: string;
-      iosFirefoxStep3: string;
-      // Android manual (when beforeinstallprompt is not available)
+      // iOS Chrome (dark-gray share button in upper-right corner)
+      iosChromeStep1Pre: string;
+      iosChromeStep1Post: string;
+      iosChromeStep2Pre: string;
+      iosChromeStep2Bold: string;
+      iosChromeStep2Post: string;
+      iosChromeStep3: string;
+      // Android manual — all browsers use the ⋮ three-dot menu (when beforeinstallprompt is not available)
       androidStep1Pre: string;
       androidStep1Post: string;
       androidStep2Pre: string;
@@ -553,11 +554,12 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Tap',
         iosSafariStep2Bold: 'Add to Home Screen',
         iosSafariStep3: 'Tap Add in the top-right corner to confirm.',
-        iosFirefoxStep1Pre: 'Tap the',
-        iosFirefoxStep1Post: 'menu button in the browser toolbar.',
-        iosFirefoxStep2Pre: 'Tap',
-        iosFirefoxStep2Bold: 'Add to Home Screen',
-        iosFirefoxStep3: 'Tap Add to confirm.',
+        iosChromeStep1Pre: 'Tap the',
+        iosChromeStep1Post: 'button in the upper-right corner.',
+        iosChromeStep2Pre: 'Select',
+        iosChromeStep2Bold: 'Add to Home Screen',
+        iosChromeStep2Post: ' from the menu. You may need to scroll down to find it.',
+        iosChromeStep3: 'Tap Add to confirm.',
         androidStep1Pre: 'Tap the',
         androidStep1Post: 'menu button in the top-right corner.',
         androidStep2Pre: 'Tap',
@@ -856,11 +858,12 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Tocca',
         iosSafariStep2Bold: 'Aggiungi a schermata Home',
         iosSafariStep3: "Tocca Aggiungi nell'angolo in alto a destra per confermare.",
-        iosFirefoxStep1Pre: 'Tocca il',
-        iosFirefoxStep1Post: 'pulsante menu nella barra del browser.',
-        iosFirefoxStep2Pre: 'Tocca',
-        iosFirefoxStep2Bold: 'Aggiungi a schermata Home',
-        iosFirefoxStep3: 'Tocca Aggiungi per confermare.',
+        iosChromeStep1Pre: 'Tocca il',
+        iosChromeStep1Post: "pulsante nell'angolo in alto a destra.",
+        iosChromeStep2Pre: 'Seleziona',
+        iosChromeStep2Bold: 'Aggiungi a schermata Home',
+        iosChromeStep2Post: ' dal menu. Potrebbe essere necessario scorrere verso il basso per trovarlo.',
+        iosChromeStep3: 'Tocca Aggiungi per confermare.',
         androidStep1Pre: 'Tocca il',
         androidStep1Post: "pulsante menu nell'angolo in alto a destra.",
         androidStep2Pre: 'Tocca',
@@ -1155,11 +1158,12 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Toca',
         iosSafariStep2Bold: 'Añadir a pantalla de inicio',
         iosSafariStep3: 'Toca Añadir en la esquina superior derecha para confirmar.',
-        iosFirefoxStep1Pre: 'Toca el',
-        iosFirefoxStep1Post: 'botón de menú en la barra del navegador.',
-        iosFirefoxStep2Pre: 'Toca',
-        iosFirefoxStep2Bold: 'Añadir a pantalla de inicio',
-        iosFirefoxStep3: 'Toca Añadir para confirmar.',
+        iosChromeStep1Pre: 'Toca el',
+        iosChromeStep1Post: 'botón en la esquina superior derecha.',
+        iosChromeStep2Pre: 'Selecciona',
+        iosChromeStep2Bold: 'Añadir a pantalla de inicio',
+        iosChromeStep2Post: ' del menú. Es posible que debas desplazarte para encontrarlo.',
+        iosChromeStep3: 'Toca Añadir para confirmar.',
         androidStep1Pre: 'Toca el',
         androidStep1Post: 'botón de menú en la esquina superior derecha.',
         androidStep2Pre: 'Toca',
@@ -1454,11 +1458,12 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Appuyez sur',
         iosSafariStep2Bold: "Sur l'écran d'accueil",
         iosSafariStep3: "Appuyez sur Ajouter dans le coin supérieur droit pour confirmer.",
-        iosFirefoxStep1Pre: 'Appuyez sur le',
-        iosFirefoxStep1Post: "bouton de menu dans la barre du navigateur.",
-        iosFirefoxStep2Pre: 'Appuyez sur',
-        iosFirefoxStep2Bold: "Sur l'écran d'accueil",
-        iosFirefoxStep3: 'Appuyez sur Ajouter pour confirmer.',
+        iosChromeStep1Pre: 'Appuyez sur le',
+        iosChromeStep1Post: 'bouton dans le coin supérieur droit.',
+        iosChromeStep2Pre: 'Sélectionnez',
+        iosChromeStep2Bold: "Sur l'écran d'accueil",
+        iosChromeStep2Post: ' dans le menu. Faites défiler vers le bas si nécessaire.',
+        iosChromeStep3: 'Appuyez sur Ajouter pour confirmer.',
         androidStep1Pre: 'Appuyez sur le',
         androidStep1Post: 'bouton de menu en haut à droite.',
         androidStep2Pre: 'Appuyez sur',
@@ -1753,11 +1758,12 @@ const translations: Record<Locale, Translations> = {
         iosSafariStep2Pre: 'Tippen Sie auf',
         iosSafariStep2Bold: 'Zum Home-Bildschirm',
         iosSafariStep3: 'Tippen Sie zur Bestätigung auf Hinzufügen in der oberen rechten Ecke.',
-        iosFirefoxStep1Pre: 'Tippen Sie auf die',
-        iosFirefoxStep1Post: 'Menü-Schaltfläche in der Browser-Symbolleiste.',
-        iosFirefoxStep2Pre: 'Tippen Sie auf',
-        iosFirefoxStep2Bold: 'Zum Home-Bildschirm',
-        iosFirefoxStep3: 'Tippen Sie auf Hinzufügen zur Bestätigung.',
+        iosChromeStep1Pre: 'Tippen Sie auf die',
+        iosChromeStep1Post: 'Schaltfläche in der oberen rechten Ecke.',
+        iosChromeStep2Pre: 'Wählen Sie',
+        iosChromeStep2Bold: 'Zum Home-Bildschirm',
+        iosChromeStep2Post: ' aus dem Menü. Möglicherweise müssen Sie nach unten scrollen.',
+        iosChromeStep3: 'Tippen Sie auf Hinzufügen zur Bestätigung.',
         androidStep1Pre: 'Tippen Sie auf die',
         androidStep1Post: 'Menü-Schaltfläche oben rechts.',
         androidStep2Pre: 'Tippen Sie auf',
