@@ -280,7 +280,7 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
         <DrawerHeader>
           <div className="flex justify-center mb-4">
             {/* White rounded container matches iOS app icon style; keeps logo visible on any bg */}
-            <div className="w-16 h-16 rounded-[22%] bg-white dark:bg-white shadow-sm flex items-center justify-center p-2.5">
+            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-white shadow-md overflow-hidden flex items-center justify-center p-2.5">
               <PostinoLogo className="h-11 w-11" />
             </div>
           </div>

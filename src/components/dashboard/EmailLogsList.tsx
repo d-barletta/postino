@@ -409,9 +409,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                           ) : (
                             <Mail className="h-4 w-4 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
                           )}
-                          <div>
-                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">{log.subject}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 wrap-break-word">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 break-words">{log.subject}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
@@ -442,7 +442,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                               </>
                             )}
                             <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.attachments}</dt>
-                            <dd className="text-gray-700 dark:text-gray-300">
+                            <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
                               {emailData?.loading ? (
                                 <span className="text-gray-400">…</span>
                               ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
@@ -475,9 +475,11 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                           {/* Email content iframe */}
                           <div className="space-y-2">
                             {emailData?.loading && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 py-2">
-                                {t.dashboard.emailHistory.loadingEmail}
-                              </p>
+                              <div className="animate-pulse space-y-2 pt-1">
+                                <div className="h-[200px] w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                                <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
+                                <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+                              </div>
                             )}
                             {emailData && !emailData.loading && emailData.originalBody && (
                               <>
