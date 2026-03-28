@@ -475,9 +475,11 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                           {/* Email content iframe */}
                           <div className="space-y-2">
                             {emailData?.loading && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 py-2">
-                                {t.dashboard.emailHistory.loadingEmail}
-                              </p>
+                              <div className="animate-pulse space-y-2 pt-1">
+                                <div className="h-[200px] w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                                <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
+                                <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+                              </div>
                             )}
                             {emailData && !emailData.loading && emailData.originalBody && (
                               <>
