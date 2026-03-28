@@ -301,6 +301,111 @@ function resolveStoreAttachmentUrl(
   }
 }
 
+/**
+ * Parse the filename from an HTTP `Content-Disposition` header value.
+ * Handles the RFC 5987 `filename*=` form (percent-encoded, charset-prefixed) and
+ * the basic `filename=` form (optionally quoted).
+ * Returns null when no usable filename can be extracted.
+ */
+function parseFilenameFromContentDisposition(header: string): string | null {
+  if (!header) return null;
+
+  // RFC 5987: filename*=charset'language'encoded%20name.pdf
+  // charset is required; language tag is optional (may be empty).
+  const rfc5987 = header.match(/filename\*\s*=\s*(?:[A-Za-z0-9\-]+'[A-Za-z0-9\-]*')?([^\s;]+)/i);
+  if (rfc5987 && rfc5987[1]) {
+    try {
+      const decoded = decodeURIComponent(rfc5987[1]).trim();
+      if (decoded) return decoded;
+    } catch {
+      const raw = rfc5987[1].trim();
+      if (raw) return raw;
+    }
+  }
+
+  // Basic: filename="quoted name.pdf" or filename=unquoted.pdf
+  const basic = header.match(/filename\s*=\s*"((?:[^"\\]|\\.)*)"|filename\s*=\s*([^\s;]+)/i);
+  if (basic) {
+    const name = (basic[1] !== undefined
+      ? basic[1].replace(/\\(.)/g, '$1')  // unescape backslash sequences
+      : basic[2] ?? ''
+    ).trim();
+    if (name) return name;
+  }
+
+  return null;
+}
+
+/**
+ * Return a file extension (including the leading dot) that corresponds to the
+ * given MIME type, or an empty string when no mapping is known.
+ * Used as a last-resort fallback so forwarded attachments always carry an
+ * extension even when neither the Mailgun metadata nor the Content-Disposition
+ * response header contains the original filename.
+ */
+function extensionFromMimeType(mimeType: string): string {
+  const type = mimeType.split(';')[0].trim().toLowerCase();
+  const map: Record<string, string> = {
+    'application/pdf': '.pdf',
+    'application/zip': '.zip',
+    'application/x-zip-compressed': '.zip',
+    'application/gzip': '.gz',
+    'application/x-tar': '.tar',
+    'application/x-rar-compressed': '.rar',
+    'application/vnd.rar': '.rar',
+    'application/x-7z-compressed': '.7z',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'application/vnd.ms-excel': '.xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+    'application/vnd.ms-powerpoint': '.ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+    'application/vnd.oasis.opendocument.text': '.odt',
+    'application/vnd.oasis.opendocument.spreadsheet': '.ods',
+    'application/vnd.oasis.opendocument.presentation': '.odp',
+    'text/plain': '.txt',
+    'text/html': '.html',
+    'text/csv': '.csv',
+    'text/calendar': '.ics',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/svg+xml': '.svg',
+    'image/tiff': '.tiff',
+    'image/bmp': '.bmp',
+    'audio/mpeg': '.mp3',
+    'audio/ogg': '.ogg',
+    'audio/wav': '.wav',
+    'video/mp4': '.mp4',
+    'video/mpeg': '.mpeg',
+    'video/ogg': '.ogv',
+    'video/webm': '.webm',
+    'video/quicktime': '.mov',
+    'video/x-msvideo': '.avi',
+    'application/json': '.json',
+    'application/xml': '.xml',
+    'text/xml': '.xml',
+  };
+  return map[type] ?? '';
+}
+
+/**
+ * Ensure that `filename` carries a file-extension by appending one derived
+ * from `mimeType` when the basename has no extension.
+ */
+function ensureFilenameExtension(filename: string, mimeType: string): string {
+  if (!filename) return filename;
+  const lastSep = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+  const dot = filename.lastIndexOf('.');
+  // A dot that appears after the last path separator (and not at position 0
+  // of the basename, i.e. hidden-file convention) counts as an extension.
+  const hasExtension = dot > 0 && dot > lastSep;
+  if (hasExtension) return filename;
+  const ext = extensionFromMimeType(mimeType);
+  return ext ? `${filename}${ext}` : filename;
+}
+
 function fingerprintSecret(secret: string): string {
   if (!secret) return '';
   return crypto.createHash('sha256').update(secret).digest('hex').slice(0, 12);
@@ -935,14 +1040,25 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
         }
 
+        const resolvedContentType =
+          attachmentRef.contentType ||
+          attachmentResponse.headers.get('content-type') ||
+          'application/octet-stream';
+
+        // Resolve the best available filename for this attachment.
+        // Priority: Mailgun metadata name → Content-Disposition response header → generic fallback.
+        // Always ensure the filename carries a file extension so email clients and
+        // operating systems can determine the correct application to open the file.
+        const contentDispositionHeader = attachmentResponse.headers.get('content-disposition') || '';
+        const filenameFromHeader = parseFilenameFromContentDisposition(contentDispositionHeader);
+        const rawFilename = attachmentRef.name || filenameFromHeader || `attachment-${i + 1}`;
+        const resolvedFilename = ensureFilenameExtension(rawFilename, resolvedContentType);
+
         const contentId = contentIdFieldMap.get(attachmentRef.url) || contentIdFieldMap.get(safeUrl);
         attachments.push({
-          filename: attachmentRef.name || `attachment-${i + 1}`,
+          filename: resolvedFilename,
           content,
-          contentType:
-            attachmentRef.contentType ||
-            attachmentResponse.headers.get('content-type') ||
-            'application/octet-stream',
+          contentType: resolvedContentType,
           ...(contentId ? { contentId } : {}),
         });
       }
@@ -969,10 +1085,11 @@ export async function POST(request: NextRequest) {
 
         const fieldName = `attachment-${i}`;
         const contentId = contentIdFieldMap.get(fieldName);
+        const fileContentType = file.type || 'application/octet-stream';
         attachments.push({
-          filename: file.name,
+          filename: ensureFilenameExtension(file.name, fileContentType),
           content: await file.arrayBuffer(),
-          contentType: file.type || 'application/octet-stream',
+          contentType: fileContentType,
           ...(contentId ? { contentId } : {}),
         });
       }
