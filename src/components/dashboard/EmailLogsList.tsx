@@ -24,14 +24,12 @@ import {
   Mail,
   Paperclip,
   ExternalLink,
-  Maximize2,
   Search,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 
 const PAGE_SIZE = 20;
 const ALL_STATUS_VALUE = '__all__';
-const SEARCH_DEBOUNCE_MS = 400;
 
 interface EmailLogsListProps {
   selectedEmailId?: string;
@@ -68,17 +66,23 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [totalPages, setTotalPages] = useState<number | undefined>(undefined);
+  const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
 
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+
+  // Pending (staged in UI, not yet applied)
+  const [pendingSearch, setPendingSearch] = useState('');
+  const [pendingStatus, setPendingStatus] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState(false);
+
+  // Applied (trigger server fetch / client filter)
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [hasAttachmentsFilter, setHasAttachmentsFilter] = useState(false);
 
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
 
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Tracks which email IDs have already had their expanded data fetched to avoid duplicate requests. */
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -111,6 +115,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     if (!firebaseUser) return;
     if (isRefresh) setRefreshing(true);
     else setLogsLoading(true);
+    setTotalCount(undefined);
     try {
       const token = await firebaseUser.getIdToken();
       const params = new URLSearchParams({
@@ -128,6 +133,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         setPage(data.page);
         setHasNextPage(data.hasNextPage);
         setTotalPages(data.totalPages);
+        setTotalCount(data.totalCount);
       }
     } finally {
       setLogsLoading(false);
@@ -142,14 +148,12 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, searchQuery, hasAttachmentsFilter, refreshTrigger]);
 
-  // Debounce search input
-  const handleSearchChange = (value: string) => {
-    setSearchInput(value);
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => {
-      setSearchQuery(value.trim());
-      setPage(1);
-    }, SEARCH_DEBOUNCE_MS);
+  const handleApplyFilters = () => {
+    setSearchQuery(pendingSearch.trim());
+    setStatusFilter(pendingStatus);
+    setHasAttachmentsFilter(pendingAttachments);
+    setPage(1);
+    setSelectedId(null);
   };
 
   const handleRefresh = async () => {
@@ -163,23 +167,15 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     setPage(newPage);
   };
 
-  const handleStatusFilter = (value: string) => {
-    setStatusFilter(value === ALL_STATUS_VALUE ? '' : value);
-    setPage(1);
-    setSelectedId(null);
-  };
-
-  const handleAttachmentsToggle = (checked: boolean) => {
-    setHasAttachmentsFilter(checked);
-    setPage(1);
-    setSelectedId(null);
-  };
-
   const handleClearFilters = () => {
-    handleStatusFilter(ALL_STATUS_VALUE);
-    setSearchInput('');
+    setPendingSearch('');
+    setPendingStatus('');
+    setPendingAttachments(false);
     setSearchQuery('');
+    setStatusFilter('');
     setHasAttachmentsFilter(false);
+    setPage(1);
+    setSelectedId(null);
   };
 
   const fetchExpandedEmail = useCallback(async (logId: string) => {
@@ -255,62 +251,88 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Row 1: Title + Refresh */}
+            <div className="flex items-center justify-between">
               <CardTitle>{t.dashboard.tabs.emailHistory}</CardTitle>
-              <div className="flex items-center gap-2">
-                <div className="w-44">
-                  <Select
-                    value={statusFilter || ALL_STATUS_VALUE}
-                    onValueChange={handleStatusFilter}
-                  >
-                    <SelectTrigger aria-label={t.dashboard.emailHistory.filterByStatus}>
-                      <SelectValue placeholder={t.dashboard.emailHistory.allStatuses} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {STATUS_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  title={t.dashboard.emailHistory.refresh}
-                >
-                  <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
-                </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title={t.dashboard.emailHistory.refresh}
+              >
+                <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
+              </Button>
+            </div>
+
+            {/* Row 2: Search input + Apply button */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="search"
+                  value={pendingSearch}
+                  onChange={(e) => setPendingSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleApplyFilters(); }}
+                  placeholder={t.dashboard.emailHistory.searchPlaceholder}
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                />
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleApplyFilters}
+                disabled={logsLoading || refreshing}
+                className="shrink-0"
+              >
+                {t.dashboard.emailHistory.applyFilters}
+              </Button>
             </div>
 
-            {/* Search bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              <input
-                type="search"
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder={t.dashboard.emailHistory.searchPlaceholder}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-              />
-            </div>
-
-            {/* Attachment filter toggle */}
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={hasAttachmentsFilter}
-                onCheckedChange={handleAttachmentsToggle}
-                aria-label={t.dashboard.emailHistory.withAttachments}
-              />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {t.dashboard.emailHistory.withAttachments}
-              </span>
+            {/* Row 3: Status filter + Attachments toggle + Clear + Count */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="w-40">
+                <Select
+                  value={pendingStatus || ALL_STATUS_VALUE}
+                  onValueChange={(v) => setPendingStatus(v === ALL_STATUS_VALUE ? '' : v)}
+                >
+                  <SelectTrigger aria-label={t.dashboard.emailHistory.filterByStatus}>
+                    <SelectValue placeholder={t.dashboard.emailHistory.allStatuses} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={pendingAttachments}
+                  onCheckedChange={setPendingAttachments}
+                  aria-label={t.dashboard.emailHistory.withAttachments}
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {t.dashboard.emailHistory.withAttachments}
+                </span>
+              </div>
+              {(searchQuery || statusFilter || hasAttachmentsFilter) && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
+                >
+                  {t.dashboard.emailHistory.clearFilter}
+                </button>
+              )}
+              {!logsLoading && (
+                <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
+                  {totalCount !== undefined ? totalCount : filteredLogs.length} {t.dashboard.emailHistory.results}
+                </span>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -439,44 +461,6 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                             )}
                             {emailData && !emailData.loading && emailData.originalBody && (
                               <>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                    {t.emailOriginal.emailContent}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    {isAdmin ? (
-                                      <>
-                                        <a
-                                          href={`/email/original/${log.id}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 text-xs text-[#d0b53f] hover:underline"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                          {t.dashboard.emailHistory.viewOriginal}
-                                        </a>
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); setFullscreenEmailId(log.id); }}
-                                          className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                          title={t.emailOriginal.openFullPageView}
-                                        >
-                                          <Maximize2 className="h-3 w-3" />
-                                          {t.dashboard.emailHistory.viewFullPage}
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <a
-                                        href={`/email/original/${log.id}`}
-                                        className="inline-flex items-center gap-1 text-xs text-[#d0b53f] hover:underline"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <Maximize2 className="h-3 w-3" />
-                                        {t.dashboard.emailHistory.viewFullPage}
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
                                 <iframe
                                   sandbox=""
                                   srcDoc={emailData.originalBody}
@@ -489,6 +473,40 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                                     if (height) iframe.style.height = `${Math.min(height + 20, 400)}px`;
                                   }}
                                 />
+                                {/* Buttons below preview */}
+                                <div className="flex items-center gap-3 pt-1">
+                                  {isAdmin ? (
+                                    <>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setFullscreenEmailId(log.id); }}
+                                        className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                        title={t.emailOriginal.openFullPageView}
+                                      >
+                                        <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
+                                        {t.dashboard.emailHistory.viewFullPage}
+                                      </button>
+                                      <a
+                                        href={`/email/original/${log.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        {t.dashboard.emailHistory.viewOriginal}
+                                      </a>
+                                    </>
+                                  ) : (
+                                    <a
+                                      href={`/email/original/${log.id}`}
+                                      className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
+                                      {t.dashboard.emailHistory.viewFullPage}
+                                    </a>
+                                  )}
+                                </div>
                               </>
                             )}
                             {emailData && !emailData.loading && !emailData.originalBody && !emailData.error && (

@@ -181,6 +181,8 @@ export interface Translations {
       loadingEmail: string;
       searchPlaceholder: string;
       withAttachments: string;
+      applyFilters: string;
+      results: string;
       previous: string;
       next: string;
       page: string;
@@ -474,6 +476,8 @@ const translations: Record<Locale, Translations> = {
         loadingEmail: 'Loading email…',
         searchPlaceholder: 'Search emails…',
         withAttachments: 'With attachments',
+        applyFilters: 'Search',
+        results: 'results',
         previous: 'Previous',
         next: 'Next',
         page: 'Page',
@@ -766,6 +770,8 @@ const translations: Record<Locale, Translations> = {
         loadingEmail: 'Caricamento email…',
         searchPlaceholder: 'Cerca email…',
         withAttachments: 'Con allegati',
+        applyFilters: 'Cerca',
+        results: 'risultati',
         previous: 'Precedente',
         next: 'Successivo',
         page: 'Pagina',
@@ -1054,6 +1060,8 @@ const translations: Record<Locale, Translations> = {
         loadingEmail: 'Cargando correo…',
         searchPlaceholder: 'Buscar correos…',
         withAttachments: 'Con adjuntos',
+        applyFilters: 'Buscar',
+        results: 'resultados',
         previous: 'Anterior',
         next: 'Siguiente',
         page: 'Página',
@@ -1342,6 +1350,8 @@ const translations: Record<Locale, Translations> = {
         loadingEmail: "Chargement de l'e-mail\u2026",
         searchPlaceholder: 'Rechercher des e-mails…',
         withAttachments: 'Avec pièces jointes',
+        applyFilters: 'Rechercher',
+        results: 'résultats',
         previous: 'Précédent',
         next: 'Suivant',
         page: 'Page',
@@ -1630,6 +1640,8 @@ const translations: Record<Locale, Translations> = {
         loadingEmail: 'E-Mail wird geladen…',
         searchPlaceholder: 'E-Mails suchen…',
         withAttachments: 'Mit Anhängen',
+        applyFilters: 'Suchen',
+        results: 'Ergebnisse',
         previous: 'Zurück',
         next: 'Weiter',
         page: 'Seite',
