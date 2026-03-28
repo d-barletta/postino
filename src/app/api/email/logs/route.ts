@@ -26,17 +26,13 @@ export async function GET(request: NextRequest) {
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam));
 
     const db = adminDb();
-    let query: Query = db
+    const query: Query = db
       .collection('emailLogs')
       .where('userId', '==', decoded.uid)
       .orderBy('receivedAt', 'desc');
 
-    if (hasAttachments) {
-      query = query.where('attachmentCount', '>', 0);
-    }
-
     let snap;
-    if (search) {
+    if (search || hasAttachments) {
       snap = await query.limit(SEARCH_FETCH_LIMIT).get();
     } else {
       const offset = (page - 1) * pageSize;
@@ -70,9 +66,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (hasAttachments) {
+      docs = docs.filter((d) => (d.attachmentCount ?? 0) > 0);
+    }
+
     let hasNextPage = false;
     let paginatedDocs;
-    if (search) {
+    if (search || hasAttachments) {
       const totalCount = docs.length;
       const start = (page - 1) * pageSize;
       paginatedDocs = docs.slice(start, start + pageSize);

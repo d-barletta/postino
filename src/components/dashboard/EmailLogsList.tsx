@@ -244,6 +244,11 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     ? logs.filter((l) => l.status === statusFilter)
     : logs;
 
+  const hasPendingChanges =
+    pendingSearch.trim() !== searchQuery ||
+    pendingStatus !== statusFilter ||
+    pendingAttachments !== hasAttachmentsFilter;
+
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
 
   return (
@@ -273,23 +278,22 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                   type="search"
                   value={pendingSearch}
                   onChange={(e) => setPendingSearch(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleApplyFilters(); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
                   placeholder={t.dashboard.emailHistory.searchPlaceholder}
                   className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
                 />
               </div>
               <Button
-                variant="outline"
                 size="sm"
                 onClick={handleApplyFilters}
-                disabled={logsLoading || refreshing}
+                disabled={!hasPendingChanges || logsLoading || refreshing}
                 className="shrink-0"
               >
                 {t.dashboard.emailHistory.applyFilters}
               </Button>
             </div>
 
-            {/* Row 3: Status filter + Attachments toggle + Clear + Count */}
+            {/* Row 3: Status filter + Attachments toggle + Count (left) + Remove filters (right) */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="w-40">
                 <Select
@@ -320,18 +324,18 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                   {t.dashboard.emailHistory.withAttachments}
                 </span>
               </div>
+              {!logsLoading && (
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {totalCount !== undefined ? totalCount : filteredLogs.length} {t.dashboard.emailHistory.results}
+                </span>
+              )}
               {(searchQuery || statusFilter || hasAttachmentsFilter) && (
                 <button
                   onClick={handleClearFilters}
-                  className="text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
+                  className="ml-auto text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
                 >
                   {t.dashboard.emailHistory.clearFilter}
                 </button>
-              )}
-              {!logsLoading && (
-                <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
-                  {totalCount !== undefined ? totalCount : filteredLogs.length} {t.dashboard.emailHistory.results}
-                </span>
               )}
             </div>
           </div>
