@@ -56,7 +56,7 @@ interface ExpandedEmailData {
 }
 
 export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsListProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { firebaseUser, user } = useAuth();
   const isAdmin = user?.isAdmin === true;
 
@@ -406,7 +406,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                         </div>
                         <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
                           <Badge variant={statusVariant[log.status] || 'default'}>{statusLabel[log.status] ?? log.status}</Badge>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt)}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt, locale)}</span>
                         </div>
                       </div>
 

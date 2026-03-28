@@ -108,7 +108,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   const [range, setRange] = useState<TimeRange>('7d');
   const [granularity, setGranularity] = useState<TimeGranularity>(DEFAULT_GRANULARITY['7d']);
   const [statusAccordionValue, setStatusAccordionValue] = useState('');
-  const [tokensAccordionValue, setTokensAccordionValue] = useState('tokens-cost');
+  const [tokensAccordionValue, setTokensAccordionValue] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -216,6 +216,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                         innerRadius={44}
                         outerRadius={78}
                         strokeWidth={0}
+                        isAnimationActive={false}
                       >
                         {(pieData.length > 0 ? pieData : [{ status: 'received', fill: 'var(--color-received)' }]).map((entry) => (
                           <Cell key={entry.status} fill={entry.fill} />
@@ -317,7 +318,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                             />
                           }
                         />
-                        <Bar yAxisId="tokens" dataKey="tokens" radius={0} fill="var(--color-tokens)" />
+                        <Bar yAxisId="tokens" dataKey="tokens" radius={0} fill="var(--color-tokens)" isAnimationActive={false} />
                         <Line
                           yAxisId="cost"
                           type="monotone"
@@ -326,6 +327,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                           strokeWidth={2.5}
                           dot={{ r: 3, fill: isDarkMode ? '#efd957' : 'var(--color-cost)' }}
                           activeDot={{ r: 5, fill: isDarkMode ? '#efd957' : 'var(--color-cost)' }}
+                          isAnimationActive={false}
                         />
                       </ComposedChart>
                     </ChartContainer>
