@@ -535,7 +535,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                   Previous
                 </Button>
                 <span className="text-xs text-gray-400 dark:text-gray-500">
-                  Page {page}{totalPages !== undefined ? ` / ${totalPages}` : ''}
+                  Page {page}{totalPages != null ? ` / ${totalPages}` : ''}
                 </span>
                 <Button variant="ghost" size="sm" onClick={() => handlePageChange(page + 1)} disabled={!hasNextPage}>
                   Next
