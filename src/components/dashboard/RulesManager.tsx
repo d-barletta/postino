@@ -32,7 +32,7 @@ interface RulesManagerProps {
 
 export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }: RulesManagerProps) {
   const { rules, loading, createRule, updateRule, deleteRule, reorderRules } = useRules();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const [newRuleName, setNewRuleName] = useState('');
   const [newRuleText, setNewRuleText] = useState('');
@@ -472,7 +472,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                           </div>
                         )}
                         <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
-                          {t.dashboard.rules.updated} {formatDate(rule.updatedAt)}
+                          {t.dashboard.rules.updated} {formatDate(rule.updatedAt, locale)}
                         </p>
 
                         {/* Bottom row: up/down arrows (left) + edit/delete (right) */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { StatsCards } from '@/components/admin/StatsCards';
 import { AdminOverviewCharts } from '@/components/admin/AdminOverviewCharts';
@@ -16,6 +16,8 @@ export default function AdminPage() {
   const { firebaseUser } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -35,6 +37,12 @@ export default function AdminPage() {
     };
     fetchStats();
   }, [firebaseUser]);
+
+  const handleTabChange = (value: string) => {
+    startTransition(() => {
+      setActiveTab(value);
+    });
+  };
 
   const renderOverviewContent = () => {
     if (loading) {
@@ -78,7 +86,7 @@ export default function AdminPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">Platform statistics and management</p>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="overflow-x-auto whitespace-nowrap">
           <TabsTrigger value="overview" className="mr-4 sm:mr-6">Overview</TabsTrigger>
           <TabsTrigger value="users" className="mr-4 sm:mr-6">Users</TabsTrigger>

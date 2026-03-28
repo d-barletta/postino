@@ -1,14 +1,22 @@
 'use client';
 
-import { Fragment, useState, useEffect, useCallback, useRef } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { EmailLogsCharts } from '@/components/admin/EmailLogsCharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Switch } from '@/components/ui/Switch';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import { cn } from '@/lib/utils';
-import { RefreshCw, ChevronLeft, ChevronRight, Search, X, Copy, Filter, FileJson } from 'lucide-react';
+import { RefreshCw, ChevronLeft, ChevronRight, Search, Copy, Filter, FileJson } from 'lucide-react';
 
 interface AdminEmailLog {
   id: string;
@@ -25,6 +33,8 @@ interface AdminEmailLog {
   estimatedCost: number | null;
   errorMessage: string | null;
   agentTrace: unknown | null;
+  attachmentCount: number;
+  attachmentNames: string[];
 }
 
 interface AgentTraceStepView {
@@ -60,17 +70,17 @@ const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error' | 
 };
 
 const ALL_STATUSES = ['received', 'processing', 'forwarded', 'error', 'skipped'] as const;
-type EmailStatus = (typeof ALL_STATUSES)[number];
+const ALL_STATUS_VALUE = '__all__';
 
 const PAGE_SIZE = 20;
 
 function formatDate(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return '\u2014';
   return new Date(iso).toLocaleString();
 }
 
 function processingTime(receivedAt: string | null, processedAt: string | null): string {
-  if (!receivedAt || !processedAt) return '—';
+  if (!receivedAt || !processedAt) return '\u2014';
   const ms = new Date(processedAt).getTime() - new Date(receivedAt).getTime();
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
@@ -90,42 +100,57 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
   const [warningsOnly, setWarningsOnly] = useState(false);
   const [copiedTraceId, setCopiedTraceId] = useState<string | null>(null);
   const [rawJsonLogId, setRawJsonLogId] = useState<string | null>(null);
-  const [cursorStack, setCursorStack] = useState<string[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [totalPages, setTotalPages] = useState<number | undefined>(undefined);
+  const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
 
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState<EmailStatus | null>(null);
-  const [searchText, setSearchText] = useState('');
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  // Pending (staged in UI, not yet applied)
+  const [pendingSearch, setPendingSearch] = useState('');
+  const [pendingStatus, setPendingStatus] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState(false);
 
-  const buildUrl = useCallback((cursor: string | null, status: EmailStatus | null) => {
-    const params = new URLSearchParams({ pageSize: String(PAGE_SIZE) });
-    if (cursor) params.set('cursor', cursor);
-    if (status) params.set('status', status);
-    return `/api/admin/emails?${params.toString()}`;
-  }, []);
+  // Applied (trigger server fetch)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [hasAttachmentsFilter, setHasAttachmentsFilter] = useState(false);
 
-  const fetchPage = useCallback(async (cursor: string | null, status: EmailStatus | null): Promise<boolean> => {
-    if (!firebaseUser) return false;
+  const fetchLogs = useCallback(async (targetPage: number, isRefresh = false) => {
+    if (!firebaseUser) return;
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setTotalCount(undefined);
     try {
       let token = await firebaseUser.getIdToken();
-      let res = await fetch(buildUrl(cursor, status), { headers: { Authorization: `Bearer ${token}` } });
+      const params = new URLSearchParams({
+        page: String(targetPage),
+        pageSize: String(PAGE_SIZE),
+        ...(searchQuery ? { search: searchQuery } : {}),
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(hasAttachmentsFilter ? { hasAttachments: 'true' } : {}),
+      });
+
+      let res = await fetch(`/api/admin/emails?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       // Retry once with a forced token refresh for transient auth expiration.
       if (res.status === 401) {
         token = await firebaseUser.getIdToken(true);
-        res = await fetch(buildUrl(cursor, status), { headers: { Authorization: `Bearer ${token}` } });
+        res = await fetch(`/api/admin/emails?${params}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
 
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs || []);
-        setHasMore(data.hasMore ?? false);
-        setNextCursor(data.nextCursor ?? null);
+        setPage(data.page ?? targetPage);
+        setHasNextPage(data.hasNextPage ?? false);
+        setTotalPages(data.totalPages);
+        setTotalCount(data.totalCount);
         setExpanded(null);
         setFetchError('');
-        return true;
       } else {
         if (res.status === 401) {
           setFetchError('Unauthorized. Please sign in again.');
@@ -134,50 +159,47 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
         } else {
           setFetchError('Failed to load email logs.');
         }
-        return false;
       }
     } catch {
       setFetchError('Failed to load email logs.');
-      return false;
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [firebaseUser, buildUrl]);
+  }, [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter]);
 
-  useEffect(() => { fetchPage(null, statusFilter); }, [fetchPage, statusFilter]);
+  useEffect(() => {
+    setPage(1);
+    fetchLogs(1);
+  }, [fetchLogs]);
+
+  const handleApplyFilters = () => {
+    setSearchQuery(pendingSearch.trim());
+    setStatusFilter(pendingStatus);
+    setHasAttachmentsFilter(pendingAttachments);
+    setPage(1);
+    setExpanded(null);
+  };
 
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setCursorStack([]);
-    try { await fetchPage(null, statusFilter); }
-    finally { setRefreshing(false); }
-  }, [fetchPage, statusFilter]);
+    await fetchLogs(1, true);
+  }, [fetchLogs]);
 
-  const handleNextPage = useCallback(async () => {
-    if (!nextCursor) return;
-    const success = await fetchPage(nextCursor, statusFilter);
-    if (success) setCursorStack((prev) => [...prev, nextCursor]);
-  }, [nextCursor, fetchPage, statusFilter]);
+  const handlePageChange = (newPage: number) => {
+    setExpanded(null);
+    fetchLogs(newPage);
+  };
 
-  const handlePrevPage = useCallback(async () => {
-    const newStack = [...cursorStack];
-    newStack.pop();
-    const prevCursor = newStack.length > 0 ? newStack[newStack.length - 1] : null;
-    const success = await fetchPage(prevCursor, statusFilter);
-    if (success) setCursorStack(newStack);
-  }, [cursorStack, fetchPage, statusFilter]);
-
-  const handleStatusFilter = useCallback((status: EmailStatus | null) => {
-    setStatusFilter(status);
-    setCursorStack([]);
-    setSearchText('');
-  }, []);
-
-  const handleClearFilters = useCallback(() => {
-    setStatusFilter(null);
-    setSearchText('');
-    setCursorStack([]);
-  }, []);
+  const handleClearFilters = () => {
+    setPendingSearch('');
+    setPendingStatus('');
+    setPendingAttachments(false);
+    setSearchQuery('');
+    setStatusFilter('');
+    setHasAttachmentsFilter(false);
+    setPage(1);
+    setExpanded(null);
+  };
 
   const handleCopyTrace = useCallback(async (logId: string, trace: unknown) => {
     try {
@@ -189,26 +211,17 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
     }
   }, []);
 
-  const currentPage = cursorStack.length + 1;
-  const hasActiveFilters = statusFilter !== null || searchText.trim() !== '';
+  const hasPendingChanges =
+    pendingSearch.trim() !== searchQuery ||
+    pendingStatus !== statusFilter ||
+    pendingAttachments !== hasAttachmentsFilter;
 
-  // Client-side text search applied on top of server-side status filter
-  const needle = searchText.trim().toLowerCase();
-  const visibleLogs = needle
-    ? logs.filter(
-        (l) =>
-          l.subject?.toLowerCase().includes(needle) ||
-          l.fromAddress?.toLowerCase().includes(needle) ||
-          l.userEmail?.toLowerCase().includes(needle) ||
-          l.toAddress?.toLowerCase().includes(needle),
-      )
-    : logs;
+  const hasActiveFilters = searchQuery !== '' || statusFilter !== '' || hasAttachmentsFilter;
 
-  const btnBase = 'px-3 py-1 text-xs rounded-full transition-colors border whitespace-nowrap';
-  const btnActive = 'font-semibold bg-[#efd957] dark:bg-[#efd957] text-black dark:text-black border-transparent';
-  const btnInactive = 'bg-white/60 dark:bg-gray-900/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/10';
-
-  const statusBtnClass = (active: boolean) => cn(btnBase, active ? btnActive : btnInactive);
+  const STATUS_OPTIONS = [
+    { value: ALL_STATUS_VALUE, label: 'All statuses' },
+    ...ALL_STATUSES.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) })),
+  ];
 
   return (
     <div className="space-y-6 ui-fade-up">
@@ -219,78 +232,100 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
         </div>
       )}
 
-      {<EmailLogsCharts logs={logs} loading={loading} />}
+      <EmailLogsCharts logs={logs} loading={loading} />
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Processed Emails</CardTitle>
-            <div className="flex items-center gap-3">
-              {!loading && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Page {currentPage} · {visibleLogs.length} records
-                </span>
-              )}
-              <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={loading || refreshing} title="Refresh">
+          <div className="flex flex-col gap-3">
+            {/* Row 1: Title + Refresh */}
+            <div className="flex items-center justify-between">
+              <CardTitle>Processed Emails</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh"
+              >
                 <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
               </Button>
             </div>
-          </div>
 
-          {/* Filter toolbar */}
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 dark:border-gray-800 pt-3">
-            {/* Status pills */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                className={statusBtnClass(statusFilter === null)}
-                onClick={() => handleStatusFilter(null)}
+            {/* Row 2: Search input + Apply button */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="search"
+                  value={pendingSearch}
+                  onChange={(e) => setPendingSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
+                  placeholder="Search subject, from, user..."
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={handleApplyFilters}
+                disabled={!hasPendingChanges || loading || refreshing}
+                className="shrink-0"
               >
-                All
-              </button>
-              {ALL_STATUSES.map((s) => (
-                <button
-                  key={s}
-                  className={statusBtnClass(statusFilter === s)}
-                  onClick={() => handleStatusFilter(s)}
+                Apply
+              </Button>
+            </div>
+
+            {/* Row 3: Status filter + Attachments toggle + Count + Clear */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="w-44">
+                <Select
+                  value={pendingStatus || ALL_STATUS_VALUE}
+                  onValueChange={(v) => setPendingStatus(v === ALL_STATUS_VALUE ? '' : v)}
                 >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                  <SelectTrigger aria-label="Filter by status">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={pendingAttachments}
+                  onCheckedChange={setPendingAttachments}
+                  aria-label="With attachments"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  With attachments
+                </span>
+              </div>
+              {!loading && (
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {totalCount !== undefined ? totalCount : logs.length} results
+                </span>
+              )}
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearFilters}
+                  className="ml-auto text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
+                >
+                  Clear filters
                 </button>
-              ))}
+              )}
             </div>
-
-            {/* Divider */}
-            <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1" aria-hidden />
-
-            {/* Text search */}
-            <div className="relative flex-1 min-w-36 max-w-xs">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" aria-hidden />
-              <input
-                ref={searchInputRef}
-                type="search"
-                placeholder="Search subject, from, user…"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#efd957] focus:border-[#efd957]"
-              />
-            </div>
-
-            {/* Clear button */}
-            {hasActiveFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-                Clear
-              </button>
-            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="animate-pulse">
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse">
                   <div className="h-3 w-28 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -304,9 +339,21 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
             </div>
           ) : fetchError ? (
             <div className="text-center py-12 text-red-500 dark:text-red-400">{fetchError}</div>
-          ) : visibleLogs.length === 0 ? (
+          ) : logs.length === 0 ? (
             <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-              {hasActiveFilters ? 'No emails match the current filters.' : 'No emails processed yet.'}
+              {hasActiveFilters ? (
+                <>
+                  <p>No emails match the current filters.</p>
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                </>
+              ) : (
+                'No emails processed yet.'
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -324,7 +371,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleLogs.map((log) => (
+                  {logs.map((log) => (
                     <Fragment key={log.id}>
                       <tr
                         className="border-b border-gray-100 dark:border-gray-800 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors"
@@ -347,10 +394,10 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                           {processingTime(log.receivedAt, log.processedAt)}
                         </td>
                         <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                          {log.tokensUsed != null ? log.tokensUsed.toLocaleString() : '—'}
+                          {log.tokensUsed != null ? log.tokensUsed.toLocaleString() : '\u2014'}
                         </td>
                         <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                          {log.estimatedCost != null ? `$${log.estimatedCost.toFixed(5)}` : '—'}
+                          {log.estimatedCost != null ? `$${log.estimatedCost.toFixed(5)}` : '\u2014'}
                         </td>
                       </tr>
                       {expanded === log.id && (
@@ -380,6 +427,14 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                     <div className="col-span-2 md:col-span-3">
                                       <dt className="font-medium text-gray-500 dark:text-gray-400">Rule applied</dt>
                                       <dd className="text-gray-700 dark:text-gray-300">{log.ruleApplied}</dd>
+                                    </div>
+                                  )}
+                                  {(log.attachmentCount ?? 0) > 0 && (
+                                    <div className="col-span-2 md:col-span-3">
+                                      <dt className="font-medium text-gray-500 dark:text-gray-400">Attachments</dt>
+                                      <dd className="text-gray-700 dark:text-gray-300">
+                                        {(log.attachmentNames ?? []).join(', ') || `${log.attachmentCount} file(s)`}
+                                      </dd>
                                     </div>
                                   )}
                                   {log.errorMessage && (
@@ -475,12 +530,14 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                 </tbody>
               </table>
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-                <Button variant="ghost" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                <Button variant="ghost" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Previous
                 </Button>
-                <span className="text-xs text-gray-400 dark:text-gray-500">Page {currentPage}</span>
-                <Button variant="ghost" size="sm" onClick={handleNextPage} disabled={!hasMore}>
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  Page {page}{totalPages !== undefined ? ` / ${totalPages}` : ''}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => handlePageChange(page + 1)} disabled={!hasNextPage}>
                   Next
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>

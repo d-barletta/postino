@@ -108,7 +108,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   const [range, setRange] = useState<TimeRange>('7d');
   const [granularity, setGranularity] = useState<TimeGranularity>(DEFAULT_GRANULARITY['7d']);
   const [statusAccordionValue, setStatusAccordionValue] = useState('');
-  const [tokensAccordionValue, setTokensAccordionValue] = useState('tokens-cost');
+  const [tokensAccordionValue, setTokensAccordionValue] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
