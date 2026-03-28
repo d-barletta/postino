@@ -183,9 +183,9 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
 
   return (
     <div className="space-y-6">
-      {/* Add Rule inline section */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
+      {/* Header card with Add Rule button */}
+      <Card>
+        <CardContent className="py-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {t.dashboard.rules.yourRules}{' '}
             <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
@@ -197,14 +197,16 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
               {t.dashboard.rules.appliedTopToBottom} <br/>{t.dashboard.rules.useArrows}
             </p>
           )}
-        </div>
-        {!showAddForm && (
-          <Button onClick={() => { setShowAddForm(true); setError(''); }}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            {t.dashboard.rules.addARule}
-          </Button>
-        )}
-      </div>
+          {!showAddForm && (
+            <div className="mt-3">
+              <Button onClick={() => { setShowAddForm(true); setError(''); }}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                {t.dashboard.rules.addARule}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {showAddForm && (
         <Card className="mb-3">
