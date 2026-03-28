@@ -13,6 +13,7 @@ interface OriginalEmail {
   fromAddress: string;
   toAddress: string;
   ccAddress?: string | null;
+  bccAddress?: string | null;
   subject: string;
   originalBody: string | null;
   receivedAt: string | null;
@@ -222,6 +223,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                       <>
                         <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.cc}</dt>
                         <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.ccAddress}</dd>
+                      </>
+                    )}
+                    {email.bccAddress && (
+                      <>
+                        <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.bcc}</dt>
+                        <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.bccAddress}</dd>
                       </>
                     )}
                     <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.subject}</dt>

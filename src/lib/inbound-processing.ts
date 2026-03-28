@@ -37,6 +37,10 @@ export interface QueuedInboundPayload {
   bodyHtml: string;
   bodyPlain: string;
   messageId: string;
+  /** CC recipients from the original email header. */
+  ccAddress?: string;
+  /** BCC recipients from the original email header. */
+  bccAddress?: string;
   /**
    * Attachments for Firestore queue storage.
    * Small attachments are stored inline as base64 (`contentBase64`).
@@ -435,6 +439,8 @@ export async function processQueuedInboundPayload(
             </tr>
           </table>
           <div style="margin-bottom: 6px; color: #4b5563; font-size: 13px;">Original from: ${escapeHtml(payload.sender)}</div>
+          ${payload.ccAddress ? `<div style="margin-bottom: 6px; color: #4b5563; font-size: 13px;">Cc: ${escapeHtml(payload.ccAddress)}</div>` : ''}
+          ${payload.bccAddress ? `<div style="margin-bottom: 6px; color: #4b5563; font-size: 13px;">Bcc: ${escapeHtml(payload.bccAddress)}</div>` : ''}
           <div style="color: #4b5563; font-size: 13px;">Rule: ${ruleDisplayHtml}</div>
         </div>
       </div>` : '';

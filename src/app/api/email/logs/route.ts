@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       toAddress: (d.data().toAddress as string) || '',
       fromAddress: (d.data().fromAddress as string) || '',
       ccAddress: (d.data().ccAddress as string | undefined) || undefined,
+      bccAddress: (d.data().bccAddress as string | undefined) || undefined,
       subject: (d.data().subject as string) || '',
       receivedAt: d.data().receivedAt?.toDate?.()?.toISOString() ?? null,
       processedAt: d.data().processedAt?.toDate?.()?.toISOString() ?? null,
