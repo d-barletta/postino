@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
-import { DashboardLink } from '@/components/auth/DashboardLink';
 import { RegisterHeading } from '@/components/auth/RegisterHeading';
 
 export const metadata: Metadata = {
@@ -43,7 +42,6 @@ export default function RegisterPage() {
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
           <RegisterForm />
         </div>
-        <DashboardLink />
       </div>
     </div>
   );
