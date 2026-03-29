@@ -518,6 +518,9 @@ const emailAnalysisSchema = z.object({
   isUrgent: z.boolean().describe(
     'True if this email is explicitly marked as urgent or time-sensitive'
   ),
+  requiresResponse: z.boolean().describe(
+    'True if this email explicitly or implicitly expects a direct reply from the recipient (e.g. asks a question, requests confirmation, or awaits feedback)'
+  ),
   language: z.string().describe(
     'ISO 639-1 language code of the email body (e.g. "en" for English, "it" for Italian, "es" for Spanish)'
   ),
@@ -533,6 +536,13 @@ const emailAnalysisSchema = z.object({
   senderType: z.enum(['human', 'automated', 'business', 'newsletter']).describe(
     'Characterises who sent the email: human (individual person), automated (system/bot), business (company communication), newsletter (subscription content)'
   ),
+  entities: z.object({
+    places: z.array(z.string()).describe('Physical or geographic locations mentioned in the email (cities, addresses, venues, countries, etc.)'),
+    events: z.array(z.string()).describe('Events mentioned in the email (meetings, conferences, deadlines, appointments, etc.)'),
+    dates: z.array(z.string()).describe('Specific dates, times, or time references mentioned in the email (e.g. "March 15", "next Monday", "3pm CET")'),
+    people: z.array(z.string()).describe('Names of people mentioned in the email (senders, recipients, contacts, etc.)'),
+    organizations: z.array(z.string()).describe('Company, brand, or organization names mentioned in the email'),
+  }).describe('Named entities extracted from the email content'),
 });
 
 // EmailAnalysis is imported from @/types — the Zod schema above must match that interface.
@@ -628,6 +638,17 @@ function buildAnalysisSection(analysis: EmailAnalysis | null): string {
   }
   lines.push(`Has action items: ${analysis.hasActionItems ? 'Yes' : 'No'}`);
   lines.push(`Is urgent: ${analysis.isUrgent ? 'Yes' : 'No'}`);
+  lines.push(`Requires response: ${analysis.requiresResponse ? 'Yes' : 'No'}`);
+
+  const { entities } = analysis;
+  if (entities) {
+    if (entities.people.length > 0) lines.push(`People: ${entities.people.join(', ')}`);
+    if (entities.organizations.length > 0) lines.push(`Organizations: ${entities.organizations.join(', ')}`);
+    if (entities.places.length > 0) lines.push(`Places: ${entities.places.join(', ')}`);
+    if (entities.events.length > 0) lines.push(`Events: ${entities.events.join(', ')}`);
+    if (entities.dates.length > 0) lines.push(`Dates/times: ${entities.dates.join(', ')}`);
+  }
+
   lines.push(`</email_analysis>`);
 
   return `\n\n${lines.join('\n')}`;
@@ -1580,6 +1601,8 @@ export async function processEmailWithAgent(
     ...(analysis?.tags?.length ? { tags: analysis.tags } : {}),
     ...(analysis?.intent ? { intent: analysis.intent } : {}),
     ...(analysis?.senderType ? { senderType: analysis.senderType } : {}),
+    ...(analysis?.requiresResponse !== undefined ? { requiresResponse: analysis.requiresResponse } : {}),
+    ...(analysis?.entities ? { entities: analysis.entities } : {}),
   };
 
   saveUserMemory({

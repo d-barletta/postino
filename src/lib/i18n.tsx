@@ -197,6 +197,12 @@ export interface Translations {
       analysisIntent: string;
       analysisTags: string;
       analysisTopics: string;
+      analysisRequiresResponse: string;
+      analysisEntitiesPeople: string;
+      analysisEntitiesOrganizations: string;
+      analysisEntitiesPlaces: string;
+      analysisEntitiesEvents: string;
+      analysisEntitiesDates: string;
     };
     rules: {
       yourRules: string;
@@ -530,6 +536,12 @@ const translations: Record<Locale, Translations> = {
         analysisIntent: 'Intent:',
         analysisTags: 'Tags:',
         analysisTopics: 'Topics:',
+        analysisRequiresResponse: 'Requires response',
+        analysisEntitiesPeople: 'People:',
+        analysisEntitiesOrganizations: 'Organizations:',
+        analysisEntitiesPlaces: 'Places:',
+        analysisEntitiesEvents: 'Events:',
+        analysisEntitiesDates: 'Dates:',
       },
       rules: {
         yourRules: 'Your Rules',
@@ -857,6 +869,12 @@ const translations: Record<Locale, Translations> = {
         analysisIntent: 'Intenzione:',
         analysisTags: 'Tag:',
         analysisTopics: 'Argomenti:',
+        analysisRequiresResponse: 'Richiede risposta',
+        analysisEntitiesPeople: 'Persone:',
+        analysisEntitiesOrganizations: 'Organizzazioni:',
+        analysisEntitiesPlaces: 'Luoghi:',
+        analysisEntitiesEvents: 'Eventi:',
+        analysisEntitiesDates: 'Date:',
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1180,6 +1198,12 @@ const translations: Record<Locale, Translations> = {
         analysisIntent: 'Intención:',
         analysisTags: 'Etiquetas:',
         analysisTopics: 'Temas:',
+        analysisRequiresResponse: 'Requiere respuesta',
+        analysisEntitiesPeople: 'Personas:',
+        analysisEntitiesOrganizations: 'Organizaciones:',
+        analysisEntitiesPlaces: 'Lugares:',
+        analysisEntitiesEvents: 'Eventos:',
+        analysisEntitiesDates: 'Fechas:',
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -1503,6 +1527,12 @@ const translations: Record<Locale, Translations> = {
         analysisIntent: 'Intention :',
         analysisTags: 'Tags :',
         analysisTopics: 'Sujets :',
+        analysisRequiresResponse: 'Nécessite une réponse',
+        analysisEntitiesPeople: 'Personnes :',
+        analysisEntitiesOrganizations: 'Organisations :',
+        analysisEntitiesPlaces: 'Lieux :',
+        analysisEntitiesEvents: 'Événements :',
+        analysisEntitiesDates: 'Dates :',
       },
       rules: {
         yourRules: 'Vos règles',
@@ -1826,6 +1856,12 @@ const translations: Record<Locale, Translations> = {
         analysisIntent: 'Absicht:',
         analysisTags: 'Tags:',
         analysisTopics: 'Themen:',
+        analysisRequiresResponse: 'Antwort erforderlich',
+        analysisEntitiesPeople: 'Personen:',
+        analysisEntitiesOrganizations: 'Organisationen:',
+        analysisEntitiesPlaces: 'Orte:',
+        analysisEntitiesEvents: 'Ereignisse:',
+        analysisEntitiesDates: 'Daten:',
       },
       rules: {
         yourRules: 'Ihre Regeln',

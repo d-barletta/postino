@@ -47,6 +47,8 @@ export interface EmailAnalysis {
   hasActionItems: boolean;
   /** True if this email is explicitly marked as urgent or time-sensitive. */
   isUrgent: boolean;
+  /** True if the email explicitly or implicitly expects a direct reply. */
+  requiresResponse: boolean;
   /** ISO 639-1 language code of the email body (e.g. "en", "it", "es"). */
   language: string;
   /** Overall emotional tone of the email. */
@@ -57,6 +59,19 @@ export interface EmailAnalysis {
   intent: string;
   /** Characterises who sent the email. */
   senderType: 'human' | 'automated' | 'business' | 'newsletter';
+  /** Named entities extracted from the email body. */
+  entities: {
+    /** Physical or geographic locations mentioned (cities, addresses, venues, countries). */
+    places: string[];
+    /** Events mentioned (meetings, conferences, deadlines, appointments). */
+    events: string[];
+    /** Specific dates, times, or time references. */
+    dates: string[];
+    /** Names of people mentioned. */
+    people: string[];
+    /** Company, brand, or organization names mentioned. */
+    organizations: string[];
+  };
 }
 
 export interface EmailLog {
@@ -191,6 +206,16 @@ export interface EmailMemoryEntry {
   intent?: string;
   /** Characterises who sent the email (human, automated, business, newsletter). */
   senderType?: string;
+  /** True if the email explicitly or implicitly expected a direct reply. */
+  requiresResponse?: boolean;
+  /** Named entities extracted from the email body. */
+  entities?: {
+    places: string[];
+    events: string[];
+    dates: string[];
+    people: string[];
+    organizations: string[];
+  };
 }
 
 export interface UserMemory {

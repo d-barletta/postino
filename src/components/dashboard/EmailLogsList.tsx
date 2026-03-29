@@ -72,12 +72,19 @@ interface AnalysisPanelProps {
     analysisIntent: string;
     analysisTags: string;
     analysisTopics: string;
+    analysisRequiresResponse: string;
+    analysisEntitiesPeople: string;
+    analysisEntitiesOrganizations: string;
+    analysisEntitiesPlaces: string;
+    analysisEntitiesEvents: string;
+    analysisEntitiesDates: string;
   };
 }
 
 function AnalysisPanel({ analysis, labels }: AnalysisPanelProps) {
   const hasTags = analysis.tags && analysis.tags.length > 0;
   const hasTopics = analysis.topics && analysis.topics.length > 0;
+  const { entities } = analysis;
 
   return (
     <div className="mt-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 p-3 space-y-2">
@@ -108,6 +115,11 @@ function AnalysisPanel({ analysis, labels }: AnalysisPanelProps) {
         {analysis.language && (
           <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${DEFAULT_BADGE_COLOR}`}>
             {analysis.language.toUpperCase()}
+          </span>
+        )}
+        {analysis.requiresResponse && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+            ↩ {labels.analysisRequiresResponse}
           </span>
         )}
       </div>
@@ -145,6 +157,42 @@ function AnalysisPanel({ analysis, labels }: AnalysisPanelProps) {
           <span className="font-medium">{labels.analysisTopics} </span>
           {analysis.topics.join(' · ')}
         </p>
+      )}
+
+      {/* Entities */}
+      {entities && (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+          {entities.people.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesPeople}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.people.join(', ')}</dd>
+            </>
+          )}
+          {entities.organizations.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesOrganizations}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.organizations.join(', ')}</dd>
+            </>
+          )}
+          {entities.places.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesPlaces}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.places.join(', ')}</dd>
+            </>
+          )}
+          {entities.events.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesEvents}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.events.join(', ')}</dd>
+            </>
+          )}
+          {entities.dates.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesDates}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.dates.join(', ')}</dd>
+            </>
+          )}
+        </dl>
       )}
     </div>
   );
