@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
+import { LayoutDashboard, ListFilter, Inbox, Search } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
@@ -151,10 +152,22 @@ export default function DashboardPage() {
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'emails' | 'search')}>
         <TabsList>
-          <TabsTrigger value="overview">{t.dashboard.tabs.overview}</TabsTrigger>
-          <TabsTrigger value="rules">{t.dashboard.tabs.myRules}</TabsTrigger>
-          <TabsTrigger value="emails">{t.dashboard.tabs.emailHistory}</TabsTrigger>
-          <TabsTrigger value="search">{t.dashboard.tabs.search}</TabsTrigger>
+          <TabsTrigger value="overview">
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{t.dashboard.tabs.overview}</span>
+          </TabsTrigger>
+          <TabsTrigger value="rules">
+            <ListFilter className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{t.dashboard.tabs.myRules}</span>
+          </TabsTrigger>
+          <TabsTrigger value="emails">
+            <Inbox className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{t.dashboard.tabs.emailHistory}</span>
+          </TabsTrigger>
+          <TabsTrigger value="search">
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{t.dashboard.tabs.search}</span>
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <div className="space-y-6">

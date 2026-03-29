@@ -480,21 +480,22 @@ export function EmailSearchTab() {
       <Card>
         <Accordion type="single" collapsible defaultValue="filters">
           <AccordionItem value="filters" className="border-0">
-            <div className="flex items-center pr-6">
-              <AccordionTrigger className="flex-1 px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
-                {ts.title}
-              </AccordionTrigger>
-              {hasActive && (
-                <button
-                  onClick={handleClearFilters}
-                  className="ml-2 text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline shrink-0"
-                >
-                  {t.dashboard.emailHistory.clearFilter}
-                </button>
-              )}
-            </div>
+            <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+              {ts.title}
+            </AccordionTrigger>
             <AccordionContent>
               <div className="px-6 space-y-4">
+                {hasActive && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleClearFilters}
+                      className="text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
+                    >
+                      {t.dashboard.emailHistory.clearFilter}
+                    </button>
+                  </div>
+                )}
+
                 {/* Text search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -508,8 +509,8 @@ export function EmailSearchTab() {
                   />
                 </div>
 
-                {/* Dropdown filters grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {/* Dropdown + language filters grid (6 items, 2 cols → 3 cols on sm) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterStatus}</label>
                     <Select
@@ -594,10 +595,7 @@ export function EmailSearchTab() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
 
-                {/* Text filters row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterLanguage}</label>
                     <input
@@ -609,17 +607,19 @@ export function EmailSearchTab() {
                       className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterTags}</label>
-                    <input
-                      type="text"
-                      value={pending.tags}
-                      onChange={(e) => setPending((p) => ({ ...p, tags: e.target.value }))}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
-                      placeholder={ts.tagsPlaceholder}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-                    />
-                  </div>
+                </div>
+
+                {/* Tags — full row */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterTags}</label>
+                  <input
+                    type="text"
+                    value={pending.tags}
+                    onChange={(e) => setPending((p) => ({ ...p, tags: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
+                    placeholder={ts.tagsPlaceholder}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                  />
                 </div>
 
                 {/* Toggle filters row */}
@@ -658,16 +658,16 @@ export function EmailSearchTab() {
                   </label>
                 </div>
 
-                {/* Search button — last row */}
-                <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    onClick={handleApplyFilters}
-                    disabled={!hasPendingChanges || logsLoading || refreshing}
-                  >
-                    {ts.applyFilters}
-                  </Button>
-                </div>
+                {/* Search button — last row, full width on mobile */}
+                <Button
+                  size="sm"
+                  onClick={handleApplyFilters}
+                  disabled={!hasPendingChanges || logsLoading || refreshing}
+                  className="w-full sm:w-auto gap-2"
+                >
+                  <Search className="h-4 w-4 shrink-0" />
+                  {ts.applyFilters}
+                </Button>
               </div>
             </AccordionContent>
           </AccordionItem>
