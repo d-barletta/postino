@@ -188,6 +188,10 @@ export interface Translations {
       next: string;
       page: string;
       of: string;
+      tabSummary: string;
+      tabContent: string;
+      tabAiAnalysis: string;
+      noAiAnalysis: string;
       aiAnalysis: string;
       analysisType: string;
       analysisSentiment: string;
@@ -528,6 +532,10 @@ const translations: Record<Locale, Translations> = {
         page: 'Page',
         of: 'of',
         aiAnalysis: 'AI Analysis',
+        tabSummary: 'Summary',
+        tabContent: 'Content',
+        tabAiAnalysis: 'AI Analysis',
+        noAiAnalysis: 'No AI analysis available.',
         analysisType: 'Type:',
         analysisSentiment: 'Sentiment:',
         analysisPriority: 'Priority:',
@@ -861,6 +869,10 @@ const translations: Record<Locale, Translations> = {
         page: 'Pagina',
         of: 'di',
         aiAnalysis: 'Analisi AI',
+        tabSummary: 'Riepilogo',
+        tabContent: 'Contenuto',
+        tabAiAnalysis: 'Analisi AI',
+        noAiAnalysis: 'Nessuna analisi AI disponibile.',
         analysisType: 'Tipo:',
         analysisSentiment: 'Sentiment:',
         analysisPriority: 'Priorità:',
@@ -1190,6 +1202,10 @@ const translations: Record<Locale, Translations> = {
         page: 'Página',
         of: 'de',
         aiAnalysis: 'Análisis IA',
+        tabSummary: 'Resumen',
+        tabContent: 'Contenido',
+        tabAiAnalysis: 'Análisis IA',
+        noAiAnalysis: 'No hay análisis de IA disponible.',
         analysisType: 'Tipo:',
         analysisSentiment: 'Sentimiento:',
         analysisPriority: 'Prioridad:',
@@ -1519,6 +1535,10 @@ const translations: Record<Locale, Translations> = {
         page: 'Page',
         of: 'sur',
         aiAnalysis: 'Analyse IA',
+        tabSummary: 'Résumé',
+        tabContent: 'Contenu',
+        tabAiAnalysis: 'Analyse IA',
+        noAiAnalysis: "Aucune analyse IA disponible.",
         analysisType: 'Type :',
         analysisSentiment: 'Sentiment :',
         analysisPriority: 'Priorité :',
@@ -1848,6 +1868,10 @@ const translations: Record<Locale, Translations> = {
         page: 'Seite',
         of: 'von',
         aiAnalysis: 'KI-Analyse',
+        tabSummary: 'Zusammenfassung',
+        tabContent: 'Inhalt',
+        tabAiAnalysis: 'KI-Analyse',
+        noAiAnalysis: 'Keine KI-Analyse verfügbar.',
         analysisType: 'Typ:',
         analysisSentiment: 'Stimmung:',
         analysisPriority: 'Priorität:',
