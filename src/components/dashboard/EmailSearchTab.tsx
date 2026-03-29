@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
@@ -25,7 +26,6 @@ import {
   Paperclip,
   ExternalLink,
   Search,
-  SlidersHorizontal,
   X,
 } from 'lucide-react';
 import type { EmailLog, EmailAnalysis } from '@/types';
@@ -278,7 +278,6 @@ export function EmailSearchTab() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(true);
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -479,207 +478,200 @@ export function EmailSearchTab() {
     <div className="space-y-4">
       {/* Filter panel */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>{ts.title}</CardTitle>
-            <div className="flex items-center gap-2">
+        <Accordion type="single" collapsible defaultValue="filters">
+          <AccordionItem value="filters" className="border-0">
+            <div className="flex items-center pr-6">
+              <AccordionTrigger className="flex-1 px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+                {ts.title}
+              </AccordionTrigger>
               {hasActive && (
                 <button
                   onClick={handleClearFilters}
-                  className="text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
+                  className="ml-2 text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline shrink-0"
                 >
                   {t.dashboard.emailHistory.clearFilter}
                 </button>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setFiltersOpen((o) => !o)}
-                title={ts.toggleFilters}
-                aria-label={ts.toggleFilters}
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
             </div>
-          </div>
-        </CardHeader>
+            <AccordionContent>
+              <div className="px-6 space-y-4">
+                {/* Text search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="search"
+                    value={pending.search}
+                    onChange={(e) => setPending((p) => ({ ...p, search: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
+                    placeholder={ts.searchPlaceholder}
+                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                  />
+                </div>
 
-        {filtersOpen && (
-          <CardContent className="pt-0 pb-4 space-y-4">
-            {/* Text search */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="search"
-                  value={pending.search}
-                  onChange={(e) => setPending((p) => ({ ...p, search: e.target.value }))}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
-                  placeholder={ts.searchPlaceholder}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-                />
-              </div>
-              <Button
-                size="sm"
-                onClick={handleApplyFilters}
-                disabled={!hasPendingChanges || logsLoading || refreshing}
-                className="shrink-0"
-              >
-                {ts.applyFilters}
-              </Button>
-            </div>
+                {/* Dropdown filters grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterStatus}</label>
+                    <Select
+                      value={pending.status || ALL_VALUE}
+                      onValueChange={(v) => setPending((p) => ({ ...p, status: v === ALL_VALUE ? '' : v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {STATUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            {/* Dropdown filters grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterStatus}</label>
-                <Select
-                  value={pending.status || ALL_VALUE}
-                  onValueChange={(v) => setPending((p) => ({ ...p, status: v === ALL_VALUE ? '' : v }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {STATUS_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterSentiment}</label>
+                    <Select
+                      value={pending.sentiment || ALL_VALUE}
+                      onValueChange={(v) => setPending((p) => ({ ...p, sentiment: v === ALL_VALUE ? '' : v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {SENTIMENT_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterSentiment}</label>
-                <Select
-                  value={pending.sentiment || ALL_VALUE}
-                  onValueChange={(v) => setPending((p) => ({ ...p, sentiment: v === ALL_VALUE ? '' : v }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {SENTIMENT_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterCategory}</label>
+                    <Select
+                      value={pending.emailType || ALL_VALUE}
+                      onValueChange={(v) => setPending((p) => ({ ...p, emailType: v === ALL_VALUE ? '' : v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {EMAIL_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterCategory}</label>
-                <Select
-                  value={pending.emailType || ALL_VALUE}
-                  onValueChange={(v) => setPending((p) => ({ ...p, emailType: v === ALL_VALUE ? '' : v }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {EMAIL_TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterPriority}</label>
+                    <Select
+                      value={pending.priority || ALL_VALUE}
+                      onValueChange={(v) => setPending((p) => ({ ...p, priority: v === ALL_VALUE ? '' : v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {PRIORITY_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterPriority}</label>
-                <Select
-                  value={pending.priority || ALL_VALUE}
-                  onValueChange={(v) => setPending((p) => ({ ...p, priority: v === ALL_VALUE ? '' : v }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {PRIORITY_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterSenderType}</label>
+                    <Select
+                      value={pending.senderType || ALL_VALUE}
+                      onValueChange={(v) => setPending((p) => ({ ...p, senderType: v === ALL_VALUE ? '' : v }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {SENDER_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterSenderType}</label>
-                <Select
-                  value={pending.senderType || ALL_VALUE}
-                  onValueChange={(v) => setPending((p) => ({ ...p, senderType: v === ALL_VALUE ? '' : v }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {SENDER_TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                {/* Text filters row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterLanguage}</label>
+                    <input
+                      type="text"
+                      value={pending.language}
+                      onChange={(e) => setPending((p) => ({ ...p, language: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
+                      placeholder={ts.languagePlaceholder}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterTags}</label>
+                    <input
+                      type="text"
+                      value={pending.tags}
+                      onChange={(e) => setPending((p) => ({ ...p, tags: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
+                      placeholder={ts.tagsPlaceholder}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                    />
+                  </div>
+                </div>
 
-            {/* Text filters row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterLanguage}</label>
-                <input
-                  type="text"
-                  value={pending.language}
-                  onChange={(e) => setPending((p) => ({ ...p, language: e.target.value }))}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
-                  placeholder={ts.languagePlaceholder}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{ts.filterTags}</label>
-                <input
-                  type="text"
-                  value={pending.tags}
-                  onChange={(e) => setPending((p) => ({ ...p, tags: e.target.value }))}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
-                  placeholder={ts.tagsPlaceholder}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-                />
-              </div>
-            </div>
+                {/* Toggle filters row */}
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                      checked={pending.attachments}
+                      onCheckedChange={(v) => setPending((p) => ({ ...p, attachments: v }))}
+                      aria-label={ts.withAttachments}
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{ts.withAttachments}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                      checked={pending.requiresResponse}
+                      onCheckedChange={(v) => setPending((p) => ({ ...p, requiresResponse: v }))}
+                      aria-label={ts.requiresResponse}
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{ts.requiresResponse}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                      checked={pending.hasActionItems}
+                      onCheckedChange={(v) => setPending((p) => ({ ...p, hasActionItems: v }))}
+                      aria-label={ts.hasActionItems}
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{ts.hasActionItems}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                      checked={pending.isUrgent}
+                      onCheckedChange={(v) => setPending((p) => ({ ...p, isUrgent: v }))}
+                      aria-label={ts.isUrgent}
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{ts.isUrgent}</span>
+                  </label>
+                </div>
 
-            {/* Toggle filters row */}
-            <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                  checked={pending.attachments}
-                  onCheckedChange={(v) => setPending((p) => ({ ...p, attachments: v }))}
-                  aria-label={ts.withAttachments}
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.withAttachments}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                  checked={pending.requiresResponse}
-                  onCheckedChange={(v) => setPending((p) => ({ ...p, requiresResponse: v }))}
-                  aria-label={ts.requiresResponse}
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.requiresResponse}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                  checked={pending.hasActionItems}
-                  onCheckedChange={(v) => setPending((p) => ({ ...p, hasActionItems: v }))}
-                  aria-label={ts.hasActionItems}
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.hasActionItems}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                  checked={pending.isUrgent}
-                  onCheckedChange={(v) => setPending((p) => ({ ...p, isUrgent: v }))}
-                  aria-label={ts.isUrgent}
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.isUrgent}</span>
-              </label>
-            </div>
-          </CardContent>
-        )}
+                {/* Search button — last row */}
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={handleApplyFilters}
+                    disabled={!hasPendingChanges || logsLoading || refreshing}
+                  >
+                    {ts.applyFilters}
+                  </Button>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </Card>
 
       {/* Active filter chips */}
