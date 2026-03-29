@@ -780,8 +780,8 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         <CardHeader>
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {!logsLoading && (
-                <>{totalCount !== undefined ? totalCount : logs.length} {t.dashboard.emailHistory.results}</>
+              {!logsLoading && totalCount !== undefined && (
+                <>{totalCount} {t.dashboard.emailHistory.results}</>
               )}
             </span>
             <Button
@@ -859,46 +859,56 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                             <p className="text-sm font-medium text-gray-800 dark:text-gray-100 break-words">{log.subject}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
                             {log.emailAnalysis && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {log.emailAnalysis.emailType && (
-                                  <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
-                                    {log.emailAnalysis.emailType}
-                                  </span>
+                              <div className="mt-1.5 space-y-1">
+                                {/* Row 1: type, sentiment, priority, flags */}
+                                <div className="flex flex-wrap gap-1">
+                                  {log.emailAnalysis.emailType && (
+                                    <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
+                                      {log.emailAnalysis.emailType}
+                                    </span>
+                                  )}
+                                  {log.emailAnalysis.sentiment && (
+                                    <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
+                                      {log.emailAnalysis.sentiment}
+                                    </span>
+                                  )}
+                                  {log.emailAnalysis.priority && log.emailAnalysis.priority !== 'normal' && (
+                                    <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${PRIORITY_COLORS[log.emailAnalysis.priority] ?? DEFAULT_BADGE_COLOR}`}>
+                                      {log.emailAnalysis.priority}
+                                    </span>
+                                  )}
+                                  {log.emailAnalysis.requiresResponse && (
+                                    <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                      {t.dashboard.emailHistory.analysisRequiresResponse}
+                                    </span>
+                                  )}
+                                  {log.emailAnalysis.isUrgent && (
+                                    <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                      {ts.isUrgent}
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Row 2: tags */}
+                                {log.emailAnalysis.tags && log.emailAnalysis.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {log.emailAnalysis.tags.slice(0, 3).map((tag) => (
+                                      <span
+                                        key={tag}
+                                        className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
                                 )}
-                                {log.emailAnalysis.sentiment && (
-                                  <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
-                                    {log.emailAnalysis.sentiment}
-                                  </span>
-                                )}
-                                {log.emailAnalysis.priority && log.emailAnalysis.priority !== 'normal' && (
-                                  <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${PRIORITY_COLORS[log.emailAnalysis.priority] ?? DEFAULT_BADGE_COLOR}`}>
-                                    {log.emailAnalysis.priority}
-                                  </span>
-                                )}
-                                {log.emailAnalysis.requiresResponse && (
-                                  <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                    {t.dashboard.emailHistory.analysisRequiresResponse}
-                                  </span>
-                                )}
-                                {log.emailAnalysis.isUrgent && (
-                                  <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                                    {ts.isUrgent}
-                                  </span>
-                                )}
-                                {log.emailAnalysis.tags?.slice(0, 3).map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
                               </div>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
-                          <Badge variant={statusVariant[log.status] || 'default'}>{statusLabel[log.status] ?? log.status}</Badge>
+                          {log.status !== 'forwarded' && (
+                            <Badge variant={statusVariant[log.status] || 'default'}>{statusLabel[log.status] ?? log.status}</Badge>
+                          )}
                           <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt, locale)}</span>
                         </div>
                       </div>
