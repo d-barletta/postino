@@ -3,6 +3,7 @@ import { jsonrepair } from 'jsonrepair';
 import * as cheerio from 'cheerio';
 import { adminDb } from './firebase-admin';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
+import type { EmailAnalysis } from '@/types';
 
 interface DomPatch {
   selector: string;
@@ -75,6 +76,8 @@ export interface ProcessEmailResult {
   ruleApplied: string;
   parseError?: string;
   trace?: AgentTrace;
+  /** Structured AI pre-analysis result for this email. */
+  analysis?: EmailAnalysis | null;
 }
 
 export interface AgentTraceStep {

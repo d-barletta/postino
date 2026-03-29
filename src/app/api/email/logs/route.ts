@@ -56,15 +56,29 @@ export async function GET(request: NextRequest) {
       attachmentCount: (d.data().attachmentCount as number) ?? 0,
       attachmentNames: (d.data().attachmentNames as string[]) ?? [],
       userId: d.data().userId,
+      emailAnalysis: d.data().emailAnalysis ?? null,
     }));
 
     if (search) {
-      docs = docs.filter(
-        (d) =>
+      docs = docs.filter((d) => {
+        if (
           d.subject.toLowerCase().includes(search) ||
           d.fromAddress.toLowerCase().includes(search) ||
-          (d.toAddress && d.toAddress.toLowerCase().includes(search))
-      );
+          (d.toAddress && d.toAddress.toLowerCase().includes(search)) ||
+          (d.emailAnalysis?.summary && String(d.emailAnalysis.summary).toLowerCase().includes(search)) ||
+          (d.emailAnalysis?.intent && String(d.emailAnalysis.intent).toLowerCase().includes(search)) ||
+          (Array.isArray(d.emailAnalysis?.tags) && d.emailAnalysis.tags.some((tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(search))) ||
+          (Array.isArray(d.emailAnalysis?.topics) && d.emailAnalysis.topics.some((topic: unknown) => typeof topic === 'string' && topic.toLowerCase().includes(search)))
+        ) return true;
+        // Also match entity values (places, events, dates, people, organizations)
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        if (entities) {
+          for (const list of Object.values(entities)) {
+            if (Array.isArray(list) && list.some((v) => typeof v === 'string' && v.toLowerCase().includes(search))) return true;
+          }
+        }
+        return false;
+      });
     }
 
     if (hasAttachments) {

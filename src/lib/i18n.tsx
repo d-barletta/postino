@@ -188,6 +188,21 @@ export interface Translations {
       next: string;
       page: string;
       of: string;
+      aiAnalysis: string;
+      analysisType: string;
+      analysisSentiment: string;
+      analysisPriority: string;
+      analysisLanguage: string;
+      analysisSenderType: string;
+      analysisIntent: string;
+      analysisTags: string;
+      analysisTopics: string;
+      analysisRequiresResponse: string;
+      analysisEntitiesPeople: string;
+      analysisEntitiesOrganizations: string;
+      analysisEntitiesPlaces: string;
+      analysisEntitiesEvents: string;
+      analysisEntitiesDates: string;
     };
     rules: {
       yourRules: string;
@@ -512,6 +527,21 @@ const translations: Record<Locale, Translations> = {
         next: 'Next',
         page: 'Page',
         of: 'of',
+        aiAnalysis: 'AI Analysis',
+        analysisType: 'Type:',
+        analysisSentiment: 'Sentiment:',
+        analysisPriority: 'Priority:',
+        analysisLanguage: 'Language:',
+        analysisSenderType: 'Sender type:',
+        analysisIntent: 'Intent:',
+        analysisTags: 'Tags:',
+        analysisTopics: 'Topics:',
+        analysisRequiresResponse: 'Requires response',
+        analysisEntitiesPeople: 'People:',
+        analysisEntitiesOrganizations: 'Organizations:',
+        analysisEntitiesPlaces: 'Places:',
+        analysisEntitiesEvents: 'Events:',
+        analysisEntitiesDates: 'Dates:',
       },
       rules: {
         yourRules: 'Your Rules',
@@ -830,6 +860,21 @@ const translations: Record<Locale, Translations> = {
         next: 'Successivo',
         page: 'Pagina',
         of: 'di',
+        aiAnalysis: 'Analisi AI',
+        analysisType: 'Tipo:',
+        analysisSentiment: 'Sentiment:',
+        analysisPriority: 'Priorità:',
+        analysisLanguage: 'Lingua:',
+        analysisSenderType: 'Tipo mittente:',
+        analysisIntent: 'Intenzione:',
+        analysisTags: 'Tag:',
+        analysisTopics: 'Argomenti:',
+        analysisRequiresResponse: 'Richiede risposta',
+        analysisEntitiesPeople: 'Persone:',
+        analysisEntitiesOrganizations: 'Organizzazioni:',
+        analysisEntitiesPlaces: 'Luoghi:',
+        analysisEntitiesEvents: 'Eventi:',
+        analysisEntitiesDates: 'Date:',
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1144,6 +1189,21 @@ const translations: Record<Locale, Translations> = {
         next: 'Siguiente',
         page: 'Página',
         of: 'de',
+        aiAnalysis: 'Análisis IA',
+        analysisType: 'Tipo:',
+        analysisSentiment: 'Sentimiento:',
+        analysisPriority: 'Prioridad:',
+        analysisLanguage: 'Idioma:',
+        analysisSenderType: 'Tipo de remitente:',
+        analysisIntent: 'Intención:',
+        analysisTags: 'Etiquetas:',
+        analysisTopics: 'Temas:',
+        analysisRequiresResponse: 'Requiere respuesta',
+        analysisEntitiesPeople: 'Personas:',
+        analysisEntitiesOrganizations: 'Organizaciones:',
+        analysisEntitiesPlaces: 'Lugares:',
+        analysisEntitiesEvents: 'Eventos:',
+        analysisEntitiesDates: 'Fechas:',
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -1458,6 +1518,21 @@ const translations: Record<Locale, Translations> = {
         next: 'Suivant',
         page: 'Page',
         of: 'sur',
+        aiAnalysis: 'Analyse IA',
+        analysisType: 'Type :',
+        analysisSentiment: 'Sentiment :',
+        analysisPriority: 'Priorité :',
+        analysisLanguage: 'Langue :',
+        analysisSenderType: "Type d'expéditeur :",
+        analysisIntent: 'Intention :',
+        analysisTags: 'Tags :',
+        analysisTopics: 'Sujets :',
+        analysisRequiresResponse: 'Nécessite une réponse',
+        analysisEntitiesPeople: 'Personnes :',
+        analysisEntitiesOrganizations: 'Organisations :',
+        analysisEntitiesPlaces: 'Lieux :',
+        analysisEntitiesEvents: 'Événements :',
+        analysisEntitiesDates: 'Dates :',
       },
       rules: {
         yourRules: 'Vos règles',
@@ -1772,6 +1847,21 @@ const translations: Record<Locale, Translations> = {
         next: 'Weiter',
         page: 'Seite',
         of: 'von',
+        aiAnalysis: 'KI-Analyse',
+        analysisType: 'Typ:',
+        analysisSentiment: 'Stimmung:',
+        analysisPriority: 'Priorität:',
+        analysisLanguage: 'Sprache:',
+        analysisSenderType: 'Absendertyp:',
+        analysisIntent: 'Absicht:',
+        analysisTags: 'Tags:',
+        analysisTopics: 'Themen:',
+        analysisRequiresResponse: 'Antwort erforderlich',
+        analysisEntitiesPeople: 'Personen:',
+        analysisEntitiesOrganizations: 'Organisationen:',
+        analysisEntitiesPlaces: 'Orte:',
+        analysisEntitiesEvents: 'Ereignisse:',
+        analysisEntitiesDates: 'Daten:',
       },
       rules: {
         yourRules: 'Ihre Regeln',

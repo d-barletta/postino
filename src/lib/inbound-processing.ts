@@ -481,6 +481,7 @@ export async function processQueuedInboundPayload(
   });
 
   const safeTrace = result.trace ? sanitizeForFirestore(result.trace) : undefined;
+  const safeAnalysis = result.analysis ? sanitizeForFirestore(result.analysis) : undefined;
 
   const finalStatus: 'forwarded' | 'error' = result.parseError?.includes('forwarded as-is')
     ? 'error'
@@ -494,6 +495,7 @@ export async function processQueuedInboundPayload(
     estimatedCost: result.estimatedCost,
     processedBody: result.body,
     ...(safeTrace ? { agentTrace: safeTrace } : {}),
+    ...(safeAnalysis ? { emailAnalysis: safeAnalysis } : {}),
     ...(result.parseError ? { errorMessage: result.parseError } : {}),
   });
 

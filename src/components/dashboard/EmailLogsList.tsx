@@ -26,10 +26,177 @@ import {
   ExternalLink,
   Search,
 } from 'lucide-react';
-import type { EmailLog } from '@/types';
+import type { EmailLog, EmailAnalysis } from '@/types';
 
 const PAGE_SIZE = 20;
 const ALL_STATUS_VALUE = '__all__';
+
+/** Default badge colour used as fallback when a specific key is not found. */
+const DEFAULT_BADGE_COLOR = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+
+/** Colour scheme for sentiment badges. */
+const SENTIMENT_COLORS: Record<string, string> = {
+  positive: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  neutral: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  negative: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+};
+
+/** Colour scheme for priority badges. */
+const PRIORITY_COLORS: Record<string, string> = {
+  low: DEFAULT_BADGE_COLOR,
+  normal: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  critical: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+};
+
+/** Colour scheme for email-type badges. */
+const TYPE_COLORS: Record<string, string> = {
+  newsletter: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+  transactional: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  promotional: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+  personal: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  notification: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
+  automated: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  other: DEFAULT_BADGE_COLOR,
+};
+
+interface AnalysisPanelProps {
+  analysis: EmailAnalysis;
+  labels: {
+    aiAnalysis: string;
+    analysisType: string;
+    analysisSentiment: string;
+    analysisPriority: string;
+    analysisLanguage: string;
+    analysisSenderType: string;
+    analysisIntent: string;
+    analysisTags: string;
+    analysisTopics: string;
+    analysisRequiresResponse: string;
+    analysisEntitiesPeople: string;
+    analysisEntitiesOrganizations: string;
+    analysisEntitiesPlaces: string;
+    analysisEntitiesEvents: string;
+    analysisEntitiesDates: string;
+  };
+}
+
+function AnalysisPanel({ analysis, labels }: AnalysisPanelProps) {
+  const hasTags = analysis.tags && analysis.tags.length > 0;
+  const hasTopics = analysis.topics && analysis.topics.length > 0;
+  const { entities } = analysis;
+
+  return (
+    <div className="mt-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 p-3 space-y-2">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+        {labels.aiAnalysis}
+      </p>
+
+      {/* Badges row: type, sentiment, priority */}
+      <div className="flex flex-wrap gap-1.5">
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${TYPE_COLORS[analysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
+          {analysis.emailType}
+        </span>
+        {analysis.sentiment && (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${SENTIMENT_COLORS[analysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
+            {analysis.sentiment}
+          </span>
+        )}
+        {analysis.priority && (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${PRIORITY_COLORS[analysis.priority] ?? DEFAULT_BADGE_COLOR}`}>
+            {analysis.priority}
+          </span>
+        )}
+        {analysis.senderType && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+            {analysis.senderType}
+          </span>
+        )}
+        {analysis.language && (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${DEFAULT_BADGE_COLOR}`}>
+            {analysis.language.toUpperCase()}
+          </span>
+        )}
+        {analysis.requiresResponse && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+            ↩ {labels.analysisRequiresResponse}
+          </span>
+        )}
+      </div>
+
+      {/* Intent */}
+      {analysis.intent && (
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          <span className="font-medium text-gray-500 dark:text-gray-400">{labels.analysisIntent} </span>
+          {analysis.intent}
+        </p>
+      )}
+
+      {/* Summary */}
+      {analysis.summary && (
+        <p className="text-xs text-gray-600 dark:text-gray-300 italic">{analysis.summary}</p>
+      )}
+
+      {/* Tags */}
+      {hasTags && (
+        <div className="flex flex-wrap gap-1">
+          {analysis.tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Topics */}
+      {hasTopics && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="font-medium">{labels.analysisTopics} </span>
+          {analysis.topics.join(' · ')}
+        </p>
+      )}
+
+      {/* Entities */}
+      {entities && (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+          {entities.people.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesPeople}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.people.join(', ')}</dd>
+            </>
+          )}
+          {entities.organizations.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesOrganizations}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.organizations.join(', ')}</dd>
+            </>
+          )}
+          {entities.places.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesPlaces}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.places.join(', ')}</dd>
+            </>
+          )}
+          {entities.events.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesEvents}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.events.join(', ')}</dd>
+            </>
+          )}
+          {entities.dates.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{labels.analysisEntitiesDates}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.dates.join(', ')}</dd>
+            </>
+          )}
+        </dl>
+      )}
+    </div>
+  );
+}
 
 interface EmailLogsListProps {
   selectedEmailId?: string;
@@ -470,6 +637,14 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: ${(log.estimatedCost || 0).toFixed(5)}
                             </p>
+                          )}
+
+                          {/* AI Analysis panel */}
+                          {log.emailAnalysis && (
+                            <AnalysisPanel
+                              analysis={log.emailAnalysis}
+                              labels={t.dashboard.emailHistory}
+                            />
                           )}
 
                           {/* Email content iframe */}

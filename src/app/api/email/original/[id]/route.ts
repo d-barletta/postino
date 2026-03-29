@@ -42,6 +42,7 @@ export async function GET(
       receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
       attachmentCount: data.attachmentCount ?? 0,
       attachmentNames: data.attachmentNames ?? [],
+      emailAnalysis: data.emailAnalysis ?? null,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
