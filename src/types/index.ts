@@ -30,6 +30,35 @@ export interface Rule {
 
 export type EmailStatus = 'received' | 'processing' | 'forwarded' | 'error' | 'skipped';
 
+/**
+ * Structured result of the AI pre-analysis pass that runs before rule application.
+ * Captures classification, sentiment, intent and enrichment tags for each email.
+ */
+export interface EmailAnalysis {
+  /** Primary category of the email. */
+  emailType: 'newsletter' | 'transactional' | 'promotional' | 'personal' | 'notification' | 'automated' | 'other';
+  /** 1-2 sentence summary of the email content. */
+  summary: string;
+  /** Key topics or themes mentioned in the email. */
+  topics: string[];
+  /** Specific descriptive tags (e.g. company name, product, event type). */
+  tags: string[];
+  /** True if this email requests or requires action from the recipient. */
+  hasActionItems: boolean;
+  /** True if this email is explicitly marked as urgent or time-sensitive. */
+  isUrgent: boolean;
+  /** ISO 639-1 language code of the email body (e.g. "en", "it", "es"). */
+  language: string;
+  /** Overall emotional tone of the email. */
+  sentiment: 'positive' | 'neutral' | 'negative';
+  /** Processing priority inferred from content and urgency signals. */
+  priority: 'low' | 'normal' | 'high' | 'critical';
+  /** Concise description of the sender's primary intent (e.g. "Confirming order", "Requesting payment"). */
+  intent: string;
+  /** Characterises who sent the email. */
+  senderType: 'human' | 'automated' | 'business' | 'newsletter';
+}
+
 export interface EmailLog {
   id: string;
   toAddress: string;
@@ -53,6 +82,8 @@ export interface EmailLog {
   attachmentCount?: number;
   /** Original filenames of attachments in the email. */
   attachmentNames?: string[];
+  /** Structured AI pre-analysis of the email stored at processing time. */
+  emailAnalysis?: EmailAnalysis;
 }
 
 export interface Settings {
@@ -148,6 +179,18 @@ export interface EmailMemoryEntry {
   summary?: string;
   /** Classified type of the email (newsletter, transactional, promotional, personal, notification, automated, other). */
   emailType?: string;
+  /** ISO 639-1 language code detected by pre-analysis. */
+  language?: string;
+  /** Overall sentiment detected by pre-analysis (positive, neutral, negative). */
+  sentiment?: string;
+  /** Processing priority inferred from content (low, normal, high, critical). */
+  priority?: string;
+  /** Descriptive tags detected by pre-analysis. */
+  tags?: string[];
+  /** Sender's primary intent as detected by pre-analysis. */
+  intent?: string;
+  /** Characterises who sent the email (human, automated, business, newsletter). */
+  senderType?: string;
 }
 
 export interface UserMemory {
