@@ -114,6 +114,7 @@ export interface Translations {
       myRules: string;
       emailHistory: string;
       inbox: string;
+      settings: string;
     };
     address: {
       title: string;
@@ -143,6 +144,11 @@ export interface Translations {
       title: string;
       enabledDescription: string;
       disabledDescription: string;
+    };
+    installApp: {
+      title: string;
+      description: string;
+      buttonLabel: string;
     };
     charts: {
       myEmailVolume: string;
@@ -498,6 +504,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'My Rules',
         emailHistory: 'Email History',
         inbox: 'Inbox',
+        settings: 'Settings',
       },
       address: {
         title: 'Your Postino Address',
@@ -529,6 +536,11 @@ const translations: Record<Locale, Translations> = {
         title: 'Postino Header in Forwarded Emails',
         enabledDescription: 'A Postino summary box is appended to the bottom of every forwarded email.',
         disabledDescription: 'The Postino summary box is not appended to forwarded emails.',
+      },
+      installApp: {
+        title: 'Install Postino App',
+        description: 'Install Postino as an app on your device for a faster, native-like experience.',
+        buttonLabel: 'Install App',
       },
       charts: {
         myEmailVolume: 'My Email Volume',
@@ -878,6 +890,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Le mie regole',
         emailHistory: 'Cronologia email',
         inbox: 'In arrivo',
+        settings: 'Impostazioni',
       },
       address: {
         title: 'Il tuo indirizzo Postino',
@@ -909,6 +922,11 @@ const translations: Record<Locale, Translations> = {
         title: 'Intestazione Postino nelle email inoltrate',
         enabledDescription: 'Un riquadro di riepilogo Postino viene aggiunto in fondo a ogni email inoltrata.',
         disabledDescription: 'Il riquadro di riepilogo Postino non viene aggiunto alle email inoltrate.',
+      },
+      installApp: {
+        title: 'Installa l\'app Postino',
+        description: 'Installa Postino come app sul tuo dispositivo per un\'esperienza più rapida e nativa.',
+        buttonLabel: 'Installa app',
       },
       charts: {
         myEmailVolume: 'Il mio volume di email',
@@ -1254,6 +1272,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Mis Reglas',
         emailHistory: 'Historial de correos',
         inbox: 'Bandeja de entrada',
+        settings: 'Configuración',
       },
       address: {
         title: 'Tu dirección Postino',
@@ -1285,6 +1304,11 @@ const translations: Record<Locale, Translations> = {
         title: 'Encabezado Postino en correos reenviados',
         enabledDescription: 'Un cuadro de resumen de Postino se añade al final de cada correo reenviado.',
         disabledDescription: 'El cuadro de resumen de Postino no se añade a los correos reenviados.',
+      },
+      installApp: {
+        title: 'Instalar la app Postino',
+        description: 'Instala Postino como una app en tu dispositivo para una experiencia más rápida y nativa.',
+        buttonLabel: 'Instalar app',
       },
       charts: {
         myEmailVolume: 'Mi volumen de correos',
@@ -1630,6 +1654,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Mes règles',
         emailHistory: 'Historique des e-mails',
         inbox: 'Boîte de réception',
+        settings: 'Paramètres',
       },
       address: {
         title: 'Votre adresse Postino',
@@ -1661,6 +1686,11 @@ const translations: Record<Locale, Translations> = {
         title: 'En-tête Postino dans les e-mails transmis',
         enabledDescription: 'Un encadré récapitulatif Postino est ajouté au bas de chaque e-mail transmis.',
         disabledDescription: "L'encadré récapitulatif Postino n'est pas ajouté aux e-mails transmis.",
+      },
+      installApp: {
+        title: 'Installer l\'application Postino',
+        description: 'Installez Postino comme application sur votre appareil pour une expérience plus rapide et native.',
+        buttonLabel: 'Installer l\'application',
       },
       charts: {
         myEmailVolume: "Mon volume d'e-mails",
@@ -2006,6 +2036,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Meine Regeln',
         emailHistory: 'E-Mail-Verlauf',
         inbox: 'Posteingang',
+        settings: 'Einstellungen',
       },
       address: {
         title: 'Ihre Postino-Adresse',
@@ -2037,6 +2068,11 @@ const translations: Record<Locale, Translations> = {
         title: 'Postino-Kopfzeile in weitergeleiteten E-Mails',
         enabledDescription: 'Eine Postino-Zusammenfassungsbox wird am Ende jeder weitergeleiteten E-Mail eingefügt.',
         disabledDescription: 'Die Postino-Zusammenfassungsbox wird nicht zu weitergeleiteten E-Mails hinzugefügt.',
+      },
+      installApp: {
+        title: 'Postino-App installieren',
+        description: 'Installieren Sie Postino als App auf Ihrem Gerät für ein schnelleres, natives Erlebnis.',
+        buttonLabel: 'App installieren',
       },
       charts: {
         myEmailVolume: 'Mein E-Mail-Volumen',

@@ -9,22 +9,25 @@ import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
 import { ForwardingHeaderCard } from '@/components/dashboard/ForwardingHeaderCard';
 import { InstallPwaDrawer } from '@/components/dashboard/InstallPwaDrawer';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
-import { Home, ListFilter, Inbox } from 'lucide-react';
+import { Home, ListFilter, Inbox, Settings } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
   const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'inbox'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'inbox' | 'settings'>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [emailListRefreshTrigger, setEmailListRefreshTrigger] = useState(0);
+  const [installPwaTrigger, setInstallPwaTrigger] = useState(0);
   const searchParams = useSearchParams();
   const editRuleId = searchParams.get('editRule');
   const selectedEmailId = searchParams.get('selectedEmail');
@@ -149,7 +152,7 @@ export default function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">{t.dashboard.subtitle}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'inbox')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'inbox' | 'settings')}>
         <TabsList>
           <TabsTrigger value="overview">
             <Home className="h-4 w-4 shrink-0" />
@@ -163,6 +166,10 @@ export default function DashboardPage() {
             <Inbox className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.inbox}</span>
           </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.settings}</span>
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <div className="space-y-6">
@@ -174,11 +181,6 @@ export default function DashboardPage() {
                 onToggle={handleAddressToggle}
               />
             )}
-            <PushNotificationButton />
-            <ForwardingHeaderCard
-              isEnabled={user?.isForwardingHeaderEnabled !== false}
-              onToggle={handleForwardingHeaderToggle}
-            />
             {userStats && <UserStatsCards stats={userStats} />}
             {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
           </div>
@@ -193,8 +195,35 @@ export default function DashboardPage() {
             refreshTrigger={emailListRefreshTrigger}
           />
         </TabsContent>
+        <TabsContent value="settings">
+          <div className="space-y-6">
+            <PushNotificationButton />
+            <ForwardingHeaderCard
+              isEnabled={user?.isForwardingHeaderEnabled !== false}
+              onToggle={handleForwardingHeaderToggle}
+            />
+            <Card>
+              <CardHeader>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {t.dashboard.installApp.title}
+                </h2>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  {t.dashboard.installApp.description}
+                </p>
+                <Button
+                  onClick={() => setInstallPwaTrigger((n) => n + 1)}
+                  variant="outline"
+                >
+                  {t.dashboard.installApp.buttonLabel}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
-      <InstallPwaDrawer />
+      <InstallPwaDrawer forceOpenTrigger={installPwaTrigger} />
     </div>
   );
 }
