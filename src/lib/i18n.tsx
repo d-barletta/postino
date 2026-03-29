@@ -188,6 +188,15 @@ export interface Translations {
       next: string;
       page: string;
       of: string;
+      aiAnalysis: string;
+      analysisType: string;
+      analysisSentiment: string;
+      analysisPriority: string;
+      analysisLanguage: string;
+      analysisSenderType: string;
+      analysisIntent: string;
+      analysisTags: string;
+      analysisTopics: string;
     };
     rules: {
       yourRules: string;
@@ -512,6 +521,15 @@ const translations: Record<Locale, Translations> = {
         next: 'Next',
         page: 'Page',
         of: 'of',
+        aiAnalysis: 'AI Analysis',
+        analysisType: 'Type:',
+        analysisSentiment: 'Sentiment:',
+        analysisPriority: 'Priority:',
+        analysisLanguage: 'Language:',
+        analysisSenderType: 'Sender type:',
+        analysisIntent: 'Intent:',
+        analysisTags: 'Tags:',
+        analysisTopics: 'Topics:',
       },
       rules: {
         yourRules: 'Your Rules',
@@ -830,6 +848,15 @@ const translations: Record<Locale, Translations> = {
         next: 'Successivo',
         page: 'Pagina',
         of: 'di',
+        aiAnalysis: 'Analisi AI',
+        analysisType: 'Tipo:',
+        analysisSentiment: 'Sentiment:',
+        analysisPriority: 'Priorità:',
+        analysisLanguage: 'Lingua:',
+        analysisSenderType: 'Tipo mittente:',
+        analysisIntent: 'Intenzione:',
+        analysisTags: 'Tag:',
+        analysisTopics: 'Argomenti:',
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1144,6 +1171,15 @@ const translations: Record<Locale, Translations> = {
         next: 'Siguiente',
         page: 'Página',
         of: 'de',
+        aiAnalysis: 'Análisis IA',
+        analysisType: 'Tipo:',
+        analysisSentiment: 'Sentimiento:',
+        analysisPriority: 'Prioridad:',
+        analysisLanguage: 'Idioma:',
+        analysisSenderType: 'Tipo de remitente:',
+        analysisIntent: 'Intención:',
+        analysisTags: 'Etiquetas:',
+        analysisTopics: 'Temas:',
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -1458,6 +1494,15 @@ const translations: Record<Locale, Translations> = {
         next: 'Suivant',
         page: 'Page',
         of: 'sur',
+        aiAnalysis: 'Analyse IA',
+        analysisType: 'Type :',
+        analysisSentiment: 'Sentiment :',
+        analysisPriority: 'Priorité :',
+        analysisLanguage: 'Langue :',
+        analysisSenderType: "Type d'expéditeur :",
+        analysisIntent: 'Intention :',
+        analysisTags: 'Tags :',
+        analysisTopics: 'Sujets :',
       },
       rules: {
         yourRules: 'Vos règles',
@@ -1772,6 +1817,15 @@ const translations: Record<Locale, Translations> = {
         next: 'Weiter',
         page: 'Seite',
         of: 'von',
+        aiAnalysis: 'KI-Analyse',
+        analysisType: 'Typ:',
+        analysisSentiment: 'Stimmung:',
+        analysisPriority: 'Priorität:',
+        analysisLanguage: 'Sprache:',
+        analysisSenderType: 'Absendertyp:',
+        analysisIntent: 'Absicht:',
+        analysisTags: 'Tags:',
+        analysisTopics: 'Themen:',
       },
       rules: {
         yourRules: 'Ihre Regeln',
