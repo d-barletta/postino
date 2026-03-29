@@ -149,6 +149,7 @@ export interface Translations {
       title: string;
       description: string;
       buttonLabel: string;
+      alreadyInstalled: string;
     };
     charts: {
       myEmailVolume: string;
@@ -541,6 +542,7 @@ const translations: Record<Locale, Translations> = {
         title: 'Install Postino App',
         description: 'Install Postino as an app on your device for a faster, native-like experience.',
         buttonLabel: 'Install App',
+        alreadyInstalled: 'Already Installed',
       },
       charts: {
         myEmailVolume: 'My Email Volume',
@@ -927,6 +929,7 @@ const translations: Record<Locale, Translations> = {
         title: 'Installa l\'app Postino',
         description: 'Installa Postino come app sul tuo dispositivo per un\'esperienza più rapida e nativa.',
         buttonLabel: 'Installa app',
+        alreadyInstalled: 'Già installata',
       },
       charts: {
         myEmailVolume: 'Il mio volume di email',
@@ -1309,6 +1312,7 @@ const translations: Record<Locale, Translations> = {
         title: 'Instalar la app Postino',
         description: 'Instala Postino como una app en tu dispositivo para una experiencia más rápida y nativa.',
         buttonLabel: 'Instalar app',
+        alreadyInstalled: 'Ya instalada',
       },
       charts: {
         myEmailVolume: 'Mi volumen de correos',
@@ -1691,6 +1695,7 @@ const translations: Record<Locale, Translations> = {
         title: 'Installer l\'application Postino',
         description: 'Installez Postino comme application sur votre appareil pour une expérience plus rapide et native.',
         buttonLabel: 'Installer l\'application',
+        alreadyInstalled: 'Déjà installée',
       },
       charts: {
         myEmailVolume: "Mon volume d'e-mails",
@@ -2073,6 +2078,7 @@ const translations: Record<Locale, Translations> = {
         title: 'Postino-App installieren',
         description: 'Installieren Sie Postino als App auf Ihrem Gerät für ein schnelleres, natives Erlebnis.',
         buttonLabel: 'App installieren',
+        alreadyInstalled: 'Bereits installiert',
       },
       charts: {
         myEmailVolume: 'Mein E-Mail-Volumen',
