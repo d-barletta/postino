@@ -680,7 +680,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
 
       {/* Results */}
       <Card>
-        <CardHeader>
+        <CardHeader className="py-2 px-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {!logsLoading && totalCount !== undefined && (
@@ -756,7 +756,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                           {hasAtt ? (
                             <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
                           ) : (
-                            <Mail className="h-4 w-4 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
+                            <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60 mt-0.5 shrink-0" />
                           )}
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-gray-800 dark:text-gray-100 break-words">{log.subject}</p>
