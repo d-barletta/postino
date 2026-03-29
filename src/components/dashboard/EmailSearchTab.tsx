@@ -162,7 +162,7 @@ function AnalysisPanel({ analysis }: AnalysisPanelProps) {
         )}
         {analysis.requiresResponse && (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-            {'\u21A9'} {eh.analysisRequiresResponse}
+            {eh.analysisRequiresResponse}
           </span>
         )}
       </div>
@@ -854,7 +854,7 @@ export function EmailSearchTab() {
                                 )}
                                 {log.emailAnalysis.requiresResponse && (
                                   <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                    {'\u21A9'} {t.dashboard.emailHistory.analysisRequiresResponse}
+                                    {t.dashboard.emailHistory.analysisRequiresResponse}
                                   </span>
                                 )}
                                 {log.emailAnalysis.isUrgent && (

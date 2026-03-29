@@ -11,6 +11,7 @@ import AdminEmailsPage from './emails/page';
 import AdminSettingsPage from './settings/page';
 import EmailJobsLiveTab from '@/components/admin/EmailJobsLiveTab';
 import type { Stats } from '@/types';
+import { LayoutDashboard, Users, Mail, Activity, Settings } from 'lucide-react';
 
 export default function AdminPage() {
   const { firebaseUser } = useAuth();
@@ -87,12 +88,27 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="overflow-x-auto whitespace-nowrap">
-          <TabsTrigger value="overview" className="mr-4 sm:mr-6">Overview</TabsTrigger>
-          <TabsTrigger value="users" className="mr-4 sm:mr-6">Users</TabsTrigger>
-          <TabsTrigger value="emails" className="mr-4 sm:mr-6">Emails</TabsTrigger>
-          <TabsTrigger value="jobs" className="mr-4 sm:mr-6">Jobs</TabsTrigger>
-          <TabsTrigger value="settings" className="mr-0">Settings</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="overview">
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            <span>Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="users">
+            <Users className="h-4 w-4 shrink-0" />
+            <span>Users</span>
+          </TabsTrigger>
+          <TabsTrigger value="emails">
+            <Mail className="h-4 w-4 shrink-0" />
+            <span>Emails</span>
+          </TabsTrigger>
+          <TabsTrigger value="jobs">
+            <Activity className="h-4 w-4 shrink-0" />
+            <span>Jobs</span>
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="h-4 w-4 shrink-0" />
+            <span>Settings</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">

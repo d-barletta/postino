@@ -154,19 +154,19 @@ export default function DashboardPage() {
         <TabsList>
           <TabsTrigger value="overview">
             <LayoutDashboard className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{t.dashboard.tabs.overview}</span>
+            <span>{t.dashboard.tabs.overview}</span>
           </TabsTrigger>
           <TabsTrigger value="rules">
             <ListFilter className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{t.dashboard.tabs.myRules}</span>
+            <span>{t.dashboard.tabs.myRules}</span>
           </TabsTrigger>
           <TabsTrigger value="emails">
             <Inbox className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{t.dashboard.tabs.emailHistory}</span>
+            <span>{t.dashboard.tabs.emailHistory}</span>
           </TabsTrigger>
           <TabsTrigger value="search">
             <Search className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{t.dashboard.tabs.search}</span>
+            <span>{t.dashboard.tabs.search}</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
