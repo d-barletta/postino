@@ -113,6 +113,7 @@ export interface Translations {
       overview: string;
       myRules: string;
       emailHistory: string;
+      search: string;
     };
     address: {
       title: string;
@@ -207,6 +208,48 @@ export interface Translations {
       analysisEntitiesPlaces: string;
       analysisEntitiesEvents: string;
       analysisEntitiesDates: string;
+    };
+    search: {
+      title: string;
+      toggleFilters: string;
+      searchPlaceholder: string;
+      applyFilters: string;
+      noResults: string;
+      filterStatus: string;
+      filterSentiment: string;
+      filterCategory: string;
+      filterPriority: string;
+      filterSenderType: string;
+      filterLanguage: string;
+      filterTags: string;
+      languagePlaceholder: string;
+      tagsPlaceholder: string;
+      withAttachments: string;
+      requiresResponse: string;
+      hasActionItems: string;
+      isUrgent: string;
+      allSentiments: string;
+      sentimentPositive: string;
+      sentimentNeutral: string;
+      sentimentNegative: string;
+      allCategories: string;
+      typeNewsletter: string;
+      typeTransactional: string;
+      typePromotional: string;
+      typePersonal: string;
+      typeNotification: string;
+      typeAutomated: string;
+      typeOther: string;
+      allPriorities: string;
+      priorityLow: string;
+      priorityNormal: string;
+      priorityHigh: string;
+      priorityCritical: string;
+      allSenderTypes: string;
+      senderHuman: string;
+      senderAutomated: string;
+      senderBusiness: string;
+      senderNewsletter: string;
     };
     rules: {
       yourRules: string;
@@ -454,6 +497,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Overview',
         myRules: 'My Rules',
         emailHistory: 'Email History',
+        search: 'Search',
       },
       address: {
         title: 'Your Postino Address',
@@ -550,6 +594,48 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Places:',
         analysisEntitiesEvents: 'Events:',
         analysisEntitiesDates: 'Dates:',
+      },
+      search: {
+        title: 'Search Emails',
+        toggleFilters: 'Toggle filters',
+        searchPlaceholder: 'Search by subject, sender, summary, tags…',
+        applyFilters: 'Search',
+        noResults: 'No emails match your filters.',
+        filterStatus: 'Status',
+        filterSentiment: 'Sentiment',
+        filterCategory: 'Category',
+        filterPriority: 'Priority',
+        filterSenderType: 'Sender type',
+        filterLanguage: 'Language',
+        filterTags: 'Tag',
+        languagePlaceholder: 'e.g. en',
+        tagsPlaceholder: 'e.g. invoice',
+        withAttachments: 'With attachments',
+        requiresResponse: 'Requires response',
+        hasActionItems: 'Has action items',
+        isUrgent: 'Urgent',
+        allSentiments: 'All sentiments',
+        sentimentPositive: 'Positive',
+        sentimentNeutral: 'Neutral',
+        sentimentNegative: 'Negative',
+        allCategories: 'All categories',
+        typeNewsletter: 'Newsletter',
+        typeTransactional: 'Transactional',
+        typePromotional: 'Promotional',
+        typePersonal: 'Personal',
+        typeNotification: 'Notification',
+        typeAutomated: 'Automated',
+        typeOther: 'Other',
+        allPriorities: 'All priorities',
+        priorityLow: 'Low',
+        priorityNormal: 'Normal',
+        priorityHigh: 'High',
+        priorityCritical: 'Critical',
+        allSenderTypes: 'All sender types',
+        senderHuman: 'Human',
+        senderAutomated: 'Automated',
+        senderBusiness: 'Business',
+        senderNewsletter: 'Newsletter',
       },
       rules: {
         yourRules: 'Your Rules',
@@ -791,6 +877,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Panoramica',
         myRules: 'Le mie regole',
         emailHistory: 'Cronologia email',
+        search: 'Cerca',
       },
       address: {
         title: 'Il tuo indirizzo Postino',
@@ -887,6 +974,48 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Luoghi:',
         analysisEntitiesEvents: 'Eventi:',
         analysisEntitiesDates: 'Date:',
+      },
+      search: {
+        title: 'Cerca email',
+        toggleFilters: 'Mostra/nascondi filtri',
+        searchPlaceholder: 'Cerca per oggetto, mittente, riepilogo, tag…',
+        applyFilters: 'Cerca',
+        noResults: 'Nessuna email corrisponde ai filtri.',
+        filterStatus: 'Stato',
+        filterSentiment: 'Sentiment',
+        filterCategory: 'Categoria',
+        filterPriority: 'Priorità',
+        filterSenderType: 'Tipo mittente',
+        filterLanguage: 'Lingua',
+        filterTags: 'Tag',
+        languagePlaceholder: 'es. it',
+        tagsPlaceholder: 'es. fattura',
+        withAttachments: 'Con allegati',
+        requiresResponse: 'Richiede risposta',
+        hasActionItems: 'Ha azioni da fare',
+        isUrgent: 'Urgente',
+        allSentiments: 'Tutti i sentiment',
+        sentimentPositive: 'Positivo',
+        sentimentNeutral: 'Neutro',
+        sentimentNegative: 'Negativo',
+        allCategories: 'Tutte le categorie',
+        typeNewsletter: 'Newsletter',
+        typeTransactional: 'Transazionale',
+        typePromotional: 'Promozionale',
+        typePersonal: 'Personale',
+        typeNotification: 'Notifica',
+        typeAutomated: 'Automatizzato',
+        typeOther: 'Altro',
+        allPriorities: 'Tutte le priorità',
+        priorityLow: 'Bassa',
+        priorityNormal: 'Normale',
+        priorityHigh: 'Alta',
+        priorityCritical: 'Critica',
+        allSenderTypes: 'Tutti i tipi',
+        senderHuman: 'Persona',
+        senderAutomated: 'Automatizzato',
+        senderBusiness: 'Azienda',
+        senderNewsletter: 'Newsletter',
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1124,6 +1253,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Resumen',
         myRules: 'Mis Reglas',
         emailHistory: 'Historial de correos',
+        search: 'Buscar',
       },
       address: {
         title: 'Tu dirección Postino',
@@ -1220,6 +1350,48 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Lugares:',
         analysisEntitiesEvents: 'Eventos:',
         analysisEntitiesDates: 'Fechas:',
+      },
+      search: {
+        title: 'Buscar correos',
+        toggleFilters: 'Mostrar/ocultar filtros',
+        searchPlaceholder: 'Buscar por asunto, remitente, resumen, etiquetas…',
+        applyFilters: 'Buscar',
+        noResults: 'Ningún correo coincide con los filtros.',
+        filterStatus: 'Estado',
+        filterSentiment: 'Sentimiento',
+        filterCategory: 'Categoría',
+        filterPriority: 'Prioridad',
+        filterSenderType: 'Tipo de remitente',
+        filterLanguage: 'Idioma',
+        filterTags: 'Etiqueta',
+        languagePlaceholder: 'ej. es',
+        tagsPlaceholder: 'ej. factura',
+        withAttachments: 'Con adjuntos',
+        requiresResponse: 'Requiere respuesta',
+        hasActionItems: 'Tiene tareas pendientes',
+        isUrgent: 'Urgente',
+        allSentiments: 'Todos los sentimientos',
+        sentimentPositive: 'Positivo',
+        sentimentNeutral: 'Neutro',
+        sentimentNegative: 'Negativo',
+        allCategories: 'Todas las categorías',
+        typeNewsletter: 'Newsletter',
+        typeTransactional: 'Transaccional',
+        typePromotional: 'Promocional',
+        typePersonal: 'Personal',
+        typeNotification: 'Notificación',
+        typeAutomated: 'Automatizado',
+        typeOther: 'Otro',
+        allPriorities: 'Todas las prioridades',
+        priorityLow: 'Baja',
+        priorityNormal: 'Normal',
+        priorityHigh: 'Alta',
+        priorityCritical: 'Crítica',
+        allSenderTypes: 'Todos los tipos',
+        senderHuman: 'Persona',
+        senderAutomated: 'Automatizado',
+        senderBusiness: 'Empresa',
+        senderNewsletter: 'Newsletter',
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -1457,6 +1629,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Vue d\'ensemble',
         myRules: 'Mes règles',
         emailHistory: 'Historique des e-mails',
+        search: 'Rechercher',
       },
       address: {
         title: 'Votre adresse Postino',
@@ -1553,6 +1726,48 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Lieux :',
         analysisEntitiesEvents: 'Événements :',
         analysisEntitiesDates: 'Dates :',
+      },
+      search: {
+        title: 'Rechercher des e-mails',
+        toggleFilters: 'Afficher/masquer les filtres',
+        searchPlaceholder: 'Rechercher par objet, expéditeur, résumé, tags…',
+        applyFilters: 'Rechercher',
+        noResults: 'Aucun e-mail ne correspond aux filtres.',
+        filterStatus: 'Statut',
+        filterSentiment: 'Sentiment',
+        filterCategory: 'Catégorie',
+        filterPriority: 'Priorité',
+        filterSenderType: "Type d'expéditeur",
+        filterLanguage: 'Langue',
+        filterTags: 'Tag',
+        languagePlaceholder: 'ex. fr',
+        tagsPlaceholder: 'ex. facture',
+        withAttachments: 'Avec pièces jointes',
+        requiresResponse: 'Nécessite une réponse',
+        hasActionItems: "A des actions à faire",
+        isUrgent: 'Urgent',
+        allSentiments: 'Tous les sentiments',
+        sentimentPositive: 'Positif',
+        sentimentNeutral: 'Neutre',
+        sentimentNegative: 'Négatif',
+        allCategories: 'Toutes les catégories',
+        typeNewsletter: 'Newsletter',
+        typeTransactional: 'Transactionnel',
+        typePromotional: 'Promotionnel',
+        typePersonal: 'Personnel',
+        typeNotification: 'Notification',
+        typeAutomated: 'Automatisé',
+        typeOther: 'Autre',
+        allPriorities: 'Toutes les priorités',
+        priorityLow: 'Faible',
+        priorityNormal: 'Normale',
+        priorityHigh: 'Haute',
+        priorityCritical: 'Critique',
+        allSenderTypes: 'Tous les types',
+        senderHuman: 'Humain',
+        senderAutomated: 'Automatisé',
+        senderBusiness: 'Entreprise',
+        senderNewsletter: 'Newsletter',
       },
       rules: {
         yourRules: 'Vos règles',
@@ -1790,6 +2005,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Übersicht',
         myRules: 'Meine Regeln',
         emailHistory: 'E-Mail-Verlauf',
+        search: 'Suche',
       },
       address: {
         title: 'Ihre Postino-Adresse',
@@ -1886,6 +2102,48 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Orte:',
         analysisEntitiesEvents: 'Ereignisse:',
         analysisEntitiesDates: 'Daten:',
+      },
+      search: {
+        title: 'E-Mails suchen',
+        toggleFilters: 'Filter ein-/ausblenden',
+        searchPlaceholder: 'Nach Betreff, Absender, Zusammenfassung, Tags suchen…',
+        applyFilters: 'Suchen',
+        noResults: 'Keine E-Mails entsprechen den Filtern.',
+        filterStatus: 'Status',
+        filterSentiment: 'Stimmung',
+        filterCategory: 'Kategorie',
+        filterPriority: 'Priorität',
+        filterSenderType: 'Absendertyp',
+        filterLanguage: 'Sprache',
+        filterTags: 'Tag',
+        languagePlaceholder: 'z. B. de',
+        tagsPlaceholder: 'z. B. rechnung',
+        withAttachments: 'Mit Anhängen',
+        requiresResponse: 'Antwort erforderlich',
+        hasActionItems: 'Hat Aufgaben',
+        isUrgent: 'Dringend',
+        allSentiments: 'Alle Stimmungen',
+        sentimentPositive: 'Positiv',
+        sentimentNeutral: 'Neutral',
+        sentimentNegative: 'Negativ',
+        allCategories: 'Alle Kategorien',
+        typeNewsletter: 'Newsletter',
+        typeTransactional: 'Transaktional',
+        typePromotional: 'Werblich',
+        typePersonal: 'Persönlich',
+        typeNotification: 'Benachrichtigung',
+        typeAutomated: 'Automatisiert',
+        typeOther: 'Sonstiges',
+        allPriorities: 'Alle Prioritäten',
+        priorityLow: 'Niedrig',
+        priorityNormal: 'Normal',
+        priorityHigh: 'Hoch',
+        priorityCritical: 'Kritisch',
+        allSenderTypes: 'Alle Typen',
+        senderHuman: 'Mensch',
+        senderAutomated: 'Automatisiert',
+        senderBusiness: 'Unternehmen',
+        senderNewsletter: 'Newsletter',
       },
       rules: {
         yourRules: 'Ihre Regeln',

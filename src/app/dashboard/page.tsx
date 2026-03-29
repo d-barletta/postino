@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailLogsList } from '@/components/dashboard/EmailLogsList';
+import { EmailSearchTab } from '@/components/dashboard/EmailSearchTab';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
@@ -14,12 +15,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
+import { Home, ListFilter, Inbox, Search } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
   const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'emails'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'emails' | 'search'>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -148,11 +150,24 @@ export default function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">{t.dashboard.subtitle}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'emails')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'emails' | 'search')}>
         <TabsList>
-          <TabsTrigger value="overview">{t.dashboard.tabs.overview}</TabsTrigger>
-          <TabsTrigger value="rules">{t.dashboard.tabs.myRules}</TabsTrigger>
-          <TabsTrigger value="emails">{t.dashboard.tabs.emailHistory}</TabsTrigger>
+          <TabsTrigger value="overview">
+            <Home className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.overview}</span>
+          </TabsTrigger>
+          <TabsTrigger value="rules">
+            <ListFilter className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.myRules}</span>
+          </TabsTrigger>
+          <TabsTrigger value="emails">
+            <Inbox className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.emailHistory}</span>
+          </TabsTrigger>
+          <TabsTrigger value="search">
+            <Search className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.search}</span>
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <div className="space-y-6">
@@ -182,6 +197,9 @@ export default function DashboardPage() {
             selectedEmailId={selectedEmailId ?? undefined}
             refreshTrigger={emailListRefreshTrigger}
           />
+        </TabsContent>
+        <TabsContent value="search">
+          <EmailSearchTab />
         </TabsContent>
       </Tabs>
       <InstallPwaDrawer />
