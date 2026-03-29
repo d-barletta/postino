@@ -14,7 +14,7 @@ const TabsList = React.forwardRef<
     ref={ref}
     className={cn(
       'flex items-center border-b border-gray-200 dark:border-gray-700 w-full gap-0',
-      'overflow-x-auto scrollbar-none',
+      'overflow-x-auto overflow-y-hidden scrollbar-none',
       className
     )}
     {...props}
