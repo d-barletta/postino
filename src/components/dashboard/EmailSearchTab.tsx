@@ -29,7 +29,8 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import type { EmailLog, EmailAnalysis } from '@/types';
+import type { EmailLog } from '@/types';
+import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
 
 const PAGE_SIZE = 20;
 const ALL_VALUE = '__all__';
@@ -117,125 +118,6 @@ function hasActiveFilter(f: FilterState): boolean {
   );
 }
 
-// ---------------------------------------------------------------------------
-// AnalysisPanel
-// ---------------------------------------------------------------------------
-interface AnalysisPanelProps {
-  analysis: EmailAnalysis;
-}
-
-function AnalysisPanel({ analysis }: AnalysisPanelProps) {
-  const { t } = useI18n();
-  const eh = t.dashboard.emailHistory;
-  const hasTags = analysis.tags && analysis.tags.length > 0;
-  const hasTopics = analysis.topics && analysis.topics.length > 0;
-  const { entities } = analysis;
-
-  return (
-    <div className="mt-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 p-3 space-y-2">
-      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-        {eh.aiAnalysis}
-      </p>
-
-      <div className="flex flex-wrap gap-1.5">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${TYPE_COLORS[analysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
-          {analysis.emailType}
-        </span>
-        {analysis.sentiment && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${SENTIMENT_COLORS[analysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
-            {analysis.sentiment}
-          </span>
-        )}
-        {analysis.priority && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${PRIORITY_COLORS[analysis.priority] ?? DEFAULT_BADGE_COLOR}`}>
-            {analysis.priority}
-          </span>
-        )}
-        {analysis.senderType && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-            {analysis.senderType}
-          </span>
-        )}
-        {analysis.language && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${DEFAULT_BADGE_COLOR}`}>
-            {analysis.language.toUpperCase()}
-          </span>
-        )}
-        {analysis.requiresResponse && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-            {eh.analysisRequiresResponse}
-          </span>
-        )}
-      </div>
-
-      {analysis.intent && (
-        <p className="text-xs text-gray-600 dark:text-gray-300">
-          <span className="font-medium text-gray-500 dark:text-gray-400">{eh.analysisIntent} </span>
-          {analysis.intent}
-        </p>
-      )}
-
-      {analysis.summary && (
-        <p className="text-xs text-gray-600 dark:text-gray-300 italic">{analysis.summary}</p>
-      )}
-
-      {hasTags && (
-        <div className="flex flex-wrap gap-1">
-          {analysis.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {hasTopics && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          <span className="font-medium">{eh.analysisTopics} </span>
-          {analysis.topics.join(' \u00B7 ')}
-        </p>
-      )}
-
-      {entities && (
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-          {entities.people.length > 0 && (
-            <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPeople}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.people.join(', ')}</dd>
-            </>
-          )}
-          {entities.organizations.length > 0 && (
-            <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesOrganizations}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.organizations.join(', ')}</dd>
-            </>
-          )}
-          {entities.places.length > 0 && (
-            <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPlaces}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.places.join(', ')}</dd>
-            </>
-          )}
-          {entities.events.length > 0 && (
-            <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesEvents}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.events.join(', ')}</dd>
-            </>
-          )}
-          {entities.dates.length > 0 && (
-            <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesDates}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.dates.join(', ')}</dd>
-            </>
-          )}
-        </dl>
-      )}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -351,6 +233,27 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     { value: 'business', label: ts.senderBusiness },
     { value: 'newsletter', label: ts.senderNewsletter },
   ];
+
+  const rowTypeLabel: Record<string, string> = {
+    newsletter: ts.typeNewsletter,
+    transactional: ts.typeTransactional,
+    promotional: ts.typePromotional,
+    personal: ts.typePersonal,
+    notification: ts.typeNotification,
+    automated: ts.typeAutomated,
+    other: ts.typeOther,
+  };
+  const rowSentimentLabel: Record<string, string> = {
+    positive: ts.sentimentPositive,
+    neutral: ts.sentimentNeutral,
+    negative: ts.sentimentNegative,
+  };
+  const rowPriorityLabel: Record<string, string> = {
+    low: ts.priorityLow,
+    normal: ts.priorityNormal,
+    high: ts.priorityHigh,
+    critical: ts.priorityCritical,
+  };
 
   const fetchLogs = useCallback(async (targetPage: number, isRefresh = false) => {
     if (!firebaseUser) return;
@@ -864,17 +767,17 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                                 <div className="flex flex-wrap gap-1">
                                   {log.emailAnalysis.emailType && (
                                     <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
-                                      {log.emailAnalysis.emailType}
+                                      {rowTypeLabel[log.emailAnalysis.emailType] ?? log.emailAnalysis.emailType}
                                     </span>
                                   )}
                                   {log.emailAnalysis.sentiment && (
                                     <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
-                                      {log.emailAnalysis.sentiment}
+                                      {rowSentimentLabel[log.emailAnalysis.sentiment] ?? log.emailAnalysis.sentiment}
                                     </span>
                                   )}
                                   {log.emailAnalysis.priority && log.emailAnalysis.priority !== 'normal' && (
                                     <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${PRIORITY_COLORS[log.emailAnalysis.priority] ?? DEFAULT_BADGE_COLOR}`}>
-                                      {log.emailAnalysis.priority}
+                                      {rowPriorityLabel[log.emailAnalysis.priority] ?? log.emailAnalysis.priority}
                                     </span>
                                   )}
                                   {log.emailAnalysis.requiresResponse && (
@@ -1043,7 +946,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                             {/* AI Analysis tab */}
                             <TabsContent value="ai" className="mt-3">
                               {log.emailAnalysis ? (
-                                <AnalysisPanel analysis={log.emailAnalysis} />
+                                <EmailAnalysisPanel analysis={log.emailAnalysis} />
                               ) : (
                                 <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
                                   {t.dashboard.emailHistory.noAiAnalysis}
