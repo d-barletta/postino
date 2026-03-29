@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
-import { DashboardLink } from '@/components/auth/DashboardLink';
 import { LoginHeading } from '@/components/auth/LoginHeading';
 
 export const metadata: Metadata = {
@@ -42,7 +41,6 @@ export default function LoginPage() {
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
           <LoginForm />
         </div>
-        <DashboardLink />
       </div>
     </div>
   );
