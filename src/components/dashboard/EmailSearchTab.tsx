@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { formatDate } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
@@ -262,7 +263,12 @@ interface ExpandedEmailData {
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-export function EmailSearchTab() {
+interface EmailSearchTabProps {
+  selectedEmailId?: string;
+  refreshTrigger?: number;
+}
+
+export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchTabProps) {
   const { t, locale } = useI18n();
   const { firebaseUser, user } = useAuth();
   const isAdmin = user?.isAdmin === true;
@@ -275,9 +281,10 @@ export function EmailSearchTab() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [totalPages, setTotalPages] = useState<number | undefined>(undefined);
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
+  const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -456,9 +463,25 @@ export function EmailSearchTab() {
       setSelectedId(null);
     } else {
       setSelectedId(logId);
+      setActiveDetailTab('summary');
       fetchExpandedEmail(logId);
     }
   };
+
+  // Auto-expand when selectedEmailId prop is provided (e.g., from push notification link)
+  useEffect(() => {
+    if (!selectedEmailId) return;
+    setSelectedId(selectedEmailId);
+    fetchExpandedEmail(selectedEmailId);
+  }, [selectedEmailId, fetchExpandedEmail]);
+
+  // Refresh when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger === undefined || refreshTrigger === 0) return;
+    fetchLogs(1, true);
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
 
   useEffect(() => {
     if (!fullscreenEmailId) return;
@@ -478,7 +501,7 @@ export function EmailSearchTab() {
     <div className="space-y-4">
       {/* Filter panel */}
       <Card>
-        <Accordion type="single" collapsible defaultValue="filters">
+        <Accordion type="single" collapsible>
           <AccordionItem value="filters" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               {ts.title}
@@ -882,89 +905,110 @@ export function EmailSearchTab() {
 
                       {expanded && (
                         <div
-                          className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3 pl-6"
+                          className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 pl-6"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-                            <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.to}</dt>
-                            <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{log.toAddress}</dd>
-                            {emailData?.ccAddress && (
-                              <>
-                                <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.cc}</dt>
-                                <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.ccAddress}</dd>
-                              </>
-                            )}
-                            {emailData?.bccAddress && (
-                              <>
-                                <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.bcc}</dt>
-                                <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.bccAddress}</dd>
-                              </>
-                            )}
-                            <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.attachments}</dt>
-                            <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
-                              {emailData?.loading ? (
-                                <span className="text-gray-400">{'\u2026'}</span>
-                              ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-                                <ul className="list-none space-y-0.5">
-                                  {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
-                                    <li key={i} className="flex items-center gap-1 min-w-0">
-                                      <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
-                                      <span className="truncate">{name}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <span className="text-gray-400">{t.dashboard.emailHistory.noAttachmentsShort}</span>
+                          <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
+                            <TabsList>
+                              <TabsTrigger value="summary">{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
+                              <TabsTrigger value="content">{t.dashboard.emailHistory.tabContent}</TabsTrigger>
+                              <TabsTrigger value="ai">{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
+                            </TabsList>
+
+                            {/* Summary tab: metadata */}
+                            <TabsContent value="summary" className="mt-3 space-y-3">
+                              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                                <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.to}</dt>
+                                <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{log.toAddress}</dd>
+                                {emailData?.ccAddress && (
+                                  <>
+                                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.cc}</dt>
+                                    <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.ccAddress}</dd>
+                                  </>
+                                )}
+                                {emailData?.bccAddress && (
+                                  <>
+                                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.bcc}</dt>
+                                    <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.bccAddress}</dd>
+                                  </>
+                                )}
+                                <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.attachments}</dt>
+                                <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
+                                  {emailData?.loading ? (
+                                    <span className="text-gray-400">{'\u2026'}</span>
+                                  ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
+                                    <ul className="list-none space-y-0.5">
+                                      {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
+                                        <li key={i} className="flex items-center gap-1 min-w-0">
+                                          <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
+                                          <span className="truncate">{name}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <span className="text-gray-400">{t.dashboard.emailHistory.noAttachmentsShort}</span>
+                                  )}
+                                </dd>
+                              </dl>
+
+                              {log.ruleApplied && (
+                                <p className="text-xs text-gray-600 dark:text-gray-300">
+                                  <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span> {log.ruleApplied}
+                                </p>
                               )}
-                            </dd>
-                          </dl>
+                              {log.tokensUsed !== undefined && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: ${(log.estimatedCost || 0).toFixed(5)}
+                                </p>
+                              )}
+                            </TabsContent>
 
-                          {log.ruleApplied && (
-                            <p className="text-xs text-gray-600 dark:text-gray-300">
-                              <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span> {log.ruleApplied}
-                            </p>
-                          )}
-                          {log.tokensUsed !== undefined && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: ${(log.estimatedCost || 0).toFixed(5)}
-                            </p>
-                          )}
-
-                          {log.emailAnalysis && <AnalysisPanel analysis={log.emailAnalysis} />}
-
-                          <div className="space-y-2">
-                            {emailData?.loading && (
-                              <div className="animate-pulse space-y-2 pt-1">
-                                <div className="h-[200px] w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                                <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
-                                <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
-                              </div>
-                            )}
-                            {emailData && !emailData.loading && emailData.originalBody && (
-                              <>
-                                <iframe
-                                  sandbox=""
-                                  srcDoc={emailData.originalBody}
-                                  className="w-full border-0 rounded-lg"
-                                  style={{ minHeight: '200px', maxHeight: '400px' }}
-                                  title="Email content preview"
-                                  onLoad={(e) => {
-                                    const iframe = e.currentTarget;
-                                    const height = iframe.contentDocument?.documentElement?.scrollHeight;
-                                    if (height) iframe.style.height = `${Math.min(height + 20, 400)}px`;
-                                  }}
-                                />
-                                <div className="flex items-center gap-3 pt-1">
-                                  {isAdmin ? (
-                                    <>
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); setFullscreenEmailId(log.id); }}
-                                        className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                        title={t.emailOriginal.openFullPageView}
-                                      >
-                                        <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
-                                        {t.dashboard.emailHistory.viewFullPage}
-                                      </button>
+                            {/* Content tab: email iframe */}
+                            <TabsContent value="content" className="mt-3 space-y-2">
+                              {emailData?.loading && (
+                                <div className="animate-pulse space-y-2 pt-1">
+                                  <div className="h-[200px] w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                                  <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
+                                  <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+                                </div>
+                              )}
+                              {emailData && !emailData.loading && emailData.originalBody && (
+                                <>
+                                  <iframe
+                                    sandbox=""
+                                    srcDoc={emailData.originalBody}
+                                    className="w-full border-0 rounded-lg"
+                                    style={{ minHeight: '200px', maxHeight: '400px' }}
+                                    title="Email content preview"
+                                    onLoad={(e) => {
+                                      const iframe = e.currentTarget;
+                                      const height = iframe.contentDocument?.documentElement?.scrollHeight;
+                                      if (height) iframe.style.height = `${Math.min(height + 20, 400)}px`;
+                                    }}
+                                  />
+                                  <div className="flex items-center gap-3 pt-1">
+                                    {isAdmin ? (
+                                      <>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setFullscreenEmailId(log.id); }}
+                                          className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                          title={t.emailOriginal.openFullPageView}
+                                        >
+                                          <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
+                                          {t.dashboard.emailHistory.viewFullPage}
+                                        </button>
+                                        <a
+                                          href={`/email/original/${log.id}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <ExternalLink className="h-3 w-3" />
+                                          {t.dashboard.emailHistory.viewOriginal}
+                                        </a>
+                                      </>
+                                    ) : (
                                       <a
                                         href={`/email/original/${log.id}`}
                                         target="_blank"
@@ -975,26 +1019,28 @@ export function EmailSearchTab() {
                                         <ExternalLink className="h-3 w-3" />
                                         {t.dashboard.emailHistory.viewOriginal}
                                       </a>
-                                    </>
-                                  ) : (
-                                    <a
-                                      href={`/email/original/${log.id}`}
-                                      className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <ExternalLink className="h-3 w-3" />
-                                      {t.dashboard.emailHistory.viewOriginal}
-                                    </a>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                            {emailData && !emailData.loading && !emailData.originalBody && !emailData.error && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-                                {t.emailOriginal.noOriginalContent}
-                              </p>
-                            )}
-                          </div>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                              {emailData && !emailData.loading && !emailData.originalBody && !emailData.error && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
+                                  {t.emailOriginal.noOriginalContent}
+                                </p>
+                              )}
+                            </TabsContent>
+
+                            {/* AI Analysis tab */}
+                            <TabsContent value="ai" className="mt-3">
+                              {log.emailAnalysis ? (
+                                <AnalysisPanel analysis={log.emailAnalysis} />
+                              ) : (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
+                                  {t.dashboard.emailHistory.noAiAnalysis}
+                                </p>
+                              )}
+                            </TabsContent>
+                          </Tabs>
                         </div>
                       )}
                     </div>

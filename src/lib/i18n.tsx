@@ -113,7 +113,7 @@ export interface Translations {
       overview: string;
       myRules: string;
       emailHistory: string;
-      search: string;
+      inbox: string;
     };
     address: {
       title: string;
@@ -497,7 +497,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Overview',
         myRules: 'My Rules',
         emailHistory: 'Email History',
-        search: 'Search',
+        inbox: 'Inbox',
       },
       address: {
         title: 'Your Postino Address',
@@ -877,7 +877,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Panoramica',
         myRules: 'Le mie regole',
         emailHistory: 'Cronologia email',
-        search: 'Cerca',
+        inbox: 'In arrivo',
       },
       address: {
         title: 'Il tuo indirizzo Postino',
@@ -1253,7 +1253,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Resumen',
         myRules: 'Mis Reglas',
         emailHistory: 'Historial de correos',
-        search: 'Buscar',
+        inbox: 'Bandeja de entrada',
       },
       address: {
         title: 'Tu dirección Postino',
@@ -1629,7 +1629,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Vue d\'ensemble',
         myRules: 'Mes règles',
         emailHistory: 'Historique des e-mails',
-        search: 'Rechercher',
+        inbox: 'Boîte de réception',
       },
       address: {
         title: 'Votre adresse Postino',
@@ -2005,7 +2005,7 @@ const translations: Record<Locale, Translations> = {
         overview: 'Übersicht',
         myRules: 'Meine Regeln',
         emailHistory: 'E-Mail-Verlauf',
-        search: 'Suche',
+        inbox: 'Posteingang',
       },
       address: {
         title: 'Ihre Postino-Adresse',
