@@ -206,9 +206,11 @@ function IosHorizontalDotsIcon() {
 interface InstallPwaDrawerProps {
   /** External signal that can trigger the drawer early (e.g. user enabled notifications). */
   triggerOpen?: boolean;
+  /** Increment to explicitly trigger the drawer from settings — bypasses dismissed state. */
+  forceOpenTrigger?: number;
 }
 
-export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps) {
+export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: InstallPwaDrawerProps) {
   const { isAvailable, install } = usePWAInstall();
   const [open, setOpen] = useState(false);
   const [deviceOS, setDeviceOS] = useState<DeviceOS>('desktop');
@@ -219,15 +221,16 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
   const tr = t.dashboard.pwaInstall;
 
   useEffect(() => {
-    // All checks are client-only.
-    if (isStandalone() || hasDismissed()) return;
-
+    // Device/browser detection is always needed (for manual-install instructions).
     const os = getDeviceOS();
     const browser = getBrowserType();
     setDeviceOS(os);
     setBrowserType(browser);
     setIsIOS26(detectIOS26Safari());
     setIsIPad(detectIPad());
+
+    // Auto-prompt: skip if already installed or previously dismissed.
+    if (isStandalone() || hasDismissed()) return;
 
     // iOS Firefox cannot add to homescreen — skip entirely.
     if (os === 'ios' && browser === 'firefox') return;
@@ -249,6 +252,16 @@ export function InstallPwaDrawer({ triggerOpen = false }: InstallPwaDrawerProps)
     if (!isAvailable && !needsManual) return;
     setOpen(true);
   }, [triggerOpen, isAvailable, deviceOS, browserType]);
+
+  // Allow an explicit user-initiated trigger from settings (bypasses dismissed state).
+  useEffect(() => {
+    if (forceOpenTrigger <= 0 || isStandalone()) return;
+    // iOS Firefox cannot add to homescreen.
+    if (deviceOS === 'ios' && browserType === 'firefox') return;
+    const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
+    if (!isAvailable && !needsManual) return;
+    setOpen(true);
+  }, [forceOpenTrigger, isAvailable, deviceOS, browserType]);
 
   const handleDismiss = () => {
     saveDismissed();
