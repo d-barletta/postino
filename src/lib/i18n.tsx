@@ -535,6 +535,9 @@ const translations: Record<Locale, Translations> = {
       address: {
         title: 'Your Postino Address',
         active: 'Active',
+        disabled: 'Disabled',
+        activeDescription:
+          "Send emails to this address and they'll be processed according to your rules, then forwarded to your email",
         disabledDescription:
           'Your Postino address is disabled. Incoming emails will be registered as skipped and not forwarded.',
         copy: 'Copy',
@@ -943,6 +946,9 @@ const translations: Record<Locale, Translations> = {
       address: {
         title: 'Il tuo indirizzo Postino',
         active: 'Attivo',
+        disabled: 'Disabilitato',
+        activeDescription:
+          'Invia email a questo indirizzo e verranno elaborate secondo le tue regole, poi inoltrate alla tua email',
         disabledDescription:
           "Il tuo indirizzo Postino è disabilitato. Le email in arrivo verranno registrate come saltate e non inoltrate.",
         copy: 'Copia',
@@ -1347,6 +1353,9 @@ const translations: Record<Locale, Translations> = {
       address: {
         title: 'Tu dirección Postino',
         active: 'Activa',
+        disabled: 'Desactivada',
+        activeDescription:
+          'Envía correos a esta dirección y se procesarán según tus reglas, luego se reenviarán a tu correo',
         disabledDescription:
           'Tu dirección Postino está desactivada. Los correos entrantes se registrarán como omitidos y no se reenviarán.',
         copy: 'Copiar',
@@ -1751,6 +1760,9 @@ const translations: Record<Locale, Translations> = {
       address: {
         title: 'Votre adresse Postino',
         active: 'Active',
+        disabled: 'Désactivée',
+        activeDescription:
+          "Envoyez des e-mails à cette adresse et ils seront traités selon vos règles, puis transmis à votre e-mail",
         disabledDescription:
           "Votre adresse Postino est désactivée. Les e-mails entrants seront enregistrés comme ignorés et ne seront pas transmis.",
         copy: 'Copier',
@@ -2155,6 +2167,9 @@ const translations: Record<Locale, Translations> = {
       address: {
         title: 'Ihre Postino-Adresse',
         active: 'Aktiv',
+        disabled: 'Deaktiviert',
+        activeDescription:
+          'Senden Sie E-Mails an diese Adresse und sie werden gemäß Ihren Regeln verarbeitet, dann an Ihre E-Mail weitergeleitet',
         disabledDescription:
           'Ihre Postino-Adresse ist deaktiviert. Eingehende E-Mails werden als übersprungen registriert und nicht weitergeleitet.',
         copy: 'Kopieren',
