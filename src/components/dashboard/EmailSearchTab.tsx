@@ -29,6 +29,9 @@ import {
   ExternalLink,
   Search,
   X,
+  FileText,
+  AlignLeft,
+  Brain,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -167,7 +170,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
+  const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -824,9 +827,9 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                         >
                           <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
                             <TabsList>
-                              <TabsTrigger value="summary">{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
-                              <TabsTrigger value="content">{t.dashboard.emailHistory.tabContent}</TabsTrigger>
-                              <TabsTrigger value="ai">{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
+                              <TabsTrigger value="content"><FileText className="h-3.5 w-3.5 shrink-0" />{t.dashboard.emailHistory.tabContent}</TabsTrigger>
+                              <TabsTrigger value="summary"><AlignLeft className="h-3.5 w-3.5 shrink-0" />{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
+                              <TabsTrigger value="ai"><Brain className="h-3.5 w-3.5 shrink-0" />{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
                             </TabsList>
 
                             {/* Summary tab: metadata */}
