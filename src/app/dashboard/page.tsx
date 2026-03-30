@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailSearchTab } from '@/components/dashboard/EmailSearchTab';
+import { KnowledgeTab } from '@/components/dashboard/KnowledgeTab';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
@@ -18,13 +19,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
-import { Home, ListFilter, Inbox, Settings, Download, CheckCircle } from 'lucide-react';
+import { Home, ListFilter, Inbox, Settings, Download, CheckCircle, Compass } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
   const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'inbox' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'inbox' | 'explore' | 'settings'>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -170,7 +171,7 @@ export default function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">{t.dashboard.subtitle}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'inbox' | 'settings')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'inbox' | 'explore' | 'settings')}>
         <TabsList>
           <TabsTrigger value="overview">
             <Home className="h-4 w-4 shrink-0" />
@@ -183,6 +184,10 @@ export default function DashboardPage() {
           <TabsTrigger value="inbox">
             <Inbox className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.inbox}</span>
+          </TabsTrigger>
+          <TabsTrigger value="explore">
+            <Compass className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.explore}</span>
           </TabsTrigger>
           <TabsTrigger value="settings">
             <Settings className="h-4 w-4 shrink-0" />
@@ -212,6 +217,9 @@ export default function DashboardPage() {
             selectedEmailId={selectedEmailId ?? undefined}
             refreshTrigger={emailListRefreshTrigger}
           />
+        </TabsContent>
+        <TabsContent value="explore">
+          <KnowledgeTab />
         </TabsContent>
         <TabsContent value="settings">
           <div className="space-y-6">

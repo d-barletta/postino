@@ -29,6 +29,8 @@ import {
   ExternalLink,
   Search,
   X,
+  AlignLeft,
+  Brain,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -167,7 +169,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
+  const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -367,7 +369,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       setSelectedId(null);
     } else {
       setSelectedId(logId);
-      setActiveDetailTab('summary');
+      setActiveDetailTab('content');
       fetchExpandedEmail(logId);
     }
   };
@@ -824,9 +826,9 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                         >
                           <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
                             <TabsList>
-                              <TabsTrigger value="summary">{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
-                              <TabsTrigger value="content">{t.dashboard.emailHistory.tabContent}</TabsTrigger>
-                              <TabsTrigger value="ai">{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
+                              <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}><Mail className="h-3.5 w-3.5 shrink-0" /></TabsTrigger>
+                              <TabsTrigger value="summary"><AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
+                              <TabsTrigger value="ai"><Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
                             </TabsList>
 
                             {/* Summary tab: metadata */}
@@ -901,28 +903,15 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                                     }}
                                   />
                                   <div className="flex items-center gap-3 pt-1">
-                                    {isAdmin ? (
-                                      <>
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); setFullscreenEmailId(log.id); }}
-                                          className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                          title={t.emailOriginal.openFullPageView}
-                                        >
-                                          <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
-                                          {t.dashboard.emailHistory.viewFullPage}
-                                        </button>
-                                        <a
-                                          href={`/email/original/${log.id}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                          {t.dashboard.emailHistory.viewOriginal}
-                                        </a>
-                                      </>
-                                    ) : (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setFullscreenEmailId(log.id); }}
+                                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                      title={t.emailOriginal.openFullPageView}
+                                    >
+                                      <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
+                                      {t.dashboard.emailHistory.viewFullPage}
+                                    </button>
+                                    {isAdmin && (
                                       <a
                                         href={`/email/original/${log.id}`}
                                         target="_blank"
