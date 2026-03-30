@@ -20,6 +20,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,8 +36,11 @@ export function LoginForm() {
       if (res.status === 403) {
         await signOut();
         setError(tr.errors.suspended);
+        setLoading(false);
         return;
       }
+      setLoading(false);
+      setRedirecting(true);
       router.push('/dashboard');
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
@@ -47,7 +51,6 @@ export function LoginForm() {
       } else {
         setError(tr.errors.failed);
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -61,6 +64,11 @@ export function LoginForm() {
     }
   };
 
+  const handleGoToDashboard = () => {
+    setRedirecting(true);
+    router.push('/dashboard');
+  };
+
   if (!authLoading && firebaseUser) {
     return (
       <div className="space-y-4 text-center">
@@ -68,13 +76,11 @@ export function LoginForm() {
           {t.auth.dashboardLink.alreadySignedIn}
         </p>
         <div className="flex flex-col gap-3">
-          <Link href="/dashboard">
-            <Button className="w-full" size="md">
-              <LayoutDashboard className="h-4 w-4" />
-              {t.auth.dashboardLink.goToDashboard}
-            </Button>
-          </Link>
-          <Button variant="secondary" size="md" className="w-full" onClick={handleSignOut} loading={signingOut}>
+          <Button className="w-full" size="md" onClick={handleGoToDashboard} loading={redirecting}>
+            <LayoutDashboard className="h-4 w-4" />
+            {redirecting ? t.auth.dashboardLink.loadingDashboard : t.auth.dashboardLink.goToDashboard}
+          </Button>
+          <Button variant="secondary" size="md" className="w-full" onClick={handleSignOut} loading={signingOut} disabled={redirecting}>
             <LogOut className="h-4 w-4" />
             {t.nav.signOut}
           </Button>

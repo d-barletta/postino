@@ -104,6 +104,7 @@ export interface Translations {
     dashboardLink: {
       alreadySignedIn: string;
       goToDashboard: string;
+      loadingDashboard: string;
     };
   };
   dashboard: {
@@ -522,6 +523,7 @@ const translations: Record<Locale, Translations> = {
       dashboardLink: {
         alreadySignedIn: 'You are already signed in.',
         goToDashboard: 'Go to Dashboard',
+        loadingDashboard: 'Loading dashboard…',
       },
     },
     dashboard: {
@@ -936,6 +938,7 @@ const translations: Record<Locale, Translations> = {
       dashboardLink: {
         alreadySignedIn: 'Hai già effettuato l\'accesso.',
         goToDashboard: 'Vai alla Dashboard',
+        loadingDashboard: 'Caricamento dashboard…',
       },
     },
     dashboard: {
@@ -1346,6 +1349,7 @@ const translations: Record<Locale, Translations> = {
       dashboardLink: {
         alreadySignedIn: 'Ya has iniciado sesión.',
         goToDashboard: 'Ir al Panel',
+        loadingDashboard: 'Cargando panel…',
       },
     },
     dashboard: {
@@ -1756,6 +1760,7 @@ const translations: Record<Locale, Translations> = {
       dashboardLink: {
         alreadySignedIn: 'Vous êtes déjà connecté.',
         goToDashboard: 'Aller au tableau de bord',
+        loadingDashboard: 'Chargement du tableau de bord…',
       },
     },
     dashboard: {
@@ -2166,6 +2171,7 @@ const translations: Record<Locale, Translations> = {
       dashboardLink: {
         alreadySignedIn: 'Sie sind bereits angemeldet.',
         goToDashboard: 'Zum Dashboard',
+        loadingDashboard: 'Dashboard wird geladen…',
       },
     },
     dashboard: {
