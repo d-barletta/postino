@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
+import { useModalHistory } from '@/hooks/useModalHistory';
 
 const PAGE_SIZE = 20;
 const ALL_VALUE = '__all__';
@@ -174,6 +175,10 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
+
+  // Integrate the fullscreen email dialog with browser history.
+  const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
+  useModalHistory(!!(fullscreenEmailId && fullscreenLog?.originalBody), () => setFullscreenEmailId(null));
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -404,8 +409,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [fullscreenEmailId]);
-
-  const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
 
   return (
     <div className="space-y-4">

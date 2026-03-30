@@ -15,6 +15,7 @@ import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { useAuth } from '@/hooks/useAuth';
+import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   ChevronLeft,
   ChevronRight,
@@ -121,6 +122,9 @@ export function ExploreEmailsModal({
   const isAdmin = user?.isAdmin === true;
   const ts = t.dashboard.search;
   const tk = t.dashboard.knowledge;
+
+  // Integrate with browser history so the Back button closes this modal.
+  useModalHistory(!!term, onClose);
 
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [loading, setLoading] = useState(false);
