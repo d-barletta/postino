@@ -114,7 +114,7 @@ export interface Translations {
       myRules: string;
       emailHistory: string;
       inbox: string;
-      knowledge: string;
+      explore: string;
       settings: string;
     };
     address: {
@@ -529,7 +529,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'My Rules',
         emailHistory: 'Email History',
         inbox: 'Inbox',
-        knowledge: 'Knowledge',
+        explore: 'Explore',
         settings: 'Settings',
       },
       address: {
@@ -940,7 +940,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Le mie regole',
         emailHistory: 'Cronologia email',
         inbox: 'In arrivo',
-        knowledge: 'Conoscenza',
+        explore: 'Esplora',
         settings: 'Impostazioni',
       },
       address: {
@@ -1347,7 +1347,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Mis Reglas',
         emailHistory: 'Historial de correos',
         inbox: 'Bandeja de entrada',
-        knowledge: 'Conocimiento',
+        explore: 'Explorar',
         settings: 'Configuración',
       },
       address: {
@@ -1754,7 +1754,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Mes règles',
         emailHistory: 'Historique des e-mails',
         inbox: 'Boîte de réception',
-        knowledge: 'Connaissance',
+        explore: 'Explorer',
         settings: 'Paramètres',
       },
       address: {
@@ -2161,7 +2161,7 @@ const translations: Record<Locale, Translations> = {
         myRules: 'Meine Regeln',
         emailHistory: 'E-Mail-Verlauf',
         inbox: 'Posteingang',
-        knowledge: 'Wissen',
+        explore: 'Erkunden',
         settings: 'Einstellungen',
       },
       address: {
