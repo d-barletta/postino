@@ -78,7 +78,13 @@ export async function GET(request: NextRequest) {
       events: toSortedArray(events),
       totalEmails,
     });
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (err) {
+    const isAuthError =
+      err instanceof Error &&
+      (err.message.includes('auth') || err.message.includes('token') || err.message.includes('Firebase'));
+    if (isAuthError) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.json({ error: 'Failed to fetch knowledge data' }, { status: 500 });
   }
 }

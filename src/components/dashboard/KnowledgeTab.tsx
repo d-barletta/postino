@@ -284,7 +284,7 @@ export function KnowledgeTab({ onSearchInInbox }: KnowledgeTabProps) {
                 key={key}
                 title={t.dashboard.knowledge[key]}
                 icon={SECTION_ICONS[key]}
-                items={data![key]}
+                items={data?.[key] ?? []}
                 onChipClick={handleChipClick}
               />
             ))}
