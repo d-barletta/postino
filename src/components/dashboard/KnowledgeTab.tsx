@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import {
   RefreshCw,
   Sparkles,
@@ -16,6 +18,7 @@ import {
   MapPin,
   Calendar,
   Tag,
+  X,
 } from 'lucide-react';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 
@@ -151,6 +154,22 @@ export function KnowledgeTab() {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string } | null>(null);
+  const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
+
+  // Fullscreen keyboard + scroll-lock handler
+  useEffect(() => {
+    if (!fullscreenEmail) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreenEmail(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [fullscreenEmail]);
 
   const fetchKnowledge = useCallback(async () => {
     if (!firebaseUser) return;
@@ -323,8 +342,37 @@ export function KnowledgeTab() {
           category={modalChip.category}
           categoryLabel={modalChip.label}
           onClose={() => setModalChip(null)}
+          onRequestFullscreen={setFullscreenEmail}
         />
       )}
+
+      {/* Fullscreen email overlay — rendered outside the Explore Dialog to avoid nesting */}
+      {typeof document !== 'undefined' && fullscreenEmail &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col">
+            <div className="h-14 shrink-0 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
+                {fullscreenEmail.subject}
+              </p>
+              <button
+                onClick={() => setFullscreenEmail(null)}
+                className="shrink-0 rounded-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#efd957] focus:ring-offset-2"
+                title={t.emailOriginal.closeFullPageView}
+                aria-label={t.emailOriginal.closeFullPageView}
+              >
+                <X className="h-4 w-4 text-gray-500" />
+                <span className="sr-only">{t.emailOriginal.closeFullPageView}</span>
+              </button>
+            </div>
+            <iframe
+              sandbox=""
+              srcDoc={buildSandboxedEmailSrcDoc(fullscreenEmail.body)}
+              className="w-full flex-1 border-0"
+              title="Original email content full page"
+            />
+          </div>,
+          document.body,
+        )}
     </Card>
   );
 }

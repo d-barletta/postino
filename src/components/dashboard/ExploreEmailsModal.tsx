@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +24,6 @@ import {
   AlignLeft,
   Brain,
   RefreshCw,
-  X,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -85,6 +83,8 @@ export interface ExploreEmailsModalProps {
   /** Human-readable label shown in the modal header */
   categoryLabel: string;
   onClose: () => void;
+  /** Called when user requests fullscreen view of an email */
+  onRequestFullscreen: (email: { subject: string; body: string }) => void;
 }
 
 function EmailRowSkeleton() {
@@ -114,6 +114,7 @@ export function ExploreEmailsModal({
   category,
   categoryLabel,
   onClose,
+  onRequestFullscreen,
 }: ExploreEmailsModalProps) {
   const { t, locale } = useI18n();
   const { firebaseUser, user } = useAuth();
@@ -130,7 +131,6 @@ export function ExploreEmailsModal({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
-  const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -303,23 +303,6 @@ export function ExploreEmailsModal({
     setPage(newPage);
   };
 
-  // Fullscreen keyboard handler
-  useEffect(() => {
-    if (!fullscreenEmailId) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreenEmailId(null);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [fullscreenEmailId]);
-
-  const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
-
   return (
     <>
       <Dialog open={!!term} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -327,7 +310,6 @@ export function ExploreEmailsModal({
           className={cn(
             'w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0',
           )}
-          onEscapeKeyDown={(e) => { if (fullscreenEmailId) e.preventDefault(); }}
         >
           {/* Header */}
           <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
@@ -581,7 +563,10 @@ export function ExploreEmailsModal({
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setFullscreenEmailId(log.id);
+                                        const emailData = expandedData[log.id];
+                                        if (emailData?.originalBody) {
+                                          onRequestFullscreen({ subject: log.subject, body: emailData.originalBody });
+                                        }
                                       }}
                                       className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                                       title={t.emailOriginal.openFullPageView}
@@ -666,36 +651,6 @@ export function ExploreEmailsModal({
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Fullscreen email overlay (above the modal) */}
-      {typeof document !== 'undefined' &&
-        fullscreenEmailId &&
-        fullscreenLog?.originalBody &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col">
-            <div className="h-14 shrink-0 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
-                {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
-              </p>
-              <button
-                onClick={() => setFullscreenEmailId(null)}
-                className="shrink-0 rounded-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#efd957] focus:ring-offset-2"
-                title={t.emailOriginal.closeFullPageView}
-                aria-label={t.emailOriginal.closeFullPageView}
-              >
-                <X className="h-4 w-4 text-gray-500" />
-                <span className="sr-only">{t.emailOriginal.closeFullPageView}</span>
-              </button>
-            </div>
-            <iframe
-              sandbox=""
-              srcDoc={buildSandboxedEmailSrcDoc(fullscreenLog.originalBody)}
-              className="w-full flex-1 border-0"
-              title="Original email content full page"
-            />
-          </div>,
-          document.body,
-        )}
     </>
   );
 }
