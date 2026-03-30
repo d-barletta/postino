@@ -133,6 +133,35 @@ export async function PUT(request: NextRequest) {
 
     const nextSettings = { ...currentSettings, ...normalizedWithBounds };
 
+    // Validate mailgunBaseUrl to prevent SSRF: only permit known Mailgun API hosts.
+    const ALLOWED_MAILGUN_HOSTNAMES = new Set([
+      'api.mailgun.net',
+      'api.eu.mailgun.net',
+    ]);
+    if (
+      typeof normalized.mailgunBaseUrl === 'string' &&
+      normalized.mailgunBaseUrl.length > 0
+    ) {
+      let parsedMgUrl: URL;
+      try {
+        parsedMgUrl = new URL(normalized.mailgunBaseUrl);
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid mailgunBaseUrl: must be a valid URL (https://api.mailgun.net or https://api.eu.mailgun.net)' },
+          { status: 400 }
+        );
+      }
+      if (
+        parsedMgUrl.protocol !== 'https:' ||
+        !ALLOWED_MAILGUN_HOSTNAMES.has(parsedMgUrl.hostname)
+      ) {
+        return NextResponse.json(
+          { error: 'Invalid mailgunBaseUrl: must be https://api.mailgun.net or https://api.eu.mailgun.net' },
+          { status: 400 }
+        );
+      }
+    }
+
     const nextChunkThreshold = nextSettings.agentChunkThresholdChars;
     const nextChunkSize = nextSettings.agentChunkSizeChars;
     if (

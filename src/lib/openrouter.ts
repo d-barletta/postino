@@ -25,6 +25,38 @@ function isDomPatch(value: unknown): value is DomPatch {
   return typeof v.selector === 'string' && validOperation && typeof v.html === 'string';
 }
 
+/**
+ * Strips dangerous HTML tags and event handler attributes from LLM-produced
+ * patch HTML before it is injected into the outgoing email body.
+ * This prevents the LLM (or a compromised/prompt-injected response) from
+ * introducing executable content (scripts, iframes, event handlers, etc.)
+ * into forwarded emails.
+ *
+ * Uses Cheerio to parse the HTML so that comment-obfuscated tags (e.g.
+ * `<!--<script>-->`) are handled correctly by the HTML parser rather than
+ * relying on regex alone.
+ */
+export function sanitizePatchHtml(html: string): string {
+  if (!html) return html;
+  const $ = cheerio.load(html, null, false);
+  $('script,iframe,object,embed,form,base,meta,link,style,svg,math').remove();
+  $('*').each((_i, el) => {
+    if (el.type !== 'tag') return;
+    const attribs: Record<string, string> = ('attribs' in el ? el.attribs : {}) as Record<string, string>;
+    for (const attr of Object.keys(attribs)) {
+      if (/^on/i.test(attr)) {
+        $(el).removeAttr(attr);
+      } else if (
+        /^(href|src|action)$/i.test(attr) &&
+        /^\s*javascript:/i.test(attribs[attr])
+      ) {
+        $(el).removeAttr(attr);
+      }
+    }
+  });
+  return $.html();
+}
+
 function applyDomPatches(html: string, patches: DomPatch[]): string {
   if (patches.length === 0) return html;
 
@@ -37,24 +69,25 @@ function applyDomPatches(html: string, patches: DomPatch[]): string {
         continue;
       }
 
+      const safeHtml = sanitizePatchHtml(patch.html);
       switch (patch.operation) {
         case 'prepend':
-          $el.prepend(patch.html);
+          $el.prepend(safeHtml);
           break;
         case 'append':
-          $el.append(patch.html);
+          $el.append(safeHtml);
           break;
         case 'before':
-          $el.before(patch.html);
+          $el.before(safeHtml);
           break;
         case 'after':
-          $el.after(patch.html);
+          $el.after(safeHtml);
           break;
         case 'replace_content':
-          $el.html(patch.html);
+          $el.html(safeHtml);
           break;
         case 'replace_element':
-          $el.replaceWith(patch.html);
+          $el.replaceWith(safeHtml);
           break;
         case 'remove':
           $el.remove();

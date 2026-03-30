@@ -679,10 +679,7 @@ export async function POST(request: NextRequest) {
     if (!verifyMailgunSignature(timestamp, token, signature, mailgunWebhookSigningKey)) {
       await updateWebhookLog({ status: 'rejected', result: 'invalid-signature', reason: 'Invalid webhook signature' });
       return NextResponse.json(
-        {
-          error: 'Invalid signature',
-          hint: `Check Mailgun webhook signing key and endpoint (${mailgunBaseUrl})`,
-        },
+        { error: 'Invalid signature' },
         { status: 403 }
       );
     }

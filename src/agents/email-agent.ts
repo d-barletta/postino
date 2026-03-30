@@ -26,6 +26,7 @@ import {
   sanitizeEmailField,
   sanitizeEmailBody,
   sanitizeHtmlBodyForPrompt,
+  sanitizePatchHtml,
   getOpenRouterClient,
   getModelPricing,
   calculateCost,
@@ -305,6 +306,9 @@ const domPatchSchema = z.object({
  *    match). A warning is logged so broad/ambiguous selectors are visible.
  *  - Individual patch errors are caught so a bad selector cannot abort the
  *    entire operation.
+ *  - LLM-produced patch HTML is sanitized via sanitizePatchHtml (imported
+ *    from @/lib/openrouter) to strip dangerous tags and event handler
+ *    attributes before injection.
  */
 function applyDomPatches(html: string, patches: DomPatch[]): string {
   if (patches.length === 0) return html;
@@ -339,14 +343,15 @@ function applyDomPatches(html: string, patches: DomPatch[]): string {
         $el = $all.eq(safeIdx);
       }
 
+      const safeHtml = sanitizePatchHtml(patch.html);
       switch (patch.operation) {
-        case 'prepend':          $el.prepend(patch.html);      break;
-        case 'append':           $el.append(patch.html);       break;
-        case 'before':           $el.before(patch.html);       break;
-        case 'after':            $el.after(patch.html);        break;
-        case 'replace_content':  $el.html(patch.html);         break;
-        case 'replace_element':  $el.replaceWith(patch.html);  break;
-        case 'remove':           $el.remove();                 break;
+        case 'prepend':          $el.prepend(safeHtml);      break;
+        case 'append':           $el.append(safeHtml);       break;
+        case 'before':           $el.before(safeHtml);       break;
+        case 'after':            $el.after(safeHtml);        break;
+        case 'replace_content':  $el.html(safeHtml);         break;
+        case 'replace_element':  $el.replaceWith(safeHtml);  break;
+        case 'remove':           $el.remove();               break;
       }
     } catch (err) {
       console.warn(`DOM patch failed for selector "${patch.selector}":`, err);
