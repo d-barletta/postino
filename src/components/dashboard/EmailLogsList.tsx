@@ -17,7 +17,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
 import { formatDate, cn } from '@/lib/utils';
@@ -614,14 +613,14 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
       >
         <DialogContent
           className={cn(
-            'w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0',
+            'w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0',
           )}
         >
-          <DialogHeader className="shrink-0 px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
-            <DialogTitle className="text-base font-medium text-gray-900 dark:text-gray-100 truncate">
+          <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
               {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
             </DialogTitle>
-          </DialogHeader>
+          </div>
           {fullscreenLog?.originalBody && (
             <iframe
               sandbox=""

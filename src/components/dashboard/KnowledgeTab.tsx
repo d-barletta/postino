@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -18,9 +17,12 @@ import {
   MapPin,
   Calendar,
   Tag,
-  X,
 } from 'lucide-react';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/Dialog';
 
 interface KnowledgeItem {
   value: string;
@@ -155,21 +157,6 @@ export function KnowledgeTab() {
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string } | null>(null);
   const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
-
-  // Fullscreen keyboard + scroll-lock handler
-  useEffect(() => {
-    if (!fullscreenEmail) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreenEmail(null);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [fullscreenEmail]);
 
   const fetchKnowledge = useCallback(async () => {
     if (!firebaseUser) return;
@@ -346,33 +333,25 @@ export function KnowledgeTab() {
         />
       )}
 
-      {/* Fullscreen email overlay — rendered outside the Explore Dialog to avoid nesting */}
-      {typeof document !== 'undefined' && fullscreenEmail &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col">
-            <div className="h-14 shrink-0 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
-                {fullscreenEmail.subject}
-              </p>
-              <button
-                onClick={() => setFullscreenEmail(null)}
-                className="shrink-0 rounded-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#efd957] focus:ring-offset-2"
-                title={t.emailOriginal.closeFullPageView}
-                aria-label={t.emailOriginal.closeFullPageView}
-              >
-                <X className="h-4 w-4 text-gray-500" />
-                <span className="sr-only">{t.emailOriginal.closeFullPageView}</span>
-              </button>
-            </div>
-            <iframe
-              sandbox=""
-              srcDoc={buildSandboxedEmailSrcDoc(fullscreenEmail.body)}
-              className="w-full flex-1 border-0"
-              title="Original email content full page"
-            />
-          </div>,
-          document.body,
-        )}
+      {/* Full email modal — stacked above ExploreEmailsModal with higher z-index */}
+      <Dialog open={!!fullscreenEmail} onOpenChange={(open) => { if (!open) setFullscreenEmail(null); }}>
+        <DialogContent
+          overlayClassName="z-[100]"
+          className="z-[100] w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
+        >
+          <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
+              {fullscreenEmail?.subject}
+            </p>
+          </div>
+          <iframe
+            sandbox=""
+            srcDoc={fullscreenEmail ? buildSandboxedEmailSrcDoc(fullscreenEmail.body) : ''}
+            className="w-full flex-1 border-0"
+            title="Original email content full page"
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

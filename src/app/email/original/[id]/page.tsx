@@ -8,6 +8,11 @@ import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 interface OriginalEmail {
   id: string;
@@ -67,26 +72,6 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
         .finally(() => setModelsLoading(false))
     );
   }, [firebaseUser, user?.isAdmin]);
-
-  useEffect(() => {
-    if (!isFullscreen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsFullscreen(false);
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isFullscreen]);
 
   const handleBack = () => {
     if (typeof window !== 'undefined' && document.referrer && document.referrer.startsWith(window.location.origin)) {
@@ -382,30 +367,27 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
         )}
       </div>
 
-      {isFullscreen && email.originalBody && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900">
-          <div className="absolute inset-0 flex flex-col">
-            <div className="h-14 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">{email.subject}</p>
-              <button
-                onClick={toggleFullscreen}
-                className="shrink-0 rounded-md p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                title={t.emailOriginal.closeFullPageView}
-                aria-label={t.emailOriginal.closeFullPageView}
-              >
-                <i className="bi bi-x-lg" aria-hidden="true" />
-              </button>
-            </div>
+      {/* Full email modal */}
+      <Dialog
+        open={!!(isFullscreen && email.originalBody)}
+        onOpenChange={(open) => { if (!open) setIsFullscreen(false); }}
+      >
+        <DialogContent className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0">
+          <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
+              {email.subject}
+            </DialogTitle>
+          </div>
+          {email.originalBody && (
             <iframe
               sandbox=""
               srcDoc={buildSandboxedEmailSrcDoc(email.originalBody)}
               className="w-full flex-1 border-0"
-              style={{ minHeight: 'calc(100dvh - 56px)' }}
               title="Original email content full page"
             />
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
