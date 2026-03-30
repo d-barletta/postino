@@ -19,6 +19,7 @@ import {
   Tag,
 } from 'lucide-react';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
+import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   Dialog,
   DialogContent,
@@ -157,6 +158,9 @@ export function KnowledgeTab() {
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string } | null>(null);
   const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
+
+  // Integrate the fullscreen email dialog with browser history.
+  useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
 
   const fetchKnowledge = useCallback(async () => {
     if (!firebaseUser) return;

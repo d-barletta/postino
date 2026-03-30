@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { useI18n } from '@/lib/i18n';
+import { useModalHistory } from '@/hooks/useModalHistory';
 
 const DISMISSED_KEY = 'postino_pwa_install_dismissed';
 const SHOW_DELAY_MS = 15_000;
@@ -219,6 +220,9 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
   const [isIPad, setIsIPad] = useState(false);
   const { t } = useI18n();
   const tr = t.dashboard.pwaInstall;
+
+  // Integrate with browser history so the Back button closes this drawer.
+  useModalHistory(open, () => setOpen(false));
 
   useEffect(() => {
     // Device/browser detection is always needed (for manual-install instructions).

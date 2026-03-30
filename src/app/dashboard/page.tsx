@@ -21,11 +21,13 @@ import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
 import { Home, ListFilter, Inbox, Settings, Download, CheckCircle, Compass } from 'lucide-react';
 
+type DashboardTab = 'overview' | 'rules' | 'inbox' | 'explore' | 'settings';
+
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
   const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'inbox' | 'explore' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -36,10 +38,51 @@ export default function DashboardPage() {
   const editRuleId = searchParams.get('editRule');
   const selectedEmailId = searchParams.get('selectedEmail');
 
+  // ---------------------------------------------------------------------------
+  // Tab history: push a history entry when the user clicks a tab so the
+  // browser Back button can navigate between previously-visited tabs.
+  // ---------------------------------------------------------------------------
+
+  // Stamp the initial history entry with the current tab so popstate always
+  // knows which tab to restore when the user reaches the first entry.
+  useEffect(() => {
+    window.history.replaceState(
+      { ...(window.history.state ?? {}), postinoTab: 'overview' },
+      '',
+    );
+  }, []);
+
+  // Listen for browser Back/Forward and restore the tab stored in the state.
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if ((e.state as Record<string, unknown> | null)?.postinoTab !== undefined) {
+        setActiveTab((e.state as { postinoTab: DashboardTab }).postinoTab);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Navigate to a tab and record the change in browser history.
+  const handleTabChange = useCallback((newTab: string) => {
+    window.history.pushState({ postinoTab: newTab as DashboardTab }, '');
+    setActiveTab(newTab as DashboardTab);
+  }, []);
+
   useEffect(() => {
     if (selectedEmailId) {
+      // Update history state to reflect the URL-forced tab so that Back works
+      // correctly if the user later opens a modal from this tab.
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoTab: 'inbox' },
+        '',
+      );
       setActiveTab('inbox');
     } else if (editRuleId) {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoTab: 'rules' },
+        '',
+      );
       setActiveTab('rules');
     }
   }, [selectedEmailId, editRuleId]);
@@ -171,7 +214,7 @@ export default function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">{t.dashboard.subtitle}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'rules' | 'inbox' | 'explore' | 'settings')}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="overview">
             <Home className="h-4 w-4 shrink-0" />
