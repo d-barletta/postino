@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { formatDate } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { useAuth } from '@/hooks/useAuth';
 import {
   RefreshCw,
@@ -497,7 +498,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                                 <>
                                   <iframe
                                     sandbox=""
-                                    srcDoc={emailData.originalBody}
+                                    srcDoc={buildSandboxedEmailSrcDoc(emailData.originalBody)}
                                     className="w-full border-0 rounded-lg"
                                     style={{ minHeight: '200px', maxHeight: '400px' }}
                                     title="Email content preview"
@@ -620,7 +621,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
             </div>
             <iframe
               sandbox=""
-              srcDoc={fullscreenLog.originalBody}
+              srcDoc={buildSandboxedEmailSrcDoc(fullscreenLog.originalBody)}
               className="w-full flex-1 border-0"
               title="Original email content full page"
             />
