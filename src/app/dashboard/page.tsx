@@ -232,7 +232,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5 shrink-0 bg-white dark:bg-white">
+                  <div className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5 shrink-0 bg-white dark:bg-white" style={{ backgroundColor: '#ffffff' }}>
                     <PostinoLogo className="h-11 w-11" />
                   </div>
                   <div className="flex-1">
