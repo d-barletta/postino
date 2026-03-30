@@ -25,22 +25,62 @@ TabsList.displayName = TabsPrimitive.List.displayName;
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      'inline-flex items-center justify-center gap-1.5 whitespace-nowrap pb-3 px-1 mr-4 sm:mr-6 text-sm font-medium',
-      'ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-      'disabled:pointer-events-none disabled:opacity-50',
-      'border-b-2 border-transparent text-gray-500 dark:text-gray-400',
-      'hover:text-gray-700 dark:hover:text-gray-200',
-      'data-[state=active]:border-[#efd957] data-[state=active]:text-[#a3891f] dark:data-[state=active]:text-[#f3df79]',
-      '-mb-px',
-      className
-    )}
-    {...props}
-  />
-));
+>(({ className, ...props }, forwardedRef) => {
+  const innerRef = React.useRef<HTMLButtonElement>(null);
+
+  const setRef = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      innerRef.current = node;
+      if (typeof forwardedRef === 'function') {
+        forwardedRef(node);
+      } else if (forwardedRef) {
+        forwardedRef.current = node;
+      }
+    },
+    [forwardedRef],
+  );
+
+  React.useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+
+    const scrollToCenter = () => {
+      const parent = el.parentElement;
+      if (!parent) return;
+      parent.scrollTo({
+        left: Math.max(0, el.offsetLeft - parent.clientWidth / 2 + el.offsetWidth / 2),
+        behavior: 'smooth',
+      });
+    };
+
+    const observer = new MutationObserver(() => {
+      if (el.dataset.state === 'active') scrollToCenter();
+    });
+
+    observer.observe(el, { attributes: true, attributeFilter: ['data-state'] });
+
+    if (el.dataset.state === 'active') scrollToCenter();
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <TabsPrimitive.Trigger
+      ref={setRef}
+      className={cn(
+        'inline-flex items-center justify-center gap-1.5 whitespace-nowrap pb-3 px-1 mr-4 sm:mr-6 text-sm font-medium',
+        'ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'disabled:pointer-events-none disabled:opacity-50',
+        'border-b-2 border-transparent text-gray-500 dark:text-gray-400',
+        'hover:text-gray-700 dark:hover:text-gray-200',
+        'data-[state=active]:border-[#efd957] data-[state=active]:text-[#a3891f] dark:data-[state=active]:text-[#f3df79]',
+        '-mb-px',
+        className
+      )}
+      {...props}
+    />
+  );
+});
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
 const TabsContent = React.forwardRef<
