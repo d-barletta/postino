@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
+/** The set of language codes accepted for AI analysis output — must match the UI locale selector. */
+const SUPPORTED_ANALYSIS_LANGUAGES = new Set(['en', 'it', 'es', 'fr', 'de']);
+
 export async function PATCH(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -11,15 +14,17 @@ export async function PATCH(request: NextRequest) {
     const decoded = await adminAuth().verifyIdToken(token);
 
     const body = await request.json();
-    // Allow null or a non-empty string ISO 639-1 code; null clears the preference.
+    // Allow null or one of the supported language codes; null clears the preference.
     if (body.analysisOutputLanguage !== null && typeof body.analysisOutputLanguage !== 'string') {
       return NextResponse.json({ error: 'analysisOutputLanguage must be a string or null' }, { status: 400 });
     }
 
     const raw = body.analysisOutputLanguage === null ? null : (body.analysisOutputLanguage as string).trim() || null;
-    // Basic sanity check: accept ISO 639-1 (2 letters) or ISO 639-2 (3 letters) codes, lowercase ASCII only.
-    if (raw !== null && !/^[a-z]{2,3}$/.test(raw)) {
-      return NextResponse.json({ error: 'analysisOutputLanguage must be a valid ISO 639-1 or ISO 639-2 language code (2-3 lowercase letters)' }, { status: 400 });
+    if (raw !== null && !SUPPORTED_ANALYSIS_LANGUAGES.has(raw)) {
+      return NextResponse.json(
+        { error: `analysisOutputLanguage must be one of: ${[...SUPPORTED_ANALYSIS_LANGUAGES].join(', ')}` },
+        { status: 400 }
+      );
     }
     const value = raw;
 

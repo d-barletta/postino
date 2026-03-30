@@ -568,22 +568,14 @@ interface PreAnalysisResult {
  * Failures are soft-caught; a `null` result means the main processing continues
  * without the analysis context rather than aborting entirely.
  */
-/** Maps ISO 639-1 codes to their full English language names for use in prompts. */
+/** Maps ISO 639-1 codes to their full English language names for use in prompts.
+ * Only the languages supported by the UI locale selector are included. */
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   it: 'Italian',
   es: 'Spanish',
   fr: 'French',
   de: 'German',
-  pt: 'Portuguese',
-  nl: 'Dutch',
-  pl: 'Polish',
-  ru: 'Russian',
-  zh: 'Chinese',
-  ja: 'Japanese',
-  ko: 'Korean',
-  ar: 'Arabic',
-  tr: 'Turkish',
 };
 
 async function preAnalyzeEmail(
