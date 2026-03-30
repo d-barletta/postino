@@ -576,31 +576,18 @@ export function ExploreEmailsModal({
                                     }}
                                   />
                                   <div className="flex items-center gap-3 pt-1">
-                                    {isAdmin ? (
-                                      <>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setFullscreenEmailId(log.id);
-                                          }}
-                                          className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                          title={t.emailOriginal.openFullPageView}
-                                        >
-                                          <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
-                                          {t.dashboard.emailHistory.viewFullPage}
-                                        </button>
-                                        <a
-                                          href={`/email/original/${log.id}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                          {t.dashboard.emailHistory.viewOriginal}
-                                        </a>
-                                      </>
-                                    ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFullscreenEmailId(log.id);
+                                      }}
+                                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                      title={t.emailOriginal.openFullPageView}
+                                    >
+                                      <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
+                                      {t.dashboard.emailHistory.viewFullPage}
+                                    </button>
+                                    {isAdmin && (
                                       <a
                                         href={`/email/original/${log.id}`}
                                         target="_blank"
