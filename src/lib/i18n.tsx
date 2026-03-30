@@ -145,6 +145,12 @@ export interface Translations {
       enabledDescription: string;
       disabledDescription: string;
     };
+    analysisLanguage: {
+      title: string;
+      description: string;
+      selectPlaceholder: string;
+      autoLabel: string;
+    };
     installApp: {
       title: string;
       description: string;
@@ -538,6 +544,12 @@ const translations: Record<Locale, Translations> = {
         enabledDescription: 'A Postino summary box is appended to the bottom of every forwarded email.',
         disabledDescription: 'The Postino summary box is not appended to forwarded emails.',
       },
+      analysisLanguage: {
+        title: 'AI Analysis Language',
+        description: 'Choose the language for AI-generated analysis content (summary, intent, tags, topics). Select "Auto" to use English (default).',
+        selectPlaceholder: 'Select language',
+        autoLabel: 'Auto (English)',
+      },
       installApp: {
         title: 'Install Postino App',
         description: 'Install Postino as an app on your device for a faster, native-like experience.',
@@ -925,6 +937,12 @@ const translations: Record<Locale, Translations> = {
         enabledDescription: 'Un riquadro di riepilogo Postino viene aggiunto in fondo a ogni email inoltrata.',
         disabledDescription: 'Il riquadro di riepilogo Postino non viene aggiunto alle email inoltrate.',
       },
+      analysisLanguage: {
+        title: 'Lingua analisi AI',
+        description: "Scegli la lingua per i contenuti generati dall'AI (riepilogo, intento, tag, argomenti). Seleziona \"Auto\" per usare l'inglese (predefinito).",
+        selectPlaceholder: 'Seleziona lingua',
+        autoLabel: 'Auto (Inglese)',
+      },
       installApp: {
         title: 'Installa l\'app Postino',
         description: 'Installa Postino come app sul tuo dispositivo per un\'esperienza più rapida e nativa.',
@@ -1307,6 +1325,12 @@ const translations: Record<Locale, Translations> = {
         title: 'Encabezado Postino en correos reenviados',
         enabledDescription: 'Un cuadro de resumen de Postino se añade al final de cada correo reenviado.',
         disabledDescription: 'El cuadro de resumen de Postino no se añade a los correos reenviados.',
+      },
+      analysisLanguage: {
+        title: 'Idioma del análisis IA',
+        description: 'Elige el idioma para el contenido generado por IA (resumen, intención, etiquetas, temas). Selecciona "Auto" para usar inglés (predeterminado).',
+        selectPlaceholder: 'Seleccionar idioma',
+        autoLabel: 'Auto (Inglés)',
       },
       installApp: {
         title: 'Instalar la app Postino',
@@ -1691,6 +1715,12 @@ const translations: Record<Locale, Translations> = {
         enabledDescription: 'Un encadré récapitulatif Postino est ajouté au bas de chaque e-mail transmis.',
         disabledDescription: "L'encadré récapitulatif Postino n'est pas ajouté aux e-mails transmis.",
       },
+      analysisLanguage: {
+        title: "Langue d'analyse IA",
+        description: "Choisissez la langue pour le contenu généré par l'IA (résumé, intention, étiquettes, sujets). Sélectionnez « Auto » pour utiliser l'anglais (par défaut).",
+        selectPlaceholder: 'Sélectionner la langue',
+        autoLabel: 'Auto (Anglais)',
+      },
       installApp: {
         title: 'Installer l\'application Postino',
         description: 'Installez Postino comme application sur votre appareil pour une expérience plus rapide et native.',
@@ -2073,6 +2103,12 @@ const translations: Record<Locale, Translations> = {
         title: 'Postino-Kopfzeile in weitergeleiteten E-Mails',
         enabledDescription: 'Eine Postino-Zusammenfassungsbox wird am Ende jeder weitergeleiteten E-Mail eingefügt.',
         disabledDescription: 'Die Postino-Zusammenfassungsbox wird nicht zu weitergeleiteten E-Mails hinzugefügt.',
+      },
+      analysisLanguage: {
+        title: 'Sprache der KI-Analyse',
+        description: 'Wählen Sie die Sprache für KI-generierte Analyseinhalte (Zusammenfassung, Absicht, Tags, Themen). Wählen Sie „Auto" für Englisch (Standard).',
+        selectPlaceholder: 'Sprache auswählen',
+        autoLabel: 'Auto (Englisch)',
       },
       installApp: {
         title: 'Postino-App installieren',

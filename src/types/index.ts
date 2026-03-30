@@ -11,6 +11,8 @@ export interface User {
   displayName?: string;
   /** FCM registration tokens for web push notifications (one per browser/device). */
   fcmTokens?: string[];
+  /** Preferred language for AI analysis output (summary, intent, tags, topics). ISO 639-1 code, e.g. "en", "it". When unset, defaults to English. */
+  analysisOutputLanguage?: string;
 }
 
 export interface Rule {

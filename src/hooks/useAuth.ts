@@ -6,6 +6,21 @@ import { auth } from '@/lib/firebase';
 import { signOut } from '@/lib/auth';
 import type { User } from '@/types';
 
+const SUPPORTED_LOCALES = ['en', 'it', 'es', 'fr', 'de'] as const;
+
+/** Reads the active UI locale from localStorage / navigator for use in the bootstrap request. */
+function getBootstrapLocale(): string {
+  try {
+    const stored = localStorage.getItem('locale');
+    if (stored && (SUPPORTED_LOCALES as readonly string[]).includes(stored)) return stored;
+  } catch { /* ignore */ }
+  if (typeof navigator !== 'undefined') {
+    const primary = (navigator.language || '').split('-')[0].toLowerCase();
+    if ((SUPPORTED_LOCALES as readonly string[]).includes(primary)) return primary;
+  }
+  return 'en';
+}
+
 interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   user: User | null;
@@ -33,7 +48,7 @@ export function useAuthState() {
     try {
       const token = await fbUser.getIdToken();
       const res = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-Locale': getBootstrapLocale() },
       });
       if (res.status === 403) {
         await signOut();
