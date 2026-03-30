@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
 import { Badge } from '@/components/ui/Badge';
@@ -16,6 +15,11 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 import { formatDate } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
@@ -982,33 +986,27 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         </CardContent>
       </Card>
 
-      {/* Fullscreen overlay */}
-      {typeof document !== 'undefined' && fullscreenEmailId && fullscreenLog?.originalBody &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col">
-            <div className="h-14 shrink-0 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
-                {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
-              </p>
-              <button
-                onClick={() => setFullscreenEmailId(null)}
-                className="shrink-0 rounded-md p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                title={t.emailOriginal.closeFullPageView}
-                aria-label={t.emailOriginal.closeFullPageView}
-              >
-                <i className="bi bi-x-lg" aria-hidden="true" />
-              </button>
-            </div>
+      {/* Full email modal */}
+      <Dialog
+        open={!!(fullscreenEmailId && fullscreenLog?.originalBody)}
+        onOpenChange={(open) => { if (!open) setFullscreenEmailId(null); }}
+      >
+        <DialogContent className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0">
+          <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
+              {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
+            </DialogTitle>
+          </div>
+          {fullscreenLog?.originalBody && (
             <iframe
               sandbox=""
               srcDoc={buildSandboxedEmailSrcDoc(fullscreenLog.originalBody)}
               className="w-full flex-1 border-0"
               title="Original email content full page"
             />
-          </div>,
-          document.body
-        )
-      }
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
