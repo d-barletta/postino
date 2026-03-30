@@ -8,6 +8,7 @@ import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
 import { ForwardingHeaderCard } from '@/components/dashboard/ForwardingHeaderCard';
+import { AnalysisLanguageCard } from '@/components/dashboard/AnalysisLanguageCard';
 import { InstallPwaDrawer } from '@/components/dashboard/InstallPwaDrawer';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
@@ -143,6 +144,17 @@ export default function DashboardPage() {
     await refreshUser();
   }, [firebaseUser, refreshUser]);
 
+  const handleAnalysisLanguageChange = useCallback(async (language: string | null) => {
+    if (!firebaseUser) return;
+    const token = await firebaseUser.getIdToken();
+    await fetch('/api/user/analysis-language', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analysisOutputLanguage: language }),
+    });
+    await refreshUser();
+  }, [firebaseUser, refreshUser]);
+
   if (loading || logsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100svh-8rem)]">
@@ -207,6 +219,10 @@ export default function DashboardPage() {
             <ForwardingHeaderCard
               isEnabled={user?.isForwardingHeaderEnabled !== false}
               onToggle={handleForwardingHeaderToggle}
+            />
+            <AnalysisLanguageCard
+              currentLanguage={user?.analysisOutputLanguage}
+              onSave={handleAnalysisLanguageChange}
             />
             <Card>
               <CardHeader>

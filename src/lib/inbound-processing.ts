@@ -306,6 +306,9 @@ export async function processQueuedInboundPayload(
   // Fetch user preferences. isForwardingHeaderEnabled defaults to true when unset.
   const userSnap = await db.collection('users').doc(payload.userId).get();
   const isForwardingHeaderEnabled = userSnap.data()?.isForwardingHeaderEnabled !== false;
+  const analysisOutputLanguage = typeof userSnap.data()?.analysisOutputLanguage === 'string'
+    ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
+    : undefined;
 
   // If no attachments were provided directly (queue path), deserialize from payload.
   // Attachments may be stored as inline base64 (small) or in Firebase Storage (large).
@@ -409,6 +412,7 @@ export async function processQueuedInboundPayload(
     payload.bodyHtml !== '',
     undefined,
     attachmentNames?.length ? attachmentNames : undefined,
+    analysisOutputLanguage,
   );
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');

@@ -52,6 +52,12 @@ export async function POST(
     const emailSubject = (data.subject as string) || '';
     const originalBody = (data.originalBody as string) || '';
 
+    // Fetch the email owner's analysis language preference
+    const userSnap = await db.collection('users').doc(userId).get();
+    const analysisOutputLanguage = typeof userSnap.data()?.analysisOutputLanguage === 'string'
+      ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
+      : undefined;
+
     // Fetch active rules for this email's owner
     const rulesSnap = await db
       .collection('rules')
@@ -97,6 +103,8 @@ export async function POST(
       matchingRules,
       isHtml,
       modelOverride,
+      undefined, // attachmentNames — not stored on reprocessed logs
+      analysisOutputLanguage,
     );
 
     return NextResponse.json({

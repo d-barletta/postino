@@ -568,6 +568,24 @@ interface PreAnalysisResult {
  * Failures are soft-caught; a `null` result means the main processing continues
  * without the analysis context rather than aborting entirely.
  */
+/** Maps ISO 639-1 codes to their full English language names for use in prompts. */
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  it: 'Italian',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  nl: 'Dutch',
+  pl: 'Polish',
+  ru: 'Russian',
+  zh: 'Chinese',
+  ja: 'Japanese',
+  ko: 'Korean',
+  ar: 'Arabic',
+  tr: 'Turkish',
+};
+
 async function preAnalyzeEmail(
   emailFrom: string,
   emailSubject: string,
@@ -576,18 +594,26 @@ async function preAnalyzeEmail(
   openrouterProvider: ReturnType<typeof createOpenAI>,
   model: string,
   agentRuntimeSettings: AgentRuntimeSettings,
+  outputLanguage?: string,
 ): Promise<PreAnalysisResult> {
   // Use only an excerpt of the body — full content is not needed for classification.
   const bodyExcerpt = isHtml
     ? stripHtmlForChunking(emailBody).slice(0, agentRuntimeSettings.bodyAnalysisMaxChars)
     : emailBody.slice(0, agentRuntimeSettings.bodyAnalysisMaxChars);
 
+  // Build an optional language instruction for the system prompt.
+  const langCode = outputLanguage?.toLowerCase().trim();
+  const langName = langCode ? (LANGUAGE_NAMES[langCode] ?? langCode) : null;
+  const languageInstruction = langName
+    ? ` Write the summary, intent, tags, and topics fields in ${langName}.`
+    : '';
+
   try {
     const { object, usage } = await generateObject({
       model: openrouterProvider(model),
       schema: emailAnalysisSchema,
       system:
-        'You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values.',
+        `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values.${languageInstruction}`,
       prompt: `Analyze and classify this email in detail:
 
 FROM: ${sanitizeEmailField(emailFrom)}
@@ -1348,6 +1374,7 @@ export async function processEmailWithAgent(
   isHtml = false,
   modelOverride?: string,
   attachmentNames?: string[],
+  analysisOutputLanguage?: string,
 ): Promise<ProcessEmailResult> {
   const traceStartedAt = new Date().toISOString();
   const traceSteps: AgentTraceStep[] = [];
@@ -1422,7 +1449,7 @@ export async function processEmailWithAgent(
     { analysis, tokensUsed: analysisTotalTokens, promptTokens: analysisPromptTokens, completionTokens: analysisCompletionTokens },
     memory,
   ] = await Promise.all([
-    preAnalyzeEmail(emailFrom, emailSubject, emailBody, isHtml, openrouter, model, agentRuntimeSettings),
+    preAnalyzeEmail(emailFrom, emailSubject, emailBody, isHtml, openrouter, model, agentRuntimeSettings, analysisOutputLanguage),
     getUserMemory(userId),
   ]);
   pushTrace('pre_analysis', analysis ? 'ok' : 'warning', analysis ? 'Pre-analysis completed' : 'Pre-analysis unavailable', {
