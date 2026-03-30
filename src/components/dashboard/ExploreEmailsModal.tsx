@@ -25,6 +25,7 @@ import {
   AlignLeft,
   Brain,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -326,6 +327,7 @@ export function ExploreEmailsModal({
           className={cn(
             'w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0',
           )}
+          onEscapeKeyDown={(e) => { if (fullscreenEmailId) e.preventDefault(); }}
         >
           {/* Header */}
           <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
@@ -677,11 +679,12 @@ export function ExploreEmailsModal({
               </p>
               <button
                 onClick={() => setFullscreenEmailId(null)}
-                className="shrink-0 rounded-md p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="shrink-0 rounded-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#efd957] focus:ring-offset-2"
                 title={t.emailOriginal.closeFullPageView}
                 aria-label={t.emailOriginal.closeFullPageView}
               >
-                <i className="bi bi-x-lg" aria-hidden="true" />
+                <X className="h-4 w-4 text-gray-500" />
+                <span className="sr-only">{t.emailOriginal.closeFullPageView}</span>
               </button>
             </div>
             <iframe

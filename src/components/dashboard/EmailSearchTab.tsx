@@ -369,7 +369,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       setSelectedId(null);
     } else {
       setSelectedId(logId);
-      setActiveDetailTab('summary');
+      setActiveDetailTab('content');
       fetchExpandedEmail(logId);
     }
   };
