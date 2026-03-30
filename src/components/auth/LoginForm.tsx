@@ -29,6 +29,10 @@ export function LoginForm() {
     setLoading(true);
     try {
       const fbUser = await loginUser(email, password);
+      // Set redirecting immediately so the "already signed in" view renders
+      // with the loading spinner straight away — before the /api/auth/me round-trip.
+      setLoading(false);
+      setRedirecting(true);
       const token = await fbUser.getIdToken();
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
@@ -36,11 +40,9 @@ export function LoginForm() {
       if (res.status === 403) {
         await signOut();
         setError(tr.errors.suspended);
-        setLoading(false);
+        setRedirecting(false);
         return;
       }
-      setLoading(false);
-      setRedirecting(true);
       router.push('/dashboard');
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
@@ -52,6 +54,7 @@ export function LoginForm() {
         setError(tr.errors.failed);
       }
       setLoading(false);
+      setRedirecting(false);
     }
   };
 
