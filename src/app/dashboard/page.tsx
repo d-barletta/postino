@@ -219,11 +219,7 @@ export default function DashboardPage() {
           />
         </TabsContent>
         <TabsContent value="explore">
-          <KnowledgeTab
-            onSearchInInbox={() => {
-              setActiveTab('inbox');
-            }}
-          />
+          <KnowledgeTab />
         </TabsContent>
         <TabsContent value="settings">
           <div className="space-y-6">

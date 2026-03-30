@@ -17,6 +17,7 @@ import {
   Calendar,
   Tag,
 } from 'lucide-react';
+import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 
 interface KnowledgeItem {
   value: string;
@@ -31,10 +32,6 @@ interface KnowledgeData {
   places: KnowledgeItem[];
   events: KnowledgeItem[];
   totalEmails: number;
-}
-
-interface KnowledgeTabProps {
-  onSearchInInbox: (query: string) => void;
 }
 
 type CategoryKey = 'all' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags';
@@ -123,10 +120,11 @@ interface SectionProps {
   title: string;
   icon: React.ReactNode;
   items: KnowledgeItem[];
-  onChipClick: (value: string) => void;
+  category: string;
+  onChipClick: (value: string, category: string) => void;
 }
 
-function Section({ title, icon, items, onChipClick }: SectionProps) {
+function Section({ title, icon, items, category, onChipClick }: SectionProps) {
   if (items.length === 0) return null;
   return (
     <div>
@@ -138,20 +136,21 @@ function Section({ title, icon, items, onChipClick }: SectionProps) {
       </div>
       <div className="flex flex-wrap gap-1.5">
         {items.map((item) => (
-          <Chip key={item.value} item={item} maxCount={items[0]?.count ?? 1} onClick={() => onChipClick(item.value)} />
+          <Chip key={item.value} item={item} maxCount={items[0]?.count ?? 1} onClick={() => onChipClick(item.value, category)} />
         ))}
       </div>
     </div>
   );
 }
 
-export function KnowledgeTab({ onSearchInInbox }: KnowledgeTabProps) {
+export function KnowledgeTab() {
   const { t } = useI18n();
   const { firebaseUser } = useAuth();
   const [data, setData] = useState<KnowledgeData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
+  const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string } | null>(null);
 
   const fetchKnowledge = useCallback(async () => {
     if (!firebaseUser) return;
@@ -182,10 +181,15 @@ export function KnowledgeTab({ onSearchInInbox }: KnowledgeTabProps) {
   };
 
   const handleChipClick = useCallback(
-    (value: string) => {
-      onSearchInInbox(value);
+    (value: string, category: string) => {
+      const catKey = category as CategoryKey;
+      const label =
+        catKey === 'all'
+          ? t.dashboard.knowledge.allCategories
+          : (t.dashboard.knowledge[catKey] ?? category);
+      setModalChip({ value, category, label });
     },
-    [onSearchInInbox],
+    [t],
   );
 
   const hasAnyData =
@@ -285,6 +289,7 @@ export function KnowledgeTab({ onSearchInInbox }: KnowledgeTabProps) {
                 title={t.dashboard.knowledge[key]}
                 icon={SECTION_ICONS[key]}
                 items={data?.[key] ?? []}
+                category={key}
                 onChipClick={handleChipClick}
               />
             ))}
@@ -304,13 +309,22 @@ export function KnowledgeTab({ onSearchInInbox }: KnowledgeTabProps) {
                   item={item}
                   maxCount={activeMaxCount}
                   detailed
-                  onClick={() => handleChipClick(item.value)}
+                  onClick={() => handleChipClick(item.value, activeCategory)}
                 />
               ))
             )}
           </div>
         )}
       </CardContent>
+
+      {modalChip && (
+        <ExploreEmailsModal
+          term={modalChip.value}
+          category={modalChip.category}
+          categoryLabel={modalChip.label}
+          onClose={() => setModalChip(null)}
+        />
+      )}
     </Card>
   );
 }

@@ -281,6 +281,9 @@ export interface Translations {
       searchInInbox: string;
       loading: string;
       mentions: string;
+      relatedEmails: string;
+      relatedEmailsDesc: string;
+      noRelatedEmails: string;
     };
     rules: {
       yourRules: string;
@@ -698,6 +701,9 @@ const translations: Record<Locale, Translations> = {
         searchInInbox: 'Search in inbox',
         loading: 'Loading…',
         mentions: 'mentions',
+        relatedEmails: 'Related emails',
+        relatedEmailsDesc: 'Emails mentioning',
+        noRelatedEmails: 'No emails found for this term.',
       },
       rules: {
         yourRules: 'Your Rules',
@@ -1109,6 +1115,9 @@ const translations: Record<Locale, Translations> = {
         searchInInbox: 'Cerca nella posta',
         loading: 'Caricamento…',
         mentions: 'menzioni',
+        relatedEmails: 'Email correlate',
+        relatedEmailsDesc: 'Email che menzionano',
+        noRelatedEmails: 'Nessuna email trovata per questo termine.',
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1516,6 +1525,9 @@ const translations: Record<Locale, Translations> = {
         searchInInbox: 'Buscar en bandeja',
         loading: 'Cargando…',
         mentions: 'menciones',
+        relatedEmails: 'Correos relacionados',
+        relatedEmailsDesc: 'Correos que mencionan',
+        noRelatedEmails: 'No se encontraron correos para este término.',
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -1923,6 +1935,9 @@ const translations: Record<Locale, Translations> = {
         searchInInbox: 'Rechercher dans la boîte',
         loading: 'Chargement…',
         mentions: 'mentions',
+        relatedEmails: 'E-mails associés',
+        relatedEmailsDesc: 'E-mails mentionnant',
+        noRelatedEmails: 'Aucun e-mail trouvé pour ce terme.',
       },
       rules: {
         yourRules: 'Vos règles',
@@ -2330,6 +2345,9 @@ const translations: Record<Locale, Translations> = {
         searchInInbox: 'In Posteingang suchen',
         loading: 'Laden…',
         mentions: 'Erwähnungen',
+        relatedEmails: 'Verwandte E-Mails',
+        relatedEmailsDesc: 'E-Mails mit Erwähnung von',
+        noRelatedEmails: 'Keine E-Mails für diesen Begriff gefunden.',
       },
       rules: {
         yourRules: 'Ihre Regeln',
