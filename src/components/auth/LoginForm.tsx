@@ -20,6 +20,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,6 +29,10 @@ export function LoginForm() {
     setLoading(true);
     try {
       const fbUser = await loginUser(email, password);
+      // Set redirecting immediately so the "already signed in" view renders
+      // with the loading spinner straight away — before the /api/auth/me round-trip.
+      setLoading(false);
+      setRedirecting(true);
       const token = await fbUser.getIdToken();
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
@@ -35,6 +40,7 @@ export function LoginForm() {
       if (res.status === 403) {
         await signOut();
         setError(tr.errors.suspended);
+        setRedirecting(false);
         return;
       }
       router.push('/dashboard');
@@ -47,8 +53,8 @@ export function LoginForm() {
       } else {
         setError(tr.errors.failed);
       }
-    } finally {
       setLoading(false);
+      setRedirecting(false);
     }
   };
 
@@ -61,6 +67,11 @@ export function LoginForm() {
     }
   };
 
+  const handleGoToDashboard = () => {
+    setRedirecting(true);
+    router.push('/dashboard');
+  };
+
   if (!authLoading && firebaseUser) {
     return (
       <div className="space-y-4 text-center">
@@ -68,13 +79,11 @@ export function LoginForm() {
           {t.auth.dashboardLink.alreadySignedIn}
         </p>
         <div className="flex flex-col gap-3">
-          <Link href="/dashboard">
-            <Button className="w-full" size="md">
-              <LayoutDashboard className="h-4 w-4" />
-              {t.auth.dashboardLink.goToDashboard}
-            </Button>
-          </Link>
-          <Button variant="secondary" size="md" className="w-full" onClick={handleSignOut} loading={signingOut}>
+          <Button className="w-full" size="md" onClick={handleGoToDashboard} loading={redirecting}>
+            <LayoutDashboard className="h-4 w-4" />
+            {redirecting ? t.auth.dashboardLink.loadingDashboard : t.auth.dashboardLink.goToDashboard}
+          </Button>
+          <Button variant="secondary" size="md" className="w-full" onClick={handleSignOut} loading={signingOut} disabled={redirecting}>
             <LogOut className="h-4 w-4" />
             {t.nav.signOut}
           </Button>
