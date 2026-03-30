@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
+import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
@@ -282,7 +283,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                       )}
                       <iframe
                         sandbox=""
-                        srcDoc={email.originalBody}
+                        srcDoc={buildSandboxedEmailSrcDoc(email.originalBody)}
                         className="w-full border-0 rounded-xl"
                         style={{ minHeight: '300px' }}
                         title="Original email content"
@@ -360,7 +361,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.emailOriginal.admin.processedBody}</p>
                           <iframe
                             sandbox=""
-                            srcDoc={reprocessResult.body}
+                            srcDoc={buildSandboxedEmailSrcDoc(reprocessResult.body)}
                             className="w-full border-0 rounded-lg"
                             style={{ minHeight: '300px' }}
                             title="Processed email content"
@@ -397,7 +398,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
             </div>
             <iframe
               sandbox=""
-              srcDoc={email.originalBody}
+              srcDoc={buildSandboxedEmailSrcDoc(email.originalBody)}
               className="w-full flex-1 border-0"
               style={{ minHeight: 'calc(100dvh - 56px)' }}
               title="Original email content full page"
