@@ -68,6 +68,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to provision assigned email' }, { status: 500 });
       }
 
+      const SUPPORTED_LOCALES = ['en', 'it', 'es', 'fr', 'de'];
+      const requestedLocale = (request.headers.get('X-Locale') ?? '').toLowerCase();
+      const analysisOutputLanguage = SUPPORTED_LOCALES.includes(requestedLocale) ? requestedLocale : 'en';
+
       await userRef.set({
         email: decoded.email ?? '',
         assignedEmail,
@@ -75,6 +79,7 @@ export async function GET(request: NextRequest) {
         isAdmin: false,
         isActive: false,
         suspended: false,
+        analysisOutputLanguage,
       });
       userSnap = await userRef.get();
     } else {
