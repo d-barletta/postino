@@ -15,8 +15,17 @@
  *    inner sandbox still isolates the email content.
  *  • The email content cannot navigate the parent page, submit forms, open
  *    pop-ups, or access the parent origin.
- *  • A Content-Security-Policy meta tag in the outer wrapper further
- *    restricts what the wrapper document itself may do.
+ *
+ * Height sizing note
+ * The outer React iframe's onLoad handler reads
+ * contentDocument.documentElement.scrollHeight to auto-size the preview.
+ * The wrapper body carries min-height:600px so that this measurement always
+ * returns at least 600px; the onLoad then caps it to 400px via
+ * Math.min(height+20, 400).  Without the min-height the wrapper would
+ * inherit the iframe's own initial minHeight (200px) and cut off the lower
+ * portion of the email — hiding images that appear below ~200px.
+ * For fullscreen iframes (flex-1, no onLoad height logic) the wrapper's
+ * height:100% on html/body fills the available viewport normally.
  *
  * Usage:
  *   <iframe sandbox="" srcDoc={buildSandboxedEmailSrcDoc(html)} … />
@@ -40,11 +49,13 @@ export function buildSandboxedEmailSrcDoc(html: string): string {
     '<html>' +
     '<head>' +
     '<meta charset="utf-8">' +
-    // CSP for the outer wrapper: only inline styles allowed; nothing else.
-    '<meta http-equiv="Content-Security-Policy" ' +
-    "content=\"default-src 'none'; style-src 'unsafe-inline';\">" +
     '<style>' +
-    'html,body{margin:0;padding:0;height:100%;overflow:hidden}' +
+    // min-height:600px ensures the onLoad height measurement always returns
+    // a value that gets capped to the 400px max, rather than inheriting the
+    // outer iframe's initial minHeight (~200px) which would cut off images.
+    // height:100% kicks in for fullscreen usage (flex-1 outer iframe) where
+    // the viewport is larger than 600px, filling the available space.
+    'html,body{margin:0;padding:0;height:100%;min-height:600px;overflow:hidden}' +
     'iframe{width:100%;height:100%;border:0;display:block;}' +
     '</style>' +
     '</head>' +
