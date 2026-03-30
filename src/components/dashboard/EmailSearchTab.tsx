@@ -29,7 +29,6 @@ import {
   ExternalLink,
   Search,
   X,
-  FileText,
   AlignLeft,
   Brain,
 } from 'lucide-react';
@@ -827,7 +826,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                         >
                           <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
                             <TabsList>
-                              <TabsTrigger value="content"><FileText className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabContent}</TabsTrigger>
+                              <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}><Mail className="h-3.5 w-3.5 shrink-0" /></TabsTrigger>
                               <TabsTrigger value="summary"><AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
                               <TabsTrigger value="ai"><Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
                             </TabsList>
