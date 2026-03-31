@@ -56,7 +56,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
         : null;
 
   return (
-    <div className="min-h-full">
+    <div className="min-h-[calc(100vh-70px)]">
       <nav className="glass-panel sticky top-0 z-10 border-0! dark:bg-transparent!">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2 sm:gap-6">
