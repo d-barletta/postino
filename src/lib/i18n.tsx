@@ -327,6 +327,8 @@ export interface Translations {
       deleteConfirm: string;
       cannotBeUndone: string;
       close: string;
+      searchPlaceholder: string;
+      noMatchingRules: string;
       errors: {
         nameRequired: string;
         textRequired: string;
@@ -749,6 +751,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Are you sure you want to delete',
         cannotBeUndone: 'This action cannot be undone.',
         close: 'Close',
+        searchPlaceholder: 'Search rules…',
+        noMatchingRules: 'No rules match your search.',
         errors: {
           nameRequired: 'Rule name is required',
           textRequired: 'Rule text is required',
@@ -1165,6 +1169,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Sei sicuro di voler eliminare',
         cannotBeUndone: 'Questa azione non può essere annullata.',
         close: 'Chiudi',
+        searchPlaceholder: 'Cerca regole…',
+        noMatchingRules: 'Nessuna regola corrisponde alla ricerca.',
         errors: {
           nameRequired: 'Il nome della regola è obbligatorio',
           textRequired: 'Il testo della regola è obbligatorio',
@@ -1577,6 +1583,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: '¿Estás seguro de que quieres eliminar',
         cannotBeUndone: 'Esta acción no se puede deshacer.',
         close: 'Cerrar',
+        searchPlaceholder: 'Buscar reglas…',
+        noMatchingRules: 'Ninguna regla coincide con tu búsqueda.',
         errors: {
           nameRequired: 'El nombre de la regla es obligatorio',
           textRequired: 'El texto de la regla es obligatorio',
@@ -1989,6 +1997,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Êtes-vous sûr de vouloir supprimer',
         cannotBeUndone: 'Cette action est irréversible.',
         close: 'Fermer',
+        searchPlaceholder: 'Rechercher des règles…',
+        noMatchingRules: 'Aucune règle ne correspond à votre recherche.',
         errors: {
           nameRequired: 'Le nom de la règle est obligatoire',
           textRequired: 'Le texte de la règle est obligatoire',
@@ -2401,6 +2411,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Sind Sie sicher, dass Sie löschen möchten',
         cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
         close: 'Schließen',
+        searchPlaceholder: 'Regeln suchen…',
+        noMatchingRules: 'Keine Regeln entsprechen Ihrer Suche.',
         errors: {
           nameRequired: 'Regelname ist erforderlich',
           textRequired: 'Regeltext ist erforderlich',

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/Drawer';
 import { formatDate } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { Plus, Filter, Pencil, Trash2, AlertCircle, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Plus, Filter, Pencil, Trash2, AlertCircle, ChevronUp, ChevronDown, X, Search } from 'lucide-react';
 
 const DEFAULT_MAX_LENGTH = 1000;
 const MAX_RULE_NAME_LENGTH = 100;
@@ -56,6 +56,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const editRuleRef = useRef<HTMLDivElement>(null);
 
@@ -181,6 +182,19 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
 
   const deleteRuleName = rules.find((r) => r.id === deleteId)?.name;
 
+  const filteredRules = searchQuery.trim()
+    ? rules.filter((r) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          r.name.toLowerCase().includes(q) ||
+          r.text.toLowerCase().includes(q) ||
+          (r.matchSender ?? '').toLowerCase().includes(q) ||
+          (r.matchSubject ?? '').toLowerCase().includes(q) ||
+          (r.matchBody ?? '').toLowerCase().includes(q)
+        );
+      })
+    : rules;
+
   return (
     <div className="space-y-6">
       {/* Header card with Add Rule button */}
@@ -197,11 +211,23 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
             )}
           </h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-            {t.dashboard.rules.appliedTopToBottom} <br/>{t.dashboard.rules.useArrows}
+            {t.dashboard.rules.appliedTopToBottom} {t.dashboard.rules.useArrows}
           </p>
           {!showAddForm && (
-            <div className="mt-3">
-              <Button onClick={() => { setShowAddForm(true); setError(''); }}>
+            <div className="flex items-center gap-2 mt-3">
+              {rules.length > 0 && (
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t.dashboard.rules.searchPlaceholder}
+                    className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
+                  />
+                </div>
+              )}
+              <Button onClick={() => { setShowAddForm(true); setError(''); }} className="shrink-0">
                 <Plus className="h-4 w-4 mr-1.5" />
                 {t.dashboard.rules.addARule}
               </Button>
@@ -345,9 +371,17 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
               </p>
             </CardContent>
           </Card>
+        ) : filteredRules.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-10">
+              <p className="text-gray-500 dark:text-gray-400">{t.dashboard.rules.noMatchingRules}</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
-            {rules.map((rule, index) => (
+            {filteredRules.map((rule) => {
+              const index = rules.findIndex((r) => r.id === rule.id);
+              return (
               <div key={rule.id} ref={rule.id === editingId ? editRuleRef : undefined}>
                 <Card className={!rule.isActive ? 'opacity-60' : ''}>
                   <CardContent className="py-4">
@@ -519,7 +553,8 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
                   </CardContent>
                 </Card>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
