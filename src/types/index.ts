@@ -74,6 +74,8 @@ export interface EmailAnalysis {
     /** Company, brand, or organization names mentioned. */
     organizations: string[];
   };
+  /** Prices, costs, or monetary amounts mentioned in the email (e.g. "$19.99/month", "€50 discount"). */
+  prices?: string[];
 }
 
 export interface EmailLog {

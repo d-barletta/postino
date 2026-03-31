@@ -543,6 +543,7 @@ const emailAnalysisSchema = z.object({
     people: z.array(z.string()).describe('Names of people mentioned in the email (senders, recipients, contacts, etc.)'),
     organizations: z.array(z.string()).describe('Company, brand, or organization names mentioned in the email'),
   }).describe('Named entities extracted from the email content'),
+  prices: z.array(z.string()).optional().describe('Prices, costs, or monetary amounts mentioned in the email (e.g. "$19.99/month", "€50 discount", "free trial")'),
 });
 
 // EmailAnalysis is imported from @/types — the Zod schema above must match that interface.
