@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
 import { Badge } from '@/components/ui/Badge';
@@ -46,6 +46,7 @@ import {
   MousePointerClick,
   Trash2,
   Maximize2,
+  Eye,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -162,6 +163,168 @@ interface ExpandedEmailData {
 }
 
 // ---------------------------------------------------------------------------
+// Swipeable row — iOS Mail-style swipe-to-reveal actions.
+// Works with mouse, touch and stylus via the Pointer Events API.
+// Normal tap/click passes through unchanged; only horizontal drags reveal actions.
+// ---------------------------------------------------------------------------
+const SWIPE_ACTION_WIDTH = 128; // 64 px per action button × 2
+const DRAG_THRESHOLD = 6;       // px of movement before we commit to a drag
+
+function SwipeableEmailRow({
+  children,
+  onOpen,
+  onDelete,
+}: {
+  children: React.ReactNode;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
+  const [offset, setOffset] = useState(0);
+  const [animate, setAnimate] = useState(false);
+  const [isSnapped, setIsSnapped] = useState(false);
+
+  // Refs so event handlers never have stale closures
+  const liveOffset = useRef(0);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const startOffset = useRef(0);
+  const isDragging = useRef(false);
+  const suppressNextClick = useRef(false);
+
+  const applyOffset = (v: number, smooth: boolean) => {
+    liveOffset.current = v;
+    setAnimate(smooth);
+    setOffset(v);
+  };
+
+  const close = useCallback(() => {
+    applyOffset(0, true);
+    setIsSnapped(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const snapOpen = useCallback(() => {
+    applyOffset(-SWIPE_ACTION_WIDTH, true);
+    setIsSnapped(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When snapped open, close on the next outside pointerdown
+  useEffect(() => {
+    if (!isSnapped) return;
+    const id = setTimeout(() => {
+      document.addEventListener('pointerdown', close, { once: true });
+    }, 50);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener('pointerdown', close);
+    };
+  }, [isSnapped, close]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    // Let buttons/links handle themselves
+    if ((e.target as HTMLElement).closest('button, a')) return;
+    pointerStart.current = { x: e.clientX, y: e.clientY };
+    startOffset.current = liveOffset.current;
+    isDragging.current = false;
+    suppressNextClick.current = false;
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!pointerStart.current) return;
+    const dx = e.clientX - pointerStart.current.x;
+    const dy = e.clientY - pointerStart.current.y;
+
+    if (!isDragging.current) {
+      // Not enough movement yet — wait
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      // Vertical scroll dominates → cancel horizontal tracking
+      if (Math.abs(dy) > Math.abs(dx)) {
+        pointerStart.current = null;
+        return;
+      }
+      // Confirmed horizontal drag — capture pointer so scroll doesn't steal it
+      isDragging.current = true;
+      suppressNextClick.current = true;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+
+    setAnimate(false);
+    const next = Math.max(-SWIPE_ACTION_WIDTH, Math.min(0, startOffset.current + dx));
+    liveOffset.current = next;
+    setOffset(next);
+  };
+
+  const onPointerUp = () => {
+    if (!isDragging.current) {
+      pointerStart.current = null;
+      return;
+    }
+    isDragging.current = false;
+    pointerStart.current = null;
+    if (liveOffset.current < -SWIPE_ACTION_WIDTH / 2) {
+      snapOpen();
+    } else {
+      close();
+    }
+  };
+
+  // Capture-phase click handler:
+  //   • after a real drag → suppress the synthetic click that follows pointerup
+  //   • when panel is snapped open → close it instead of expanding the row
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (suppressNextClick.current) {
+      suppressNextClick.current = false;
+      e.stopPropagation();
+      return;
+    }
+    if (isSnapped) {
+      close();
+      e.stopPropagation();
+    }
+  };
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Action buttons — hidden behind the row until swiped */}
+      <div className="absolute inset-y-0 right-0 flex" style={{ width: SWIPE_ACTION_WIDTH }}>
+        <button
+          className="flex-1 flex items-center justify-center bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-colors"
+          onClick={(e) => { e.stopPropagation(); close(); onOpen(); }}
+          aria-label="View full page"
+        >
+          <Eye className="h-5 w-5" />
+        </button>
+        <button
+          className="flex-1 flex items-center justify-center bg-red-500 hover:bg-red-600 active:bg-red-700 text-white transition-colors"
+          onClick={(e) => { e.stopPropagation(); close(); onDelete(); }}
+          aria-label="Delete"
+        >
+          <Trash2 className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Sliding content — solid background so it fully covers the buttons */}
+      <div
+        className="bg-white dark:bg-gray-900"
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: animate ? 'transform 0.22s ease' : 'none',
+          touchAction: 'pan-y',
+          willChange: 'transform',
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onClickCapture={onClickCapture}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 interface EmailSearchTabProps {
@@ -192,7 +355,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
 
   // Integrate the fullscreen email dialog with browser history.
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
-  useModalHistory(!!(fullscreenEmailId && fullscreenLog?.originalBody), () => setFullscreenEmailId(null));
+  useModalHistory(!!fullscreenEmailId, () => setFullscreenEmailId(null));
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -731,7 +894,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
 
       {/* Results — NARROW layout (< xl): single column with inline expansion */}
       <div className="min-[900px]:hidden">
-      <Card>
+      <Card className="hover:translate-y-0 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
         <CardHeader className="py-2 px-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -798,8 +961,12 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                   const emailData = expandedData[log.id];
 
                   return (
-                    <div
+                    <SwipeableEmailRow
                       key={log.id}
+                      onOpen={() => { fetchExpandedEmail(log.id); setFullscreenEmailId(log.id); }}
+                      onDelete={() => setDeleteEmailId(log.id)}
+                    >
+                    <div
                       className={`px-6 py-4 hover:bg-yellow-50/70 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors ${expanded ? 'bg-yellow-50/70 dark:bg-yellow-900/10' : ''}`}
                       onClick={() => handleToggleExpand(log.id)}
                     >
@@ -867,14 +1034,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                             )}
                             <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt, locale)}</span>
                           </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeleteEmailId(log.id); }}
-                            className="p-1 rounded text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                            title={t.dashboard.emailHistory.deleteEmail}
-                            aria-label={t.dashboard.emailHistory.deleteEmail}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+
                         </div>
                       </div>
 
@@ -1006,6 +1166,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                         </div>
                       )}
                     </div>
+                    </SwipeableEmailRow>
                   );
                 })}
               </div>
@@ -1314,7 +1475,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
 
       {/* Full email modal */}
       <Dialog
-        open={!!(fullscreenEmailId && fullscreenLog?.originalBody)}
+        open={!!fullscreenEmailId}
         onOpenChange={(open) => { if (!open) setFullscreenEmailId(null); }}
       >
         <DialogContent className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0" aria-describedby={undefined}>
@@ -1323,6 +1484,11 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
               {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
             </DialogTitle>
           </div>
+          {fullscreenLog?.loading && (
+            <div className="flex flex-1 items-center justify-center">
+              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          )}
           {fullscreenLog?.originalBody && (
             <iframe
               sandbox=""
@@ -1330,6 +1496,11 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
               className="w-full flex-1 border-0"
               title="Original email content full page"
             />
+          )}
+          {fullscreenLog && !fullscreenLog.loading && !fullscreenLog.originalBody && (
+            <div className="flex flex-1 items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+              {t.emailOriginal.noOriginalContent}
+            </div>
           )}
         </DialogContent>
       </Dialog>
