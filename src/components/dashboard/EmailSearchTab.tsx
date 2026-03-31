@@ -15,13 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/Dialog';
+import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
@@ -1496,41 +1490,13 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       </div>
 
       {/* Full email modal */}
-      <Dialog
+      <FullPageEmailDialog
         open={!!fullscreenEmailId}
-        onOpenChange={(open) => { if (!open) setFullscreenEmailId(null); }}
-      >
-        <DialogContent hideCloseButton animation="slide-from-bottom" className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0" aria-describedby={undefined}>
-          {fullscreenLog?.loading && (
-            <div className="flex flex-1 items-center justify-center">
-              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-            </div>
-          )}
-          {fullscreenLog?.originalBody && (
-            <iframe
-              sandbox=""
-              srcDoc={buildSandboxedEmailSrcDoc(fullscreenLog.originalBody)}
-              className="w-full flex-1 border-0"
-              title="Original email content full page"
-            />
-          )}
-          {fullscreenLog && !fullscreenLog.loading && !fullscreenLog.originalBody && (
-            <div className="flex flex-1 items-center justify-center text-sm text-gray-400 dark:text-gray-500">
-              {t.emailOriginal.noOriginalContent}
-            </div>
-          )}
-          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
-            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-              {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
-            </DialogTitle>
-            <DialogClose asChild>
-              <Button variant="outline" size="sm" className="shrink-0">
-                {t.dashboard.rules.close}
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onClose={() => setFullscreenEmailId(null)}
+        subject={logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
+        body={fullscreenLog?.originalBody ?? null}
+        loading={fullscreenLog?.loading}
+      />
 
       {/* Delete confirmation drawer */}
       <Drawer open={!!deleteEmailId} onOpenChange={(open) => { if (!open) { setDeleteEmailId(null); setDeleteError(false); } }}>
