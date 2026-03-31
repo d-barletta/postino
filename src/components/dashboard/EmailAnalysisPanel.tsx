@@ -131,36 +131,42 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
         </p>
       )}
 
-      {entities && (
+      {(entities || (analysis.prices && analysis.prices.length > 0)) && (
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-          {entities.people.length > 0 && (
+          {entities && entities.people.length > 0 && (
             <>
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPeople}</dt>
               <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.people.join(', ')}</dd>
             </>
           )}
-          {entities.organizations.length > 0 && (
+          {entities && entities.organizations.length > 0 && (
             <>
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesOrganizations}</dt>
               <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.organizations.join(', ')}</dd>
             </>
           )}
-          {entities.places.length > 0 && (
+          {entities && entities.places.length > 0 && (
             <>
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPlaces}</dt>
               <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.places.join(', ')}</dd>
             </>
           )}
-          {entities.events.length > 0 && (
+          {entities && entities.events.length > 0 && (
             <>
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesEvents}</dt>
               <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.events.join(', ')}</dd>
             </>
           )}
-          {entities.dates.length > 0 && (
+          {entities && entities.dates.length > 0 && (
             <>
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesDates}</dt>
               <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.dates.join(', ')}</dd>
+            </>
+          )}
+          {analysis.prices && analysis.prices.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPrices}</dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{analysis.prices.join(', ')}</dd>
             </>
           )}
         </dl>

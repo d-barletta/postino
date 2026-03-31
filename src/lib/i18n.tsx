@@ -224,6 +224,7 @@ export interface Translations {
       analysisEntitiesPlaces: string;
       analysisEntitiesEvents: string;
       analysisEntitiesDates: string;
+      analysisEntitiesPrices: string;
       deleteEmail: string;
       deleteEmailConfirm: string;
       deleteEmailSuccess: string;
@@ -652,6 +653,7 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Places:',
         analysisEntitiesEvents: 'Events:',
         analysisEntitiesDates: 'Dates:',
+        analysisEntitiesPrices: 'Prices:',
         deleteEmail: 'Delete email',
         deleteEmailConfirm: 'Are you sure you want to permanently delete this email? This action cannot be undone.',
         deleteEmailSuccess: 'Email deleted.',
@@ -1074,6 +1076,7 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Luoghi:',
         analysisEntitiesEvents: 'Eventi:',
         analysisEntitiesDates: 'Date:',
+        analysisEntitiesPrices: 'Prezzi:',
         deleteEmail: 'Elimina email',
         deleteEmailConfirm: "Sei sicuro di voler eliminare definitivamente questa email? Questa azione non può essere annullata.",
         deleteEmailSuccess: 'Email eliminata.',
@@ -1492,6 +1495,7 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Lugares:',
         analysisEntitiesEvents: 'Eventos:',
         analysisEntitiesDates: 'Fechas:',
+        analysisEntitiesPrices: 'Precios:',
         deleteEmail: 'Eliminar correo',
         deleteEmailConfirm: '¿Seguro que quieres eliminar permanentemente este correo? Esta acción no se puede deshacer.',
         deleteEmailSuccess: 'Correo eliminado.',
@@ -1910,6 +1914,7 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Lieux :',
         analysisEntitiesEvents: 'Événements :',
         analysisEntitiesDates: 'Dates :',
+        analysisEntitiesPrices: 'Prix :',
         deleteEmail: "Supprimer l'e-mail",
         deleteEmailConfirm: "Voulez-vous vraiment supprimer définitivement cet e-mail ? Cette action est irréversible.",
         deleteEmailSuccess: 'E-mail supprimé.',
@@ -2328,6 +2333,7 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Orte:',
         analysisEntitiesEvents: 'Ereignisse:',
         analysisEntitiesDates: 'Daten:',
+        analysisEntitiesPrices: 'Preise:',
         deleteEmail: 'E-Mail löschen',
         deleteEmailConfirm: 'Möchten Sie diese E-Mail wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
         deleteEmailSuccess: 'E-Mail gelöscht.',
