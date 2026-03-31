@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import {
   RefreshCw,
   Sparkles,
@@ -25,13 +24,9 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
+import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { EntityMergeDialog } from '@/components/dashboard/EntityMergeDialog';
 import { useModalHistory } from '@/hooks/useModalHistory';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/Dialog';
 import type { EntityMerge, EntityCategory } from '@/types';
 
 interface KnowledgeItem {
@@ -655,25 +650,14 @@ export function KnowledgeTab() {
       )}
 
       {/* Full email modal — stacked above ExploreEmailsModal with higher z-index */}
-      <Dialog open={!!fullscreenEmail} onOpenChange={(open) => { if (!open) setFullscreenEmail(null); }}>
-        <DialogContent
-          overlayClassName="z-[100]"
-          className="z-[100] w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
-          aria-describedby={undefined}
-        >
-          <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
-            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
-              {fullscreenEmail?.subject}
-            </DialogTitle>
-          </div>
-          <iframe
-            sandbox=""
-            srcDoc={fullscreenEmail ? buildSandboxedEmailSrcDoc(fullscreenEmail.body) : ''}
-            className="w-full flex-1 border-0"
-            title="Original email content full page"
-          />
-        </DialogContent>
-      </Dialog>
+      <FullPageEmailDialog
+        open={!!fullscreenEmail}
+        onClose={() => setFullscreenEmail(null)}
+        subject={fullscreenEmail?.subject ?? ''}
+        body={fullscreenEmail?.body ?? null}
+        overlayClassName="z-[100]"
+        contentClassName="z-[100]"
+      />
 
       {/* Entity merge dialog */}
       {showMergeDialog && selectedChips.length >= 2 && selectedCategory && (

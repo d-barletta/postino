@@ -6,16 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/Dialog';
+import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 
 interface OriginalEmail {
   id: string;
@@ -371,31 +364,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Full email modal */}
-      <Dialog
+      <FullPageEmailDialog
         open={!!(isFullscreen && email.originalBody)}
-        onOpenChange={(open) => { if (!open) setIsFullscreen(false); }}
-      >
-        <DialogContent hideCloseButton animation="slide-from-bottom" className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0" aria-describedby={undefined}>
-          {email.originalBody && (
-            <iframe
-              sandbox=""
-              srcDoc={buildSandboxedEmailSrcDoc(email.originalBody)}
-              className="w-full flex-1 border-0"
-              title="Original email content full page"
-            />
-          )}
-          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
-            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-              {email.subject}
-            </DialogTitle>
-            <DialogClose asChild>
-              <Button variant="outline" size="sm" className="shrink-0">
-                {t.dashboard.rules.close}
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onClose={() => setIsFullscreen(false)}
+        subject={email.subject}
+        body={email.originalBody}
+      />
     </div>
   );
 }
