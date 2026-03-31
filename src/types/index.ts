@@ -226,3 +226,23 @@ export interface UserMemory {
   entries: EmailMemoryEntry[];
   updatedAt: Date;
 }
+
+/** Category of an entity that can be merged. */
+export type EntityCategory = 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags';
+
+/**
+ * Represents a user-defined merge of two or more entity values into a single
+ * canonical name.  All `aliases` (including the canonical itself) are treated
+ * as equivalent when aggregating knowledge data.
+ */
+export interface EntityMerge {
+  id: string;
+  userId: string;
+  /** Category of entities being merged. */
+  category: EntityCategory;
+  /** The canonical name to display instead of the individual aliases. */
+  canonical: string;
+  /** All original values that map to this canonical (at least two). */
+  aliases: string[];
+  createdAt: Date;
+}

@@ -86,6 +86,11 @@ export interface ExploreEmailsModalProps {
   onClose: () => void;
   /** Called when user requests fullscreen view of an email */
   onRequestFullscreen: (email: { subject: string; body: string }) => void;
+  /**
+   * Optional list of alias values that the term was merged from.
+   * When provided, the search will match any of these aliases instead of the term alone.
+   */
+  aliases?: string[];
 }
 
 function EmailRowSkeleton() {
@@ -116,6 +121,7 @@ export function ExploreEmailsModal({
   categoryLabel,
   onClose,
   onRequestFullscreen,
+  aliases,
 }: ExploreEmailsModalProps) {
   const { t, locale } = useI18n();
   const { firebaseUser, user } = useAuth();
@@ -186,8 +192,13 @@ export function ExploreEmailsModal({
           page: String(targetPage),
           pageSize: String(PAGE_SIZE),
         });
-        // Use tags param for the tags category, otherwise text search
-        if (category === 'tags') {
+        // When aliases are provided (merged entity), use OR-matched terms search.
+        // Otherwise use tags param for the tags category, or plain text search.
+        if (aliases && aliases.length > 0) {
+          for (const alias of aliases) {
+            params.append('terms', alias.trim());
+          }
+        } else if (category === 'tags') {
           params.set('tags', term.trim().toLowerCase());
         } else {
           params.set('search', term.trim());
@@ -207,7 +218,7 @@ export function ExploreEmailsModal({
         setLoading(false);
       }
     },
-    [firebaseUser, term, category],
+    [firebaseUser, term, category, aliases],
   );
 
   // Reset + fetch when modal opens (term changes)
