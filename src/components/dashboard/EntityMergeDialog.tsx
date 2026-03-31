@@ -130,7 +130,7 @@ export function EntityMergeDialog({
               type="submit"
               size="sm"
               disabled={loading || !canonical.trim()}
-              className="bg-[#efd957] hover:bg-[#e8cf3c] text-[#a3891f] border-0"
+              className="bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
             >
               {k.createMerge}
             </Button>
