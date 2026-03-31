@@ -457,7 +457,8 @@ export function ExploreEmailsModal({
                           <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
                             <TabsList>
                               <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}>
-                                <Mail className="h-3.5 w-3.5 shrink-0" />
+                                <Mail className="h-3.5 w-3.5 shrink-0mr-1.5" />
+                                {t.dashboard.emailHistory.tabContent}
                               </TabsTrigger>
                               <TabsTrigger value="summary">
                                 <AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />
