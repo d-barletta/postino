@@ -224,6 +224,10 @@ export interface Translations {
       analysisEntitiesPlaces: string;
       analysisEntitiesEvents: string;
       analysisEntitiesDates: string;
+      deleteEmail: string;
+      deleteEmailConfirm: string;
+      deleteEmailSuccess: string;
+      deleteEmailError: string;
     };
     search: {
       title: string;
@@ -648,6 +652,10 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Places:',
         analysisEntitiesEvents: 'Events:',
         analysisEntitiesDates: 'Dates:',
+        deleteEmail: 'Delete email',
+        deleteEmailConfirm: 'Are you sure you want to permanently delete this email? This action cannot be undone.',
+        deleteEmailSuccess: 'Email deleted.',
+        deleteEmailError: 'Failed to delete email.',
       },
       search: {
         title: 'Search Emails',
@@ -1066,6 +1074,10 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Luoghi:',
         analysisEntitiesEvents: 'Eventi:',
         analysisEntitiesDates: 'Date:',
+        deleteEmail: 'Elimina email',
+        deleteEmailConfirm: "Sei sicuro di voler eliminare definitivamente questa email? Questa azione non può essere annullata.",
+        deleteEmailSuccess: 'Email eliminata.',
+        deleteEmailError: "Impossibile eliminare l'email.",
       },
       search: {
         title: 'Cerca email',
@@ -1480,6 +1492,10 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Lugares:',
         analysisEntitiesEvents: 'Eventos:',
         analysisEntitiesDates: 'Fechas:',
+        deleteEmail: 'Eliminar correo',
+        deleteEmailConfirm: '¿Seguro que quieres eliminar permanentemente este correo? Esta acción no se puede deshacer.',
+        deleteEmailSuccess: 'Correo eliminado.',
+        deleteEmailError: 'No se pudo eliminar el correo.',
       },
       search: {
         title: 'Buscar correos',
@@ -1894,6 +1910,10 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Lieux :',
         analysisEntitiesEvents: 'Événements :',
         analysisEntitiesDates: 'Dates :',
+        deleteEmail: "Supprimer l'e-mail",
+        deleteEmailConfirm: "Voulez-vous vraiment supprimer définitivement cet e-mail ? Cette action est irréversible.",
+        deleteEmailSuccess: 'E-mail supprimé.',
+        deleteEmailError: "Impossible de supprimer l'e-mail.",
       },
       search: {
         title: 'Rechercher des e-mails',
@@ -2308,6 +2328,10 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesPlaces: 'Orte:',
         analysisEntitiesEvents: 'Ereignisse:',
         analysisEntitiesDates: 'Daten:',
+        deleteEmail: 'E-Mail löschen',
+        deleteEmailConfirm: 'Möchten Sie diese E-Mail wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+        deleteEmailSuccess: 'E-Mail gelöscht.',
+        deleteEmailError: 'E-Mail konnte nicht gelöscht werden.',
       },
       search: {
         title: 'E-Mails suchen',

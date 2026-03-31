@@ -25,6 +25,14 @@ import { useI18n } from '@/lib/i18n';
 import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { useAuth } from '@/hooks/useAuth';
 import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/Drawer';
+import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +44,8 @@ import {
   AlignLeft,
   Brain,
   MousePointerClick,
+  Trash2,
+  Maximize2,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -176,6 +186,9 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
+  const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   // Integrate the fullscreen email dialog with browser history.
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
@@ -383,6 +396,33 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       fetchExpandedEmail(logId);
     }
   };
+
+  const handleDeleteEmail = useCallback(async () => {
+    if (!deleteEmailId || !firebaseUser) return;
+    setDeleting(true);
+    setDeleteError(false);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`/api/email/${deleteEmailId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setLogs((prev) => prev.filter((l) => l.id !== deleteEmailId));
+        if (selectedId === deleteEmailId) setSelectedId(null);
+        if (totalCount !== undefined) setTotalCount((c) => (c !== undefined ? Math.max(0, c - 1) : undefined));
+        setDeleteEmailId(null);
+      } else {
+        console.error('Failed to delete email:', await res.text());
+        setDeleteError(true);
+      }
+    } catch (err) {
+      console.error('Failed to delete email:', err);
+      setDeleteError(true);
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteEmailId, firebaseUser, selectedId, totalCount]);
 
   // Auto-expand when selectedEmailId prop is provided (e.g., from push notification link)
   useEffect(() => {
@@ -690,7 +730,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       )}
 
       {/* Results — NARROW layout (< xl): single column with inline expansion */}
-      <div className="xl:hidden">
+      <div className="min-[900px]:hidden">
       <Card>
         <CardHeader className="py-2 px-4">
           <div className="flex items-center justify-between">
@@ -763,7 +803,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                       className={`px-6 py-4 hover:bg-yellow-50/70 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors ${expanded ? 'bg-yellow-50/70 dark:bg-yellow-900/10' : ''}`}
                       onClick={() => handleToggleExpand(log.id)}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                      <div className="flex flex-col gap-2">
                         <div className="min-w-0 flex items-start gap-2">
                           {hasAtt ? (
                             <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
@@ -820,11 +860,21 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
-                          {log.status !== 'forwarded' && (
-                            <Badge variant={statusVariant[log.status] || 'default'}>{statusLabel[log.status] ?? log.status}</Badge>
-                          )}
-                          <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt, locale)}</span>
+                        <div className="flex items-center justify-between shrink-0 pl-6">
+                          <div className="flex items-center gap-2">
+                            {log.status !== 'forwarded' && (
+                              <Badge variant={statusVariant[log.status] || 'default'}>{statusLabel[log.status] ?? log.status}</Badge>
+                            )}
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt, locale)}</span>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteEmailId(log.id); }}
+                            className="p-1 rounded text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title={t.dashboard.emailHistory.deleteEmail}
+                            aria-label={t.dashboard.emailHistory.deleteEmail}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </div>
 
@@ -993,7 +1043,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       </div>{/* end narrow layout */}
 
       {/* Results — WIDE layout (≥ xl): macOS Mail split-pane */}
-      <div className="hidden xl:flex rounded-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150 max-h-[900px]">
+      <div className="hidden min-[900px]:flex rounded-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150 max-h-[900px]">
         {/* Left pane: list */}
         <div className="w-100 shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700">
           {/* Mini results header */}
@@ -1045,7 +1095,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                   <div
                     key={log.id}
                     className={cn(
-                      'px-4 py-3 cursor-pointer transition-colors border-l-2',
+                      'px-4 py-3 cursor-pointer transition-colors border-l-2 group',
                       isSelected
                         ? 'bg-[#efd957]/20 dark:bg-[#efd957]/10 border-l-[#efd957]'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-transparent',
@@ -1121,8 +1171,20 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
             return (
               <>
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
-                  <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{log.subject}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{log.subject}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
+                    </div>
+                    <button
+                      onClick={() => setDeleteEmailId(log.id)}
+                      className="p-1.5 rounded text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+                      title={t.dashboard.emailHistory.deleteEmail}
+                      aria-label={t.dashboard.emailHistory.deleteEmail}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                   {log.emailAnalysis && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {log.emailAnalysis.emailType && (
@@ -1160,11 +1222,37 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                 </div>
                 <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
                   <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="flex flex-col flex-1 overflow-hidden">
-                    <TabsList>
-                      <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}><Mail className="h-3.5 w-3.5 shrink-0" /></TabsTrigger>
-                      <TabsTrigger value="summary"><AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
-                      <TabsTrigger value="ai"><Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
-                    </TabsList>
+                    <div className="flex items-center justify-between">
+                      <TabsList>
+                        <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}><Mail className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabContent}</TabsTrigger>
+                        <TabsTrigger value="summary"><AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
+                        <TabsTrigger value="ai"><Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
+                      </TabsList>
+                      {activeDetailTab === 'content' && emailData && !emailData.loading && emailData.originalBody && (
+                        <div className="flex items-center gap-1 pb-1.5 border-b border-gray-200 dark:border-gray-700">
+                          <button
+                            onClick={() => setFullscreenEmailId(log.id)}
+                            className="p-1.5 rounded text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            title={t.dashboard.emailHistory.viewFullPage}
+                            aria-label={t.dashboard.emailHistory.viewFullPage}
+                          >
+                            <Maximize2 className="h-3.5 w-3.5" />
+                          </button>
+                          {isAdmin && (
+                            <a
+                              href={`/email/original/${log.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded text-gray-400 hover:text-[#d0b53f] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                              title={t.dashboard.emailHistory.viewOriginal}
+                              aria-label={t.dashboard.emailHistory.viewOriginal}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <TabsContent value="summary" className="mt-3 space-y-3 overflow-y-auto">
                       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
                         <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.to}</dt>
@@ -1196,29 +1284,13 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                         </div>
                       )}
                       {emailData && !emailData.loading && emailData.originalBody && (
-                        <>
-                          <iframe
-                            sandbox=""
-                            srcDoc={buildSandboxedEmailSrcDoc(emailData.originalBody)}
-                            className="w-full flex-1 border-0 rounded-lg min-h-0"
-                            style={{ height: '100%' }}
-                            title="Email content preview"
-                          />
-                          <div className="flex items-center gap-3 pt-1">
-                            <button
-                              onClick={() => setFullscreenEmailId(log.id)}
-                              className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                              <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
-                              {t.dashboard.emailHistory.viewFullPage}
-                            </button>
-                            {isAdmin && (
-                              <a href={`/email/original/${log.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline">
-                                <ExternalLink className="h-3 w-3" />{t.dashboard.emailHistory.viewOriginal}
-                              </a>
-                            )}
-                          </div>
-                        </>
+                        <iframe
+                          sandbox=""
+                          srcDoc={buildSandboxedEmailSrcDoc(emailData.originalBody)}
+                          className="w-full flex-1 border-0 rounded-lg min-h-0"
+                          style={{ height: '100%' }}
+                          title="Email content preview"
+                        />
                       )}
                       {emailData && !emailData.loading && !emailData.originalBody && !emailData.error && (
                         <p className="text-xs text-gray-400 dark:text-gray-500 py-1">{t.emailOriginal.noOriginalContent}</p>
@@ -1261,6 +1333,29 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation drawer */}
+      <Drawer open={!!deleteEmailId} onOpenChange={(open) => { if (!open) { setDeleteEmailId(null); setDeleteError(false); } }}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{t.dashboard.emailHistory.deleteEmail}</DrawerTitle>
+            <DrawerDescription>{t.dashboard.emailHistory.deleteEmailConfirm}</DrawerDescription>
+          </DrawerHeader>
+          {deleteError && (
+            <p className="px-4 pb-2 text-sm text-red-600 dark:text-red-400">
+              {t.dashboard.emailHistory.deleteEmailError}
+            </p>
+          )}
+          <DrawerFooter>
+            <Button variant="danger" onClick={handleDeleteEmail} disabled={deleting}>
+              {deleting ? '…' : t.dashboard.emailHistory.deleteEmail}
+            </Button>
+            <Button variant="ghost" onClick={() => { setDeleteEmailId(null); setDeleteError(false); }} disabled={deleting}>
+              {t.dashboard.rules.cancel}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
