@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     const pageParam = parseInt(searchParams.get('page') || '1', 10);
     const pageSizeParam = parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10);
     const search = (searchParams.get('search') || '').trim().toLowerCase();
+    // `terms` supports multiple OR-matched search terms (e.g. for merged entities)
+    const termsRaw = searchParams.getAll('terms').map((t) => t.trim().toLowerCase()).filter(Boolean);
     const hasAttachments = searchParams.get('hasAttachments') === 'true';
     const sentimentFilter = (searchParams.get('sentiment') || '').trim().toLowerCase();
     const emailTypeFilter = (searchParams.get('emailType') || '').trim().toLowerCase();
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
       .orderBy('receivedAt', 'desc');
 
     let snap;
-    const hasAnyFilter = search || hasAttachments || sentimentFilter || emailTypeFilter || priorityFilter || senderTypeFilter || requiresResponse || hasActionItems || isUrgent || languageFilter || tagsFilter || statusFilter;
+    const hasAnyFilter = search || termsRaw.length > 0 || hasAttachments || sentimentFilter || emailTypeFilter || priorityFilter || senderTypeFilter || requiresResponse || hasActionItems || isUrgent || languageFilter || tagsFilter || statusFilter;
     if (hasAnyFilter) {
       snap = await query.limit(SEARCH_FETCH_LIMIT).get();
     } else {
@@ -70,26 +72,33 @@ export async function GET(request: NextRequest) {
       emailAnalysis: d.data().emailAnalysis ?? null,
     }));
 
-    if (search) {
-      docs = docs.filter((d) => {
-        if (
-          d.subject.toLowerCase().includes(search) ||
-          d.fromAddress.toLowerCase().includes(search) ||
-          (d.toAddress && d.toAddress.toLowerCase().includes(search)) ||
-          (d.emailAnalysis?.summary && String(d.emailAnalysis.summary).toLowerCase().includes(search)) ||
-          (d.emailAnalysis?.intent && String(d.emailAnalysis.intent).toLowerCase().includes(search)) ||
-          (Array.isArray(d.emailAnalysis?.tags) && d.emailAnalysis.tags.some((tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(search))) ||
-          (Array.isArray(d.emailAnalysis?.topics) && d.emailAnalysis.topics.some((topic: unknown) => typeof topic === 'string' && topic.toLowerCase().includes(search)))
-        ) return true;
-        // Also match entity values (places, events, dates, people, organizations)
-        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
-        if (entities) {
-          for (const list of Object.values(entities)) {
-            if (Array.isArray(list) && list.some((v) => typeof v === 'string' && v.toLowerCase().includes(search))) return true;
-          }
+    /** Returns true if the given doc matches the provided single search term. */
+    function matchesTerm(d: (typeof docs)[number], term: string): boolean {
+      if (
+        d.subject.toLowerCase().includes(term) ||
+        d.fromAddress.toLowerCase().includes(term) ||
+        (d.toAddress && d.toAddress.toLowerCase().includes(term)) ||
+        (d.emailAnalysis?.summary && String(d.emailAnalysis.summary).toLowerCase().includes(term)) ||
+        (d.emailAnalysis?.intent && String(d.emailAnalysis.intent).toLowerCase().includes(term)) ||
+        (Array.isArray(d.emailAnalysis?.tags) && d.emailAnalysis.tags.some((tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(term))) ||
+        (Array.isArray(d.emailAnalysis?.topics) && d.emailAnalysis.topics.some((topic: unknown) => typeof topic === 'string' && topic.toLowerCase().includes(term)))
+      ) return true;
+      const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+      if (entities) {
+        for (const list of Object.values(entities)) {
+          if (Array.isArray(list) && list.some((v) => typeof v === 'string' && v.toLowerCase().includes(term))) return true;
         }
-        return false;
-      });
+      }
+      return false;
+    }
+
+    if (search) {
+      docs = docs.filter((d) => matchesTerm(d, search));
+    }
+
+    // OR-match across multiple terms (used for merged entity search)
+    if (termsRaw.length > 0) {
+      docs = docs.filter((d) => termsRaw.some((term) => matchesTerm(d, term)));
     }
 
     if (hasAttachments) {

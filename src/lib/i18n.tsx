@@ -290,6 +290,25 @@ export interface Translations {
       relatedEmails: string;
       relatedEmailsDesc: string;
       noRelatedEmails: string;
+      merge: string;
+      mergeMode: string;
+      cancelMerge: string;
+      mergeSelected: string;
+      mergeDialogTitle: string;
+      mergeDialogDesc: string;
+      canonicalName: string;
+      canonicalNamePlaceholder: string;
+      createMerge: string;
+      mergeSameCategoryWarning: string;
+      manageMerges: string;
+      noMerges: string;
+      deleteMerge: string;
+      mergesTitle: string;
+      mergesDesc: string;
+      xSelected: string;
+      mergedFrom: string;
+      mergeCreated: string;
+      mergeDeleted: string;
     };
     rules: {
       yourRules: string;
@@ -718,6 +737,25 @@ const translations: Record<Locale, Translations> = {
         relatedEmails: 'Related emails',
         relatedEmailsDesc: 'Emails mentioning',
         noRelatedEmails: 'No emails found for this term.',
+        merge: 'Merge',
+        mergeMode: 'Select to merge',
+        cancelMerge: 'Cancel',
+        mergeSelected: 'Merge selected',
+        mergeDialogTitle: 'Merge Entities',
+        mergeDialogDesc: 'These entities will be combined into one.',
+        canonicalName: 'Canonical name',
+        canonicalNamePlaceholder: 'Name to display',
+        createMerge: 'Create merge',
+        mergeSameCategoryWarning: 'Select 2 or more entities from the same category to merge.',
+        manageMerges: 'Manage merges',
+        noMerges: 'No merges defined yet.',
+        deleteMerge: 'Delete merge',
+        mergesTitle: 'Entity Merges',
+        mergesDesc: 'Entities you have merged are shown as a single item in the knowledge view.',
+        xSelected: '{count} selected',
+        mergedFrom: 'Merged from',
+        mergeCreated: 'Merge created',
+        mergeDeleted: 'Merge deleted',
       },
       rules: {
         yourRules: 'Your Rules',
@@ -1140,6 +1178,25 @@ const translations: Record<Locale, Translations> = {
         relatedEmails: 'Email correlate',
         relatedEmailsDesc: 'Email che menzionano',
         noRelatedEmails: 'Nessuna email trovata per questo termine.',
+        merge: 'Unisci',
+        mergeMode: 'Seleziona per unire',
+        cancelMerge: 'Annulla',
+        mergeSelected: 'Unisci selezionati',
+        mergeDialogTitle: 'Unisci entità',
+        mergeDialogDesc: 'Queste entità verranno combinate in una sola.',
+        canonicalName: 'Nome canonico',
+        canonicalNamePlaceholder: 'Nome da visualizzare',
+        createMerge: 'Crea unione',
+        mergeSameCategoryWarning: 'Seleziona 2 o più entità della stessa categoria per unirle.',
+        manageMerges: 'Gestisci unioni',
+        noMerges: 'Nessuna unione definita.',
+        deleteMerge: 'Elimina unione',
+        mergesTitle: 'Unioni di entità',
+        mergesDesc: 'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
+        xSelected: '{count} selezionati',
+        mergedFrom: 'Unito da',
+        mergeCreated: 'Unione creata',
+        mergeDeleted: 'Unione eliminata',
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1558,6 +1615,25 @@ const translations: Record<Locale, Translations> = {
         relatedEmails: 'Correos relacionados',
         relatedEmailsDesc: 'Correos que mencionan',
         noRelatedEmails: 'No se encontraron correos para este término.',
+        merge: 'Fusionar',
+        mergeMode: 'Seleccionar para fusionar',
+        cancelMerge: 'Cancelar',
+        mergeSelected: 'Fusionar seleccionados',
+        mergeDialogTitle: 'Fusionar entidades',
+        mergeDialogDesc: 'Estas entidades se combinarán en una sola.',
+        canonicalName: 'Nombre canónico',
+        canonicalNamePlaceholder: 'Nombre a mostrar',
+        createMerge: 'Crear fusión',
+        mergeSameCategoryWarning: 'Selecciona 2 o más entidades de la misma categoría para fusionar.',
+        manageMerges: 'Gestionar fusiones',
+        noMerges: 'No hay fusiones definidas.',
+        deleteMerge: 'Eliminar fusión',
+        mergesTitle: 'Fusiones de entidades',
+        mergesDesc: 'Las entidades fusionadas se muestran como un único elemento en la vista de conocimiento.',
+        xSelected: '{count} seleccionados',
+        mergedFrom: 'Fusionado de',
+        mergeCreated: 'Fusión creada',
+        mergeDeleted: 'Fusión eliminada',
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -1976,6 +2052,25 @@ const translations: Record<Locale, Translations> = {
         relatedEmails: 'E-mails associés',
         relatedEmailsDesc: 'E-mails mentionnant',
         noRelatedEmails: 'Aucun e-mail trouvé pour ce terme.',
+        merge: 'Fusionner',
+        mergeMode: 'Sélectionner pour fusionner',
+        cancelMerge: 'Annuler',
+        mergeSelected: 'Fusionner la sélection',
+        mergeDialogTitle: 'Fusionner les entités',
+        mergeDialogDesc: 'Ces entités seront combinées en une seule.',
+        canonicalName: 'Nom canonique',
+        canonicalNamePlaceholder: 'Nom à afficher',
+        createMerge: 'Créer la fusion',
+        mergeSameCategoryWarning: 'Sélectionnez 2 entités ou plus de la même catégorie pour les fusionner.',
+        manageMerges: 'Gérer les fusions',
+        noMerges: 'Aucune fusion définie.',
+        deleteMerge: 'Supprimer la fusion',
+        mergesTitle: 'Fusions d\'entités',
+        mergesDesc: 'Les entités fusionnées apparaissent comme un seul élément dans la vue de connaissance.',
+        xSelected: '{count} sélectionnés',
+        mergedFrom: 'Fusionné depuis',
+        mergeCreated: 'Fusion créée',
+        mergeDeleted: 'Fusion supprimée',
       },
       rules: {
         yourRules: 'Vos règles',
@@ -2394,6 +2489,25 @@ const translations: Record<Locale, Translations> = {
         relatedEmails: 'Verwandte E-Mails',
         relatedEmailsDesc: 'E-Mails mit Erwähnung von',
         noRelatedEmails: 'Keine E-Mails für diesen Begriff gefunden.',
+        merge: 'Zusammenführen',
+        mergeMode: 'Zum Zusammenführen auswählen',
+        cancelMerge: 'Abbrechen',
+        mergeSelected: 'Auswahl zusammenführen',
+        mergeDialogTitle: 'Entitäten zusammenführen',
+        mergeDialogDesc: 'Diese Entitäten werden zu einer zusammengefasst.',
+        canonicalName: 'Kanonischer Name',
+        canonicalNamePlaceholder: 'Anzuzeigender Name',
+        createMerge: 'Zusammenführung erstellen',
+        mergeSameCategoryWarning: 'Wählen Sie 2 oder mehr Entitäten der gleichen Kategorie aus.',
+        manageMerges: 'Zusammenführungen verwalten',
+        noMerges: 'Keine Zusammenführungen definiert.',
+        deleteMerge: 'Zusammenführung löschen',
+        mergesTitle: 'Entitätszusammenführungen',
+        mergesDesc: 'Zusammengeführte Entitäten werden in der Wissensansicht als ein Element angezeigt.',
+        xSelected: '{count} ausgewählt',
+        mergedFrom: 'Zusammengeführt aus',
+        mergeCreated: 'Zusammenführung erstellt',
+        mergeDeleted: 'Zusammenführung gelöscht',
       },
       rules: {
         yourRules: 'Ihre Regeln',

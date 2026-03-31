@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -19,14 +19,20 @@ import {
   Tag,
   Search,
   X,
+  GitMerge,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
+import { EntityMergeDialog } from '@/components/dashboard/EntityMergeDialog';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from '@/components/ui/Dialog';
+import type { EntityMerge, EntityCategory } from '@/types';
 
 interface KnowledgeItem {
   value: string;
@@ -113,23 +119,37 @@ interface ChipProps {
   maxCount: number;
   detailed?: boolean;
   highlight?: string;
+  mergeMode: boolean;
+  selected: boolean;
+  isMerged?: boolean;
   onClick: () => void;
 }
 
-function Chip({ item, maxCount, detailed = false, highlight = '', onClick }: ChipProps) {
+function Chip({ item, maxCount, detailed = false, highlight = '', mergeMode, selected, isMerged = false, onClick }: ChipProps) {
   const freqClass = detailed ? getFrequencyClass(item.count, maxCount) : 'text-xs px-2 py-0.5';
   return (
     <button
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border transition-all',
-        'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800',
-        'text-gray-700 dark:text-gray-300',
-        'hover:border-[#efd957] hover:bg-[#efd957]/10 hover:text-[#a3891f] dark:hover:text-[#efd957]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
         freqClass,
+        mergeMode && selected
+          ? 'border-[#efd957] bg-[#efd957]/20 text-[#a3891f] dark:text-[#efd957] ring-2 ring-[#efd957]/40'
+          : mergeMode
+          ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-[#efd957]/60 cursor-pointer'
+          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-[#efd957] hover:bg-[#efd957]/10 hover:text-[#a3891f] dark:hover:text-[#efd957]',
       )}
     >
+      {mergeMode && (
+        <span className={cn(
+          'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border',
+          selected ? 'border-[#a3891f] bg-[#efd957]' : 'border-gray-400 dark:border-gray-500',
+        )} />
+      )}
+      {isMerged && !mergeMode && (
+        <GitMerge className="h-3 w-3 shrink-0 text-gray-400 dark:text-gray-500" />
+      )}
       <span className="truncate max-w-[180px]">
         <HighlightedText text={item.value} query={highlight} />
       </span>
@@ -149,10 +169,13 @@ interface SectionProps {
   items: KnowledgeItem[];
   category: string;
   highlight?: string;
+  mergeMode: boolean;
+  selectedKeys: Set<string>;
+  mergedCanonicals: Set<string>;
   onChipClick: (value: string, category: string) => void;
 }
 
-function Section({ title, icon, items, category, highlight = '', onChipClick }: SectionProps) {
+function Section({ title, icon, items, category, highlight = '', mergeMode, selectedKeys, mergedCanonicals, onChipClick }: SectionProps) {
   const filtered = highlight
     ? items.filter((i) => i.value.toLowerCase().includes(highlight.toLowerCase()))
     : items;
@@ -167,24 +190,48 @@ function Section({ title, icon, items, category, highlight = '', onChipClick }: 
       </div>
       <div className="flex flex-wrap gap-1.5">
         {filtered.map((item) => (
-          <Chip key={item.value} item={item} maxCount={items[0]?.count ?? 1} highlight={highlight} onClick={() => onChipClick(item.value, category)} />
+          <Chip
+            key={item.value}
+            item={item}
+            maxCount={items[0]?.count ?? 1}
+            highlight={highlight}
+            mergeMode={mergeMode}
+            selected={selectedKeys.has(`${category}:${item.value}`)}
+            isMerged={mergedCanonicals.has(`${category}:${item.value}`)}
+            onClick={() => onChipClick(item.value, category)}
+          />
         ))}
       </div>
     </div>
   );
 }
 
+interface SelectedChip {
+  value: string;
+  category: EntityCategory;
+}
+
 export function KnowledgeTab() {
   const { t } = useI18n();
   const { firebaseUser } = useAuth();
+  const k = t.dashboard.knowledge;
   const [data, setData] = useState<KnowledgeData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string } | null>(null);
+  const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string; aliases?: string[] } | null>(null);
   const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Entity merges
+  const [merges, setMerges] = useState<EntityMerge[]>([]);
+  const [mergesLoading, setMergesLoading] = useState(false);
+  const [mergeMode, setMergeMode] = useState(false);
+  const [selectedChips, setSelectedChips] = useState<SelectedChip[]>([]);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [showManageMerges, setShowManageMerges] = useState(false);
+  const [mergeActionMessage, setMergeActionMessage] = useState<string | null>(null);
 
   // Integrate the fullscreen email dialog with browser history.
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
@@ -208,25 +255,121 @@ export function KnowledgeTab() {
     }
   }, [firebaseUser]);
 
+  const fetchMerges = useCallback(async () => {
+    if (!firebaseUser) return;
+    setMergesLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/entities/merges', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const json = await res.json() as { merges: EntityMerge[] };
+        setMerges(json.merges ?? []);
+      }
+    } finally {
+      setMergesLoading(false);
+    }
+  }, [firebaseUser]);
+
   useEffect(() => {
     fetchKnowledge();
-  }, [fetchKnowledge]);
+    fetchMerges();
+  }, [fetchKnowledge, fetchMerges]);
+
+  /** Set of "category:canonical" for merged entities (to show the merge icon). */
+  const mergedCanonicals = useMemo(
+    () => new Set(merges.map((m) => `${m.category}:${m.canonical}`)),
+    [merges],
+  );
+
+  /** Map from "category:canonical" → aliases for ExploreEmailsModal. */
+  const mergeAliasMap = useMemo(
+    () =>
+      new Map<string, string[]>(
+        merges.map((m) => [`${m.category}:${m.canonical}`, m.aliases]),
+      ),
+    [merges],
+  );
 
   const categoryLabel = (key: CategoryKey): string => {
-    if (key === 'all') return t.dashboard.knowledge.allCategories;
-    return t.dashboard.knowledge[key];
+    if (key === 'all') return k.allCategories;
+    return k[key];
   };
+
+  const toggleMergeMode = useCallback(() => {
+    setMergeMode((prev) => {
+      if (prev) setSelectedChips([]);
+      return !prev;
+    });
+  }, []);
 
   const handleChipClick = useCallback(
     (value: string, category: string) => {
+      if (mergeMode) {
+        const key = `${category}:${value}`;
+        setSelectedChips((prev) => {
+          const exists = prev.some((c) => `${c.category}:${c.value}` === key);
+          if (exists) return prev.filter((c) => `${c.category}:${c.value}` !== key);
+          return [...prev, { value, category: category as EntityCategory }];
+        });
+        return;
+      }
       const catKey = category as CategoryKey;
       const label =
         catKey === 'all'
-          ? t.dashboard.knowledge.allCategories
-          : (t.dashboard.knowledge[catKey] ?? category);
-      setModalChip({ value, category, label });
+          ? k.allCategories
+          : (k[catKey] ?? category);
+      const mergeKey = `${category}:${value}`;
+      const aliases = mergeAliasMap.get(mergeKey);
+      setModalChip({ value, category, label, aliases });
     },
-    [t],
+    [mergeMode, k, mergeAliasMap],
+  );
+
+  /** True when all selected chips share the same category and there are at least 2. */
+  const canMergeSelected =
+    selectedChips.length >= 2 &&
+    new Set(selectedChips.map((c) => c.category)).size === 1;
+
+  const handleCreateMerge = useCallback(
+    async (canonical: string, aliases: string[], category: EntityCategory) => {
+      if (!firebaseUser) return;
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/entities/merges', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ canonical, aliases, category }),
+      });
+      if (!res.ok) {
+        const json = await res.json() as { error?: string };
+        throw new Error(json.error ?? 'Failed to create merge');
+      }
+      await Promise.all([fetchKnowledge(), fetchMerges()]);
+      setMergeMode(false);
+      setSelectedChips([]);
+      setMergeActionMessage(k.mergeCreated);
+      setTimeout(() => setMergeActionMessage(null), 3000);
+    },
+    [firebaseUser, fetchKnowledge, fetchMerges, k],
+  );
+
+  const handleDeleteMerge = useCallback(
+    async (id: string) => {
+      if (!firebaseUser) return;
+      const token = await firebaseUser.getIdToken();
+      await fetch(`/api/entities/merges/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await Promise.all([fetchKnowledge(), fetchMerges()]);
+      setMergeActionMessage(k.mergeDeleted);
+      setTimeout(() => setMergeActionMessage(null), 3000);
+    },
+    [firebaseUser, fetchKnowledge, fetchMerges, k],
   );
 
   const hasAnyData =
@@ -245,36 +388,142 @@ export function KnowledgeTab() {
       : (data?.[activeCategoryConfig.dataKey] ?? []);
   const activeMaxCount = activeItems[0]?.count ?? 1;
 
+  const selectedCategory = selectedChips[0]?.category ?? null;
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {t.dashboard.knowledge.title}
+              {k.title}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {t.dashboard.knowledge.subtitle}
+              {k.subtitle}
             </p>
             {data && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                {t.dashboard.knowledge.emailsAnalyzed.replace('{count}', String(data.totalEmails))}
+                {k.emailsAnalyzed.replace('{count}', String(data.totalEmails))}
               </p>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={fetchKnowledge}
-            disabled={loading}
-            aria-label="Refresh"
-          >
-            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-          </Button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {hasAnyData && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMergeMode}
+                aria-label={mergeMode ? k.cancelMerge : k.merge}
+                className={cn(mergeMode && 'text-[#a3891f] dark:text-[#efd957]')}
+              >
+                <GitMerge className="h-4 w-4" />
+              </Button>
+            )}
+            {merges.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowManageMerges((v) => !v)}
+                aria-label={k.manageMerges}
+                className="gap-1.5 text-xs"
+              >
+                {k.manageMerges}
+                {showManageMerges ? (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { fetchKnowledge(); fetchMerges(); }}
+              disabled={loading}
+              aria-label="Refresh"
+            >
+              <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+            </Button>
+          </div>
         </div>
+
+        {/* Merge mode banner */}
+        {mergeMode && (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-[#efd957]/40 bg-[#efd957]/10 px-3 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
+            <span>
+              {selectedChips.length > 0
+                ? k.xSelected.replace('{count}', String(selectedChips.length))
+                : k.mergeMode}
+            </span>
+            <div className="flex gap-2 shrink-0">
+              {selectedChips.length >= 2 && !canMergeSelected && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 self-center">
+                  {k.mergeSameCategoryWarning}
+                </span>
+              )}
+              <Button
+                size="sm"
+                disabled={!canMergeSelected}
+                onClick={() => setShowMergeDialog(true)}
+                className="h-7 text-xs bg-[#efd957] hover:bg-[#e8cf3c] text-[#a3891f] border-0"
+              >
+                {k.mergeSelected}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={toggleMergeMode}
+              >
+                {k.cancelMerge}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Action message */}
+        {mergeActionMessage && (
+          <p className="mt-2 text-xs text-green-600 dark:text-green-400">{mergeActionMessage}</p>
+        )}
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {/* Manage merges panel */}
+        {showManageMerges && (
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{k.mergesTitle}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{k.mergesDesc}</p>
+            {mergesLoading ? (
+              <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            ) : merges.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-gray-500">{k.noMerges}</p>
+            ) : (
+              <ul className="space-y-2">
+                {merges.map((m) => (
+                  <li key={m.id} className="flex items-start justify-between gap-2 text-xs">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-gray-800 dark:text-gray-200">{m.canonical}</span>
+                      <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
+                        {k[m.category as keyof typeof k] as string ?? m.category}
+                      </Badge>
+                      <p className="text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                        {k.mergedFrom}: {m.aliases.join(', ')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteMerge(m.id)}
+                      className="shrink-0 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                      aria-label={k.deleteMerge}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* Category filter pills */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
           {CATEGORIES.map((cat) => (
@@ -336,10 +585,10 @@ export function KnowledgeTab() {
           <div className="text-center py-12">
             <Sparkles className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
             <p className="text-base font-medium text-gray-600 dark:text-gray-400">
-              {t.dashboard.knowledge.noData}
+              {k.noData}
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">
-              {t.dashboard.knowledge.noDataDesc}
+              {k.noDataDesc}
             </p>
           </div>
         )}
@@ -349,11 +598,14 @@ export function KnowledgeTab() {
             {(['topics', 'people', 'organizations', 'places', 'events', 'tags'] as const).map((key) => (
               <Section
                 key={key}
-                title={t.dashboard.knowledge[key]}
+                title={k[key]}
                 icon={SECTION_ICONS[key]}
                 items={data?.[key] ?? []}
                 category={key}
                 highlight={searchQuery}
+                mergeMode={mergeMode}
+                selectedKeys={new Set(selectedChips.map((c) => `${c.category}:${c.value}`))}
+                mergedCanonicals={mergedCanonicals}
                 onChipClick={handleChipClick}
               />
             ))}
@@ -364,11 +616,12 @@ export function KnowledgeTab() {
           const filtered = searchQuery
             ? activeItems.filter((i) => i.value.toLowerCase().includes(searchQuery.toLowerCase()))
             : activeItems;
+          const selectedSet = new Set(selectedChips.map((c) => `${c.category}:${c.value}`));
           return (
             <div className="flex flex-wrap gap-2">
               {filtered.length === 0 ? (
                 <p className="text-sm text-gray-400 dark:text-gray-500">
-                  {t.dashboard.knowledge.noData}
+                  {k.noData}
                 </p>
               ) : (
                 filtered.map((item) => (
@@ -378,6 +631,9 @@ export function KnowledgeTab() {
                     maxCount={activeMaxCount}
                     detailed
                     highlight={searchQuery}
+                    mergeMode={mergeMode}
+                    selected={selectedSet.has(`${activeCategory}:${item.value}`)}
+                    isMerged={mergedCanonicals.has(`${activeCategory}:${item.value}`)}
                     onClick={() => handleChipClick(item.value, activeCategory)}
                   />
                 ))
@@ -392,6 +648,7 @@ export function KnowledgeTab() {
           term={modalChip.value}
           category={modalChip.category}
           categoryLabel={modalChip.label}
+          aliases={modalChip.aliases}
           onClose={() => setModalChip(null)}
           onRequestFullscreen={setFullscreenEmail}
         />
@@ -417,6 +674,16 @@ export function KnowledgeTab() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Entity merge dialog */}
+      {showMergeDialog && selectedChips.length >= 2 && selectedCategory && (
+        <EntityMergeDialog
+          selected={selectedChips}
+          categoryLabel={k[selectedCategory as keyof typeof k] as string ?? selectedCategory}
+          onClose={() => setShowMergeDialog(false)}
+          onMerge={handleCreateMerge}
+        />
+      )}
     </Card>
   );
 }

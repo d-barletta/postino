@@ -28,6 +28,26 @@ function incrementAll(map: CountMap, values: unknown): void {
   }
 }
 
+/** Apply entity merges to a CountMap in-place.
+ *  For each merge, sum all alias counts into the canonical key and delete the aliases. */
+function applyMerges(
+  map: CountMap,
+  merges: Array<{ canonical: string; aliases: string[] }>,
+): void {
+  for (const merge of merges) {
+    let total = 0;
+    for (const alias of merge.aliases) {
+      if (alias in map) {
+        total += map[alias];
+        delete map[alias];
+      }
+    }
+    if (total > 0) {
+      map[merge.canonical] = (map[merge.canonical] ?? 0) + total;
+    }
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -38,12 +58,32 @@ export async function GET(request: NextRequest) {
     const decoded = await adminAuth().verifyIdToken(token);
 
     const db = adminDb();
-    const snap = await db
-      .collection('emailLogs')
-      .where('userId', '==', decoded.uid)
-      .orderBy('receivedAt', 'desc')
-      .limit(FETCH_LIMIT)
-      .get();
+
+    // Fetch email logs and entity merges in parallel
+    const [snap, mergesSnap] = await Promise.all([
+      db
+        .collection('emailLogs')
+        .where('userId', '==', decoded.uid)
+        .orderBy('receivedAt', 'desc')
+        .limit(FETCH_LIMIT)
+        .get(),
+      db
+        .collection('entityMerges')
+        .where('userId', '==', decoded.uid)
+        .get(),
+    ]);
+
+    // Group merges by category
+    const mergesByCategory: Record<string, Array<{ canonical: string; aliases: string[] }>> = {};
+    for (const doc of mergesSnap.docs) {
+      const d = doc.data();
+      const cat = d.category as string;
+      if (!mergesByCategory[cat]) mergesByCategory[cat] = [];
+      mergesByCategory[cat].push({
+        canonical: d.canonical as string,
+        aliases: d.aliases as string[],
+      });
+    }
 
     const topics: CountMap = {};
     const tags: CountMap = {};
@@ -68,6 +108,14 @@ export async function GET(request: NextRequest) {
         incrementAll(events, entities.events);
       }
     }
+
+    // Apply user-defined merges
+    if (mergesByCategory.topics) applyMerges(topics, mergesByCategory.topics);
+    if (mergesByCategory.tags) applyMerges(tags, mergesByCategory.tags);
+    if (mergesByCategory.people) applyMerges(people, mergesByCategory.people);
+    if (mergesByCategory.organizations) applyMerges(organizations, mergesByCategory.organizations);
+    if (mergesByCategory.places) applyMerges(places, mergesByCategory.places);
+    if (mergesByCategory.events) applyMerges(events, mergesByCategory.events);
 
     return NextResponse.json({
       topics: toSortedArray(topics),
