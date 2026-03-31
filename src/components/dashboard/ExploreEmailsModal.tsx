@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog';
@@ -326,11 +326,23 @@ export function ExploreEmailsModal({
           className="w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
         >
-          {/* Visually hidden title for accessibility */}
-          <DialogTitle className="sr-only">{tk.relatedEmails}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {tk.relatedEmailsDesc} {categoryLabel}: {term}
-          </DialogDescription>
+          {/* Header with tag/category info */}
+          <DialogHeader className="shrink-0 px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5 flex-wrap">
+              {tk.relatedEmailsDesc}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
+                {categoryLabel}: {term}
+              </span>
+              {!loading && totalCount !== undefined && (
+                <span className="text-gray-400 dark:text-gray-500 text-xs font-normal">
+                  ({totalCount} {t.dashboard.emailHistory.results})
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {tk.relatedEmailsDesc} {categoryLabel}: {term}
+            </DialogDescription>
+          </DialogHeader>
 
           {/* Scrollable email list */}
           <div className="flex-1 overflow-y-auto">
@@ -654,23 +666,6 @@ export function ExploreEmailsModal({
             </div>
           )}
 
-          {/* Footer with meta info and close button */}
-          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5 flex-wrap">
-              {tk.relatedEmailsDesc}
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
-                {categoryLabel}: {term}
-              </span>
-              {!loading && totalCount !== undefined && (
-                <span className="text-gray-400 dark:text-gray-500">
-                  ({totalCount} {t.dashboard.emailHistory.results})
-                </span>
-              )}
-            </p>
-            <Button variant="outline" size="sm" onClick={onClose} className="shrink-0">
-              {t.dashboard.rules.close}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
