@@ -9,19 +9,26 @@ import { useEffect, useRef } from 'react';
 const backHandlers: Array<() => void> = [];
 
 /**
- * Counter used to ignore popstate events that are triggered programmatically
- * (i.e. when a modal is closed via its own UI and we call history.back() to
- * clean up the phantom history entry we pushed when the modal opened).
+ * Count of phantom history entries left by modals that were closed
+ * programmatically (not via the back button). When the user presses Back and
+ * there are no open modals to close, we skip these phantom entries so that the
+ * back button reaches the real previous page in a single press.
  */
-let suppressCount = 0;
+let phantomCount = 0;
 
 function handleGlobalPopState(): void {
-  if (suppressCount > 0) {
-    suppressCount--;
+  const handler = backHandlers.pop();
+  if (handler) {
+    handler();
     return;
   }
-  const handler = backHandlers.pop();
-  if (handler) handler();
+  // No open modal to close — this popstate hit a phantom entry that was left
+  // behind when a modal was closed programmatically. Skip it so the user
+  // reaches their actual previous page.
+  if (phantomCount > 0) {
+    phantomCount--;
+    window.history.back();
+  }
 }
 
 // Register the single global listener when the module is first loaded in the browser.
@@ -42,7 +49,7 @@ if (
  * - When `isOpen` becomes `true` a history entry is pushed.
  * - When the user presses Back the `onBack` callback is invoked.
  * - When `isOpen` becomes `false` (programmatic close) the phantom history
- *   entry is cleaned up so the back button still works as expected afterward.
+ *   entry is noted and skipped transparently on the next back-button press.
  *
  * Multiple concurrent overlays are supported via a LIFO stack: the topmost
  * overlay is always closed first.
@@ -68,11 +75,14 @@ export function useModalHistory(isOpen: boolean, onBack: () => void): void {
       const idx = backHandlers.indexOf(handler);
       if (idx !== -1) {
         // The modal was closed programmatically (not via the back button).
-        // Remove our handler from the stack and go back one step to remove
-        // the phantom history entry we pushed when the modal opened.
+        // Remove our handler and record the orphaned phantom history entry.
+        // We intentionally do NOT call history.back() here: doing so fires a
+        // popstate event that Next.js intercepts and treats as a navigation,
+        // which would unexpectedly take the user to the previous page.
+        // Instead, phantomCount is decremented in handleGlobalPopState the
+        // next time the user presses Back, transparently skipping the phantom.
         backHandlers.splice(idx, 1);
-        suppressCount++;
-        window.history.back();
+        phantomCount++;
       }
       // If idx === -1 the handler was already removed by handleGlobalPopState,
       // meaning the user pressed Back — no cleanup needed.
@@ -80,3 +90,4 @@ export function useModalHistory(isOpen: boolean, onBack: () => void): void {
     };
   }, [isOpen]);
 }
+
