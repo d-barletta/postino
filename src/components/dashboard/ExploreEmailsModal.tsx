@@ -7,7 +7,6 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-  dialogSlideFromBottomClassName,
 } from '@/components/ui/Dialog';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -312,10 +311,8 @@ export function ExploreEmailsModal({
     <>
       <Dialog open={!!term} onOpenChange={(open) => { if (!open) onClose(); }}>
         <DialogContent
-          className={cn(
-            'w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0',
-            dialogSlideFromBottomClassName,
-          )}
+          animation="slide-from-bottom"
+          className="w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
         >
           {/* Visually hidden title for accessibility */}
