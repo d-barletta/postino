@@ -27,6 +27,11 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/** Extra className to apply slide-from-bottom entering/exiting animation instead of the default.
+ *  Intended for large full-page email modals. */
+export const dialogSlideFromBottomClassName =
+  'duration-300 data-[state=open]:slide-in-from-bottom-8 data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-bottom-8 data-[state=closed]:slide-out-to-left-0';
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { overlayClassName?: string }
