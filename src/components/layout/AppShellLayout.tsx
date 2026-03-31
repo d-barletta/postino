@@ -58,7 +58,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
   return (
     <div className="min-h-full">
       <nav className="glass-panel sticky top-0 z-10 border-0! dark:bg-transparent!">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2 sm:gap-6">
             <Link href="/" className="flex items-center gap-2">
               <PostinoLogo className="h-6 w-6" />
@@ -112,7 +112,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
           </div>
         )}
       </nav>
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
     </div>
   );
 }

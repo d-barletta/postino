@@ -185,6 +185,7 @@ export interface Translations {
       clearFilter: string;
       noEmailsYet: string;
       noEmailsYetDesc: string;
+      selectEmailToRead: string;
       from: string;
       to: string;
       cc: string;
@@ -606,6 +607,7 @@ const translations: Record<Locale, Translations> = {
         clearFilter: 'Remove filters',
         noEmailsYet: 'No emails processed yet.',
         noEmailsYetDesc: 'Send an email to your Postino address to get started!',
+        selectEmailToRead: 'Select an email to read',
         from: 'From:',
         to: 'To:',
         cc: 'Cc:',
@@ -1021,6 +1023,7 @@ const translations: Record<Locale, Translations> = {
         clearFilter: 'Rimuovi filtri',
         noEmailsYet: 'Nessuna email elaborata.',
         noEmailsYetDesc: "Invia un'email al tuo indirizzo Postino per iniziare!",
+        selectEmailToRead: 'Seleziona un\'email da leggere',
         from: 'Da:',
         to: 'A:',
         cc: 'Cc:',
@@ -1432,6 +1435,7 @@ const translations: Record<Locale, Translations> = {
         clearFilter: 'Borrar filtros',
         noEmailsYet: 'Aún no se han procesado correos.',
         noEmailsYetDesc: '¡Envía un correo a tu dirección Postino para empezar!',
+        selectEmailToRead: 'Selecciona un correo para leer',
         from: 'De:',
         to: 'Para:',
         cc: 'Cc:',
@@ -1843,6 +1847,7 @@ const translations: Record<Locale, Translations> = {
         clearFilter: 'Effacer les filtres',
         noEmailsYet: "Aucun e-mail traité pour l'instant.",
         noEmailsYetDesc: 'Envoyez un e-mail à votre adresse Postino pour commencer !',
+        selectEmailToRead: 'Sélectionnez un e-mail à lire',
         from: 'De :',
         to: 'À :',
         cc: 'Cc :',
@@ -2254,6 +2259,7 @@ const translations: Record<Locale, Translations> = {
         clearFilter: 'Filter entfernen',
         noEmailsYet: 'Noch keine E-Mails verarbeitet.',
         noEmailsYetDesc: 'Senden Sie eine E-Mail an Ihre Postino-Adresse, um zu beginnen!',
+        selectEmailToRead: 'E-Mail zum Lesen auswählen',
         from: 'Von:',
         to: 'An:',
         cc: 'Cc:',

@@ -20,7 +20,7 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import { formatDate } from '@/lib/utils';
+import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,6 +35,7 @@ import {
   X,
   AlignLeft,
   Brain,
+  MousePointerClick,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -688,7 +689,8 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         </div>
       )}
 
-      {/* Results */}
+      {/* Results — NARROW layout (< xl): single column with inline expansion */}
+      <div className="xl:hidden">
       <Card>
         <CardHeader className="py-2 px-4">
           <div className="flex items-center justify-between">
@@ -988,6 +990,255 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
           )}
         </CardContent>
       </Card>
+      </div>{/* end narrow layout */}
+
+      {/* Results — WIDE layout (≥ xl): macOS Mail split-pane */}
+      <div className="hidden xl:flex rounded-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150 max-h-[900px]">
+        {/* Left pane: list */}
+        <div className="w-100 shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700">
+          {/* Mini results header */}
+          <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {!logsLoading && totalCount !== undefined && <>{totalCount} {t.dashboard.emailHistory.results}</>}
+            </span>
+            <Button variant="ghost" size="icon" onClick={() => fetchLogs(1, true)} disabled={refreshing} title={t.dashboard.emailHistory.refresh}>
+              <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
+            </Button>
+          </div>
+          {/* Scrollable list */}
+          <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+            {logsLoading ? (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="px-5 py-4 animate-pulse">
+                    <div className="flex items-start gap-2">
+                      <div className="mt-1 h-4 w-4 rounded bg-gray-200 dark:bg-gray-700 shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/3" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="text-center py-10 text-gray-400 dark:text-gray-500">
+                {hasActive ? (
+                  <>
+                    <p>{ts.noResults}</p>
+                    <button onClick={handleClearFilters} className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline">
+                      {t.dashboard.emailHistory.clearFilter}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p>{t.dashboard.emailHistory.noEmailsYet}</p>
+                    <p className="text-sm mt-1">{t.dashboard.emailHistory.noEmailsYetDesc}</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              logs.map((log) => {
+                const hasAtt = (log.attachmentCount ?? 0) > 0;
+                const isSelected = selectedId === log.id;
+                return (
+                  <div
+                    key={log.id}
+                    className={cn(
+                      'px-4 py-3 cursor-pointer transition-colors border-l-2',
+                      isSelected
+                        ? 'bg-[#efd957]/20 dark:bg-[#efd957]/10 border-l-[#efd957]'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-transparent',
+                    )}
+                    onClick={() => handleToggleExpand(log.id)}
+                  >
+                    <div className="flex items-start gap-2">
+                      {hasAtt ? (
+                        <Paperclip className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+                      ) : (
+                        <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={cn('text-sm truncate', isSelected ? 'font-semibold text-gray-900 dark:text-gray-50' : 'font-medium text-gray-800 dark:text-gray-100')}>
+                          {log.subject}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{log.fromAddress}</p>
+                        {log.emailAnalysis && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {log.emailAnalysis.emailType && (
+                              <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
+                                {rowTypeLabel[log.emailAnalysis.emailType] ?? log.emailAnalysis.emailType}
+                              </span>
+                            )}
+                            {log.emailAnalysis.sentiment && (
+                              <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
+                                {rowSentimentLabel[log.emailAnalysis.sentiment] ?? log.emailAnalysis.sentiment}
+                              </span>
+                            )}
+                            {log.emailAnalysis.requiresResponse && (
+                              <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                {t.dashboard.emailHistory.analysisRequiresResponse}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          {log.status !== 'forwarded' && (
+                            <Badge variant={statusVariant[log.status] || 'default'} className="text-[10px] px-1.5 py-0 h-4">
+                              {statusLabel[log.status] ?? log.status}
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt, locale)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {/* Pagination */}
+          {!logsLoading && logs.length > 0 && (hasNextPage || page > 1) && (
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+              <Button variant="ghost" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page <= 1 || refreshing}>
+                <ChevronLeft className="h-4 w-4 mr-1" />{t.dashboard.emailHistory.previous}
+              </Button>
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {t.dashboard.emailHistory.page} {page}{totalPages !== undefined ? ` ${t.dashboard.emailHistory.of} ${totalPages}` : ''}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => handlePageChange(page + 1)} disabled={!hasNextPage || refreshing}>
+                {t.dashboard.emailHistory.next}<ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Right pane: detail */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {selectedId && logs.find((l) => l.id === selectedId) ? (() => {
+            const log = logs.find((l) => l.id === selectedId)!;
+            const emailData = expandedData[selectedId];
+            return (
+              <>
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                  <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{log.subject}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
+                  {log.emailAnalysis && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {log.emailAnalysis.emailType && (
+                        <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
+                          {rowTypeLabel[log.emailAnalysis.emailType] ?? log.emailAnalysis.emailType}
+                        </span>
+                      )}
+                      {log.emailAnalysis.sentiment && (
+                        <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
+                          {rowSentimentLabel[log.emailAnalysis.sentiment] ?? log.emailAnalysis.sentiment}
+                        </span>
+                      )}
+                      {log.emailAnalysis.priority && log.emailAnalysis.priority !== 'normal' && (
+                        <span className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${PRIORITY_COLORS[log.emailAnalysis.priority] ?? DEFAULT_BADGE_COLOR}`}>
+                          {rowPriorityLabel[log.emailAnalysis.priority] ?? log.emailAnalysis.priority}
+                        </span>
+                      )}
+                      {log.emailAnalysis.requiresResponse && (
+                        <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                          {t.dashboard.emailHistory.analysisRequiresResponse}
+                        </span>
+                      )}
+                      {log.emailAnalysis.isUrgent && (
+                        <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                          {ts.isUrgent}
+                        </span>
+                      )}
+                      {log.emailAnalysis.tags?.slice(0, 4).map((tag) => (
+                        <span key={tag} className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+                  <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="flex flex-col flex-1 overflow-hidden">
+                    <TabsList>
+                      <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}><Mail className="h-3.5 w-3.5 shrink-0" /></TabsTrigger>
+                      <TabsTrigger value="summary"><AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabSummary}</TabsTrigger>
+                      <TabsTrigger value="ai"><Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />{t.dashboard.emailHistory.tabAiAnalysis}</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="summary" className="mt-3 space-y-3 overflow-y-auto">
+                      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                        <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.to}</dt>
+                        <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{log.toAddress}</dd>
+                        {emailData?.ccAddress && (<><dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.cc}</dt><dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.ccAddress}</dd></>)}
+                        {emailData?.bccAddress && (<><dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.bcc}</dt><dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.bccAddress}</dd></>)}
+                        <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.attachments}</dt>
+                        <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
+                          {emailData?.loading ? <span className="text-gray-400">{'…'}</span>
+                          : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
+                            <ul className="list-none space-y-0.5">
+                              {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
+                                <li key={i} className="flex items-center gap-1 min-w-0">
+                                  <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
+                                  <span className="truncate">{name}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : <span className="text-gray-400">{t.dashboard.emailHistory.noAttachmentsShort}</span>}
+                        </dd>
+                      </dl>
+                      {log.ruleApplied && <p className="text-xs text-gray-600 dark:text-gray-300"><span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span> {log.ruleApplied}</p>}
+                      {log.tokensUsed !== undefined && <p className="text-xs text-gray-500 dark:text-gray-400">{t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: ${(log.estimatedCost || 0).toFixed(5)}</p>}
+                    </TabsContent>
+                    <TabsContent value="content" className="flex-1 flex flex-col overflow-hidden mt-3 min-h-0">
+                      {emailData?.loading && (
+                        <div className="animate-pulse space-y-2 pt-1">
+                          <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                        </div>
+                      )}
+                      {emailData && !emailData.loading && emailData.originalBody && (
+                        <>
+                          <iframe
+                            sandbox=""
+                            srcDoc={buildSandboxedEmailSrcDoc(emailData.originalBody)}
+                            className="w-full flex-1 border-0 rounded-lg min-h-0"
+                            style={{ height: '100%' }}
+                            title="Email content preview"
+                          />
+                          <div className="flex items-center gap-3 pt-1">
+                            <button
+                              onClick={() => setFullscreenEmailId(log.id)}
+                              className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            >
+                              <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
+                              {t.dashboard.emailHistory.viewFullPage}
+                            </button>
+                            {isAdmin && (
+                              <a href={`/email/original/${log.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline">
+                                <ExternalLink className="h-3 w-3" />{t.dashboard.emailHistory.viewOriginal}
+                              </a>
+                            )}
+                          </div>
+                        </>
+                      )}
+                      {emailData && !emailData.loading && !emailData.originalBody && !emailData.error && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 py-1">{t.emailOriginal.noOriginalContent}</p>
+                      )}
+                    </TabsContent>
+                    <TabsContent value="ai" className="mt-3">
+                      {log.emailAnalysis ? <EmailAnalysisPanel analysis={log.emailAnalysis} /> : <p className="text-xs text-gray-400 dark:text-gray-500 py-1">{t.dashboard.emailHistory.noAiAnalysis}</p>}
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </>
+            );
+          })() : (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-gray-600 select-none">
+              <MousePointerClick className="h-10 w-10" />
+              <p className="text-sm">Select an email to read</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Full email modal */}
       <Dialog
