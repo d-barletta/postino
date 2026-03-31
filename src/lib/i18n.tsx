@@ -1017,7 +1017,7 @@ const translations: Record<Locale, Translations> = {
         error: 'Errore',
         skipped: 'Saltate',
         estimatedCost: 'Costo stimato',
-        estCost: 'Costo est.',
+        estCost: 'Costo stimato',
         last24h: 'Ultime 24h',
         last7days: 'Ultimi 7 giorni',
         last30days: 'Ultimi 30 giorni',
