@@ -1043,7 +1043,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       </div>{/* end narrow layout */}
 
       {/* Results — WIDE layout (≥ xl): macOS Mail split-pane */}
-      <div className="hidden min-[900px]:flex rounded-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150 max-h-[900px]">
+      <div className="hidden min-[900px]:flex rounded-2xl border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150 max-h-[900px]">
         {/* Left pane: list */}
         <div className="w-100 shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700">
           {/* Mini results header */}
