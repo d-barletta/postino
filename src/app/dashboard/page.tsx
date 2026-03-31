@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [emailListRefreshTrigger, setEmailListRefreshTrigger] = useState(0);
   const [installPwaTrigger, setInstallPwaTrigger] = useState(0);
   const [isPwa, setIsPwa] = useState(false);
+  const [canShowInstallCard, setCanShowInstallCard] = useState(false);
   const searchParams = useSearchParams();
   const editRuleId = searchParams.get('editRule');
   const selectedEmailId = searchParams.get('selectedEmail');
@@ -89,6 +90,25 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
+  }, []);
+
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    const isIOS =
+      /iphone|ipad|ipod/i.test(ua) ||
+      (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    const isAndroid = /android/i.test(ua);
+    const isIOSFirefox = isIOS && /fxios/i.test(ua);
+
+    if ((isIOS || isAndroid) && !isIOSFirefox) {
+      setCanShowInstallCard(true);
+      return;
+    }
+
+    // Desktop: only show the card if the browser supports the native install prompt.
+    const handler = () => setCanShowInstallCard(true);
+    window.addEventListener('beforeinstallprompt', handler, { once: true });
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   useEffect(() => {
@@ -275,7 +295,7 @@ export default function DashboardPage() {
               currentLanguage={user?.analysisOutputLanguage}
               onSave={handleAnalysisLanguageChange}
             />
-            <Card>
+            {(isPwa || canShowInstallCard) && <Card>
               <CardHeader>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {t.dashboard.installApp.title}
@@ -302,7 +322,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card>}
           </div>
         </TabsContent>
       </Tabs>
