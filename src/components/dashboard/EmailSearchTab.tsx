@@ -179,6 +179,7 @@ function SwipeableEmailRow({
   onOpen: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useI18n();
   const [offset, setOffset] = useState(0);
   const [animate, setAnimate] = useState(false);
   const [isSnapped, setIsSnapped] = useState(false);
@@ -189,6 +190,8 @@ function SwipeableEmailRow({
   const startOffset = useRef(0);
   const isDragging = useRef(false);
   const suppressNextClick = useRef(false);
+  // Set to true by action buttons' onPointerDown so the document close handler skips one event
+  const skipNextClose = useRef(false);
 
   const applyOffset = (v: number, smooth: boolean) => {
     liveOffset.current = v;
@@ -208,15 +211,23 @@ function SwipeableEmailRow({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When snapped open, close on the next outside pointerdown
+  // When snapped open, close on the next outside pointerdown — but skip
+  // if one of the action buttons themselves triggered the pointerdown.
   useEffect(() => {
     if (!isSnapped) return;
+    const handler = () => {
+      if (skipNextClose.current) {
+        skipNextClose.current = false;
+        return;
+      }
+      close();
+    };
     const id = setTimeout(() => {
-      document.addEventListener('pointerdown', close, { once: true });
+      document.addEventListener('pointerdown', handler);
     }, 50);
     return () => {
       clearTimeout(id);
-      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('pointerdown', handler);
     };
   }, [isSnapped, close]);
 
@@ -288,16 +299,18 @@ function SwipeableEmailRow({
       {/* Action buttons — hidden behind the row until swiped */}
       <div className="absolute inset-y-0 right-0 flex" style={{ width: SWIPE_ACTION_WIDTH }}>
         <button
-          className="flex-1 flex items-center justify-center bg-[#efd957] hover:bg-[#d0b53f] active:bg-[#b89c2e] text-white transition-colors"
+          className="flex-1 flex items-center justify-center bg-[#efd957] hover:bg-[#d0b53f] active:bg-[#b89c2e] text-black transition-colors"
+          onPointerDown={() => { skipNextClose.current = true; }}
           onClick={(e) => { e.stopPropagation(); close(); onOpen(); }}
-          aria-label="View full page"
+          aria-label={t.dashboard.emailHistory.viewFullPage}
         >
           <Eye className="h-5 w-5" />
         </button>
         <button
           className="flex-1 flex items-center justify-center bg-red-500 hover:bg-red-600 active:bg-red-700 text-white transition-colors"
+          onPointerDown={() => { skipNextClose.current = true; }}
           onClick={(e) => { e.stopPropagation(); close(); onDelete(); }}
-          aria-label="Delete"
+          aria-label={t.dashboard.emailHistory.deleteEmail}
         >
           <Trash2 className="h-5 w-5" />
         </button>
