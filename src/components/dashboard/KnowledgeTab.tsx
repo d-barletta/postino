@@ -465,7 +465,7 @@ export function KnowledgeTab() {
                 size="sm"
                 disabled={!canMergeSelected}
                 onClick={() => setShowMergeDialog(true)}
-                className="h-7 text-xs bg-[#efd957] hover:bg-[#e8cf3c] text-[#a3891f] border-0"
+                className="h-7 text-xs bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
               >
                 {k.mergeSelected}
               </Button>
@@ -534,7 +534,7 @@ export function KnowledgeTab() {
                 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium shrink-0 transition-all',
                 'border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
                 activeCategory === cat.key
-                  ? 'bg-[#efd957] border-[#efd957] text-[#a3891f] shadow-sm'
+                  ? 'bg-[#efd957] border-[#efd957] text-black shadow-sm'
                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#efd957]/60',
               )}
             >
