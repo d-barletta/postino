@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +17,8 @@ import {
   MapPin,
   Calendar,
   Tag,
+  Search,
+  X,
 } from 'lucide-react';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 import { useModalHistory } from '@/hooks/useModalHistory';
@@ -91,14 +93,30 @@ function SkeletonChips() {
   );
 }
 
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  if (!query) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-[#efd957] text-[#a3891f] rounded-sm px-0 not-italic">
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
+}
+
 interface ChipProps {
   item: KnowledgeItem;
   maxCount: number;
   detailed?: boolean;
+  highlight?: string;
   onClick: () => void;
 }
 
-function Chip({ item, maxCount, detailed = false, onClick }: ChipProps) {
+function Chip({ item, maxCount, detailed = false, highlight = '', onClick }: ChipProps) {
   const freqClass = detailed ? getFrequencyClass(item.count, maxCount) : 'text-xs px-2 py-0.5';
   return (
     <button
@@ -112,7 +130,9 @@ function Chip({ item, maxCount, detailed = false, onClick }: ChipProps) {
         freqClass,
       )}
     >
-      <span className="truncate max-w-[180px]">{item.value}</span>
+      <span className="truncate max-w-[180px]">
+        <HighlightedText text={item.value} query={highlight} />
+      </span>
       <Badge
         variant="secondary"
         className="text-[10px] px-1.5 py-0 h-4 shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
@@ -128,11 +148,15 @@ interface SectionProps {
   icon: React.ReactNode;
   items: KnowledgeItem[];
   category: string;
+  highlight?: string;
   onChipClick: (value: string, category: string) => void;
 }
 
-function Section({ title, icon, items, category, onChipClick }: SectionProps) {
-  if (items.length === 0) return null;
+function Section({ title, icon, items, category, highlight = '', onChipClick }: SectionProps) {
+  const filtered = highlight
+    ? items.filter((i) => i.value.toLowerCase().includes(highlight.toLowerCase()))
+    : items;
+  if (filtered.length === 0) return null;
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-2">
@@ -142,8 +166,8 @@ function Section({ title, icon, items, category, onChipClick }: SectionProps) {
         </h3>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {items.map((item) => (
-          <Chip key={item.value} item={item} maxCount={items[0]?.count ?? 1} onClick={() => onChipClick(item.value, category)} />
+        {filtered.map((item) => (
+          <Chip key={item.value} item={item} maxCount={items[0]?.count ?? 1} highlight={highlight} onClick={() => onChipClick(item.value, category)} />
         ))}
       </div>
     </div>
@@ -157,8 +181,10 @@ export function KnowledgeTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string } | null>(null);
   const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Integrate the fullscreen email dialog with browser history.
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
@@ -269,6 +295,32 @@ export function KnowledgeTab() {
           ))}
         </div>
 
+        {/* Text search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Filter tags…"
+            className={cn(
+              'flex h-8 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-8 pr-8 py-1 text-sm shadow-sm',
+              'transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500',
+              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#efd957] focus-visible:border-[#efd957]',
+              'dark:bg-gray-800 dark:text-gray-100',
+            )}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
         {/* Content area */}
         {loading && (
           <div className="space-y-4">
@@ -301,31 +353,38 @@ export function KnowledgeTab() {
                 icon={SECTION_ICONS[key]}
                 items={data?.[key] ?? []}
                 category={key}
+                highlight={searchQuery}
                 onChipClick={handleChipClick}
               />
             ))}
           </div>
         )}
 
-        {!loading && !error && hasAnyData && activeCategory !== 'all' && (
-          <div className="flex flex-wrap gap-2">
-            {activeItems.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">
-                {t.dashboard.knowledge.noData}
-              </p>
-            ) : (
-              activeItems.map((item) => (
-                <Chip
-                  key={item.value}
-                  item={item}
-                  maxCount={activeMaxCount}
-                  detailed
-                  onClick={() => handleChipClick(item.value, activeCategory)}
-                />
-              ))
-            )}
-          </div>
-        )}
+        {!loading && !error && hasAnyData && activeCategory !== 'all' && (() => {
+          const filtered = searchQuery
+            ? activeItems.filter((i) => i.value.toLowerCase().includes(searchQuery.toLowerCase()))
+            : activeItems;
+          return (
+            <div className="flex flex-wrap gap-2">
+              {filtered.length === 0 ? (
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  {t.dashboard.knowledge.noData}
+                </p>
+              ) : (
+                filtered.map((item) => (
+                  <Chip
+                    key={item.value}
+                    item={item}
+                    maxCount={activeMaxCount}
+                    detailed
+                    highlight={searchQuery}
+                    onClick={() => handleChipClick(item.value, activeCategory)}
+                  />
+                ))
+              )}
+            </div>
+          );
+        })()}
       </CardContent>
 
       {modalChip && (
