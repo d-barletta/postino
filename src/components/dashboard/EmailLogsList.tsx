@@ -18,6 +18,8 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogFooter,
+  DialogClose,
 } from '@/components/ui/Dialog';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -749,16 +751,12 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         onOpenChange={(open) => { if (!open) setFullscreenEmailId(null); }}
       >
         <DialogContent
+          hideCloseButton
           className={cn(
             'w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0',
           )}
           aria-describedby={undefined}
         >
-          <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
-            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
-              {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
-            </DialogTitle>
-          </div>
           {fullscreenLog?.originalBody && (
             <iframe
               sandbox=""
@@ -767,6 +765,16 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
               title="Original email content full page"
             />
           )}
+          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
+            </DialogTitle>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm" className="shrink-0">
+                {t.dashboard.rules.close}
+              </Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
