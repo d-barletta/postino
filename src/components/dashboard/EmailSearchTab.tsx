@@ -19,6 +19,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  dialogSlideFromBottomClassName,
 } from '@/components/ui/Dialog';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -297,9 +298,16 @@ function SwipeableEmailRow({
   return (
     <div className="relative overflow-hidden">
       {/* Action buttons — hidden behind the row until swiped */}
-      <div className="absolute inset-y-0 right-0 flex" style={{ width: SWIPE_ACTION_WIDTH }}>
+      <div
+        className="absolute inset-y-0 right-0 flex"
+        style={{
+          width: SWIPE_ACTION_WIDTH,
+          opacity: Math.abs(offset) / SWIPE_ACTION_WIDTH,
+          transition: animate ? 'opacity 0.22s ease' : 'none',
+        }}
+      >
         <button
-          className="flex-1 flex items-center justify-center bg-[#efd957] hover:bg-[#d0b53f] active:bg-[#b89c2e] text-black transition-colors"
+          className="flex-1 flex items-center justify-center bg-[#efd957] hover:bg-[#d0b53f] active:bg-[#b89c2e] text-white transition-colors"
           onPointerDown={() => { skipNextClose.current = true; }}
           onClick={(e) => { e.stopPropagation(); close(); onOpen(); }}
           aria-label={t.dashboard.emailHistory.viewFullPage}
@@ -1491,7 +1499,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         open={!!fullscreenEmailId}
         onOpenChange={(open) => { if (!open) setFullscreenEmailId(null); }}
       >
-        <DialogContent className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0" aria-describedby={undefined}>
+        <DialogContent className={`w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0 ${dialogSlideFromBottomClassName}`} aria-describedby={undefined}>
           <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
               {logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
