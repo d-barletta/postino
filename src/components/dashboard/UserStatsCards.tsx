@@ -35,7 +35,7 @@ export function UserStatsCards({ stats }: UserStatsCardsProps) {
         <Card key={card.label}>
           <CardContent className="py-4">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{card.label}</p>
-            <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
+            <p className={`text-xl font-bold truncate ${card.color}`}>{card.value}</p>
           </CardContent>
         </Card>
       ))}
