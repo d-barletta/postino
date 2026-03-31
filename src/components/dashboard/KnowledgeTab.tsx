@@ -23,6 +23,7 @@ import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/Dialog';
 
 interface KnowledgeItem {
@@ -342,11 +343,12 @@ export function KnowledgeTab() {
         <DialogContent
           overlayClassName="z-[100]"
           className="z-[100] w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
+          aria-describedby={undefined}
         >
           <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
               {fullscreenEmail?.subject}
-            </p>
+            </DialogTitle>
           </div>
           <iframe
             sandbox=""

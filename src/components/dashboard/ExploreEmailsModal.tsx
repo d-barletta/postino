@@ -314,6 +314,7 @@ export function ExploreEmailsModal({
           className={cn(
             'w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0',
           )}
+          aria-describedby={undefined}
         >
           {/* Header */}
           <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">

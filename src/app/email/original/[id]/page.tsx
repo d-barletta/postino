@@ -372,7 +372,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
         open={!!(isFullscreen && email.originalBody)}
         onOpenChange={(open) => { if (!open) setIsFullscreen(false); }}
       >
-        <DialogContent className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0">
+        <DialogContent className="w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0" aria-describedby={undefined}>
           <div className="h-14 shrink-0 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-4">
               {email.subject}
