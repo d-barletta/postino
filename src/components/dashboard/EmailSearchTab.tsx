@@ -288,7 +288,7 @@ function SwipeableEmailRow({
       {/* Action buttons — hidden behind the row until swiped */}
       <div className="absolute inset-y-0 right-0 flex" style={{ width: SWIPE_ACTION_WIDTH }}>
         <button
-          className="flex-1 flex items-center justify-center bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-colors"
+          className="flex-1 flex items-center justify-center bg-[#efd957] hover:bg-[#d0b53f] active:bg-[#b89c2e] text-white transition-colors"
           onClick={(e) => { e.stopPropagation(); close(); onOpen(); }}
           aria-label="View full page"
         >
