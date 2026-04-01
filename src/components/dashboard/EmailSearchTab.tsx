@@ -1090,7 +1090,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                                   ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
                                     <ul className="list-none space-y-0.5">
                                       {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
-                                        <li key={i} className="flex items-center gap-1 min-w-0">
+                                        <li key={`${i}-${name}`} className="flex items-center gap-1 min-w-0">
                                           <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
                                           <span className="truncate">{name}</span>
                                         </li>
@@ -1442,7 +1442,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                           : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
                             <ul className="list-none space-y-0.5">
                               {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
-                                <li key={i} className="flex items-center gap-1 min-w-0">
+                                <li key={`${i}-${name}`} className="flex items-center gap-1 min-w-0">
                                   <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
                                   <span className="truncate">{name}</span>
                                 </li>
