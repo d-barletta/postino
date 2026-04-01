@@ -369,7 +369,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   // Integrate the fullscreen email dialog with browser history.
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
