@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { toast } from 'sonner';
 import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -368,7 +369,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Integrate the fullscreen email dialog with browser history.
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
@@ -580,7 +581,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const handleDeleteEmail = useCallback(async () => {
     if (!deleteEmailId || !firebaseUser) return;
     setDeleting(true);
-    setDeleteError(false);
     try {
       const token = await firebaseUser.getIdToken();
       const res = await fetch(`/api/email/${deleteEmailId}`, {
@@ -594,11 +594,13 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         setDeleteEmailId(null);
       } else {
         console.error('Failed to delete email:', await res.text());
-        setDeleteError(true);
+        toast.error(t.dashboard.emailHistory.deleteEmailError);
+        setDeleteEmailId(null);
       }
     } catch (err) {
       console.error('Failed to delete email:', err);
-      setDeleteError(true);
+      toast.error(t.dashboard.emailHistory.deleteEmailError);
+      setDeleteEmailId(null);
     } finally {
       setDeleting(false);
     }
@@ -1486,22 +1488,17 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
       />
 
       {/* Delete confirmation drawer */}
-      <Drawer open={!!deleteEmailId} onOpenChange={(open) => { if (!open) { setDeleteEmailId(null); setDeleteError(false); } }}>
+      <Drawer open={!!deleteEmailId} onOpenChange={(open) => { if (!open) { setDeleteEmailId(null); } }}>
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>{t.dashboard.emailHistory.deleteEmail}</DrawerTitle>
             <DrawerDescription>{t.dashboard.emailHistory.deleteEmailConfirm}</DrawerDescription>
           </DrawerHeader>
-          {deleteError && (
-            <p className="px-4 pb-2 text-sm text-red-600 dark:text-red-400">
-              {t.dashboard.emailHistory.deleteEmailError}
-            </p>
-          )}
           <DrawerFooter className="pb-8">
             <Button variant="danger" onClick={handleDeleteEmail} disabled={deleting}>
               {deleting ? '…' : t.dashboard.emailHistory.deleteEmail}
             </Button>
-            <Button variant="ghost" onClick={() => { setDeleteEmailId(null); setDeleteError(false); }} disabled={deleting}>
+            <Button variant="ghost" onClick={() => { setDeleteEmailId(null); }} disabled={deleting}>
               {t.dashboard.rules.cancel}
             </Button>
           </DrawerFooter>

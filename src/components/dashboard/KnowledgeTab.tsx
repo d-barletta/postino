@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -226,7 +227,6 @@ export function KnowledgeTab() {
   const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string; aliases?: string[] } | null>(null);
   const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const mergeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Entity merges
   const [merges, setMerges] = useState<EntityMerge[]>([]);
@@ -235,18 +235,8 @@ export function KnowledgeTab() {
   const [selectedChips, setSelectedChips] = useState<SelectedChip[]>([]);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showManageMerges, setShowManageMerges] = useState(false);
-  const [mergeActionMessage, setMergeActionMessage] = useState<string | null>(null);
   const [pendingDeleteMerge, setPendingDeleteMerge] = useState<EntityMerge | null>(null);
   const [deletingMerge, setDeletingMerge] = useState(false);
-
-  // Clear any pending merge message timer when the component unmounts.
-  useEffect(() => {
-    return () => {
-      if (mergeMessageTimerRef.current !== null) {
-        clearTimeout(mergeMessageTimerRef.current);
-      }
-    };
-  }, []);
 
   // Integrate the fullscreen email dialog with browser history.
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
@@ -366,9 +356,7 @@ export function KnowledgeTab() {
       await Promise.all([fetchKnowledge(), fetchMerges()]);
       setMergeMode(false);
       setSelectedChips([]);
-      setMergeActionMessage(k.mergeCreated);
-      if (mergeMessageTimerRef.current !== null) clearTimeout(mergeMessageTimerRef.current);
-      mergeMessageTimerRef.current = setTimeout(() => setMergeActionMessage(null), 3000);
+      toast.success(k.mergeCreated);
     },
     [firebaseUser, fetchKnowledge, fetchMerges, k],
   );
@@ -384,9 +372,7 @@ export function KnowledgeTab() {
           headers: { Authorization: `Bearer ${token}` },
         });
         await Promise.all([fetchKnowledge(), fetchMerges()]);
-        setMergeActionMessage(k.mergeDeleted);
-        if (mergeMessageTimerRef.current !== null) clearTimeout(mergeMessageTimerRef.current);
-        mergeMessageTimerRef.current = setTimeout(() => setMergeActionMessage(null), 3000);
+        toast.success(k.mergeDeleted);
       } finally {
         setDeletingMerge(false);
         setPendingDeleteMerge(null);
@@ -469,10 +455,7 @@ export function KnowledgeTab() {
               )}
             </Button>
           )}
-        {/* Action message */}
-        {mergeActionMessage && (
-          <p className="mt-2 text-xs text-green-600 dark:text-green-400">{mergeActionMessage}</p>
-        )}
+        {/* Action message removed — now using toast notifications */}
       </CardHeader>
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}

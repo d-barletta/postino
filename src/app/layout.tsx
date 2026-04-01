@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ClientProviders } from '@/components/auth/ClientProviders';
 import { AppFooter } from '@/components/layout/AppFooter';
+import { Toaster } from '@/components/ui/Sonner';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppFooter />
           </ClientProviders>
         </div>
+        <Toaster richColors position="bottom-right" />
         <Analytics />
         <SpeedInsights />
       </body>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { RefreshCw, Play, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -136,13 +137,13 @@ export default function EmailJobsLiveTab() {
       });
 
       if (!res.ok) {
-        setError('Failed to process queue batch');
+        toast.error('Failed to process queue batch');
         return;
       }
 
       await fetchOverview(true);
     } catch {
-      setError('Failed to process queue batch');
+      toast.error('Failed to process queue batch');
     } finally {
       setProcessingNow(false);
     }
@@ -163,15 +164,14 @@ export default function EmailJobsLiveTab() {
       });
 
       if (!res.ok) {
-        setError('Failed to update Mailgun webhook logging setting');
+        toast.error('Failed to update Mailgun webhook logging setting');
         return;
       }
 
       setData((prev) => (prev ? { ...prev, webhookLoggingEnabled: enabled } : prev));
-      setError('');
       await fetchOverview(true);
     } catch {
-      setError('Failed to update Mailgun webhook logging setting');
+      toast.error('Failed to update Mailgun webhook logging setting');
     } finally {
       setLoggingSaving(false);
     }
@@ -196,14 +196,13 @@ export default function EmailJobsLiveTab() {
       });
 
       if (!res.ok) {
-        setError('Failed to clear Mailgun webhook request logs');
+        toast.error('Failed to clear Mailgun webhook request logs');
         return;
       }
 
-      setError('');
       await fetchOverview(true);
     } catch {
-      setError('Failed to clear Mailgun webhook request logs');
+      toast.error('Failed to clear Mailgun webhook request logs');
     } finally {
       setClearingLogs(false);
     }
