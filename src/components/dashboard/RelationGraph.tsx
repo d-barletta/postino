@@ -142,6 +142,7 @@ function CytoscapeCanvas({
         style: [
           {
             selector: 'node',
+            // shadow-* props are valid Cytoscape runtime properties but absent from @types/cytoscape
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style: {
               'background-color': (ele: cytoscape.NodeSingular) =>
@@ -211,6 +212,7 @@ function CytoscapeCanvas({
           },
           {
             selector: '.node-selected',
+            // shadow-* props are valid Cytoscape runtime properties but absent from @types/cytoscape
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style: {
               'border-color': '#efd957',
