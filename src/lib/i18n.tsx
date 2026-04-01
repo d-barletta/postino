@@ -723,7 +723,7 @@ const translations: Record<Locale, Translations> = {
         senderNewsletter: 'Newsletter',
       },
       knowledge: {
-        title: 'Email Knowledge',
+        title: 'Explore emails',
         subtitle: 'Explore topics, people and organizations from your emails',
         allCategories: 'All',
         topics: 'Topics',
@@ -1167,7 +1167,7 @@ const translations: Record<Locale, Translations> = {
         senderNewsletter: 'Newsletter',
       },
       knowledge: {
-        title: 'Conoscenza Email',
+        title: 'Esplora email',
         subtitle: 'Esplora argomenti, persone e organizzazioni dalle tue email',
         allCategories: 'Tutti',
         topics: 'Argomenti',
@@ -1607,7 +1607,7 @@ const translations: Record<Locale, Translations> = {
         senderNewsletter: 'Newsletter',
       },
       knowledge: {
-        title: 'Conocimiento Email',
+        title: 'Explorar emails',
         subtitle: 'Explora temas, personas y organizaciones de tus correos',
         allCategories: 'Todo',
         topics: 'Temas',
@@ -2047,7 +2047,7 @@ const translations: Record<Locale, Translations> = {
         senderNewsletter: 'Newsletter',
       },
       knowledge: {
-        title: 'Connaissance Email',
+        title: 'Explorer les emails',
         subtitle: 'Explorez les sujets, personnes et organisations de vos emails',
         allCategories: 'Tout',
         topics: 'Sujets',
@@ -2487,7 +2487,7 @@ const translations: Record<Locale, Translations> = {
         senderNewsletter: 'Newsletter',
       },
       knowledge: {
-        title: 'E-Mail-Wissen',
+        title: 'E-Mails erkunden',
         subtitle: 'Erkunden Sie Themen, Personen und Organisationen aus Ihren E-Mails',
         allCategories: 'Alle',
         topics: 'Themen',
