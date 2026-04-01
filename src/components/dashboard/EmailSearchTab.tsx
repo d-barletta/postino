@@ -47,6 +47,7 @@ import {
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
 import { useModalHistory } from '@/hooks/useModalHistory';
+import { AttachmentList } from '@/components/dashboard/AttachmentList';
 
 const PAGE_SIZE = 20;
 const ALL_VALUE = '__all__';
@@ -1088,14 +1089,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                                   {emailData?.loading ? (
                                     <span className="text-gray-400">{'\u2026'}</span>
                                   ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-                                    <ul className="list-none space-y-0.5">
-                                      {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
-                                        <li key={`${i}-${name}`} className="flex items-center gap-1 min-w-0">
-                                          <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
-                                          <span className="truncate">{name}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
+                                    <AttachmentList names={emailData?.attachmentNames ?? log.attachmentNames ?? []} />
                                   ) : (
                                     <span className="text-gray-400">{t.dashboard.emailHistory.noAttachmentsShort}</span>
                                   )}
@@ -1440,14 +1434,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                         <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
                           {emailData?.loading ? <span className="text-gray-400">{'…'}</span>
                           : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-                            <ul className="list-none space-y-0.5">
-                              {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
-                                <li key={`${i}-${name}`} className="flex items-center gap-1 min-w-0">
-                                  <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
-                                  <span className="truncate">{name}</span>
-                                </li>
-                              ))}
-                            </ul>
+                            <AttachmentList names={emailData?.attachmentNames ?? log.attachmentNames ?? []} />
                           ) : <span className="text-gray-400">{t.dashboard.emailHistory.noAttachmentsShort}</span>}
                         </dd>
                       </dl>

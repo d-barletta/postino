@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { processEmailWithAgent } from '@/lib/agent';
 import type { RuleForProcessing } from '@/lib/openrouter';
-
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  const decoded = await adminAuth().verifyIdToken(token);
-  const db = adminDb();
-  const userSnap = await db.collection('users').doc(decoded.uid).get();
-  if (!userSnap.data()?.isAdmin) throw new Error('Forbidden');
-  return decoded;
-}
+import { verifyAdminRequest } from '@/lib/api-auth';
 
 /** Returns true if the value contains the pattern (case-insensitive), or if pattern is empty. */
 function matchesPattern(value: string, pattern?: string): boolean {
@@ -25,7 +15,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await verifyAdmin(request);
+    await verifyAdminRequest(request);
 
     const { id } = await params;
     const db = adminDb();

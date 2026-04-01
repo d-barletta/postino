@@ -1,26 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
+import { verifyAdminRequest } from '@/lib/api-auth';
 
 type TestEmailPayload = {
   to?: string;
 };
-
-type DecodedAdmin = {
-  uid: string;
-  email?: string;
-};
-
-async function verifyAdmin(request: NextRequest): Promise<DecodedAdmin> {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  const decoded = await adminAuth().verifyIdToken(token);
-  const db = adminDb();
-  const userSnap = await db.collection('users').doc(decoded.uid).get();
-  if (!userSnap.data()?.isAdmin) throw new Error('Forbidden');
-  return { uid: decoded.uid, email: decoded.email };
-}
 
 function trimString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -38,7 +22,7 @@ function bufferToArrayBuffer(buf: Buffer): ArrayBuffer {
 
 export async function POST(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
+    const admin = await verifyAdminRequest(request);
     const body = (await request.json().catch(() => ({}))) as TestEmailPayload;
 
     const recipient = trimString(body.to) || admin.email || '';

@@ -1,24 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyAdminRequest } from '@/lib/api-auth';
 
 const MAX_PAGE_SIZE = 500;
 const DEFAULT_PAGE_SIZE = 100;
 
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  const decoded = await adminAuth().verifyIdToken(token);
-
-  const db = adminDb();
-  const userSnap = await db.collection('users').doc(decoded.uid).get();
-  if (!userSnap.data()?.isAdmin) throw new Error('Forbidden');
-  return decoded;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    await verifyAdmin(request);
+    await verifyAdminRequest(request);
     const db = adminDb();
     const { searchParams } = new URL(request.url);
 

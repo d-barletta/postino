@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { getOpenRouterClient } from '@/lib/openrouter';
-
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  const decoded = await adminAuth().verifyIdToken(token);
-  const db = adminDb();
-  const userSnap = await db.collection('users').doc(decoded.uid).get();
-  if (!userSnap.data()?.isAdmin) throw new Error('Forbidden');
-  return decoded;
-}
+import { verifyAdminRequest } from '@/lib/api-auth';
 
 function maskKey(key: string): string {
   if (!key) return '(empty)';
@@ -21,7 +10,7 @@ function maskKey(key: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    await verifyAdmin(request);
+    await verifyAdminRequest(request);
 
     const { client, model, apiKey } = await getOpenRouterClient();
 
