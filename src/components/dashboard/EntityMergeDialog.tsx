@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -131,7 +132,11 @@ export function EntityMergeDialog({
               disabled={loading || !canonical.trim()}
               className="bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
             >
-              {k.createMerge}
+              {loading ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                k.createMerge
+              )}
             </Button>
           </div>
         </form>
