@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,8 +20,14 @@ export function RelationsTab() {
     graph,
     loading,
     generating,
+    fetchGraph,
     generateGraph,
   } = useRelationGraph(firebaseUser);
+
+  // Load any previously-generated (cached) graph on first render
+  useEffect(() => {
+    fetchGraph();
+  }, [fetchGraph]);
 
   const [modalChip, setModalChip] = useState<{
     value: string;
