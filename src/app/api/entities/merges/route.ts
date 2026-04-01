@@ -31,20 +31,15 @@ export async function GET(request: NextRequest) {
     const snap = await db
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
+      .orderBy('createdAt', 'desc')
       .limit(500)
       .get();
 
-    const merges = snap.docs
-      .map((d) => ({
-        id: d.id,
-        ...d.data(),
-        createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
-      }))
-      .sort((a, b) => {
-        if (!a.createdAt) return 1;
-        if (!b.createdAt) return -1;
-        return a.createdAt < b.createdAt ? 1 : -1;
-      });
+    const merges = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+      createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
+    }));
 
     return NextResponse.json({ merges });
   } catch {
