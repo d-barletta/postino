@@ -426,22 +426,6 @@ export function KnowledgeTab() {
                 <GitMerge className="h-4 w-4" />
               </Button>
             )}
-            {merges.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowManageMerges((v) => !v)}
-                aria-label={k.manageMerges}
-                className="gap-1.5 text-xs"
-              >
-                {k.manageMerges}
-                {showManageMerges ? (
-                  <ChevronUp className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            )}
             <Button
               variant="ghost"
               size="sm"
@@ -453,7 +437,22 @@ export function KnowledgeTab() {
             </Button>
           </div>
         </div>
-
+          {merges.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowManageMerges((v) => !v)}
+              aria-label={k.manageMerges}
+              className="gap-1.5 text-xs"
+            >
+              {k.manageMerges}
+              {showManageMerges ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          )}
         {/* Action message */}
         {mergeActionMessage && (
           <p className="mt-2 text-xs text-green-600 dark:text-green-400">{mergeActionMessage}</p>
