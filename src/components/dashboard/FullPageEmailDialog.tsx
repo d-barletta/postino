@@ -73,7 +73,7 @@ export function FullPageEmailDialog({
           </DialogTitle>
           <DialogClose asChild>
             <Button size="sm" className="shrink-0">
-              {t.emailOriginal.closeFullPageView}
+              {t.dashboard.rules.close}
             </Button>
           </DialogClose>
         </DialogFooter>

@@ -464,16 +464,8 @@ export function KnowledgeTab() {
               </span>
             )}
           </div>
-          {/* Action buttons always on their own row */}
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              disabled={!canMergeSelected}
-              onClick={() => setShowMergeDialog(true)}
-              className="h-7 text-xs bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
-            >
-              {k.mergeSelected}
-            </Button>
+          {/* Action buttons always on their own row, right-aligned, Cancel first */}
+          <div className="flex justify-end gap-2">
             <Button
               size="sm"
               variant="ghost"
@@ -481,6 +473,14 @@ export function KnowledgeTab() {
               onClick={toggleMergeMode}
             >
               {k.cancelMerge}
+            </Button>
+            <Button
+              size="sm"
+              disabled={!canMergeSelected}
+              onClick={() => setShowMergeDialog(true)}
+              className="h-7 text-xs bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
+            >
+              {k.mergeSelected}
             </Button>
           </div>
         </div>
