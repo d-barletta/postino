@@ -450,18 +450,22 @@ export function KnowledgeTab() {
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}
       {mergeMode && (
-        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
-          <span className="min-w-0">
-            {selectedChips.length > 0
-              ? k.xSelected.replace('{count}', String(selectedChips.length))
-              : k.mergeMode}
-          </span>
-          <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="sticky top-16 z-10 flex flex-col gap-1.5 border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
+          {/* Status + warning (truncated) */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0">
+              {selectedChips.length > 0
+                ? k.xSelected.replace('{count}', String(selectedChips.length))
+                : k.mergeMode}
+            </span>
             {selectedChips.length >= 2 && !canMergeSelected && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 self-center">
+              <span className="text-xs text-gray-500 dark:text-gray-400 truncate min-w-0">
                 {k.mergeSameCategoryWarning}
               </span>
             )}
+          </div>
+          {/* Action buttons always on their own row */}
+          <div className="flex gap-2">
             <Button
               size="sm"
               disabled={!canMergeSelected}
