@@ -55,7 +55,7 @@ interface WebhookRequestLog {
   details: unknown;
 }
 
-const REFRESH_MS = 5000;
+const REFRESH_MS = 15000;
 
 function formatDate(value: string | null): string {
   if (!value) return '—';

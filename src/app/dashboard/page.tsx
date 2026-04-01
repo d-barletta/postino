@@ -142,7 +142,7 @@ export default function DashboardPage() {
     if (!firebaseUser) { setLogsLoading(false); return; }
     setLogsLoading(true);
     Promise.all([fetchLogs(), fetchStats()]).finally(() => setLogsLoading(false));
-  }, [firebaseUser, fetchLogs, fetchStats]);
+  }, [firebaseUser]); // fetchLogs and fetchStats are derived from firebaseUser — no separate dep needed
 
   const handleLogsRefresh = useCallback(async () => {
     await Promise.all([fetchLogs(), fetchStats()]);
