@@ -23,6 +23,14 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from '@/components/ui/Drawer';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { EntityMergeDialog } from '@/components/dashboard/EntityMergeDialog';
@@ -228,6 +236,8 @@ export function KnowledgeTab() {
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showManageMerges, setShowManageMerges] = useState(false);
   const [mergeActionMessage, setMergeActionMessage] = useState<string | null>(null);
+  const [pendingDeleteMerge, setPendingDeleteMerge] = useState<EntityMerge | null>(null);
+  const [deletingMerge, setDeletingMerge] = useState(false);
 
   // Clear any pending merge message timer when the component unmounts.
   useEffect(() => {
@@ -364,19 +374,25 @@ export function KnowledgeTab() {
   );
 
   const handleDeleteMerge = useCallback(
-    async (id: string) => {
-      if (!firebaseUser) return;
-      const token = await firebaseUser.getIdToken();
-      await fetch(`/api/entities/merges/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      await Promise.all([fetchKnowledge(), fetchMerges()]);
-      setMergeActionMessage(k.mergeDeleted);
-      if (mergeMessageTimerRef.current !== null) clearTimeout(mergeMessageTimerRef.current);
-      mergeMessageTimerRef.current = setTimeout(() => setMergeActionMessage(null), 3000);
+    async () => {
+      if (!firebaseUser || !pendingDeleteMerge) return;
+      setDeletingMerge(true);
+      try {
+        const token = await firebaseUser.getIdToken();
+        await fetch(`/api/entities/merges/${pendingDeleteMerge.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        await Promise.all([fetchKnowledge(), fetchMerges()]);
+        setMergeActionMessage(k.mergeDeleted);
+        if (mergeMessageTimerRef.current !== null) clearTimeout(mergeMessageTimerRef.current);
+        mergeMessageTimerRef.current = setTimeout(() => setMergeActionMessage(null), 3000);
+      } finally {
+        setDeletingMerge(false);
+        setPendingDeleteMerge(null);
+      }
     },
-    [firebaseUser, fetchKnowledge, fetchMerges, k],
+    [firebaseUser, pendingDeleteMerge, fetchKnowledge, fetchMerges, k],
   );
 
   const hasAnyData =
@@ -508,9 +524,9 @@ export function KnowledgeTab() {
             ) : merges.length === 0 ? (
               <p className="text-xs text-gray-400 dark:text-gray-500">{k.noMerges}</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {merges.map((m) => (
-                  <li key={m.id} className="flex items-start justify-between gap-2 text-xs">
+                  <li key={m.id} className="flex items-start justify-between gap-2 text-xs py-2 first:pt-0 last:pb-0">
                     <div className="flex-1 min-w-0">
                       <span className="font-medium text-gray-800 dark:text-gray-200">{m.canonical}</span>
                       <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
@@ -521,11 +537,11 @@ export function KnowledgeTab() {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleDeleteMerge(m.id)}
-                      className="shrink-0 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                      onClick={() => setPendingDeleteMerge(m)}
+                      className="p-1.5 rounded text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
                       aria-label={k.deleteMerge}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </li>
                 ))}
@@ -683,6 +699,28 @@ export function KnowledgeTab() {
           onMerge={handleCreateMerge}
         />
       )}
+
+      {/* Delete merge confirmation drawer */}
+      <Drawer open={!!pendingDeleteMerge} onOpenChange={(open) => { if (!open) setPendingDeleteMerge(null); }}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{k.deleteMerge}</DrawerTitle>
+            <DrawerDescription>
+              {k.deleteConfirm}{' '}
+              <span className="font-semibold text-gray-900 dark:text-gray-100">&ldquo;{pendingDeleteMerge?.canonical}&rdquo;</span>?
+              {' '}{k.cannotBeUndone}
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter className="pb-8">
+            <Button variant="danger" onClick={handleDeleteMerge} disabled={deletingMerge}>
+              {deletingMerge ? '…' : k.deleteMerge}
+            </Button>
+            <Button variant="ghost" onClick={() => setPendingDeleteMerge(null)} disabled={deletingMerge}>
+              {k.cancelMerge}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </Card>
   );
 }

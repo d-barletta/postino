@@ -304,12 +304,14 @@ export interface Translations {
       manageMerges: string;
       noMerges: string;
       deleteMerge: string;
+      deleteConfirm: string;
       mergesTitle: string;
       mergesDesc: string;
       xSelected: string;
       mergedFrom: string;
       mergeCreated: string;
       mergeDeleted: string;
+      cannotBeUndone: string;
     };
     rules: {
       yourRules: string;
@@ -752,12 +754,14 @@ const translations: Record<Locale, Translations> = {
         manageMerges: 'Manage merges',
         noMerges: 'No merges defined yet.',
         deleteMerge: 'Delete merge',
+        deleteConfirm: 'Are you sure you want to delete',
         mergesTitle: 'Entity Merges',
         mergesDesc: 'Entities you have merged are shown as a single item in the knowledge view.',
         xSelected: '{count} selected',
         mergedFrom: 'Merged from',
         mergeCreated: 'Merge created',
         mergeDeleted: 'Merge deleted',
+        cannotBeUndone: 'This action cannot be undone.',
       },
       rules: {
         yourRules: 'Your Rules',
@@ -1194,12 +1198,14 @@ const translations: Record<Locale, Translations> = {
         manageMerges: 'Gestisci unioni',
         noMerges: 'Nessuna unione definita.',
         deleteMerge: 'Elimina unione',
+        deleteConfirm: 'Sei sicuro di voler eliminare',
         mergesTitle: 'Unioni di entità',
         mergesDesc: 'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
         xSelected: '{count} selezionati',
         mergedFrom: 'Unito da',
         mergeCreated: 'Unione creata',
         mergeDeleted: 'Unione eliminata',
+        cannotBeUndone: 'Questa azione non può essere annullata.',
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1632,12 +1638,14 @@ const translations: Record<Locale, Translations> = {
         manageMerges: 'Gestionar fusiones',
         noMerges: 'No hay fusiones definidas.',
         deleteMerge: 'Eliminar fusión',
+        deleteConfirm: '¿Estás seguro de que quieres eliminar',
         mergesTitle: 'Fusiones de entidades',
         mergesDesc: 'Las entidades fusionadas se muestran como un único elemento en la vista de conocimiento.',
         xSelected: '{count} seleccionados',
         mergedFrom: 'Fusionado de',
         mergeCreated: 'Fusión creada',
         mergeDeleted: 'Fusión eliminada',
+        cannotBeUndone: 'Esta acción no se puede deshacer.',
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -2070,12 +2078,14 @@ const translations: Record<Locale, Translations> = {
         manageMerges: 'Gérer les fusions',
         noMerges: 'Aucune fusion définie.',
         deleteMerge: 'Supprimer la fusion',
+        deleteConfirm: 'Êtes-vous sûr de vouloir supprimer',
         mergesTitle: 'Fusions d\'entités',
         mergesDesc: 'Les entités fusionnées apparaissent comme un seul élément dans la vue de connaissance.',
         xSelected: '{count} sélectionnés',
         mergedFrom: 'Fusionné depuis',
         mergeCreated: 'Fusion créée',
         mergeDeleted: 'Fusion supprimée',
+        cannotBeUndone: 'Cette action est irréversible.',
       },
       rules: {
         yourRules: 'Vos règles',
@@ -2508,12 +2518,14 @@ const translations: Record<Locale, Translations> = {
         manageMerges: 'Zusammenführungen verwalten',
         noMerges: 'Keine Zusammenführungen definiert.',
         deleteMerge: 'Zusammenführung löschen',
+        deleteConfirm: 'Sind Sie sicher, dass Sie löschen möchten',
         mergesTitle: 'Entitätszusammenführungen',
         mergesDesc: 'Zusammengeführte Entitäten werden in der Wissensansicht als ein Element angezeigt.',
         xSelected: '{count} ausgewählt',
         mergedFrom: 'Zusammengeführt aus',
         mergeCreated: 'Zusammenführung erstellt',
         mergeDeleted: 'Zusammenführung gelöscht',
+        cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
       },
       rules: {
         yourRules: 'Ihre Regeln',
