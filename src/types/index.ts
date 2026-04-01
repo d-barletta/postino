@@ -232,6 +232,35 @@ export interface UserMemory {
 /** Category of an entity that can be merged. */
 export type EntityCategory = 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags';
 
+/** Category used for entity graph nodes (same values as EntityCategory). */
+export type EntityGraphNodeCategory = EntityCategory;
+
+/** A node in the entity relation graph. */
+export interface EntityGraphNode {
+  id: string;
+  label: string;
+  category: EntityGraphNodeCategory;
+  count: number;
+}
+
+/** An edge connecting two nodes in the entity relation graph. */
+export interface EntityGraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  /** Number of emails in which both endpoints co-occurred. */
+  weight: number;
+}
+
+/** Full entity relation graph computed from email analysis data. */
+export interface EntityRelationGraph {
+  nodes: EntityGraphNode[];
+  edges: EntityGraphEdge[];
+  /** ISO date string of when the graph was last generated. */
+  generatedAt: string;
+  totalEmails: number;
+}
+
 /**
  * Represents a user-defined merge of two or more entity values into a single
  * canonical name.  All `aliases` (including the canonical itself) are treated

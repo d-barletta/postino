@@ -23,6 +23,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  Share2,
 } from 'lucide-react';
 import {
   Drawer,
@@ -35,8 +36,9 @@ import {
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { EntityMergeDialog } from '@/components/dashboard/EntityMergeDialog';
+import { RelationGraph, useRelationGraph } from '@/components/dashboard/RelationGraph';
 import { useModalHistory } from '@/hooks/useModalHistory';
-import type { EntityMerge, EntityCategory } from '@/types';
+import type { EntityMerge, EntityCategory, EntityGraphNodeCategory } from '@/types';
 
 interface KnowledgeItem {
   value: string;
@@ -228,6 +230,18 @@ export function KnowledgeTab() {
   const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // View toggle: explore (chips) vs. relation graph
+  const [view, setView] = useState<'explore' | 'relations'>('explore');
+
+  // Relation graph
+  const {
+    graph: relationGraph,
+    loading: graphLoading,
+    generating: graphGenerating,
+    fetchGraph,
+    generateGraph,
+  } = useRelationGraph(firebaseUser);
+
   // Entity merges
   const [merges, setMerges] = useState<EntityMerge[]>([]);
   const [mergesLoading, setMergesLoading] = useState(false);
@@ -281,6 +295,30 @@ export function KnowledgeTab() {
     fetchKnowledge();
     fetchMerges();
   }, [fetchKnowledge, fetchMerges]);
+
+  // Fetch cached graph when switching to the relations view
+  const handleSwitchToRelations = useCallback(() => {
+    setView('relations');
+    if (!relationGraph && !graphLoading) {
+      fetchGraph();
+    }
+  }, [relationGraph, graphLoading, fetchGraph]);
+
+  const handleSwitchToExplore = useCallback(() => {
+    setView('explore');
+  }, []);
+
+  const handleNodeClick = useCallback(
+    (label: string, category: EntityGraphNodeCategory) => {
+      const catKey = category as CategoryKey;
+      const catLabel =
+        catKey === 'all'
+          ? k.allCategories
+          : (k[catKey as keyof typeof k] as string ?? category);
+      setModalChip({ value: label, category, label: catLabel });
+    },
+    [k],
+  );
 
   /** Set of "category:canonical" for merged entities (to show the merge icon). */
   const mergedCanonicals = useMemo(
@@ -405,19 +443,49 @@ export function KnowledgeTab() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {k.title}
+              {view === 'relations' ? k.relations.title : k.title}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {k.subtitle}
+              {view === 'relations' ? k.relations.subtitle : k.subtitle}
             </p>
-            {data && (
+            {view === 'explore' && data && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 {k.emailsAnalyzed.replace('{count}', String(data.totalEmails))}
               </p>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {hasAnyData && (
+            {/* View toggle buttons */}
+            <button
+              onClick={handleSwitchToExplore}
+              aria-label={k.relations.exploreToggle}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all border shrink-0',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
+                view === 'explore'
+                  ? 'bg-[#efd957] border-[#efd957] text-black shadow-sm'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#efd957]/60',
+              )}
+            >
+              <Sparkles className="h-3 w-3 shrink-0" />
+              {k.relations.exploreToggle}
+            </button>
+            <button
+              onClick={handleSwitchToRelations}
+              aria-label={k.relations.viewToggle}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all border shrink-0',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
+                view === 'relations'
+                  ? 'bg-[#efd957] border-[#efd957] text-black shadow-sm'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#efd957]/60',
+              )}
+            >
+              <Share2 className="h-3 w-3 shrink-0" />
+              {k.relations.viewToggle}
+            </button>
+
+            {view === 'explore' && hasAnyData && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -428,18 +496,20 @@ export function KnowledgeTab() {
                 <GitMerge className="h-4 w-4" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { fetchKnowledge(); fetchMerges(); }}
-              disabled={loading}
-              aria-label="Refresh"
-            >
-              <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-            </Button>
+            {view === 'explore' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { fetchKnowledge(); fetchMerges(); }}
+                disabled={loading}
+                aria-label="Refresh"
+              >
+                <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+              </Button>
+            )}
           </div>
         </div>
-          {merges.length > 0 && (
+          {view === 'explore' && merges.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -459,7 +529,7 @@ export function KnowledgeTab() {
       </CardHeader>
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}
-      {mergeMode && (
+      {view === 'explore' && mergeMode && (
         <div className="sticky top-16 z-10 flex flex-col gap-1.5 border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
           {/* Status + warning (truncated) */}
           <div className="flex items-center gap-2 min-w-0">
@@ -497,6 +567,33 @@ export function KnowledgeTab() {
       )}
 
       <CardContent className="space-y-5">
+        {/* --------------------------------------------------------------- */}
+        {/* RELATION MAP VIEW                                                */}
+        {/* --------------------------------------------------------------- */}
+        {view === 'relations' && (
+          <RelationGraph
+            graph={relationGraph}
+            loading={graphLoading}
+            generating={graphGenerating}
+            onGenerate={generateGraph}
+            onNodeClick={handleNodeClick}
+            translations={{
+              ...k.relations,
+              topics: k.topics,
+              people: k.people,
+              organizations: k.organizations,
+              places: k.places,
+              events: k.events,
+              tags: k.tags,
+            }}
+          />
+        )}
+
+        {/* --------------------------------------------------------------- */}
+        {/* EXPLORE VIEW (chips)                                             */}
+        {/* --------------------------------------------------------------- */}
+        {view === 'explore' && (
+          <>
         {/* Manage merges panel */}
         {showManageMerges && (
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3">
@@ -650,6 +747,8 @@ export function KnowledgeTab() {
             </div>
           );
         })()}
+          </>
+        )}
       </CardContent>
 
       {modalChip && (

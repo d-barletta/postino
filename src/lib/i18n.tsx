@@ -312,6 +312,22 @@ export interface Translations {
       mergeCreated: string;
       mergeDeleted: string;
       cannotBeUndone: string;
+      relations: {
+        viewToggle: string;
+        exploreToggle: string;
+        title: string;
+        subtitle: string;
+        generate: string;
+        generating: string;
+        regenerate: string;
+        noGraph: string;
+        noGraphDesc: string;
+        generatedOn: string;
+        totalEmails: string;
+        error: string;
+        nodeClickHint: string;
+        legend: string;
+      };
     };
     rules: {
       yourRules: string;
@@ -762,6 +778,22 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Merge created',
         mergeDeleted: 'Merge deleted',
         cannotBeUndone: 'This action cannot be undone.',
+        relations: {
+          viewToggle: 'Relation Map',
+          exploreToggle: 'Explore',
+          title: 'Relation Map',
+          subtitle: 'Connections between entities discovered across your emails',
+          generate: 'Generate Relations',
+          generating: 'Generating…',
+          regenerate: 'Regenerate',
+          noGraph: 'No relation map yet',
+          noGraphDesc: 'Click "Generate Relations" to discover connections between entities in your emails.',
+          generatedOn: 'Generated on {date}',
+          totalEmails: 'Based on {count} emails',
+          error: 'Failed to generate relations',
+          nodeClickHint: 'Click a node to explore related emails',
+          legend: 'Legend',
+        },
       },
       rules: {
         yourRules: 'Your Rules',
@@ -1206,6 +1238,22 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Unione creata',
         mergeDeleted: 'Unione eliminata',
         cannotBeUndone: 'Questa azione non può essere annullata.',
+        relations: {
+          viewToggle: 'Mappa relazioni',
+          exploreToggle: 'Esplora',
+          title: 'Mappa relazioni',
+          subtitle: 'Connessioni tra entità scoperte nelle tue email',
+          generate: 'Genera relazioni',
+          generating: 'Generazione…',
+          regenerate: 'Rigenera',
+          noGraph: 'Nessuna mappa relazioni',
+          noGraphDesc: 'Clicca "Genera relazioni" per scoprire le connessioni tra le entità nelle tue email.',
+          generatedOn: 'Generata il {date}',
+          totalEmails: 'Basato su {count} email',
+          error: 'Generazione relazioni non riuscita',
+          nodeClickHint: 'Clicca su un nodo per esplorare le email correlate',
+          legend: 'Legenda',
+        },
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1646,6 +1694,22 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Fusión creada',
         mergeDeleted: 'Fusión eliminada',
         cannotBeUndone: 'Esta acción no se puede deshacer.',
+        relations: {
+          viewToggle: 'Mapa de relaciones',
+          exploreToggle: 'Explorar',
+          title: 'Mapa de relaciones',
+          subtitle: 'Conexiones entre entidades descubiertas en tus correos',
+          generate: 'Generar relaciones',
+          generating: 'Generando…',
+          regenerate: 'Regenerar',
+          noGraph: 'Sin mapa de relaciones',
+          noGraphDesc: 'Haz clic en "Generar relaciones" para descubrir conexiones entre entidades de tus correos.',
+          generatedOn: 'Generado el {date}',
+          totalEmails: 'Basado en {count} correos',
+          error: 'Error al generar relaciones',
+          nodeClickHint: 'Haz clic en un nodo para explorar correos relacionados',
+          legend: 'Leyenda',
+        },
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -2086,6 +2150,22 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Fusion créée',
         mergeDeleted: 'Fusion supprimée',
         cannotBeUndone: 'Cette action est irréversible.',
+        relations: {
+          viewToggle: 'Carte des relations',
+          exploreToggle: 'Explorer',
+          title: 'Carte des relations',
+          subtitle: 'Connexions entre entités découvertes dans vos e-mails',
+          generate: 'Générer les relations',
+          generating: 'Génération…',
+          regenerate: 'Régénérer',
+          noGraph: 'Aucune carte des relations',
+          noGraphDesc: 'Cliquez sur "Générer les relations" pour découvrir les connexions entre entités dans vos e-mails.',
+          generatedOn: 'Générée le {date}',
+          totalEmails: 'Basé sur {count} e-mails',
+          error: 'Échec de la génération des relations',
+          nodeClickHint: 'Cliquez sur un nœud pour explorer les e-mails associés',
+          legend: 'Légende',
+        },
       },
       rules: {
         yourRules: 'Vos règles',
@@ -2526,6 +2606,22 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Zusammenführung erstellt',
         mergeDeleted: 'Zusammenführung gelöscht',
         cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
+        relations: {
+          viewToggle: 'Beziehungskarte',
+          exploreToggle: 'Erkunden',
+          title: 'Beziehungskarte',
+          subtitle: 'Verbindungen zwischen Entitäten in Ihren E-Mails',
+          generate: 'Beziehungen generieren',
+          generating: 'Generierung…',
+          regenerate: 'Neu generieren',
+          noGraph: 'Keine Beziehungskarte',
+          noGraphDesc: 'Klicken Sie auf "Beziehungen generieren", um Verbindungen zwischen Entitäten in Ihren E-Mails zu entdecken.',
+          generatedOn: 'Erstellt am {date}',
+          totalEmails: 'Basierend auf {count} E-Mails',
+          error: 'Beziehungen konnten nicht generiert werden',
+          nodeClickHint: 'Klicken Sie auf einen Knoten, um zugehörige E-Mails zu erkunden',
+          legend: 'Legende',
+        },
       },
       rules: {
         yourRules: 'Ihre Regeln',
