@@ -325,6 +325,7 @@ export function ExploreEmailsModal({
           animation="slide-from-bottom"
           className="w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
+          hideCloseButton
         >
           {/* Header with tag/category info */}
           <DialogHeader className="shrink-0 px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
@@ -333,11 +334,6 @@ export function ExploreEmailsModal({
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
                 {categoryLabel}: {term}
               </span>
-              {!loading && totalCount !== undefined && (
-                <span className="text-gray-400 dark:text-gray-500 text-xs font-normal">
-                  ({totalCount} {t.dashboard.emailHistory.results})
-                </span>
-              )}
             </DialogTitle>
             <DialogDescription className="sr-only">
               {tk.relatedEmailsDesc} {categoryLabel}: {term}
@@ -635,36 +631,59 @@ export function ExploreEmailsModal({
             )}
           </div>
 
-          {/* Pagination footer */}
-          {!loading && (hasNextPage || page > 1) && (
-            <div className="shrink-0 flex items-center justify-between px-6 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page <= 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                {t.dashboard.emailHistory.previous}
-              </Button>
-              <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2">
-                {loading && <RefreshCw className="h-3 w-3 animate-spin" />}
-                {t.dashboard.emailHistory.page} {page}
-                {totalPages !== undefined
-                  ? ` ${t.dashboard.emailHistory.of} ${totalPages}`
-                  : ''}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePageChange(page + 1)}
-                disabled={!hasNextPage}
-              >
-                {t.dashboard.emailHistory.next}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          )}
+          {/* Footer: result count + optional pagination + close button */}
+          <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+            {/* Left: result count */}
+            <span
+              role="status"
+              aria-live="polite"
+              className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5"
+            >
+              {loading
+                ? <RefreshCw className="h-3 w-3 animate-spin" />
+                : totalCount !== undefined
+                  ? <>{totalCount} {t.dashboard.emailHistory.results}</>
+                  : null}
+            </span>
+
+            {/* Center: pagination (only when needed) */}
+            {!loading && (hasNextPage || page > 1) && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  {t.dashboard.emailHistory.previous}
+                </Button>
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {t.dashboard.emailHistory.page} {page}
+                  {totalPages !== undefined ? ` ${t.dashboard.emailHistory.of} ${totalPages}` : ''}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={!hasNextPage}
+                >
+                  {t.dashboard.emailHistory.next}
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+
+            {/* Right: close button */}
+            <Button
+              size="sm"
+              onClick={onClose}
+              aria-label={t.dashboard.rules.close}
+              className="bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
+            >
+              {t.dashboard.rules.close}
+            </Button>
+          </div>
 
         </DialogContent>
       </Dialog>

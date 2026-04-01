@@ -442,45 +442,49 @@ export function KnowledgeTab() {
           </div>
         </div>
 
-        {/* Merge mode banner */}
-        {mergeMode && (
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-[#efd957]/40 bg-[#efd957]/10 px-3 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
-            <span>
-              {selectedChips.length > 0
-                ? k.xSelected.replace('{count}', String(selectedChips.length))
-                : k.mergeMode}
-            </span>
-            <div className="flex gap-2 shrink-0">
-              {selectedChips.length >= 2 && !canMergeSelected && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 self-center">
-                  {k.mergeSameCategoryWarning}
-                </span>
-              )}
-              <Button
-                size="sm"
-                disabled={!canMergeSelected}
-                onClick={() => setShowMergeDialog(true)}
-                className="h-7 text-xs bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
-              >
-                {k.mergeSelected}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
-                onClick={toggleMergeMode}
-              >
-                {k.cancelMerge}
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Action message */}
         {mergeActionMessage && (
           <p className="mt-2 text-xs text-green-600 dark:text-green-400">{mergeActionMessage}</p>
         )}
       </CardHeader>
+
+      {/* Sticky merge mode status bar (visible while scrolling through chips) */}
+      {mergeMode && (
+        <div className="sticky top-16 z-10 flex flex-col gap-1.5 border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
+          {/* Status + warning (truncated) */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0">
+              {selectedChips.length > 0
+                ? k.xSelected.replace('{count}', String(selectedChips.length))
+                : k.mergeMode}
+            </span>
+            {selectedChips.length >= 2 && !canMergeSelected && (
+              <span className="text-xs text-gray-500 dark:text-gray-400 truncate min-w-0">
+                {k.mergeSameCategoryWarning}
+              </span>
+            )}
+          </div>
+          {/* Action buttons always on their own row, right-aligned, Cancel first */}
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={toggleMergeMode}
+            >
+              {k.cancelMerge}
+            </Button>
+            <Button
+              size="sm"
+              disabled={!canMergeSelected}
+              onClick={() => setShowMergeDialog(true)}
+              className="h-7 text-xs bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
+            >
+              {k.mergeSelected}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <CardContent className="space-y-5">
         {/* Manage merges panel */}
