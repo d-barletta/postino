@@ -116,6 +116,7 @@ export interface Translations {
       emailHistory: string;
       inbox: string;
       explore: string;
+      relations: string;
       settings: string;
     };
     address: {
@@ -580,6 +581,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Email History',
         inbox: 'Inbox',
         explore: 'Explore',
+        relations: 'Relations',
         settings: 'Settings',
       },
       address: {
@@ -1040,6 +1042,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Cronologia email',
         inbox: 'In arrivo',
         explore: 'Esplora',
+        relations: 'Relazioni',
         settings: 'Impostazioni',
       },
       address: {
@@ -1496,6 +1499,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Historial de correos',
         inbox: 'Bandeja de entrada',
         explore: 'Explorar',
+        relations: 'Relaciones',
         settings: 'Configuración',
       },
       address: {
@@ -1952,6 +1956,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Historique des e-mails',
         inbox: 'Boîte de réception',
         explore: 'Explorer',
+        relations: 'Relations',
         settings: 'Paramètres',
       },
       address: {
@@ -2408,6 +2413,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'E-Mail-Verlauf',
         inbox: 'Posteingang',
         explore: 'Erkunden',
+        relations: 'Beziehungen',
         settings: 'Einstellungen',
       },
       address: {
