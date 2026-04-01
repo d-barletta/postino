@@ -8,13 +8,7 @@
         { "fieldPath": "receivedAt", "order": "DESCENDING" }
       ]
     },
-    {
-      "collectionGroup": "emailLogs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "receivedAt", "order": "ASCENDING" }
-      ]
-    },
+
     {
       "collectionGroup": "rules",
       "queryScope": "COLLECTION",
@@ -64,10 +58,11 @@
       ]
     },
     {
-      "collectionGroup": "users",
+      "collectionGroup": "emailJobs",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "isActive", "order": "ASCENDING" }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
       ]
     }
   ],
