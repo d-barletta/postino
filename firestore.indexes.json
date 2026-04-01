@@ -50,6 +50,14 @@
       ]
     },
     {
+      "collectionGroup": "emailLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estimatedCost", "order": "ASCENDING" },
+        { "fieldPath": "tokensUsed", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "emailJobs",
       "queryScope": "COLLECTION",
       "fields": [
