@@ -327,6 +327,9 @@ export interface Translations {
         totalEmails: string;
         error: string;
         nodeClickHint: string;
+        nodeClickHint2: string;
+        expandFullPage: string;
+        closeFullPage: string;
         legend: string;
       };
     };
@@ -793,7 +796,10 @@ const translations: Record<Locale, Translations> = {
           generatedOn: 'Generated on {date}',
           totalEmails: 'Based on {count} emails',
           error: 'Failed to generate relations',
-          nodeClickHint: 'Click a node to explore related emails',
+          nodeClickHint: 'Select a node to highlight connections',
+          nodeClickHint2: 'Click again to explore related emails',
+          expandFullPage: 'Full page',
+          closeFullPage: 'Close',
           legend: 'Legend',
         },
       },
@@ -1254,7 +1260,10 @@ const translations: Record<Locale, Translations> = {
           generatedOn: 'Generata il {date}',
           totalEmails: 'Basato su {count} email',
           error: 'Generazione relazioni non riuscita',
-          nodeClickHint: 'Clicca su un nodo per esplorare le email correlate',
+          nodeClickHint: 'Seleziona un nodo per evidenziare le connessioni',
+          nodeClickHint2: 'Clicca di nuovo per esplorare le email correlate',
+          expandFullPage: 'Pagina intera',
+          closeFullPage: 'Chiudi',
           legend: 'Legenda',
         },
       },
@@ -1711,7 +1720,10 @@ const translations: Record<Locale, Translations> = {
           generatedOn: 'Generado el {date}',
           totalEmails: 'Basado en {count} correos',
           error: 'Error al generar relaciones',
-          nodeClickHint: 'Haz clic en un nodo para explorar correos relacionados',
+          nodeClickHint: 'Selecciona un nodo para resaltar conexiones',
+          nodeClickHint2: 'Haz clic de nuevo para explorar correos relacionados',
+          expandFullPage: 'Página completa',
+          closeFullPage: 'Cerrar',
           legend: 'Leyenda',
         },
       },
@@ -2168,7 +2180,10 @@ const translations: Record<Locale, Translations> = {
           generatedOn: 'Générée le {date}',
           totalEmails: 'Basé sur {count} e-mails',
           error: 'Échec de la génération des relations',
-          nodeClickHint: 'Cliquez sur un nœud pour explorer les e-mails associés',
+          nodeClickHint: 'Sélectionnez un nœud pour mettre en évidence les connexions',
+          nodeClickHint2: 'Cliquez à nouveau pour explorer les e-mails associés',
+          expandFullPage: 'Pleine page',
+          closeFullPage: 'Fermer',
           legend: 'Légende',
         },
       },
@@ -2625,7 +2640,10 @@ const translations: Record<Locale, Translations> = {
           generatedOn: 'Erstellt am {date}',
           totalEmails: 'Basierend auf {count} E-Mails',
           error: 'Beziehungen konnten nicht generiert werden',
-          nodeClickHint: 'Klicken Sie auf einen Knoten, um zugehörige E-Mails zu erkunden',
+          nodeClickHint: 'Knoten auswählen, um Verbindungen hervorzuheben',
+          nodeClickHint2: 'Erneut klicken, um zugehörige E-Mails zu erkunden',
+          expandFullPage: 'Vollbild',
+          closeFullPage: 'Schließen',
           legend: 'Legende',
         },
       },
