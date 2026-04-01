@@ -218,6 +218,7 @@ export function KnowledgeTab() {
   const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string; aliases?: string[] } | null>(null);
   const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mergeMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Entity merges
   const [merges, setMerges] = useState<EntityMerge[]>([]);
@@ -227,6 +228,15 @@ export function KnowledgeTab() {
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showManageMerges, setShowManageMerges] = useState(false);
   const [mergeActionMessage, setMergeActionMessage] = useState<string | null>(null);
+
+  // Clear any pending merge message timer when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (mergeMessageTimerRef.current !== null) {
+        clearTimeout(mergeMessageTimerRef.current);
+      }
+    };
+  }, []);
 
   // Integrate the fullscreen email dialog with browser history.
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
@@ -347,7 +357,8 @@ export function KnowledgeTab() {
       setMergeMode(false);
       setSelectedChips([]);
       setMergeActionMessage(k.mergeCreated);
-      setTimeout(() => setMergeActionMessage(null), 3000);
+      if (mergeMessageTimerRef.current !== null) clearTimeout(mergeMessageTimerRef.current);
+      mergeMessageTimerRef.current = setTimeout(() => setMergeActionMessage(null), 3000);
     },
     [firebaseUser, fetchKnowledge, fetchMerges, k],
   );
@@ -362,7 +373,8 @@ export function KnowledgeTab() {
       });
       await Promise.all([fetchKnowledge(), fetchMerges()]);
       setMergeActionMessage(k.mergeDeleted);
-      setTimeout(() => setMergeActionMessage(null), 3000);
+      if (mergeMessageTimerRef.current !== null) clearTimeout(mergeMessageTimerRef.current);
+      mergeMessageTimerRef.current = setTimeout(() => setMergeActionMessage(null), 3000);
     },
     [firebaseUser, fetchKnowledge, fetchMerges, k],
   );

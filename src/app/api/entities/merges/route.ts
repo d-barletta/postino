@@ -20,13 +20,19 @@ async function verifyUser(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  let decoded: Awaited<ReturnType<typeof verifyUser>>;
   try {
-    const decoded = await verifyUser(request);
+    decoded = await verifyUser(request);
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
     const db = adminDb();
     const snap = await db
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
       .orderBy('createdAt', 'desc')
+      .limit(500)
       .get();
 
     const merges = snap.docs.map((d) => ({
@@ -37,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ merges });
   } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Failed to fetch merges' }, { status: 500 });
   }
 }
 
@@ -80,6 +86,7 @@ export async function POST(request: NextRequest) {
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
       .where('category', '==', category)
+      .limit(500)
       .get();
 
     for (const doc of existingSnap.docs) {

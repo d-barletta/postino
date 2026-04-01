@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
+import { AttachmentList } from '@/components/dashboard/AttachmentList';
 
 const PAGE_SIZE = 20;
 const ALL_STATUS_VALUE = '__all__';
@@ -111,14 +112,7 @@ function EmailDetailTabs({ log, emailData, isAdmin, activeTab, onTabChange, onFu
             {emailData?.loading ? (
               <span className="text-gray-400">…</span>
             ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-              <ul className="list-none space-y-0.5">
-                {(emailData?.attachmentNames ?? log.attachmentNames ?? []).map((name, i) => (
-                  <li key={i} className="flex items-center gap-1 min-w-0">
-                    <Paperclip className="h-3 w-3 shrink-0 text-gray-400" />
-                    <span className="truncate">{name}</span>
-                  </li>
-                ))}
-              </ul>
+              <AttachmentList names={emailData?.attachmentNames ?? log.attachmentNames ?? []} />
             ) : (
               <span className="text-gray-400">{t.dashboard.emailHistory.noAttachmentsShort}</span>
             )}

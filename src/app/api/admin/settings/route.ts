@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { resolveAssignedEmailDomain } from '@/lib/email-utils';
+import { verifyAdminRequest } from '@/lib/api-auth';
 
 const USER_UPDATE_BATCH_SIZE = 400;
 
@@ -28,21 +29,9 @@ function pickDomainSettings(source: Record<string, unknown>) {
   };
 }
 
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  const decoded = await adminAuth().verifyIdToken(token);
-
-  const db = adminDb();
-  const userSnap = await db.collection('users').doc(decoded.uid).get();
-  if (!userSnap.data()?.isAdmin) throw new Error('Forbidden');
-  return decoded;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    await verifyAdmin(request);
+    await verifyAdminRequest(request);
     const db = adminDb();
     const snap = await db.collection('settings').doc('global').get();
 
@@ -65,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    await verifyAdmin(request);
+    await verifyAdminRequest(request);
     const updates = await request.json();
     const db = adminDb();
     const settingsRef = db.collection('settings').doc('global');

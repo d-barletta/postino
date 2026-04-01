@@ -28,6 +28,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
   const { firebaseUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -39,11 +42,31 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
+        setHasNextPage(data.hasNextPage ?? false);
+        setNextCursor(data.nextCursor ?? null);
       }
     } finally {
       setLoading(false);
     }
   }, [firebaseUser]);
+
+  const loadMore = useCallback(async () => {
+    if (!firebaseUser || !nextCursor) return;
+    setLoadingMore(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const url = `/api/admin/users?cursor=${encodeURIComponent(nextCursor)}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers((prev) => [...prev, ...(data.users || [])]);
+        setHasNextPage(data.hasNextPage ?? false);
+        setNextCursor(data.nextCursor ?? null);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [firebaseUser, nextCursor]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -101,7 +124,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>All Users</CardTitle>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{users.length} total users</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{users.length}{hasNextPage ? '+' : ''} total users</p>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -163,6 +186,13 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                   </div>
                 </div>
               ))}
+              {hasNextPage && (
+                <div className="px-6 py-4 flex justify-center">
+                  <Button variant="secondary" onClick={loadMore} loading={loadingMore}>
+                    Load more
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

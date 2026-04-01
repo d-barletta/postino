@@ -139,29 +139,10 @@ export default function DashboardPage() {
   }, [firebaseUser]);
 
   useEffect(() => {
-    setLogsLoading(true);
     if (!firebaseUser) { setLogsLoading(false); return; }
-    const initialFetch = async () => {
-      try {
-        const token = await firebaseUser.getIdToken();
-        const [logsRes, statsRes] = await Promise.all([
-          fetch('/api/email/logs?pageSize=50', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('/api/user/stats', { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        if (logsRes.ok) {
-          const data = await logsRes.json();
-          setLogs(data.logs || []);
-        }
-        if (statsRes.ok) {
-          const data = await statsRes.json();
-          if (data.stats) setUserStats(data.stats);
-        }
-      } finally {
-        setLogsLoading(false);
-      }
-    };
-    initialFetch();
-  }, [firebaseUser]);
+    setLogsLoading(true);
+    Promise.all([fetchLogs(), fetchStats()]).finally(() => setLogsLoading(false));
+  }, [firebaseUser, fetchLogs, fetchStats]);
 
   const handleLogsRefresh = useCallback(async () => {
     await Promise.all([fetchLogs(), fetchStats()]);
