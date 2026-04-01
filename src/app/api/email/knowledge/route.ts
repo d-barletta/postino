@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 const FETCH_LIMIT = 1000;
+const MERGES_LIMIT = 500;
 const TOP_N = 50;
 
 interface CountMap {
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest) {
       db
         .collection('entityMerges')
         .where('userId', '==', decoded.uid)
+        .limit(MERGES_LIMIT)
         .get(),
     ]);
 

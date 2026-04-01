@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { FieldPath } from 'firebase-admin/firestore';
 
 async function verifyAdmin(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
@@ -18,6 +19,9 @@ const DEFAULT_PAGE_SIZE = 20;
 /** Max docs fetched before search/filter for in-memory queries. */
 const SEARCH_FETCH_LIMIT = 1000;
 
+/** Maximum IDs allowed per Firestore 'in' query clause. */
+const FIRESTORE_IN_LIMIT = 30;
+
 export async function GET(request: NextRequest) {
   try {
     await verifyAdmin(request);
@@ -33,12 +37,6 @@ export async function GET(request: NextRequest) {
 
     const page = Math.max(1, isNaN(pageParam) ? 1 : pageParam);
     const pageSize = Math.min(100, Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam));
-
-    // Fetch users map for resolving user emails (needed for search by user email)
-    const usersSnap = await db.collection('users').get();
-    const usersMap = new Map(
-      usersSnap.docs.map((d) => [d.id, d.data().email as string])
-    );
 
     let baseQuery = db.collection('emailLogs') as FirebaseFirestore.Query;
 
@@ -56,6 +54,25 @@ export async function GET(request: NextRequest) {
     } else {
       const offset = (page - 1) * pageSize;
       snap = await baseQuery.offset(offset).limit(pageSize + 1).get();
+    }
+
+    // Collect only the unique user IDs referenced in the current result set and
+    // batch-fetch their email addresses — avoids a full users collection scan.
+    const userIds = [...new Set(snap.docs.map((d) => d.data().userId as string).filter(Boolean))];
+    const usersMap = new Map<string, string>();
+    if (userIds.length > 0) {
+      const chunks: string[][] = [];
+      for (let i = 0; i < userIds.length; i += FIRESTORE_IN_LIMIT) {
+        chunks.push(userIds.slice(i, i + FIRESTORE_IN_LIMIT));
+      }
+      const chunkSnaps = await Promise.all(
+        chunks.map((chunk) => db.collection('users').where(FieldPath.documentId(), 'in', chunk).get())
+      );
+      for (const chunkSnap of chunkSnaps) {
+        for (const userDoc of chunkSnap.docs) {
+          usersMap.set(userDoc.id, userDoc.data().email as string);
+        }
+      }
     }
 
     let docs = snap.docs.map((d) => {

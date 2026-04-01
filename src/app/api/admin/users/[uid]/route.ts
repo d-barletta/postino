@@ -13,6 +13,9 @@ async function verifyAdmin(request: NextRequest) {
   return decoded;
 }
 
+/** Maximum write operations per Firestore batch (hard limit is 500). */
+const BATCH_SIZE = 400;
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
     await verifyAdmin(request);
@@ -55,18 +58,27 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: 'Cannot delete an admin user' }, { status: 400 });
     }
 
-    // Gather all documents to delete in a single batch
+    // Gather all documents to delete
     const [rulesSnap, logsSnap] = await Promise.all([
       db.collection('rules').where('userId', '==', uid).get(),
       db.collection('emailLogs').where('userId', '==', uid).get(),
     ]);
 
-    const batch = db.batch();
-    rulesSnap.docs.forEach((d) => batch.delete(d.ref));
-    logsSnap.docs.forEach((d) => batch.delete(d.ref));
-    batch.delete(db.collection('userMemory').doc(uid));
-    batch.delete(db.collection('users').doc(uid));
-    await batch.commit();
+    // Collect all refs to delete (rules + logs + auxiliary docs)
+    const refsToDelete = [
+      ...rulesSnap.docs.map((d) => d.ref),
+      ...logsSnap.docs.map((d) => d.ref),
+      db.collection('userMemory').doc(uid),
+      db.collection('users').doc(uid),
+    ];
+
+    // Delete in BATCH_SIZE chunks to stay within Firestore's per-batch limit.
+    for (let i = 0; i < refsToDelete.length; i += BATCH_SIZE) {
+      const batch = db.batch();
+      const chunk = refsToDelete.slice(i, i + BATCH_SIZE);
+      chunk.forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
 
     // Delete Firebase Auth user
     try {

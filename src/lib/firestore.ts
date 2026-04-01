@@ -48,11 +48,12 @@ export async function updateUser(uid: string, data: Partial<User>): Promise<void
 }
 
 // Rule helpers
-export async function getRulesByUser(userId: string): Promise<Rule[]> {
+export async function getRulesByUser(userId: string, limitCount = 200): Promise<Rule[]> {
   const q = query(
     collection(getDb(), 'rules'),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    orderBy('createdAt', 'desc'),
+    limit(limitCount)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({

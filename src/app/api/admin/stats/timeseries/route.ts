@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
       .collection('emailLogs')
       .where('receivedAt', '>=', Timestamp.fromDate(from))
       .orderBy('receivedAt', 'asc')
+      .limit(10000)
       .get();
 
     type BucketData = {

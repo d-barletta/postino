@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
       .orderBy('createdAt', 'desc')
+      .limit(500)
       .get();
 
     const merges = snap.docs.map((d) => ({
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
       .where('category', '==', category)
+      .limit(500)
       .get();
 
     for (const doc of existingSnap.docs) {

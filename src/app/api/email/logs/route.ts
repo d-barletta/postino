@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import type { Query } from 'firebase-admin/firestore';
+import type { Query, DocumentSnapshot } from 'firebase-admin/firestore';
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -33,20 +33,34 @@ export async function GET(request: NextRequest) {
     const languageFilter = (searchParams.get('language') || '').trim().toLowerCase();
     const tagsFilter = (searchParams.get('tags') || '').trim().toLowerCase();
     const statusFilter = (searchParams.get('status') || '').trim().toLowerCase();
+    // cursor-based pagination: pass the last document ID from the previous page
+    const cursor = searchParams.get('cursor');
 
     const page = Math.max(1, isNaN(pageParam) ? 1 : pageParam);
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam));
 
     const db = adminDb();
-    const query: Query = db
+    let query: Query = db
       .collection('emailLogs')
       .where('userId', '==', decoded.uid)
       .orderBy('receivedAt', 'desc');
 
+    // Push status filter to Firestore when it is the only active filter (avoids
+    // fetching a large batch just to discard most results in JavaScript).
+    const analysisFiltersActive = sentimentFilter || emailTypeFilter || priorityFilter || senderTypeFilter || requiresResponse || hasActionItems || isUrgent || languageFilter || tagsFilter;
+    const hasAnyFilter = search || termsRaw.length > 0 || hasAttachments || statusFilter || analysisFiltersActive;
+
     let snap;
-    const hasAnyFilter = search || termsRaw.length > 0 || hasAttachments || sentimentFilter || emailTypeFilter || priorityFilter || senderTypeFilter || requiresResponse || hasActionItems || isUrgent || languageFilter || tagsFilter || statusFilter;
     if (hasAnyFilter) {
       snap = await query.limit(SEARCH_FETCH_LIMIT).get();
+    } else if (cursor) {
+      // Cursor-based pagination: start after the provided document snapshot.
+      const cursorDoc: DocumentSnapshot = await db.collection('emailLogs').doc(cursor).get();
+      if (cursorDoc.exists) {
+        snap = await query.startAfter(cursorDoc).limit(pageSize + 1).get();
+      } else {
+        snap = await query.limit(pageSize + 1).get();
+      }
     } else {
       const offset = (page - 1) * pageSize;
       snap = await query.offset(offset).limit(pageSize + 1).get();
@@ -160,7 +174,8 @@ export async function GET(request: NextRequest) {
     } else {
       hasNextPage = docs.length > pageSize;
       paginatedDocs = docs.slice(0, pageSize);
-      return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage });
+      const nextCursor = hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
+      return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage, nextCursor });
     }
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
