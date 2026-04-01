@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 import { RefreshCw, Share2, AlertCircle } from 'lucide-react';
-import type { EntityRelationGraph, EntityGraphNode, EntityGraphNodeCategory } from '@/types';
+import type { EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Category colours (works on both light and dark backgrounds)
@@ -89,8 +89,6 @@ export function RelationGraph({
   translations: tr,
 }: RelationGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  // Track which node was last clicked (for stable ExploreEmailsModal integration)
-  const [, setClickedNode] = useState<EntityGraphNode | null>(null);
 
   // -----------------------------------------------------------------
   // Mount/update cytoscape when graph data changes
@@ -241,14 +239,10 @@ export function RelationGraph({
       // Click: open explore modal
       cy.on('tap', 'node', (evt) => {
         const node = evt.target;
-        const nodeData: EntityGraphNode = {
-          id: node.data('id') as string,
-          label: node.data('label') as string,
-          category: node.data('category') as EntityGraphNodeCategory,
-          count: node.data('count') as number,
-        };
-        setClickedNode(nodeData);
-        onNodeClick(nodeData.label, nodeData.category);
+        onNodeClick(
+          node.data('label') as string,
+          node.data('category') as EntityGraphNodeCategory,
+        );
       });
 
       // Fit on layout complete
@@ -259,14 +253,13 @@ export function RelationGraph({
       return cy;
     };
 
-    const cyPromise: Promise<cytoscape.Core | undefined> = init();
+    const cyPromise = init();
 
     return () => {
       destroyed = true;
       cyPromise.then((cy) => cy?.destroy()).catch(() => {});
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph]);
+  }, [graph, onNodeClick]);
 
   // -----------------------------------------------------------------
   // Format generated date

@@ -2,12 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import type { EntityGraphNode, EntityGraphEdge, EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
 
+/** Maximum number of email logs fetched for analysis (matches knowledge route). */
 const FETCH_LIMIT = 1000;
+/** Maximum number of entity merges fetched per user. */
 const MERGES_LIMIT = 500;
-/** Maximum entities kept per category when building the graph. */
+/** Maximum entities kept per category when building the graph nodes. */
 const TOP_K = 15;
-/** Minimum co-occurrence weight for an edge to be included. */
+/** Minimum co-occurrence weight for an edge to be included (≥1 shared email). */
 const MIN_EDGE_WEIGHT = 1;
+
+/** All entity graph node categories in a fixed order for consistent processing. */
+const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
+  'topics', 'tags', 'people', 'organizations', 'places', 'events',
+];
+
+/** Returns true when the error is a Firebase authentication / token error. */
+function isAuthError(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    (err.message.includes('auth') ||
+      err.message.includes('token') ||
+      err.message.includes('Firebase'))
+  );
+}
 
 interface CountMap {
   [value: string]: number;
@@ -95,10 +112,7 @@ export async function GET(request: NextRequest) {
       } satisfies EntityRelationGraph,
     });
   } catch (err) {
-    const isAuthError =
-      err instanceof Error &&
-      (err.message.includes('auth') || err.message.includes('token') || err.message.includes('Firebase'));
-    if (isAuthError) {
+    if (isAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.json({ error: 'Failed to fetch relation graph' }, { status: 500 });
@@ -198,20 +212,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Apply merges to frequency maps
-    for (const cat of Object.keys(freqs) as EntityGraphNodeCategory[]) {
+    for (const cat of ALL_CATEGORIES) {
       const catMerges = mergesByCategory[cat];
       if (catMerges) applyMerges(freqs[cat], catMerges);
     }
 
     // Build top-K sets and alias maps per category
-    const topSets: Record<EntityGraphNodeCategory, Set<string>> = {} as Record<EntityGraphNodeCategory, Set<string>>;
-    const aliasMaps: Record<EntityGraphNodeCategory, Map<string, string>> = {} as Record<EntityGraphNodeCategory, Map<string, string>>;
+    const topSets = Object.fromEntries(
+      ALL_CATEGORIES.map((cat) => [cat, new Set(toTopK(freqs[cat], TOP_K).map((x) => x.value))]),
+    ) as Record<EntityGraphNodeCategory, Set<string>>;
 
-    for (const cat of Object.keys(freqs) as EntityGraphNodeCategory[]) {
-      const top = toTopK(freqs[cat], TOP_K);
-      topSets[cat] = new Set(top.map((x) => x.value));
-      aliasMaps[cat] = buildAliasToCanonical(mergesByCategory[cat] ?? []);
-    }
+    const aliasMaps = Object.fromEntries(
+      ALL_CATEGORIES.map((cat) => [cat, buildAliasToCanonical(mergesByCategory[cat] ?? [])]),
+    ) as Record<EntityGraphNodeCategory, Map<string, string>>;
 
     // -------------------------------------------------------------------
     // Build nodes
@@ -220,7 +233,7 @@ export async function POST(request: NextRequest) {
     let nodeIdx = 0;
     const labelToId = new Map<string, string>(); // key = "category:label"
 
-    for (const cat of Object.keys(freqs) as EntityGraphNodeCategory[]) {
+    for (const cat of ALL_CATEGORIES) {
       for (const { value, count } of toTopK(freqs[cat], TOP_K)) {
         const id = `n${nodeIdx++}`;
         nodes.push({ id, label: value, category: cat, count });
@@ -237,7 +250,7 @@ export async function POST(request: NextRequest) {
       // Collect all node IDs present in this email
       const presentIds: string[] = [];
 
-      for (const cat of Object.keys(freqs) as EntityGraphNodeCategory[]) {
+      for (const cat of ALL_CATEGORIES) {
         const normalized = collectNormalized(raw[cat], aliasMaps[cat], topSets[cat]);
         for (const label of normalized) {
           const id = labelToId.get(`${cat}:${label}`);
@@ -277,10 +290,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ graph });
   } catch (err) {
-    const isAuthError =
-      err instanceof Error &&
-      (err.message.includes('auth') || err.message.includes('token') || err.message.includes('Firebase'));
-    if (isAuthError) {
+    if (isAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[entities/relations] POST error:', err);
