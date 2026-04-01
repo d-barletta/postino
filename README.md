@@ -254,13 +254,53 @@ After first deploy:
 3. Set your user document field isAdmin = true.
 4. Ensure account isActive = true and suspended = false.
 
-### 9) Deploy to Production
+### 9) Deploy Firestore Indexes
+
+Firestore composite indexes must be deployed before the app can run aggregate stats queries. Run this once after cloning (and after any changes to `firestore.indexes.json`):
+
+```bash
+# Install Firebase CLI if needed
+npm install -g firebase-tools
+
+# Authenticate (one-time)
+firebase login
+
+# Deploy indexes only
+firebase deploy --only firestore:indexes
+```
+
+Index builds happen asynchronously in Firebase — allow a few minutes before the admin stats page becomes fully functional.
+
+### 10) Deploy to Production
+
+#### Option A — Push to GitHub (recommended)
 
 1. Push your branch to GitHub.
-2. Trigger deployment from Vercel (or auto-deploy from main).
-3. Wait for successful build.
+2. Vercel auto-deploys from the configured production branch (usually `main`).
+3. Wait for successful build in the Vercel dashboard.
 
-### 10) Post-Deploy Verification Checklist
+#### Option B — Vercel CLI
+
+```bash
+# Install Vercel CLI if needed
+npm install -g vercel
+
+# Authenticate (one-time)
+vercel login
+
+# Link the project (one-time, run from repo root)
+vercel link
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+Ensure all environment variables are already set in Vercel Project Settings before deploying.
+
+### 11) Post-Deploy Verification Checklist
 
 1. Can open app URL and login.
 2. Admin page is accessible for admin user.
@@ -271,7 +311,7 @@ After first deploy:
 7. Confirm forwarded email arrives in destination mailbox.
 8. Confirm Mailgun webhook requests are accepted (2xx).
 
-### 11) Security and Operations Notes
+### 12) Security and Operations Notes
 
 1. Never commit .env.local with real secrets.
 2. Rotate any secret immediately if exposed.
