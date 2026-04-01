@@ -5,6 +5,7 @@ import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailSearchTab } from '@/components/dashboard/EmailSearchTab';
 import { KnowledgeTab } from '@/components/dashboard/KnowledgeTab';
+import { RelationsTab } from '@/components/dashboard/RelationsTab';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
@@ -19,9 +20,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
-import { Home, ListFilter, Inbox, Settings, Download, CheckCircle, Compass } from 'lucide-react';
+import { Home, ListFilter, Inbox, Settings, Download, CheckCircle, Compass, Share2 } from 'lucide-react';
 
-type DashboardTab = 'overview' | 'rules' | 'inbox' | 'explore' | 'settings';
+type DashboardTab = 'overview' | 'rules' | 'inbox' | 'explore' | 'relations' | 'settings';
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
@@ -233,6 +234,10 @@ export default function DashboardPage() {
             <Compass className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.explore}</span>
           </TabsTrigger>
+          <TabsTrigger value="relations">
+            <Share2 className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.relations}</span>
+          </TabsTrigger>
           <TabsTrigger value="settings">
             <Settings className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.settings}</span>
@@ -264,6 +269,9 @@ export default function DashboardPage() {
         </TabsContent>
         <TabsContent value="explore">
           <KnowledgeTab />
+        </TabsContent>
+        <TabsContent value="relations">
+          <RelationsTab />
         </TabsContent>
         <TabsContent value="settings">
           <div className="space-y-6">

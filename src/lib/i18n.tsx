@@ -116,6 +116,7 @@ export interface Translations {
       emailHistory: string;
       inbox: string;
       explore: string;
+      relations: string;
       settings: string;
     };
     address: {
@@ -312,6 +313,25 @@ export interface Translations {
       mergeCreated: string;
       mergeDeleted: string;
       cannotBeUndone: string;
+      relations: {
+        viewToggle: string;
+        exploreToggle: string;
+        title: string;
+        subtitle: string;
+        generate: string;
+        generating: string;
+        regenerate: string;
+        noGraph: string;
+        noGraphDesc: string;
+        generatedOn: string;
+        totalEmails: string;
+        error: string;
+        nodeClickHint: string;
+        nodeClickHint2: string;
+        expandFullPage: string;
+        closeFullPage: string;
+        legend: string;
+      };
     };
     rules: {
       yourRules: string;
@@ -564,6 +584,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Email History',
         inbox: 'Inbox',
         explore: 'Explore',
+        relations: 'Relations',
         settings: 'Settings',
       },
       address: {
@@ -762,6 +783,25 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Merge created',
         mergeDeleted: 'Merge deleted',
         cannotBeUndone: 'This action cannot be undone.',
+        relations: {
+          viewToggle: 'Relation Map',
+          exploreToggle: 'Explore',
+          title: 'Relation Map',
+          subtitle: 'Connections between entities discovered across your emails',
+          generate: 'Generate Relations',
+          generating: 'Generating…',
+          regenerate: 'Regenerate',
+          noGraph: 'No relation map yet',
+          noGraphDesc: 'Click "Generate Relations" to discover connections between entities in your emails.',
+          generatedOn: 'Generated on {date}',
+          totalEmails: 'Based on {count} emails',
+          error: 'Failed to generate relations',
+          nodeClickHint: 'Select a node to highlight connections',
+          nodeClickHint2: 'Click again to explore related emails',
+          expandFullPage: 'Full page',
+          closeFullPage: 'Close',
+          legend: 'Legend',
+        },
       },
       rules: {
         yourRules: 'Your Rules',
@@ -1008,6 +1048,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Cronologia email',
         inbox: 'In arrivo',
         explore: 'Esplora',
+        relations: 'Relazioni',
         settings: 'Impostazioni',
       },
       address: {
@@ -1206,6 +1247,25 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Unione creata',
         mergeDeleted: 'Unione eliminata',
         cannotBeUndone: 'Questa azione non può essere annullata.',
+        relations: {
+          viewToggle: 'Mappa relazioni',
+          exploreToggle: 'Esplora',
+          title: 'Mappa relazioni',
+          subtitle: 'Connessioni tra entità scoperte nelle tue email',
+          generate: 'Genera relazioni',
+          generating: 'Generazione…',
+          regenerate: 'Rigenera',
+          noGraph: 'Nessuna mappa relazioni',
+          noGraphDesc: 'Clicca "Genera relazioni" per scoprire le connessioni tra le entità nelle tue email.',
+          generatedOn: 'Generata il {date}',
+          totalEmails: 'Basato su {count} email',
+          error: 'Generazione relazioni non riuscita',
+          nodeClickHint: 'Seleziona un nodo per evidenziare le connessioni',
+          nodeClickHint2: 'Clicca di nuovo per esplorare le email correlate',
+          expandFullPage: 'Pagina intera',
+          closeFullPage: 'Chiudi',
+          legend: 'Legenda',
+        },
       },
       rules: {
         yourRules: 'Le tue regole',
@@ -1448,6 +1508,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Historial de correos',
         inbox: 'Bandeja de entrada',
         explore: 'Explorar',
+        relations: 'Relaciones',
         settings: 'Configuración',
       },
       address: {
@@ -1646,6 +1707,25 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Fusión creada',
         mergeDeleted: 'Fusión eliminada',
         cannotBeUndone: 'Esta acción no se puede deshacer.',
+        relations: {
+          viewToggle: 'Mapa de relaciones',
+          exploreToggle: 'Explorar',
+          title: 'Mapa de relaciones',
+          subtitle: 'Conexiones entre entidades descubiertas en tus correos',
+          generate: 'Generar relaciones',
+          generating: 'Generando…',
+          regenerate: 'Regenerar',
+          noGraph: 'Sin mapa de relaciones',
+          noGraphDesc: 'Haz clic en "Generar relaciones" para descubrir conexiones entre entidades de tus correos.',
+          generatedOn: 'Generado el {date}',
+          totalEmails: 'Basado en {count} correos',
+          error: 'Error al generar relaciones',
+          nodeClickHint: 'Selecciona un nodo para resaltar conexiones',
+          nodeClickHint2: 'Haz clic de nuevo para explorar correos relacionados',
+          expandFullPage: 'Página completa',
+          closeFullPage: 'Cerrar',
+          legend: 'Leyenda',
+        },
       },
       rules: {
         yourRules: 'Tus reglas',
@@ -1888,6 +1968,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'Historique des e-mails',
         inbox: 'Boîte de réception',
         explore: 'Explorer',
+        relations: 'Relations',
         settings: 'Paramètres',
       },
       address: {
@@ -2086,6 +2167,25 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Fusion créée',
         mergeDeleted: 'Fusion supprimée',
         cannotBeUndone: 'Cette action est irréversible.',
+        relations: {
+          viewToggle: 'Carte des relations',
+          exploreToggle: 'Explorer',
+          title: 'Carte des relations',
+          subtitle: 'Connexions entre entités découvertes dans vos e-mails',
+          generate: 'Générer les relations',
+          generating: 'Génération…',
+          regenerate: 'Régénérer',
+          noGraph: 'Aucune carte des relations',
+          noGraphDesc: 'Cliquez sur "Générer les relations" pour découvrir les connexions entre entités dans vos e-mails.',
+          generatedOn: 'Générée le {date}',
+          totalEmails: 'Basé sur {count} e-mails',
+          error: 'Échec de la génération des relations',
+          nodeClickHint: 'Sélectionnez un nœud pour mettre en évidence les connexions',
+          nodeClickHint2: 'Cliquez à nouveau pour explorer les e-mails associés',
+          expandFullPage: 'Pleine page',
+          closeFullPage: 'Fermer',
+          legend: 'Légende',
+        },
       },
       rules: {
         yourRules: 'Vos règles',
@@ -2328,6 +2428,7 @@ const translations: Record<Locale, Translations> = {
         emailHistory: 'E-Mail-Verlauf',
         inbox: 'Posteingang',
         explore: 'Erkunden',
+        relations: 'Beziehungen',
         settings: 'Einstellungen',
       },
       address: {
@@ -2526,6 +2627,25 @@ const translations: Record<Locale, Translations> = {
         mergeCreated: 'Zusammenführung erstellt',
         mergeDeleted: 'Zusammenführung gelöscht',
         cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
+        relations: {
+          viewToggle: 'Beziehungskarte',
+          exploreToggle: 'Erkunden',
+          title: 'Beziehungskarte',
+          subtitle: 'Verbindungen zwischen Entitäten in Ihren E-Mails',
+          generate: 'Beziehungen generieren',
+          generating: 'Generierung…',
+          regenerate: 'Neu generieren',
+          noGraph: 'Keine Beziehungskarte',
+          noGraphDesc: 'Klicken Sie auf "Beziehungen generieren", um Verbindungen zwischen Entitäten in Ihren E-Mails zu entdecken.',
+          generatedOn: 'Erstellt am {date}',
+          totalEmails: 'Basierend auf {count} E-Mails',
+          error: 'Beziehungen konnten nicht generiert werden',
+          nodeClickHint: 'Knoten auswählen, um Verbindungen hervorzuheben',
+          nodeClickHint2: 'Erneut klicken, um zugehörige E-Mails zu erkunden',
+          expandFullPage: 'Vollbild',
+          closeFullPage: 'Schließen',
+          legend: 'Legende',
+        },
       },
       rules: {
         yourRules: 'Ihre Regeln',
