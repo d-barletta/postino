@@ -129,6 +129,7 @@ export function EntityMergeDialog({
             <Button
               type="submit"
               size="sm"
+              autoFocus
               disabled={loading || !canonical.trim()}
               className="bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
             >
