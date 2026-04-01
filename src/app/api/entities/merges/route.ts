@@ -20,25 +20,35 @@ async function verifyUser(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  let decoded: Awaited<ReturnType<typeof verifyUser>>;
   try {
-    const decoded = await verifyUser(request);
+    decoded = await verifyUser(request);
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
     const db = adminDb();
     const snap = await db
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
-      .orderBy('createdAt', 'desc')
       .limit(500)
       .get();
 
-    const merges = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
-    }));
+    const merges = snap.docs
+      .map((d) => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
+      }))
+      .sort((a, b) => {
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
+        return a.createdAt < b.createdAt ? 1 : -1;
+      });
 
     return NextResponse.json({ merges });
   } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Failed to fetch merges' }, { status: 500 });
   }
 }
 
