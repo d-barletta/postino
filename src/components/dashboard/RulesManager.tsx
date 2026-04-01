@@ -215,18 +215,17 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
           </p>
           {!showAddForm && (
             <div className="flex items-center gap-2 mt-3">
-              {rules.length > 0 && (
-                <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t.dashboard.rules.searchPlaceholder}
-                    className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
-                  />
-                </div>
-              )}
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type="search"
+                  disabled={!rules?.length}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t.dashboard.rules.searchPlaceholder}
+                  className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
+                />
+              </div>
               <Button onClick={() => { setShowAddForm(true); setError(''); }} className="shrink-0">
                 <Plus className="h-4 w-4 mr-1.5" />
                 {t.dashboard.rules.addARule}

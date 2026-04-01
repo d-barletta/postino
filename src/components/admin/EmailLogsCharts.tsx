@@ -107,9 +107,6 @@ function ChartSkeleton({ height = 'h-56' }: { height?: string }) {
 export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   const [range, setRange] = useState<TimeRange>('7d');
   const [granularity, setGranularity] = useState<TimeGranularity>(DEFAULT_GRANULARITY['7d']);
-  const [statusAccordionValue, setStatusAccordionValue] = useState('');
-  const [tokensAccordionValue, setTokensAccordionValue] = useState('');
-  const [isMobile, setIsMobile] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const handleRangeChange = (newRange: TimeRange) => {
@@ -118,26 +115,6 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
       setGranularity(DEFAULT_GRANULARITY[newRange]);
     }
   };
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 639px)');
-
-    const syncViewportState = () => {
-      const mobile = mediaQuery.matches;
-      setIsMobile(mobile);
-
-      // On desktop, keep both accordions always expanded.
-      if (!mobile) {
-        setStatusAccordionValue('status-distribution');
-        setTokensAccordionValue('tokens-cost');
-      }
-    };
-
-    syncViewportState();
-
-    mediaQuery.addEventListener('change', syncViewportState);
-    return () => mediaQuery.removeEventListener('change', syncViewportState);
-  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -196,7 +173,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <Card>
-        <Accordion type="single" collapsible={isMobile} value={statusAccordionValue} onValueChange={setStatusAccordionValue}>
+        <Accordion type="single" collapsible defaultValue="status-distribution">
           <AccordionItem value="status-distribution" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               Status Distribution
@@ -250,7 +227,7 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
       </Card>
 
       <Card>
-        <Accordion type="single" collapsible={isMobile} value={tokensAccordionValue} onValueChange={setTokensAccordionValue}>
+        <Accordion type="single" collapsible defaultValue="tokens-cost">
           <AccordionItem value="tokens-cost" className="border-0">
             <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               Tokens and estimated Cost
