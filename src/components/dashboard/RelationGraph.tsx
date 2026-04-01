@@ -191,14 +191,22 @@ export function RelationGraph({
               opacity: 1,
             },
           },
-          // Dim unconnected nodes on hover
+          // Dim unconnected nodes on hover/selection
           {
             selector: '.faded',
-            style: { opacity: 0.2 },
+            style: { opacity: 0.15 },
           },
           {
             selector: '.highlighted',
             style: { opacity: 1 },
+          },
+          // Pinned selection ring
+          {
+            selector: '.node-selected',
+            style: {
+              'border-color': '#efd957',
+              'border-width': 4,
+            },
           },
         ],
         layout: {
@@ -223,26 +231,53 @@ export function RelationGraph({
 
       // ---- interactions ----
 
-      // Hover: highlight neighbourhood
+      // Track which node is "pinned" (selected by click)
+      let pinnedNodeId: string | null = null;
+
+      const applyPinnedHighlight = (nodeId: string | null) => {
+        cy.elements().removeClass('faded highlighted node-selected');
+        if (nodeId) {
+          const pinned = cy.getElementById(nodeId);
+          cy.elements().addClass('faded');
+          pinned.removeClass('faded').addClass('highlighted node-selected');
+          pinned.connectedEdges().removeClass('faded').addClass('highlighted');
+          pinned.connectedEdges().connectedNodes().removeClass('faded').addClass('highlighted');
+        }
+      };
+
+      // Hover: temporarily highlight neighbourhood (on top of any pinned state)
       cy.on('mouseover', 'node', (evt) => {
         const node = evt.target;
+        cy.elements().removeClass('faded highlighted');
         cy.elements().addClass('faded');
         node.removeClass('faded').addClass('highlighted');
         node.connectedEdges().removeClass('faded').addClass('highlighted');
         node.connectedEdges().connectedNodes().removeClass('faded').addClass('highlighted');
       });
 
+      // Restore pinned selection (or clear) when hover ends
       cy.on('mouseout', 'node', () => {
-        cy.elements().removeClass('faded highlighted');
+        applyPinnedHighlight(pinnedNodeId);
       });
 
-      // Click: open explore modal
+      // Click: pin/unpin selection and open explore modal
       cy.on('tap', 'node', (evt) => {
         const node = evt.target;
+        const nodeId = node.id() as string;
+        pinnedNodeId = pinnedNodeId === nodeId ? null : nodeId;
+        applyPinnedHighlight(pinnedNodeId);
         onNodeClick(
           node.data('label') as string,
           node.data('category') as EntityGraphNodeCategory,
         );
+      });
+
+      // Tap on background: clear pinned selection
+      cy.on('tap', (evt) => {
+        if (evt.target === cy) {
+          pinnedNodeId = null;
+          applyPinnedHighlight(null);
+        }
       });
 
       // Fit on layout complete
