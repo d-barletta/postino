@@ -110,7 +110,7 @@ export function RelationsTab() {
           className="w-[95vw] max-w-7xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
         >
-          <div className="flex-1 min-h-0 p-4">
+          <div className="flex-1 min-h-0">
             {graph && graph.nodes.length > 0 && (
               <RelationGraphFullPageContent
                 graph={graph}
