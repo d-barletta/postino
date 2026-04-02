@@ -79,19 +79,26 @@ export function EntityMergeDialog({
           </div>
 
           {/* Selected entities list */}
-          <div className="flex flex-wrap gap-1.5">
-            {selected.map((s) => (
-              <span
-                key={s.value}
-                className={cn(
-                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
-                  'border border-gray-200 dark:border-gray-600',
-                )}
-              >
-                {s.value}
-              </span>
-            ))}
+          <div className="space-y-1.5">
+            <p className="text-xs text-gray-500 dark:text-gray-400">{k.mergeChipHint}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {selected.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => setCanonical(s.value)}
+                  className={cn(
+                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                    'border transition-colors cursor-pointer',
+                    canonical === s.value
+                      ? 'bg-[#efd957] border-[#e8cf3c] text-black'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600',
+                  )}
+                >
+                  {s.value}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Canonical name input */}
