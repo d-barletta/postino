@@ -22,6 +22,9 @@ import {
   X,
   GitMerge,
   Trash2,
+  Wand2,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import {
   Drawer,
@@ -35,7 +38,7 @@ import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { EntityMergeDialog } from '@/components/dashboard/EntityMergeDialog';
 import { useModalHistory } from '@/hooks/useModalHistory';
-import type { EntityMerge, EntityCategory } from '@/types';
+import type { EntityMerge, EntityMergeSuggestion, EntityCategory } from '@/types';
 
 interface KnowledgeItem {
   value: string;
@@ -233,9 +236,15 @@ export function KnowledgeTab() {
   const [mergeMode, setMergeMode] = useState(false);
   const [selectedChips, setSelectedChips] = useState<SelectedChip[]>([]);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
-  const [exploreSubTab, setExploreSubTab] = useState<'list' | 'merged'>('list');
+  const [exploreSubTab, setExploreSubTab] = useState<'list' | 'merged' | 'suggestions'>('list');
   const [pendingDeleteMerge, setPendingDeleteMerge] = useState<EntityMerge | null>(null);
   const [deletingMerge, setDeletingMerge] = useState(false);
+
+  // AI merge suggestions
+  const [suggestions, setSuggestions] = useState<EntityMergeSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
+  const [pendingAcceptSuggestion, setPendingAcceptSuggestion] = useState<EntityMergeSuggestion | null>(null);
 
   // Integrate the fullscreen email dialog with browser history.
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
@@ -276,10 +285,135 @@ export function KnowledgeTab() {
     }
   }, [firebaseUser]);
 
+  const fetchSuggestions = useCallback(async () => {
+    if (!firebaseUser) return;
+    setSuggestionsLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/entities/merge-suggestions', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const json = await res.json() as { suggestions: EntityMergeSuggestion[] };
+        setSuggestions(json.suggestions ?? []);
+      }
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, [firebaseUser]);
+
+  const generateSuggestions = useCallback(async () => {
+    if (!firebaseUser) return;
+    setGeneratingSuggestions(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/entities/merge-suggestions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 409) {
+        toast.error(k.suggestionsCompleteFirst);
+        return;
+      }
+      if (!res.ok) {
+        toast.error(k.suggestionsError);
+        return;
+      }
+      const json = await res.json() as { suggestions: EntityMergeSuggestion[] };
+      setSuggestions(json.suggestions ?? []);
+    } catch {
+      toast.error(k.suggestionsError);
+    } finally {
+      setGeneratingSuggestions(false);
+    }
+  }, [firebaseUser, k]);
+
+  const handleRejectSuggestion = useCallback(async (id: string) => {
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`/api/entities/merge-suggestions/${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' }),
+      });
+      if (res.ok) {
+        setSuggestions((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, status: 'rejected' } : s)),
+        );
+      }
+    } catch {
+      // silently ignore
+    }
+  }, [firebaseUser]);
+
+  const handleAcceptSuggestion = useCallback(
+    async (canonical: string, aliases: string[], category: EntityCategory) => {
+      if (!pendingAcceptSuggestion || !firebaseUser) return;
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/entities/merges', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ canonical, aliases, category }),
+      });
+
+      if (res.status === 409) {
+        const json = await res.json() as { existingId?: string; error?: string };
+        const existingId = json.existingId;
+        if (!existingId) throw new Error(json.error ?? 'Failed to create merge');
+
+        const existingMerge = merges.find((m) => m.id === existingId);
+        const mergedAliases = existingMerge
+          ? Array.from(new Set([...existingMerge.aliases, ...aliases]))
+          : aliases;
+
+        const patchRes = await fetch(`/api/entities/merges/${existingId}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ canonical, aliases: mergedAliases, category }),
+        });
+        if (!patchRes.ok) {
+          const patchJson = await patchRes.json() as { error?: string };
+          throw new Error(patchJson.error ?? 'Failed to update merge');
+        }
+      } else if (!res.ok) {
+        const json = await res.json() as { error?: string };
+        throw new Error(json.error ?? 'Failed to create merge');
+      }
+
+      // Mark suggestion as accepted
+      const suggestionId = pendingAcceptSuggestion.id;
+      try {
+        const pToken = await firebaseUser.getIdToken();
+        await fetch(`/api/entities/merge-suggestions/${suggestionId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${pToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'accepted' }),
+        });
+        setSuggestions((prev) =>
+          prev.map((s) => (s.id === suggestionId ? { ...s, status: 'accepted' } : s)),
+        );
+      } catch {
+        // silently ignore
+      }
+
+      await Promise.all([fetchKnowledge(), fetchMerges()]);
+      toast.success(k.mergeCreated);
+    },
+    [firebaseUser, merges, pendingAcceptSuggestion, fetchKnowledge, fetchMerges, k],
+  );
+
   useEffect(() => {
     fetchKnowledge();
     fetchMerges();
-  }, [fetchKnowledge, fetchMerges]);
+    fetchSuggestions();
+  }, [fetchKnowledge, fetchMerges, fetchSuggestions]);
 
   /** Set of "category:canonical" for merged entities (to show the merge icon). */
   const mergedCanonicals = useMemo(
@@ -513,7 +647,7 @@ export function KnowledgeTab() {
       <CardContent className="space-y-0 p-2">
         <Tabs
           value={exploreSubTab}
-          onValueChange={(v) => setExploreSubTab(v as 'list' | 'merged')}
+          onValueChange={(v) => setExploreSubTab(v as 'list' | 'merged' | 'suggestions')}
         >
           <TabsList>
             <TabsTrigger value="list" className="inline-flex items-center gap-1.5">
@@ -523,6 +657,10 @@ export function KnowledgeTab() {
             <TabsTrigger value="merged" disabled={mergeMode} className="inline-flex items-center gap-1.5">
               <GitMerge className="h-3.5 w-3.5" />
               {k.mergedTab}
+            </TabsTrigger>
+            <TabsTrigger value="suggestions" disabled={mergeMode} className="inline-flex items-center gap-1.5">
+              <Wand2 className="h-3.5 w-3.5" />
+              {k.suggestionsTab}
             </TabsTrigger>
           </TabsList>
 
@@ -696,6 +834,123 @@ export function KnowledgeTab() {
               </ul>
             )}
           </TabsContent>
+
+          <TabsContent value="suggestions" className="pb-2">
+            {(() => {
+              const pendingSuggestions = suggestions.filter((s) => s.status === 'pending');
+              const hasPending = pendingSuggestions.length > 0;
+              const canGenerate = !hasPending;
+
+              return (
+                <>
+                  {/* Generate button */}
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <Button
+                      size="sm"
+                      onClick={generateSuggestions}
+                      disabled={generatingSuggestions || suggestionsLoading || !canGenerate}
+                      className="bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0 gap-1.5"
+                    >
+                      <Wand2 className={cn('h-4 w-4', generatingSuggestions && 'animate-spin')} />
+                      {generatingSuggestions ? k.suggestionsGenerating : k.suggestionsAskAI}
+                    </Button>
+                    {!canGenerate && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center max-w-xs">
+                        {k.suggestionsCompleteFirst}
+                      </p>
+                    )}
+                    {canGenerate && !generatingSuggestions && suggestions.length === 0 && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center max-w-xs">
+                        {k.suggestionsAskAIDesc}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Suggestions list */}
+                  {suggestionsLoading || generatingSuggestions ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="h-20 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : suggestions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Wand2 className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                      <p className="text-base font-medium text-gray-600 dark:text-gray-400">{k.suggestionsEmpty}</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">{k.suggestionsEmptyDesc}</p>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {suggestions.map((s) => (
+                        <li
+                          key={s.id}
+                          className={cn(
+                            'flex items-start justify-between gap-3 px-1 py-3 transition-colors',
+                            s.status === 'pending'
+                              ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                              : 'opacity-50',
+                          )}
+                        >
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className={cn(
+                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5',
+                              s.status === 'accepted'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                : s.status === 'rejected'
+                                ? 'bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400'
+                                : 'bg-[#efd957]/20 text-[#a3891f] dark:text-[#efd957]',
+                            )}>
+                              {s.status === 'accepted' ? (
+                                <CheckCircle className="h-4 w-4" />
+                              ) : s.status === 'rejected' ? (
+                                <XCircle className="h-4 w-4" />
+                              ) : (
+                                <Wand2 className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                  {s.suggestedCanonical}
+                                </span>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                                  {k[s.category as keyof typeof k] as string ?? s.category}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                {s.aliases.join(', ')}
+                              </p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 italic">
+                                {s.reason}
+                              </p>
+                            </div>
+                          </div>
+                          {s.status === 'pending' && (
+                            <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                              <button
+                                onClick={() => setPendingAcceptSuggestion(s)}
+                                className="p-1.5 rounded text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                aria-label={k.suggestionsAccept}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRejectSuggestion(s.id)}
+                                className="p-1.5 rounded text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                aria-label={k.suggestionsReject}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              );
+            })()}
+          </TabsContent>
         </Tabs>
       </CardContent>
 
@@ -727,6 +982,20 @@ export function KnowledgeTab() {
           categoryLabel={k[selectedCategory as keyof typeof k] as string ?? selectedCategory}
           onClose={() => setShowMergeDialog(false)}
           onMerge={handleCreateMerge}
+        />
+      )}
+
+      {/* Suggestion accept dialog — reuses EntityMergeDialog with the AI-suggested aliases */}
+      {pendingAcceptSuggestion && (
+        <EntityMergeDialog
+          selected={pendingAcceptSuggestion.aliases.map((alias) => ({
+            value: alias,
+            category: pendingAcceptSuggestion.category,
+          }))}
+          categoryLabel={k[pendingAcceptSuggestion.category as keyof typeof k] as string ?? pendingAcceptSuggestion.category}
+          defaultCanonical={pendingAcceptSuggestion.suggestedCanonical}
+          onClose={() => setPendingAcceptSuggestion(null)}
+          onMerge={handleAcceptSuggestion}
         />
       )}
 

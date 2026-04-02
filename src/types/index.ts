@@ -277,3 +277,23 @@ export interface EntityMerge {
   aliases: string[];
   createdAt: Date;
 }
+
+/**
+ * An AI-generated suggestion to merge two or more entity values.
+ * The user can accept (which opens the merge dialog) or reject the suggestion.
+ */
+export interface EntityMergeSuggestion {
+  id: string;
+  userId: string;
+  /** Category of entities to be merged. */
+  category: EntityCategory;
+  /** Suggested canonical name (the representative name). */
+  suggestedCanonical: string;
+  /** All entity values that the AI suggests merging together (at least two). */
+  aliases: string[];
+  /** AI-provided rationale for the suggestion. */
+  reason: string;
+  /** Current status of this suggestion. */
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+}

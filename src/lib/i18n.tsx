@@ -312,11 +312,21 @@ export interface Translations {
       mergesDesc: string;
       listTab: string;
       mergedTab: string;
+      suggestionsTab: string;
       xSelected: string;
       mergedFrom: string;
       mergeCreated: string;
       mergeDeleted: string;
       cannotBeUndone: string;
+      suggestionsAskAI: string;
+      suggestionsAskAIDesc: string;
+      suggestionsGenerating: string;
+      suggestionsEmpty: string;
+      suggestionsEmptyDesc: string;
+      suggestionsAccept: string;
+      suggestionsReject: string;
+      suggestionsCompleteFirst: string;
+      suggestionsError: string;
       relations: {
         viewToggle: string;
         exploreToggle: string;
@@ -786,11 +796,21 @@ const translations: Record<Locale, Translations> = {
         mergesDesc: 'Entities you have merged are shown as a single item in the knowledge view.',
         listTab: 'List',
         mergedTab: 'Merged',
+        suggestionsTab: 'Suggestions',
         xSelected: '{count} selected',
         mergedFrom: 'Merged from',
         mergeCreated: 'Merge created',
         mergeDeleted: 'Merge deleted',
         cannotBeUndone: 'This action cannot be undone.',
+        suggestionsAskAI: 'Ask AI for suggestions',
+        suggestionsAskAIDesc: 'AI will analyze your entities and suggest possible merges.',
+        suggestionsGenerating: 'Generating suggestions…',
+        suggestionsEmpty: 'No suggestions yet',
+        suggestionsEmptyDesc: 'Click the button above to ask AI to suggest entity merges.',
+        suggestionsAccept: 'Accept',
+        suggestionsReject: 'Reject',
+        suggestionsCompleteFirst: 'Complete all suggestions before generating new ones.',
+        suggestionsError: 'Failed to generate suggestions. Please try again.',
         relations: {
           viewToggle: 'Relation Map',
           exploreToggle: 'Explore',
@@ -1254,11 +1274,21 @@ const translations: Record<Locale, Translations> = {
         mergesDesc: 'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
         listTab: 'Lista',
         mergedTab: 'Uniti',
+        suggestionsTab: 'Suggerimenti',
         xSelected: '{count} selezionati',
         mergedFrom: 'Unito da',
         mergeCreated: 'Unione creata',
         mergeDeleted: 'Unione eliminata',
         cannotBeUndone: 'Questa azione non può essere annullata.',
+        suggestionsAskAI: "Chiedi suggerimenti all'IA",
+        suggestionsAskAIDesc: "L'IA analizzerà le tue entità e suggerirà possibili unioni.",
+        suggestionsGenerating: 'Generazione suggerimenti…',
+        suggestionsEmpty: 'Nessun suggerimento',
+        suggestionsEmptyDesc: "Clicca il pulsante per chiedere all'IA di suggerire unioni.",
+        suggestionsAccept: 'Accetta',
+        suggestionsReject: 'Rifiuta',
+        suggestionsCompleteFirst: 'Completa tutti i suggerimenti prima di generarne di nuovi.',
+        suggestionsError: 'Generazione suggerimenti non riuscita. Riprova.',
         relations: {
           viewToggle: 'Mappa relazioni',
           exploreToggle: 'Esplora',
@@ -1718,11 +1748,21 @@ const translations: Record<Locale, Translations> = {
         mergesDesc: 'Las entidades fusionadas se muestran como un único elemento en la vista de conocimiento.',
         listTab: 'Lista',
         mergedTab: 'Fusionados',
+        suggestionsTab: 'Sugerencias',
         xSelected: '{count} seleccionados',
         mergedFrom: 'Fusionado de',
         mergeCreated: 'Fusión creada',
         mergeDeleted: 'Fusión eliminada',
         cannotBeUndone: 'Esta acción no se puede deshacer.',
+        suggestionsAskAI: 'Pedir sugerencias a IA',
+        suggestionsAskAIDesc: 'La IA analizará tus entidades y sugerirá posibles fusiones.',
+        suggestionsGenerating: 'Generando sugerencias…',
+        suggestionsEmpty: 'Sin sugerencias',
+        suggestionsEmptyDesc: 'Haz clic en el botón para pedir a la IA que sugiera fusiones.',
+        suggestionsAccept: 'Aceptar',
+        suggestionsReject: 'Rechazar',
+        suggestionsCompleteFirst: 'Completa todas las sugerencias antes de generar nuevas.',
+        suggestionsError: 'Error al generar sugerencias. Inténtalo de nuevo.',
         relations: {
           viewToggle: 'Mapa de relaciones',
           exploreToggle: 'Explorar',
@@ -2182,11 +2222,21 @@ const translations: Record<Locale, Translations> = {
         mergesDesc: 'Les entités fusionnées apparaissent comme un seul élément dans la vue de connaissance.',
         listTab: 'Liste',
         mergedTab: 'Fusionnés',
+        suggestionsTab: 'Suggestions',
         xSelected: '{count} sélectionnés',
         mergedFrom: 'Fusionné depuis',
         mergeCreated: 'Fusion créée',
         mergeDeleted: 'Fusion supprimée',
         cannotBeUndone: 'Cette action est irréversible.',
+        suggestionsAskAI: "Demander des suggestions à l'IA",
+        suggestionsAskAIDesc: "L'IA analysera vos entités et suggérera des fusions possibles.",
+        suggestionsGenerating: 'Génération des suggestions…',
+        suggestionsEmpty: 'Aucune suggestion',
+        suggestionsEmptyDesc: "Cliquez sur le bouton pour demander à l'IA de suggérer des fusions.",
+        suggestionsAccept: 'Accepter',
+        suggestionsReject: 'Rejeter',
+        suggestionsCompleteFirst: "Terminez toutes les suggestions avant d'en générer de nouvelles.",
+        suggestionsError: 'Échec de la génération des suggestions. Veuillez réessayer.',
         relations: {
           viewToggle: 'Carte des relations',
           exploreToggle: 'Explorer',
@@ -2646,11 +2696,21 @@ const translations: Record<Locale, Translations> = {
         mergesDesc: 'Zusammengeführte Entitäten werden in der Wissensansicht als ein Element angezeigt.',
         listTab: 'Liste',
         mergedTab: 'Zusammengeführt',
+        suggestionsTab: 'Vorschläge',
         xSelected: '{count} ausgewählt',
         mergedFrom: 'Zusammengeführt aus',
         mergeCreated: 'Zusammenführung erstellt',
         mergeDeleted: 'Zusammenführung gelöscht',
         cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
+        suggestionsAskAI: 'KI nach Vorschlägen fragen',
+        suggestionsAskAIDesc: 'Die KI analysiert Ihre Entitäten und schlägt mögliche Zusammenführungen vor.',
+        suggestionsGenerating: 'Vorschläge werden generiert…',
+        suggestionsEmpty: 'Keine Vorschläge',
+        suggestionsEmptyDesc: 'Klicken Sie auf die Schaltfläche, um die KI nach Zusammenführungsvorschlägen zu fragen.',
+        suggestionsAccept: 'Akzeptieren',
+        suggestionsReject: 'Ablehnen',
+        suggestionsCompleteFirst: 'Beenden Sie alle Vorschläge, bevor Sie neue generieren.',
+        suggestionsError: 'Vorschläge konnten nicht generiert werden. Bitte erneut versuchen.',
         relations: {
           viewToggle: 'Beziehungskarte',
           exploreToggle: 'Erkunden',
