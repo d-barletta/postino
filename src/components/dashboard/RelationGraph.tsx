@@ -411,7 +411,7 @@ export function RelationGraph({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           {graph && !isEmpty && onExpandFullPage && (
             <Button size="sm" variant="ghost" onClick={onExpandFullPage}>
               <Maximize2 className="h-4 w-4" />
