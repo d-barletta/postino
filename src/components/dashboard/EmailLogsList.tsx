@@ -81,7 +81,15 @@ interface EmailDetailTabsProps {
   t: ReturnType<typeof useI18n>['t'];
 }
 
-function EmailDetailTabs({ log, emailData, isAdmin, activeTab, onTabChange, onFullscreen, t }: EmailDetailTabsProps) {
+function EmailDetailTabs({
+  log,
+  emailData,
+  isAdmin,
+  activeTab,
+  onTabChange,
+  onFullscreen,
+  t,
+}: EmailDetailTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange}>
       <TabsList>
@@ -93,21 +101,33 @@ function EmailDetailTabs({ log, emailData, isAdmin, activeTab, onTabChange, onFu
       {/* Summary tab */}
       <TabsContent value="summary" className="mt-3 space-y-3">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.to}</dt>
+          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+            {t.dashboard.emailHistory.to}
+          </dt>
           <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{log.toAddress}</dd>
           {emailData?.ccAddress && (
             <>
-              <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.cc}</dt>
-              <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.ccAddress}</dd>
+              <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                {t.dashboard.emailHistory.cc}
+              </dt>
+              <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
+                {emailData.ccAddress}
+              </dd>
             </>
           )}
           {emailData?.bccAddress && (
             <>
-              <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.bcc}</dt>
-              <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">{emailData.bccAddress}</dd>
+              <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                {t.dashboard.emailHistory.bcc}
+              </dt>
+              <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
+                {emailData.bccAddress}
+              </dd>
             </>
           )}
-          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.emailHistory.attachments}</dt>
+          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+            {t.dashboard.emailHistory.attachments}
+          </dt>
           <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
             {emailData?.loading ? (
               <span className="text-gray-400">…</span>
@@ -120,12 +140,14 @@ function EmailDetailTabs({ log, emailData, isAdmin, activeTab, onTabChange, onFu
         </dl>
         {log.ruleApplied && (
           <p className="text-xs text-gray-600 dark:text-gray-300">
-            <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span> {log.ruleApplied}
+            <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span>{' '}
+            {log.ruleApplied}
           </p>
         )}
         {log.tokensUsed !== undefined && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: ${(log.estimatedCost || 0).toFixed(5)}
+            {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: $
+            {(log.estimatedCost || 0).toFixed(5)}
           </p>
         )}
       </TabsContent>
@@ -145,15 +167,17 @@ function EmailDetailTabs({ log, emailData, isAdmin, activeTab, onTabChange, onFu
               html={emailData.originalBody}
               className="rounded-lg"
               style={{ minHeight: '200px', maxHeight: '400px' }}
-              title="Email content preview"
-              autoResize
               maxAutoHeight={400}
+              // autoResize
             />
             <div className="flex items-center gap-3 pt-1">
               {isAdmin ? (
                 <>
                   <button
-                    onClick={(e) => { e.stopPropagation(); onFullscreen(log.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFullscreen(log.id);
+                    }}
                     className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     title={t.emailOriginal.openFullPageView}
                   >
@@ -262,41 +286,44 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     skipped: 'default',
   };
 
-  const fetchLogs = useCallback(async (targetPage: number, isRefresh = false) => {
-    if (!firebaseUser) return;
-    if (isRefresh) setRefreshing(true);
-    else setLogsLoading(true);
-    setTotalCount(undefined);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const params = new URLSearchParams({
-        page: String(targetPage),
-        pageSize: String(PAGE_SIZE),
-        ...(searchQuery ? { search: searchQuery } : {}),
-        ...(hasAttachmentsFilter ? { hasAttachments: 'true' } : {}),
-      });
-      const res = await fetch(`/api/email/logs?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data: LogsResponse = await res.json();
-        setLogs(data.logs || []);
-        setPage(data.page);
-        setHasNextPage(data.hasNextPage);
-        setTotalPages(data.totalPages);
-        setTotalCount(data.totalCount);
+  const fetchLogs = useCallback(
+    async (targetPage: number, isRefresh = false) => {
+      if (!firebaseUser) return;
+      if (isRefresh) setRefreshing(true);
+      else setLogsLoading(true);
+      setTotalCount(undefined);
+      try {
+        const token = await firebaseUser.getIdToken();
+        const params = new URLSearchParams({
+          page: String(targetPage),
+          pageSize: String(PAGE_SIZE),
+          ...(searchQuery ? { search: searchQuery } : {}),
+          ...(hasAttachmentsFilter ? { hasAttachments: 'true' } : {}),
+        });
+        const res = await fetch(`/api/email/logs?${params}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data: LogsResponse = await res.json();
+          setLogs(data.logs || []);
+          setPage(data.page);
+          setHasNextPage(data.hasNextPage);
+          setTotalPages(data.totalPages);
+          setTotalCount(data.totalCount);
+        }
+      } finally {
+        setLogsLoading(false);
+        setRefreshing(false);
       }
-    } finally {
-      setLogsLoading(false);
-      setRefreshing(false);
-    }
-  }, [firebaseUser, searchQuery, hasAttachmentsFilter]);
+    },
+    [firebaseUser, searchQuery, hasAttachmentsFilter],
+  );
 
   // Initial load and when filters/search change
   useEffect(() => {
     setPage(1);
     fetchLogs(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, searchQuery, hasAttachmentsFilter, refreshTrigger]);
 
   const handleApplyFilters = () => {
@@ -329,45 +356,74 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     setSelectedId(null);
   };
 
-  const fetchExpandedEmail = useCallback(async (logId: string) => {
-    if (!firebaseUser || fetchedExpandedIds.current.has(logId)) return;
-    fetchedExpandedIds.current.add(logId);
-    setExpandedData((prev) => ({
-      ...prev,
-      [logId]: { originalBody: null, toAddress: '', ccAddress: null, bccAddress: null, attachmentCount: 0, attachmentNames: [], loading: true },
-    }));
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(`/api/email/original/${logId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
+  const fetchExpandedEmail = useCallback(
+    async (logId: string) => {
+      if (!firebaseUser || fetchedExpandedIds.current.has(logId)) return;
+      fetchedExpandedIds.current.add(logId);
+      setExpandedData((prev) => ({
+        ...prev,
+        [logId]: {
+          originalBody: null,
+          toAddress: '',
+          ccAddress: null,
+          bccAddress: null,
+          attachmentCount: 0,
+          attachmentNames: [],
+          loading: true,
+        },
+      }));
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch(`/api/email/original/${logId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setExpandedData((prev) => ({
+            ...prev,
+            [logId]: {
+              originalBody: data.originalBody ?? null,
+              toAddress: data.toAddress || '',
+              ccAddress: data.ccAddress ?? null,
+              bccAddress: data.bccAddress ?? null,
+              attachmentCount: data.attachmentCount ?? 0,
+              attachmentNames: data.attachmentNames ?? [],
+              loading: false,
+            },
+          }));
+        } else {
+          setExpandedData((prev) => ({
+            ...prev,
+            [logId]: {
+              originalBody: null,
+              toAddress: '',
+              ccAddress: null,
+              bccAddress: null,
+              attachmentCount: 0,
+              attachmentNames: [],
+              loading: false,
+              error: 'Failed to load',
+            },
+          }));
+        }
+      } catch {
         setExpandedData((prev) => ({
           ...prev,
           [logId]: {
-            originalBody: data.originalBody ?? null,
-            toAddress: data.toAddress || '',
-            ccAddress: data.ccAddress ?? null,
-            bccAddress: data.bccAddress ?? null,
-            attachmentCount: data.attachmentCount ?? 0,
-            attachmentNames: data.attachmentNames ?? [],
+            originalBody: null,
+            toAddress: '',
+            ccAddress: null,
+            bccAddress: null,
+            attachmentCount: 0,
+            attachmentNames: [],
             loading: false,
+            error: 'Failed to load',
           },
         }));
-      } else {
-        setExpandedData((prev) => ({
-          ...prev,
-          [logId]: { originalBody: null, toAddress: '', ccAddress: null, bccAddress: null, attachmentCount: 0, attachmentNames: [], loading: false, error: 'Failed to load' },
-        }));
       }
-    } catch {
-      setExpandedData((prev) => ({
-        ...prev,
-        [logId]: { originalBody: null, toAddress: '', ccAddress: null, bccAddress: null, attachmentCount: 0, attachmentNames: [], loading: false, error: 'Failed to load' },
-      }));
-    }
-  }, [firebaseUser]);
+    },
+    [firebaseUser],
+  );
 
   // Auto-expand and fetch email content when opened from a push notification link.
   // This fires when selectedEmailId is provided as a prop (e.g., ?selectedEmail=xxx in URL).
@@ -392,7 +448,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     if (!fullscreenEmailId) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setFullscreenEmailId(null); };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreenEmailId(null);
+    };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -401,9 +459,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   }, [fullscreenEmailId]);
 
   // Client-side status filter applied on top of server results
-  const filteredLogs = statusFilter
-    ? logs.filter((l) => l.status === statusFilter)
-    : logs;
+  const filteredLogs = statusFilter ? logs.filter((l) => l.status === statusFilter) : logs;
 
   const hasPendingChanges =
     pendingSearch.trim() !== searchQuery ||
@@ -441,7 +497,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
             type="search"
             value={pendingSearch}
             onChange={(e) => setPendingSearch(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
+            }}
             placeholder={t.dashboard.emailHistory.searchPlaceholder}
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
           />
@@ -489,7 +547,8 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         </div>
         {!logsLoading && (
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {totalCount !== undefined ? totalCount : filteredLogs.length} {t.dashboard.emailHistory.results}
+            {totalCount !== undefined ? totalCount : filteredLogs.length}{' '}
+            {t.dashboard.emailHistory.results}
           </span>
         )}
         {(searchQuery || statusFilter || hasAttachmentsFilter) && (
@@ -530,7 +589,10 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     <div className="text-center py-10 text-gray-400 dark:text-gray-500">
       {searchQuery || hasAttachmentsFilter || statusFilter ? (
         <>
-          <p>{t.dashboard.emailHistory.noEmailsWithStatus} &ldquo;{statusLabel[statusFilter] ?? statusFilter}&rdquo;.</p>
+          <p>
+            {t.dashboard.emailHistory.noEmailsWithStatus} &ldquo;
+            {statusLabel[statusFilter] ?? statusFilter}&rdquo;.
+          </p>
           <button
             onClick={handleClearFilters}
             className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline"
@@ -548,32 +610,33 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   );
 
   // Pagination controls
-  const pagination = (hasNextPage || page > 1) ? (
-    <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 dark:border-gray-800">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => handlePageChange(page - 1)}
-        disabled={page <= 1 || refreshing}
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        {t.dashboard.emailHistory.previous}
-      </Button>
-      <span className="text-xs text-gray-400 dark:text-gray-500">
-        {t.dashboard.emailHistory.page} {page}
-        {totalPages !== undefined ? ` ${t.dashboard.emailHistory.of} ${totalPages}` : ''}
-      </span>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => handlePageChange(page + 1)}
-        disabled={!hasNextPage || refreshing}
-      >
-        {t.dashboard.emailHistory.next}
-        <ChevronRight className="h-4 w-4 ml-1" />
-      </Button>
-    </div>
-  ) : null;
+  const pagination =
+    hasNextPage || page > 1 ? (
+      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 dark:border-gray-800">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handlePageChange(page - 1)}
+          disabled={page <= 1 || refreshing}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          {t.dashboard.emailHistory.previous}
+        </Button>
+        <span className="text-xs text-gray-400 dark:text-gray-500">
+          {t.dashboard.emailHistory.page} {page}
+          {totalPages !== undefined ? ` ${t.dashboard.emailHistory.of} ${totalPages}` : ''}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handlePageChange(page + 1)}
+          disabled={!hasNextPage || refreshing}
+        >
+          {t.dashboard.emailHistory.next}
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    ) : null;
 
   return (
     <>
@@ -584,7 +647,11 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         <Card>
           <CardHeader>{filterHeader}</CardHeader>
           <CardContent className="p-0">
-            {logsLoading ? loadingSkeleton : filteredLogs.length === 0 ? emptyState : (
+            {logsLoading ? (
+              loadingSkeleton
+            ) : filteredLogs.length === 0 ? (
+              emptyState
+            ) : (
               <>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
                   {filteredLogs.map((log) => {
@@ -605,13 +672,21 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                               <Mail className="h-4 w-4 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
                             )}
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">{log.subject}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">{t.dashboard.emailHistory.from} {log.fromAddress}</p>
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">
+                                {log.subject}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">
+                                {t.dashboard.emailHistory.from} {log.fromAddress}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
-                            <Badge variant={statusVariant[log.status] || 'default'}>{statusLabel[log.status] ?? log.status}</Badge>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(log.receivedAt, locale)}</span>
+                            <Badge variant={statusVariant[log.status] || 'default'}>
+                              {statusLabel[log.status] ?? log.status}
+                            </Badge>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {formatDate(log.receivedAt, locale)}
+                            </span>
                           </div>
                         </div>
                         {expanded && (
@@ -653,48 +728,60 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
           </div>
           {/* Scrollable list */}
           <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
-            {logsLoading ? loadingSkeleton : filteredLogs.length === 0 ? emptyState : (
-              filteredLogs.map((log) => {
-                const hasAttachments = (log.attachmentCount ?? 0) > 0;
-                const selected = selectedId === log.id;
-                return (
-                  <div
-                    key={log.id}
-                    className={cn(
-                      'px-5 py-3.5 cursor-pointer transition-colors',
-                      selected
-                        ? 'bg-[#efd957]/20 dark:bg-[#efd957]/10 border-l-2 border-l-[#efd957]'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-2 border-l-transparent',
-                    )}
-                    onClick={() => handleToggleExpand(log.id)}
-                  >
-                    <div className="flex items-start gap-2">
-                      {hasAttachments ? (
-                        <Paperclip className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
-                      ) : (
-                        <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className={cn('text-sm truncate', selected ? 'font-semibold text-gray-900 dark:text-gray-50' : 'font-medium text-gray-800 dark:text-gray-100')}>
-                          {log.subject}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                          {log.fromAddress}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <Badge variant={statusVariant[log.status] || 'default'} className="text-[10px] px-1.5 py-0 h-4">
-                            {statusLabel[log.status] ?? log.status}
-                          </Badge>
-                          <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {formatDate(log.receivedAt, locale)}
-                          </span>
+            {logsLoading
+              ? loadingSkeleton
+              : filteredLogs.length === 0
+                ? emptyState
+                : filteredLogs.map((log) => {
+                    const hasAttachments = (log.attachmentCount ?? 0) > 0;
+                    const selected = selectedId === log.id;
+                    return (
+                      <div
+                        key={log.id}
+                        className={cn(
+                          'px-5 py-3.5 cursor-pointer transition-colors',
+                          selected
+                            ? 'bg-[#efd957]/20 dark:bg-[#efd957]/10 border-l-2 border-l-[#efd957]'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-2 border-l-transparent',
+                        )}
+                        onClick={() => handleToggleExpand(log.id)}
+                      >
+                        <div className="flex items-start gap-2">
+                          {hasAttachments ? (
+                            <Paperclip className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+                          ) : (
+                            <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={cn(
+                                'text-sm truncate',
+                                selected
+                                  ? 'font-semibold text-gray-900 dark:text-gray-50'
+                                  : 'font-medium text-gray-800 dark:text-gray-100',
+                              )}
+                            >
+                              {log.subject}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                              {log.fromAddress}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <Badge
+                                variant={statusVariant[log.status] || 'default'}
+                                className="text-[10px] px-1.5 py-0 h-4"
+                              >
+                                {statusLabel[log.status] ?? log.status}
+                              </Badge>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                                {formatDate(log.receivedAt, locale)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                    );
+                  })}
           </div>
           {/* Pagination pinned to bottom */}
           {!logsLoading && filteredLogs.length > 0 && pagination}
@@ -738,21 +825,17 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
       {/* Full page email modal (shared between both layouts) */}
       <Dialog
         open={!!fullscreenEmailId && !!fullscreenLog?.originalBody}
-        onOpenChange={(open) => { if (!open) setFullscreenEmailId(null); }}
+        onOpenChange={(open) => {
+          if (!open) setFullscreenEmailId(null);
+        }}
       >
         <DialogContent
           hideCloseButton
-          className={cn(
-            'w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0',
-          )}
+          className={cn('w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0')}
           aria-describedby={undefined}
         >
           {fullscreenLog?.originalBody && (
-            <SafeEmailIframe
-              html={fullscreenLog.originalBody}
-              className="flex-1"
-              title="Original email content full page"
-            />
+            <SafeEmailIframe html={fullscreenLog.originalBody} className="flex-1" />
           )}
           <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -769,4 +852,3 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     </>
   );
 }
-

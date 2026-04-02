@@ -58,7 +58,6 @@ export function FullPageEmailDialog({
           <SafeEmailIframe
             html={body}
             className="flex-1"
-            title="Original email content full page"
           />
         )}
         {!loading && !body && (

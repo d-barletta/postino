@@ -1169,9 +1169,8 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                                     html={emailData.originalBody}
                                     className="rounded-lg"
                                     style={{ minHeight: '200px', maxHeight: '400px' }}
-                                    title="Email content preview"
-                                    autoResize
                                     maxAutoHeight={400}
+                                    // autoResize
                                   />
                                   <div className="flex items-center gap-3 pt-1">
                                     <button
@@ -1500,7 +1499,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                           html={emailData.originalBody}
                           className="flex-1 rounded-lg min-h-0"
                           style={{ height: '100%' }}
-                          title="Email content preview"
                         />
                       )}
                       {emailData && !emailData.loading && !emailData.originalBody && !emailData.error && (

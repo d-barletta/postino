@@ -266,8 +266,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                         html={email.originalBody}
                         className="rounded-xl"
                         style={{ minHeight: '300px' }}
-                        title="Original email content"
-                        autoResize
+                        // autoResize
                       />
                     </div>
                   ) : (
@@ -339,8 +338,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                             html={reprocessResult.body}
                             className="rounded-lg"
                             style={{ minHeight: '300px' }}
-                            title="Processed email content"
-                            autoResize
+                            // autoResize
                           />
                         </div>
                       </>
