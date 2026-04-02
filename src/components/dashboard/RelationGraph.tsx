@@ -92,6 +92,7 @@ function CytoscapeCanvas({
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const cyRef = useRef<cytoscape.Core | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
@@ -108,6 +109,15 @@ function CytoscapeCanvas({
       observer.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed()) return;
+
+    cy.nodes().style('color', isDarkMode ? '#e2e8f0' : '#1f2937');
+    cy.nodes().style('text-background-color', isDarkMode ? '#0d1117' : '#f3f4f6');
+    cy.style().update();
+  }, [isDarkMode]);
 
   useEffect(() => {
     if (!containerRef.current || graph.nodes.length === 0) return;
@@ -328,9 +338,10 @@ function CytoscapeCanvas({
       });
 
       cy.on('layoutstop', () => {
-        if (!destroyed) cy.fit(undefined, 40);
+        if (!destroyed && !cy.destroyed()) cy.fit(undefined, 40);
       });
 
+      cyRef.current = cy;
       return cy;
     };
 
@@ -338,13 +349,13 @@ function CytoscapeCanvas({
     return () => {
       destroyed = true;
       cyPromise.then((cy) => {
-        if (!cy) return;
-        cy.stop(true, true);
+        if (!cy || cy.destroyed()) return;
+        if (cyRef.current === cy) cyRef.current = null;
         cy.removeAllListeners();
         cy.destroy();
       }).catch(() => {});
     };
-  }, [graph, onNodeClick, isDarkMode]);
+  }, [graph, onNodeClick]);
 
   return (
     <div
