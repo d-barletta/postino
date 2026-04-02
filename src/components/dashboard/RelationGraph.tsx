@@ -19,15 +19,7 @@ export const CATEGORY_COLORS: Record<EntityGraphNodeCategory, string> = {
   tags: '#c084fc',        // purple-400
 };
 
-// Dark versions for the canvas background-aware glow
-const CATEGORY_GLOW: Record<EntityGraphNodeCategory, string> = {
-  topics: '#6366f180',
-  people: '#22c55e80',
-  organizations: '#f9731680',
-  places: '#0ea5e980',
-  events: '#ec489980',
-  tags: '#a855f780',
-};
+
 
 // ---------------------------------------------------------------------------
 // Props
@@ -142,20 +134,18 @@ function CytoscapeCanvas({
         style: [
           {
             selector: 'node',
-            // shadow-* props are valid Cytoscape runtime properties but absent from @types/cytoscape
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style: {
               'background-color': (ele: cytoscape.NodeSingular) =>
                 CATEGORY_COLORS[ele.data('category') as EntityGraphNodeCategory] ?? '#888',
               'border-color': (ele: cytoscape.NodeSingular) =>
                 CATEGORY_COLORS[ele.data('category') as EntityGraphNodeCategory] ?? '#888',
-              'border-width': 1.5,
+              'border-width': 0.5,
               'border-opacity': 0.6,
               label: 'data(label)',
               'text-valign': 'bottom',
               'text-halign': 'center',
               'font-size': '10px',
-              'font-weight': 600,
+              'font-weight': 400,
               color: '#e2e8f0',
               'text-margin-y': 6,
               'text-outline-width': 0,
@@ -180,14 +170,13 @@ function CytoscapeCanvas({
                     : (ele.data('count') - minCount) / (maxCount - minCount);
                 return 18 + ratio * 28;
               },
-              'shadow-blur': 12,
-              'shadow-color': (ele: cytoscape.NodeSingular) =>
-                CATEGORY_GLOW[ele.data('category') as EntityGraphNodeCategory] ?? '#00000080',
-              'shadow-offset-x': 0,
-              'shadow-offset-y': 0,
-              'shadow-opacity': 0.8,
+              'outline-color': (ele: cytoscape.NodeSingular) =>
+                CATEGORY_COLORS[ele.data('category') as EntityGraphNodeCategory] ?? '#888',
+              'outline-width': 2,
+              'outline-opacity': 0.35,
+              'outline-offset': 2,
               'overlay-padding': 8,
-            } as any,
+            },
           },
           {
             selector: 'edge',
@@ -217,16 +206,15 @@ function CytoscapeCanvas({
           },
           {
             selector: '.node-selected',
-            // shadow-* props are valid Cytoscape runtime properties but absent from @types/cytoscape
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style: {
               'border-color': '#efd957',
               'border-width': 3,
               'border-opacity': 1,
-              'shadow-color': '#efd95780',
-              'shadow-blur': 16,
-              'shadow-opacity': 1,
-            } as any,
+              'outline-color': '#efd957',
+              'outline-width': 10,
+              'outline-opacity': 0.6,
+              'outline-offset': 2,
+            },
           },
         ],
         layout: {
