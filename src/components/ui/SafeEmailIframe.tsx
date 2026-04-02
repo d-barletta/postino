@@ -58,22 +58,39 @@ export function SafeEmailIframe({
     const head = doc.head ?? doc.documentElement;
     head.insertBefore(baseStyle, head.firstChild);
 
-    const onDocClick = (event: any) => {
-      console.log(event);
-      const link = event.target?.closest('a');
-      console.log(link);
-      if (!link) return;
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      const href = link.getAttribute('href');
-      console.log(href);
-      if (!href) return;
+    const openLink = (href: string) => {
       const safeUrl = normalizeSafeExternalUrl(href);
       if (!safeUrl) return;
       window.open(safeUrl, '_blank', 'noopener,noreferrer');
     };
 
+    // touchHandled prevents the synthetic click that follows touchend from
+    // opening the link a second time on mobile browsers.
+    let touchHandled = false;
+
+    const onDocClick = (event: any) => {
+      if (touchHandled) { touchHandled = false; return; }
+      const link = event.target?.closest('a');
+      if (!link) return;
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      const href = link.getAttribute('href');
+      if (!href) return;
+      openLink(href);
+    };
+
+    const onDocTouchEnd = (event: any) => {
+      const link = event.target?.closest('a');
+      if (!link) return;
+      event?.preventDefault?.();
+      touchHandled = true;
+      const href = link.getAttribute('href');
+      if (!href) return;
+      openLink(href);
+    };
+
     doc.addEventListener('click', onDocClick);
+    doc.addEventListener('touchend', onDocTouchEnd);
 
     if (autoResize) {
       const measuredHeight = doc.documentElement?.scrollHeight;
@@ -87,6 +104,7 @@ export function SafeEmailIframe({
 
     return () => {
       doc.removeEventListener('click', onDocClick);
+      doc.removeEventListener('touchend', onDocTouchEnd);
     };
   }, [cleanHtml, autoResize, maxAutoHeight]);
 
