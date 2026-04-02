@@ -137,6 +137,14 @@ async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Pro
   const delayMs = computeRetryDelayMs(job.attempts);
   const notBefore = Timestamp.fromMillis(Date.now() + delayMs);
 
+  // Update the email log first so that even if the job status update fails, the
+  // log reflects a non-stuck state. The job will remain re-claimable via lease
+  // expiry and will be retried on the next worker run.
+  await db.collection('emailLogs').doc(job.payload.logId).update({
+    status: 'received',
+    errorMessage: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
+  });
+
   await db.collection('emailJobs').doc(job.id).update({
     status: 'retrying',
     lastError: errMsg,
@@ -146,15 +154,20 @@ async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Pro
     updatedAt: Timestamp.now(),
   });
 
-  await db.collection('emailLogs').doc(job.payload.logId).update({
-    status: 'received',
-    errorMessage: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
-  });
   await updateWebhookLogForJob(job.id, 'retrying', 'retrying');
 }
 
 async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Promise<void> {
   const db = adminDb();
+
+  // Update the email log first so that even if the job status update fails, the
+  // log reflects the error and does not stay stuck in 'processing' permanently.
+  // A job whose status update fails here will remain re-claimable via lease expiry;
+  // the idempotency guard will then recognise the terminal log state and mark it done.
+  await db.collection('emailLogs').doc(job.payload.logId).update({
+    status: 'error',
+    errorMessage: errMsg,
+  });
 
   await db.collection('emailJobs').doc(job.id).update({
     status: 'failed',
@@ -163,11 +176,6 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
     lockedBy: null,
     updatedAt: Timestamp.now(),
     completedAt: Timestamp.now(),
-  });
-
-  await db.collection('emailLogs').doc(job.payload.logId).update({
-    status: 'error',
-    errorMessage: errMsg,
   });
 
   await sendEmailCompletionPushNotification(
@@ -183,22 +191,37 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
 async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> {
   const db = adminDb();
 
+  // Idempotency guard: read the current log status BEFORE overwriting it so we
+  // can detect cases where a previous worker already completed this job (e.g. the
+  // job lease expired after a successful forward but before markJobDone ran).
+  // Terminal states: forwarded / error / skipped → skip re-processing, just close
+  // the job so it is not re-queued.
+  const logSnap = await db.collection('emailLogs').doc(job.payload.logId).get();
+  const currentLogStatus = logSnap.exists ? (logSnap.data()?.status as string | undefined) : undefined;
+  if (currentLogStatus === 'forwarded' || currentLogStatus === 'error' || currentLogStatus === 'skipped') {
+    await markJobDone(job.id);
+    return;
+  }
+
   await db.collection('emailLogs').doc(job.payload.logId).update({
     status: 'processing',
     processingStartedAt: Timestamp.now(),
   });
   await updateWebhookLogForJob(job.id, 'processing', 'processing');
 
-  // Idempotency guard: if the log is already forwarded, skip side effects.
-  const logSnap = await db.collection('emailLogs').doc(job.payload.logId).get();
-  if (logSnap.exists && logSnap.data()?.status === 'forwarded') {
-    await markJobDone(job.id);
-    return;
-  }
-
   try {
     await processQueuedInboundPayload(job.payload);
-    await markJobDone(job.id);
+    // The email was forwarded successfully (processQueuedInboundPayload updated the
+    // log status). Catch markJobDone failures in isolation so that a transient
+    // Firestore error here does not cascade into the error/retry path and
+    // overwrite the 'forwarded' log status with 'error' or 'received'.
+    try {
+      await markJobDone(job.id);
+    } catch (doneErr) {
+      console.error('Failed to mark job done after successful processing (job:', job.id, '):', doneErr);
+      // The job lease will expire and it will be re-claimed; the idempotency guard
+      // above will then recognise the 'forwarded' log state and mark it done.
+    }
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
 
