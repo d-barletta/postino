@@ -349,6 +349,37 @@ export function KnowledgeTab() {
         },
         body: JSON.stringify({ canonical, aliases, category }),
       });
+
+      if (res.status === 409) {
+        // Some aliases already belong to an existing merge — update it with the union
+        const json = await res.json() as { existingId?: string; error?: string };
+        const existingId = json.existingId;
+        if (!existingId) throw new Error(json.error ?? 'Failed to create merge');
+
+        const existingMerge = merges.find((m) => m.id === existingId);
+        const mergedAliases = existingMerge
+          ? Array.from(new Set([...existingMerge.aliases, ...aliases]))
+          : aliases;
+
+        const patchRes = await fetch(`/api/entities/merges/${existingId}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ canonical, aliases: mergedAliases, category }),
+        });
+        if (!patchRes.ok) {
+          const patchJson = await patchRes.json() as { error?: string };
+          throw new Error(patchJson.error ?? 'Failed to update merge');
+        }
+        await Promise.all([fetchKnowledge(), fetchMerges()]);
+        setMergeMode(false);
+        setSelectedChips([]);
+        toast.success(k.mergeCreated);
+        return;
+      }
+
       if (!res.ok) {
         const json = await res.json() as { error?: string };
         throw new Error(json.error ?? 'Failed to create merge');
@@ -358,7 +389,7 @@ export function KnowledgeTab() {
       setSelectedChips([]);
       toast.success(k.mergeCreated);
     },
-    [firebaseUser, fetchKnowledge, fetchMerges, k],
+    [firebaseUser, fetchKnowledge, fetchMerges, merges, k],
   );
 
   const handleDeleteMerge = useCallback(
