@@ -24,11 +24,12 @@ import type { EntityGraphNodeCategory } from '@/types';
 
 export function RelationsTab() {
   const { t } = useI18n();
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, loading: authLoading } = useAuth();
   const k = t.dashboard.knowledge;
 
   const {
     graph,
+    hasFetched,
     loading,
     generating,
     fetchGraph,
@@ -92,7 +93,7 @@ export function RelationsTab() {
         <CardContent>
           <RelationGraph
             graph={graph}
-            loading={loading}
+            loading={authLoading || loading || !hasFetched}
             generating={generating}
             onGenerate={generateGraph}
             onNodeClick={handleNodeClick}

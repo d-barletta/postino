@@ -383,6 +383,7 @@ export function RelationGraph({
     : null;
 
   const isEmpty = graph && graph.nodes.length === 0;
+  const isResolvingInitialState = loading && !graph && !generating;
 
   return (
     <div className="space-y-4">
@@ -404,19 +405,26 @@ export function RelationGraph({
               {tr.expandFullPage}
             </Button>
           )}
-          <Button
-            onClick={onGenerate}
-            disabled={generating}
-            size="sm"
-            variant={graph ? 'ghost' : 'primary'}
-          >
-            <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
-            {generating
-              ? tr.generating
-              : graph
-              ? tr.regenerate
-              : tr.generate}
-          </Button>
+          {isResolvingInitialState ? (
+            <div
+              className="h-9 w-32 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse"
+              aria-label="Loading graph actions"
+            />
+          ) : (
+            <Button
+              onClick={onGenerate}
+              disabled={generating}
+              size="sm"
+              variant={graph ? 'ghost' : 'primary'}
+            >
+              <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
+              {generating
+                ? tr.generating
+                : graph
+                ? tr.regenerate
+                : tr.generate}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -497,9 +505,16 @@ export function RelationGraphFullPageContent({
 // ---------------------------------------------------------------------------
 export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
   const [graph, setGraph] = useState<EntityRelationGraph | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (firebaseUser) {
+      setHasFetched(false);
+    }
+  }, [firebaseUser]);
 
   const fetchGraph = useCallback(async () => {
     if (!firebaseUser) return;
@@ -517,6 +532,7 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
       setError('Failed to load relation graph');
     } finally {
       setLoading(false);
+      setHasFetched(true);
     }
   }, [firebaseUser]);
 
@@ -540,6 +556,6 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
     }
   }, [firebaseUser]);
 
-  return { graph, loading, generating, error, fetchGraph, generateGraph };
+  return { graph, hasFetched, loading, generating, error, fetchGraph, generateGraph };
 }
 
