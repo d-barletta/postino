@@ -23,6 +23,8 @@ interface SelectedEntity {
 interface EntityMergeDialogProps {
   selected: SelectedEntity[];
   categoryLabel: string;
+  /** Optional default canonical name (e.g. pre-filled from an AI suggestion). */
+  defaultCanonical?: string;
   onClose: () => void;
   onMerge: (canonical: string, aliases: string[], category: EntityCategory) => Promise<void>;
 }
@@ -30,12 +32,13 @@ interface EntityMergeDialogProps {
 export function EntityMergeDialog({
   selected,
   categoryLabel,
+  defaultCanonical,
   onClose,
   onMerge,
 }: EntityMergeDialogProps) {
   const { t } = useI18n();
   const k = t.dashboard.knowledge;
-  const [canonical, setCanonical] = useState(selected[0]?.value ?? '');
+  const [canonical, setCanonical] = useState(defaultCanonical ?? selected[0]?.value ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
