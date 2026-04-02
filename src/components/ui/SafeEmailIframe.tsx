@@ -42,16 +42,25 @@ export function SafeEmailIframe({
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe) { alert('[SafeEmailIframe] iframe ref is null'); return; }
+    if (!iframe) {
+      console.log('[SafeEmailIframe] iframe ref is null');
+      return;
+    }
     const doc = iframe.contentDocument;
-    if (!doc) { alert('[SafeEmailIframe] contentDocument is null'); return; }
+    if (!doc) {
+      console.log('[SafeEmailIframe] contentDocument is null');
+      return;
+    }
 
     doc.open();
     doc.write(cleanHtml);
     doc.close();
 
     const head = doc.head ?? doc.documentElement;
-    if (!head) { alert('[SafeEmailIframe] could not find head/documentElement'); return; }
+    if (!head) {
+      console.log('[SafeEmailIframe] could not find head/documentElement');
+      return;
+    }
 
     // Inject <base target="_blank"> first so every link opens in a new tab
     // natively. This is the only approach that works on iOS Safari, which
@@ -59,32 +68,39 @@ export function SafeEmailIframe({
     const base = doc.createElement('base');
     base.target = '_blank';
     head.insertBefore(base, head.firstChild);
-    alert('[SafeEmailIframe] <base target="_blank"> injected');
+    console.log('[SafeEmailIframe] <base target="_blank"> injected');
 
     // Inject baseline styles: white background and black text isolated from
     // the parent app's CSS variables and dark-mode overrides.
     const baseStyle = doc.createElement('style');
-    baseStyle.textContent = 'html,body{background:#fff!important;color:#000!important;font-family:sans-serif;font-size:16px;}';
+    baseStyle.textContent =
+      'html,body{background:#fff!important;color:#000!important;font-family:sans-serif;font-size:16px;}';
     head.insertBefore(baseStyle, head.firstChild);
 
     // Block any link whose protocol is not http/https (e.g. javascript:, data:).
     // Valid http/https links are handled natively by the <base target="_blank">.
     const onDocClick = (event: MouseEvent) => {
       const link = (event.target as Element)?.closest('a');
-      if (!link) { alert('[SafeEmailIframe] click: no <a> found near target'); return; }
+      if (!link) {
+        console.log('[SafeEmailIframe] click: no <a> found near target');
+        return;
+      }
       const href = link.getAttribute('href');
-      if (!href) { alert('[SafeEmailIframe] click: <a> has no href'); return; }
+      if (!href) {
+        console.log('[SafeEmailIframe] click: <a> has no href');
+        return;
+      }
       const safeUrl = normalizeSafeExternalUrl(href);
       if (!safeUrl) {
-        alert(`[SafeEmailIframe] click: blocked unsafe href="${href}"`);
+        console.log(`[SafeEmailIframe] click: blocked unsafe href="${href}"`);
         event.preventDefault();
         return;
       }
-      alert(`[SafeEmailIframe] click: allowing href="${safeUrl}" — browser will open it`);
+      console.log(`[SafeEmailIframe] click: allowing href="${safeUrl}" — browser will open it`);
     };
 
     doc.addEventListener('click', onDocClick);
-    alert('[SafeEmailIframe] click listener attached');
+    console.log('[SafeEmailIframe] click listener attached');
 
     if (autoResize) {
       const measuredHeight = doc.documentElement?.scrollHeight;
