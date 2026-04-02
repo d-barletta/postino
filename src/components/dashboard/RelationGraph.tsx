@@ -128,9 +128,26 @@ function CytoscapeCanvas({
         })),
       ];
 
+      // Set deterministic initial positions so the cose layout converges
+      // to the same result every time (randomize: false uses current positions).
+      const nodeCount = elements.filter((e) => !('source' in e.data)).length;
+      const initialRadius = Math.max(150, nodeCount * 20);
+      const positionedElements = elements.map((el, i) => {
+        if ('source' in el.data) return el; // edge — no position needed
+        const nodeIndex = elements.filter((e, j) => j < i && !('source' in e.data)).length;
+        const angle = (2 * Math.PI * nodeIndex) / nodeCount;
+        return {
+          ...el,
+          position: {
+            x: initialRadius * Math.cos(angle),
+            y: initialRadius * Math.sin(angle),
+          },
+        };
+      });
+
       const cy = cytoscape({
         container: containerRef.current,
-        elements,
+        elements: positionedElements,
         style: [
           {
             selector: 'node',
