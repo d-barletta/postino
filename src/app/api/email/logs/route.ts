@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam));
 
     const db = adminDb();
-    let query: Query = db
+    const query: Query = db
       .collection('emailLogs')
       .where('userId', '==', decoded.uid)
       .orderBy('receivedAt', 'desc');

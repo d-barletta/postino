@@ -6,14 +6,19 @@ import { resolveAssignedEmailDomain } from '@/lib/email-utils';
 const MAX_ATTEMPTS = 10;
 
 export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const token = authHeader.split('Bearer ')[1];
+  let decoded: Awaited<ReturnType<ReturnType<typeof adminAuth>['verifyIdToken']>>;
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split('Bearer ')[1];
-    const decoded = await adminAuth().verifyIdToken(token);
+    decoded = await adminAuth().verifyIdToken(token);
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
+  try {
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const domain = resolveAssignedEmailDomain(settingsSnap.data());

@@ -48,15 +48,20 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     // Gather all documents to delete
-    const [rulesSnap, logsSnap] = await Promise.all([
+    const [rulesSnap, logsSnap, entityMergesSnap, entityMergeSuggestionsSnap] = await Promise.all([
       db.collection('rules').where('userId', '==', uid).get(),
       db.collection('emailLogs').where('userId', '==', uid).get(),
+      db.collection('entityMerges').where('userId', '==', uid).get(),
+      db.collection('entityMergeSuggestions').where('userId', '==', uid).get(),
     ]);
 
-    // Collect all refs to delete (rules + logs + auxiliary docs)
+    // Collect all refs to delete (rules + logs + entity data + auxiliary docs)
     const refsToDelete = [
       ...rulesSnap.docs.map((d) => d.ref),
       ...logsSnap.docs.map((d) => d.ref),
+      ...entityMergesSnap.docs.map((d) => d.ref),
+      ...entityMergeSuggestionsSnap.docs.map((d) => d.ref),
+      db.collection('entityRelations').doc(uid),
       db.collection('userMemory').doc(uid),
       db.collection('users').doc(uid),
     ];

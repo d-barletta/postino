@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { AggregateField } from 'firebase-admin/firestore';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,20 +12,34 @@ export async function GET(request: NextRequest) {
     const decoded = await adminAuth().verifyIdToken(token);
 
     const db = adminDb();
-    const snap = await db
-      .collection('emailLogs')
-      .where('userId', '==', decoded.uid)
-      .get();
+    const base = db.collection('emailLogs').where('userId', '==', decoded.uid);
 
-    const logs = snap.docs.map((d) => d.data());
+    // Use server-side aggregation queries to avoid reading every document.
+    const [
+      totalResult,
+      forwardedResult,
+      errorResult,
+      skippedResult,
+      aggregateResult,
+    ] = await Promise.all([
+      base.count().get(),
+      base.where('status', '==', 'forwarded').count().get(),
+      base.where('status', '==', 'error').count().get(),
+      base.where('status', '==', 'skipped').count().get(),
+      base.aggregate({
+        totalTokensUsed: AggregateField.sum('tokensUsed'),
+        totalEstimatedCost: AggregateField.sum('estimatedCost'),
+      }).get(),
+    ]);
 
     const stats = {
-      totalEmailsReceived: logs.length,
-      totalEmailsForwarded: logs.filter((l) => l.status === 'forwarded').length,
-      totalEmailsError: logs.filter((l) => l.status === 'error').length,
-      totalEmailsSkipped: logs.filter((l) => l.status === 'skipped').length,
-      totalTokensUsed: logs.reduce((sum, l) => sum + (l.tokensUsed || 0), 0),
-      totalEstimatedCost: logs.reduce((sum, l) => sum + (l.estimatedCost || 0), 0),
+      totalEmailsReceived: totalResult.data().count,
+      totalEmailsForwarded: forwardedResult.data().count,
+      totalEmailsError: errorResult.data().count,
+      totalEmailsSkipped: skippedResult.data().count,
+      // Firestore sum() returns null when no documents match; treat as 0.
+      totalTokensUsed: aggregateResult.data().totalTokensUsed ?? 0,
+      totalEstimatedCost: aggregateResult.data().totalEstimatedCost ?? 0,
     };
 
     return NextResponse.json({ stats });

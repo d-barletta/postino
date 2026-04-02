@@ -214,10 +214,12 @@ interface InstallPwaDrawerProps {
 export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: InstallPwaDrawerProps) {
   const { isAvailable, install } = usePWAInstall();
   const [open, setOpen] = useState(false);
-  const [deviceOS, setDeviceOS] = useState<DeviceOS>('desktop');
-  const [browserType, setBrowserType] = useState<BrowserType>('other');
-  const [isIOS26, setIsIOS26] = useState(false);
-  const [isIPad, setIsIPad] = useState(false);
+  // Device/browser detection helpers all guard against `typeof navigator === 'undefined'`,
+  // so lazy initialisers are safe for both SSR and client renders.
+  const [deviceOS] = useState<DeviceOS>(getDeviceOS);
+  const [browserType] = useState<BrowserType>(getBrowserType);
+  const [isIOS26] = useState<boolean>(detectIOS26Safari);
+  const [isIPad] = useState<boolean>(detectIPad);
   const { t } = useI18n();
   const tr = t.dashboard.pwaInstall;
 
@@ -225,27 +227,19 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
   useModalHistory(open, () => setOpen(false));
 
   useEffect(() => {
-    // Device/browser detection is always needed (for manual-install instructions).
-    const os = getDeviceOS();
-    const browser = getBrowserType();
-    setDeviceOS(os);
-    setBrowserType(browser);
-    setIsIOS26(detectIOS26Safari());
-    setIsIPad(detectIPad());
-
     // Auto-prompt: skip if already installed or previously dismissed.
     if (isStandalone() || hasDismissed()) return;
 
     // iOS Firefox cannot add to homescreen — skip entirely.
-    if (os === 'ios' && browser === 'firefox') return;
+    if (deviceOS === 'ios' && browserType === 'firefox') return;
 
     // Show if native prompt is available, or if manual steps can be shown.
-    const needsManual = os === 'ios' || (os === 'android' && !isAvailable);
+    const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
 
     const timer = setTimeout(() => setOpen(true), SHOW_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isAvailable]);
+  }, [isAvailable, deviceOS, browserType]);
 
   // Allow an external trigger (e.g. user just enabled notifications) to open early.
   useEffect(() => {
@@ -254,6 +248,7 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
     if (deviceOS === 'ios' && browserType === 'firefox') return;
     const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(true);
   }, [triggerOpen, isAvailable, deviceOS, browserType]);
 
@@ -264,6 +259,7 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
     if (deviceOS === 'ios' && browserType === 'firefox') return;
     const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(true);
   }, [forceOpenTrigger, isAvailable, deviceOS, browserType]);
 
