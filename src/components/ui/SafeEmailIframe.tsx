@@ -205,7 +205,7 @@ export function SafeEmailIframe({
   return (
     <iframe
       ref={iframeRef}
-      sandbox="allow-same-origin"
+      sandbox="allow-same-origin allow-popups"
       className={cn('w-full border-0', className)}
       style={style}
       title={title}
