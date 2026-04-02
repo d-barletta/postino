@@ -200,13 +200,11 @@ function SwipeableEmailRow({
   const close = useCallback(() => {
     applyOffset(0, true);
     setIsSnapped(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const snapOpen = useCallback(() => {
     applyOffset(-SWIPE_ACTION_WIDTH, true);
     setIsSnapped(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When snapped open, close on the next outside pointerdown — but skip
@@ -641,7 +639,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     } finally {
       setDeleting(false);
     }
-  }, [deleteEmailId, firebaseUser, selectedId, totalCount, totalEmailCount]);
+  }, [deleteEmailId, firebaseUser, selectedId, t, totalCount, totalEmailCount]);
 
   // Auto-expand when selectedEmailId prop is provided (e.g., from push notification link)
   useEffect(() => {

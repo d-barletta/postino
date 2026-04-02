@@ -159,9 +159,13 @@ export default function DashboardPage() {
   }, [firebaseUser]);
 
   useEffect(() => {
-    if (!firebaseUser) { setLogsLoading(false); return; }
+    if (!firebaseUser) {
+      setLogsLoading(false);
+      return;
+    }
     setLogsLoading(true);
     Promise.all([fetchLogs(), fetchStats()]).finally(() => setLogsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser]); // fetchLogs and fetchStats are derived from firebaseUser — no separate dep needed
 
   const handleLogsRefresh = useCallback(async () => {
