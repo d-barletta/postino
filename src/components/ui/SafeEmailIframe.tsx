@@ -58,39 +58,56 @@ export function SafeEmailIframe({
     const head = doc.head ?? doc.documentElement;
     head.insertBefore(baseStyle, head.firstChild);
 
+    // iOS Safari blocks window.open() from iframe event contexts, so we create
+    // a temporary anchor in the parent document and programmatically click it.
     const openLink = (href: string) => {
       const safeUrl = normalizeSafeExternalUrl(href);
       if (!safeUrl) return;
-      window.open(safeUrl, '_blank', 'noopener,noreferrer');
+      const a = document.createElement('a');
+      a.href = safeUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     };
 
     // touchHandled prevents the synthetic click that follows touchend from
     // opening the link a second time on mobile browsers.
     let touchHandled = false;
 
-    const onDocClick = (event: any) => {
-      if (touchHandled) { touchHandled = false; return; }
-      const link = event.target?.closest('a');
-      if (!link) return;
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      const href = link.getAttribute('href');
-      if (!href) return;
-      openLink(href);
+    // iOS decides to follow a link at touchstart, so we must preventDefault
+    // there — calling it only on touchend is too late.
+    const onDocTouchStart = (event: any) => {
+      if (event.target?.closest('a[href]')) {
+        event.preventDefault();
+      }
     };
 
     const onDocTouchEnd = (event: any) => {
-      const link = event.target?.closest('a');
+      const link = event.target?.closest('a[href]');
       if (!link) return;
-      event?.preventDefault?.();
+      event.preventDefault();
       touchHandled = true;
       const href = link.getAttribute('href');
       if (!href) return;
       openLink(href);
     };
 
-    doc.addEventListener('click', onDocClick);
+    const onDocClick = (event: any) => {
+      if (touchHandled) { touchHandled = false; return; }
+      const link = event.target?.closest('a[href]');
+      if (!link) return;
+      event.preventDefault();
+      const href = link.getAttribute('href');
+      if (!href) return;
+      openLink(href);
+    };
+
+    doc.addEventListener('touchstart', onDocTouchStart, { passive: false });
     doc.addEventListener('touchend', onDocTouchEnd);
+    doc.addEventListener('click', onDocClick);
 
     if (autoResize) {
       const measuredHeight = doc.documentElement?.scrollHeight;
@@ -103,15 +120,16 @@ export function SafeEmailIframe({
     }
 
     return () => {
-      doc.removeEventListener('click', onDocClick);
+      doc.removeEventListener('touchstart', onDocTouchStart);
       doc.removeEventListener('touchend', onDocTouchEnd);
+      doc.removeEventListener('click', onDocClick);
     };
   }, [cleanHtml, autoResize, maxAutoHeight]);
 
   return (
     <iframe
       ref={iframeRef}
-      sandbox="allow-same-origin"
+      sandbox="allow-same-origin allow-popups"
       className={cn('w-full border-0', className)}
       style={style}
       title={title}
