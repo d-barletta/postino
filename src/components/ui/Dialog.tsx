@@ -44,11 +44,12 @@ const DialogContent = React.forwardRef<
     /** When true, hides the default top-right close (X) button. */
     hideCloseButton?: boolean;
   }
->(({ className, overlayClassName, animation = 'default', hideCloseButton = false, children, ...props }, ref) => (
+>(({ className, overlayClassName, animation = 'default', hideCloseButton = false, children, 'aria-describedby': ariaDescribedBy, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay className={overlayClassName} />
     <DialogPrimitive.Content
       ref={ref}
+      aria-describedby={ariaDescribedBy ?? undefined}
       className={cn(
         'fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]',
         'grid w-full max-w-lg gap-4 bg-white dark:bg-gray-900 p-6 shadow-xl',

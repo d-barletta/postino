@@ -154,7 +154,7 @@ function Chip({ item, maxCount, detailed = false, highlight = '', mergeMode, sel
       {isMerged && !mergeMode && (
         <GitMerge className="h-3 w-3 shrink-0 text-gray-400 dark:text-gray-500" />
       )}
-      <span className="truncate max-w-[180px]">
+      <span className={cn('truncate max-w-[180px]', isMerged && 'font-semibold')}>
         <HighlightedText text={item.value} query={highlight} />
       </span>
       <Badge
@@ -491,21 +491,21 @@ export function KnowledgeTab() {
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}
       {mergeMode && (
-        <div className="sticky top-16 z-10 flex flex-col gap-1.5 border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
+        <div className="sticky top-16 z-10 flex flex-col gap-1.5 min-[900px]:flex-row min-[800px]:items-center min-[800px]:justify-between border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
           {/* Status + warning (truncated) */}
           <div className="flex items-center gap-2 min-w-0">
-            <span className="shrink-0">
+            <span className="shrink-0 text-xs">
               {selectedChips.length > 0
                 ? k.xSelected.replace('{count}', String(selectedChips.length))
                 : k.mergeMode}
             </span>
             {selectedChips.length >= 2 && !canMergeSelected && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 truncate min-w-0">
+              <span className="text-xs text-red-500 dark:text-red-400 truncate min-w-0">
                 {k.mergeSameCategoryWarning}
               </span>
             )}
           </div>
-          {/* Action buttons always on their own row, right-aligned, Cancel first */}
+          {/* Action buttons on same row at ≥800px, own row below */}
           <div className="flex justify-end gap-2">
             <Button
               size="sm"
