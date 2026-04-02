@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
+import { Maximize2, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { EntityGraphNodeCategory } from '@/types';
 
 export function RelationsTab() {
@@ -76,17 +78,45 @@ export function RelationsTab() {
     tags: k.tags,
   };
 
+  const isEmpty = graph && graph.nodes.length === 0;
+
   return (
     <>
       <Card>
         <CardHeader>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {k.relations.title}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {k.relations.subtitle}
-            </p>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {k.relations.title}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {k.relations.subtitle}
+              </p>
+            </div>
+            {/* Mobile-only icon buttons – hidden on sm+ (toolbar handles those) */}
+            <div className="sm:hidden flex items-center gap-1.5 shrink-0">
+              {graph && !isEmpty && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFullPageGraphOpen(true)}
+                  aria-label={k.relations.expandFullPage}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              )}
+              {hasFetched && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={generateGraph}
+                  disabled={generating}
+                  aria-label={k.relations.regenerate}
+                >
+                  <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
 
