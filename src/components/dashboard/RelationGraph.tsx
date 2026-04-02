@@ -93,31 +93,41 @@ function CytoscapeCanvas({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const getLabelThemeColors = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return { labelColor: '#1f2937', labelBackgroundColor: '#f3f4f6' };
+    }
+
+    const styles = getComputedStyle(container);
+    const labelColor = styles.getPropertyValue('--rg-label-color').trim() || '#1f2937';
+    const labelBackgroundColor = styles.getPropertyValue('--rg-label-bg').trim() || '#f3f4f6';
+
+    return { labelColor, labelBackgroundColor };
+  }, []);
+
+  const applyLabelThemeToCy = useCallback(() => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed()) return;
+    const { labelColor, labelBackgroundColor } = getLabelThemeColors();
+    cy.nodes().style('color', labelColor);
+    cy.nodes().style('text-background-color', labelBackgroundColor);
+    cy.style().update();
+  }, [getLabelThemeColors]);
 
   useEffect(() => {
     const root = document.documentElement;
+    applyLabelThemeToCy();
 
-    const syncTheme = () => setIsDarkMode(root.classList.contains('dark'));
-
-    syncTheme();
-
-    const observer = new MutationObserver(syncTheme);
+    const observer = new MutationObserver(() => {
+      applyLabelThemeToCy();
+    });
     observer.observe(root, { attributes: true, attributeFilter: ['class'] });
 
     return () => {
       observer.disconnect();
     };
-  }, []);
-
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy || cy.destroyed()) return;
-
-    cy.nodes().style('color', isDarkMode ? '#e2e8f0' : '#1f2937');
-    cy.nodes().style('text-background-color', isDarkMode ? '#0d1117' : '#f3f4f6');
-    cy.style().update();
-  }, [isDarkMode]);
+  }, [applyLabelThemeToCy]);
 
   useEffect(() => {
     if (!containerRef.current || graph.nodes.length === 0) return;
@@ -171,6 +181,8 @@ function CytoscapeCanvas({
         };
       });
 
+      const { labelColor, labelBackgroundColor } = getLabelThemeColors();
+
       const cy = cytoscape({
         container: containerRef.current,
         elements: positionedElements,
@@ -187,18 +199,18 @@ function CytoscapeCanvas({
               label: 'data(label)',
               'text-valign': 'bottom',
               'text-halign': 'center',
-              'font-size': '10px',
+              'font-size': '8px',
               'font-weight': 400,
-              color: isDarkMode ? '#e2e8f0' : '#1f2937',
+              color: labelColor,
               'text-margin-y': 6,
               'text-outline-width': 0,
-              'text-background-color': isDarkMode ? '#0d1117' : '#f3f4f6',
+              'text-background-color': labelBackgroundColor,
               'text-background-opacity': 0.58,
               'text-background-padding': '2px',
               'text-background-shape': 'roundrectangle',
               'text-wrap': 'ellipsis',
               'text-max-width': '100px',
-              'min-zoomed-font-size': 7,
+              'min-zoomed-font-size': 6,
               width: (ele: cytoscape.NodeSingular) => {
                 const ratio =
                   maxCount === minCount
@@ -342,6 +354,7 @@ function CytoscapeCanvas({
       });
 
       cyRef.current = cy;
+      applyLabelThemeToCy();
       return cy;
     };
 
@@ -355,12 +368,12 @@ function CytoscapeCanvas({
         cy.destroy();
       }).catch(() => {});
     };
-  }, [graph, onNodeClick]);
+  }, [graph, onNodeClick, applyLabelThemeToCy, getLabelThemeColors]);
 
   return (
     <div
       ref={containerRef}
-      className="w-full h-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#0d1117]"
+      className="w-full h-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#0d1117] [--rg-label-color:#1f2937] [--rg-label-bg:#f3f4f6] dark:[--rg-label-color:#e2e8f0] dark:[--rg-label-bg:#0d1117]"
       aria-label="Entity relation graph"
     />
   );
