@@ -46,7 +46,7 @@ export function FullPageEmailDialog({
         hideCloseButton
         animation="slide-from-bottom"
         overlayClassName={overlayClassName}
-        className={cn('w-[95vw] max-w-4xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0', contentClassName)}
+        className={cn('w-[99vw] max-w-5xl h-[99vh] flex flex-col p-0 overflow-hidden gap-0', contentClassName)}
         aria-describedby={undefined}
       >
         {loading && (
