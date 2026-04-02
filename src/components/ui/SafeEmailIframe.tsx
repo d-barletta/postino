@@ -50,9 +50,17 @@ export function SafeEmailIframe({
     doc.write(cleanHtml);
     doc.close();
 
+    // Inject baseline styles before any email-provided styles so the email
+    // can still override them, but the default is a clean white/black canvas
+    // isolated from the parent app's CSS variables or dark-mode overrides.
+    const baseStyle = doc.createElement('style');
+    baseStyle.textContent = 'html,body{background:#fff!important;color:#000!important;font-family:sans-serif;font-size:16px;}';
+    const head = doc.head ?? doc.documentElement;
+    head.insertBefore(baseStyle, head.firstChild);
+
     const onDocClick = (event: any) => {
       console.log(event);
-      const link = event.target?.closest('a')?.getAttribute('href');
+      const link = event.target?.closest('a');
       console.log(link);
       if (!link) return;
       event?.preventDefault?.();
