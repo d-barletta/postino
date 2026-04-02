@@ -3,7 +3,7 @@
 import { RefreshCw } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
+import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import {
   Dialog,
   DialogContent,
@@ -55,10 +55,9 @@ export function FullPageEmailDialog({
           </div>
         )}
         {!loading && body && (
-          <iframe
-            sandbox=""
-            srcDoc={buildSandboxedEmailSrcDoc(body)}
-            className="w-full flex-1 border-0"
+          <SafeEmailIframe
+            html={body}
+            className="flex-1"
             title="Original email content full page"
           />
         )}

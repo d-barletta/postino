@@ -510,17 +510,23 @@ export function KnowledgeTab() {
         </div>
       )}
 
-      <CardContent className="space-y-0 pb-0">
+      <CardContent className="space-y-0 p-2">
         <Tabs
           value={exploreSubTab}
           onValueChange={(v) => setExploreSubTab(v as 'list' | 'merged')}
         >
           <TabsList>
-            <TabsTrigger value="list">{k.listTab}</TabsTrigger>
-            <TabsTrigger value="merged" disabled={mergeMode}>{k.mergedTab}</TabsTrigger>
+            <TabsTrigger value="list" className="inline-flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              {k.listTab}
+            </TabsTrigger>
+            <TabsTrigger value="merged" disabled={mergeMode} className="inline-flex items-center gap-1.5">
+              <GitMerge className="h-3.5 w-3.5" />
+              {k.mergedTab}
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="list" className="space-y-5 pt-5">
+          <TabsContent value="list" className="space-y-5">
             {/* Category filter pills */}
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
               {CATEGORIES.map((cat) => (

@@ -13,9 +13,9 @@ import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
+import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import {
   ChevronLeft,
   ChevronRight,
@@ -549,19 +549,13 @@ export function ExploreEmailsModal({
                               )}
                               {emailData && !emailData.loading && emailData.originalBody && (
                                 <>
-                                  <iframe
-                                    sandbox=""
-                                    srcDoc={buildSandboxedEmailSrcDoc(emailData.originalBody)}
-                                    className="w-full border-0 rounded-lg"
+                                  <SafeEmailIframe
+                                    html={emailData.originalBody}
+                                    className="rounded-lg"
                                     style={{ minHeight: '200px', maxHeight: '400px' }}
                                     title="Email content preview"
-                                    onLoad={(e) => {
-                                      const iframe = e.currentTarget;
-                                      const height =
-                                        iframe.contentDocument?.documentElement?.scrollHeight;
-                                      if (height)
-                                        iframe.style.height = `${Math.min(height + 20, 400)}px`;
-                                    }}
+                                    autoResize
+                                    maxAutoHeight={400}
                                   />
                                   <div className="flex items-center gap-3 pt-1">
                                     <button

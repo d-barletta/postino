@@ -23,8 +23,8 @@ import {
 } from '@/components/ui/Dialog';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { useAuth } from '@/hooks/useAuth';
+import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import {
   RefreshCw,
   ChevronLeft,
@@ -141,17 +141,13 @@ function EmailDetailTabs({ log, emailData, isAdmin, activeTab, onTabChange, onFu
         )}
         {emailData && !emailData.loading && emailData.originalBody && (
           <>
-            <iframe
-              sandbox=""
-              srcDoc={buildSandboxedEmailSrcDoc(emailData.originalBody)}
-              className="w-full border-0 rounded-lg"
+            <SafeEmailIframe
+              html={emailData.originalBody}
+              className="rounded-lg"
               style={{ minHeight: '200px', maxHeight: '400px' }}
               title="Email content preview"
-              onLoad={(e) => {
-                const iframe = e.currentTarget;
-                const height = iframe.contentDocument?.documentElement?.scrollHeight;
-                if (height) iframe.style.height = `${Math.min(height + 20, 400)}px`;
-              }}
+              autoResize
+              maxAutoHeight={400}
             />
             <div className="flex items-center gap-3 pt-1">
               {isAdmin ? (
@@ -752,10 +748,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
           aria-describedby={undefined}
         >
           {fullscreenLog?.originalBody && (
-            <iframe
-              sandbox=""
-              srcDoc={buildSandboxedEmailSrcDoc(fullscreenLog.originalBody)}
-              className="w-full flex-1 border-0"
+            <SafeEmailIframe
+              html={fullscreenLog.originalBody}
+              className="flex-1"
               title="Original email content full page"
             />
           )}

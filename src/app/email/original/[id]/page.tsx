@@ -4,11 +4,11 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
-import { buildSandboxedEmailSrcDoc } from '@/lib/email-iframe';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
+import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 
 interface OriginalEmail {
   id: string;
@@ -262,17 +262,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                           </button>
                         </div>
                       )}
-                      <iframe
-                        sandbox=""
-                        srcDoc={buildSandboxedEmailSrcDoc(email.originalBody)}
-                        className="w-full border-0 rounded-xl"
+                      <SafeEmailIframe
+                        html={email.originalBody}
+                        className="rounded-xl"
                         style={{ minHeight: '300px' }}
                         title="Original email content"
-                        onLoad={(e) => {
-                          const iframe = e.currentTarget;
-                          const height = iframe.contentDocument?.documentElement?.scrollHeight;
-                          if (height) iframe.style.height = `${height + 20}px`;
-                        }}
+                        autoResize
                       />
                     </div>
                   ) : (
@@ -340,17 +335,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                         </dl>
                         <div>
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.emailOriginal.admin.processedBody}</p>
-                          <iframe
-                            sandbox=""
-                            srcDoc={buildSandboxedEmailSrcDoc(reprocessResult.body)}
-                            className="w-full border-0 rounded-lg"
+                          <SafeEmailIframe
+                            html={reprocessResult.body}
+                            className="rounded-lg"
                             style={{ minHeight: '300px' }}
                             title="Processed email content"
-                            onLoad={(e) => {
-                              const iframe = e.currentTarget;
-                              const height = iframe.contentDocument?.documentElement?.scrollHeight;
-                              if (height) iframe.style.height = `${height + 20}px`;
-                            }}
+                            autoResize
                           />
                         </div>
                       </>
