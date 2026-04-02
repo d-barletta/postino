@@ -47,12 +47,23 @@ export default function DashboardPage() {
   // ---------------------------------------------------------------------------
 
   // On mount, restore the tab stored in the current history entry (survives
-  // page refreshes).  If no valid tab is found, stamp the entry with the
-  // default 'overview' so that popstate always has a value to read.
+  // page refreshes).  Falls back to the tab saved in localStorage (survives
+  // browser restarts).  If no valid tab is found anywhere, stamp the entry
+  // with the default 'overview' so that popstate always has a value to read.
   useEffect(() => {
-    const savedTab = (window.history.state as Record<string, unknown> | null)?.postinoTab as DashboardTab | undefined;
-    if (savedTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(savedTab)) {
+    const historyTab = (window.history.state as Record<string, unknown> | null)?.postinoTab as DashboardTab | undefined;
+    const localTab = localStorage.getItem('postinoActiveTab') as DashboardTab | null;
+    const savedTab = (historyTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(historyTab))
+      ? historyTab
+      : (localTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(localTab))
+        ? localTab
+        : null;
+    if (savedTab) {
       setActiveTab(savedTab);
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoTab: savedTab },
+        '',
+      );
     } else {
       window.history.replaceState(
         { ...(window.history.state ?? {}), postinoTab: 'overview' },
@@ -72,8 +83,9 @@ export default function DashboardPage() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Navigate to a tab and record the change in browser history.
+  // Navigate to a tab and record the change in browser history and localStorage.
   const handleTabChange = useCallback((newTab: string) => {
+    localStorage.setItem('postinoActiveTab', newTab);
     window.history.pushState({ postinoTab: newTab as DashboardTab }, '');
     setActiveTab(newTab as DashboardTab);
   }, []);
