@@ -309,6 +309,8 @@ export interface Translations {
       deleteConfirm: string;
       mergesTitle: string;
       mergesDesc: string;
+      listTab: string;
+      mergedTab: string;
       xSelected: string;
       mergedFrom: string;
       mergeCreated: string;
@@ -780,6 +782,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Are you sure you want to delete',
         mergesTitle: 'Entity Merges',
         mergesDesc: 'Entities you have merged are shown as a single item in the knowledge view.',
+        listTab: 'List',
+        mergedTab: 'Merged',
         xSelected: '{count} selected',
         mergedFrom: 'Merged from',
         mergeCreated: 'Merge created',
@@ -1245,6 +1249,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Sei sicuro di voler eliminare',
         mergesTitle: 'Unioni di entità',
         mergesDesc: 'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
+        listTab: 'Lista',
+        mergedTab: 'Uniti',
         xSelected: '{count} selezionati',
         mergedFrom: 'Unito da',
         mergeCreated: 'Unione creata',
@@ -1706,6 +1712,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: '¿Estás seguro de que quieres eliminar',
         mergesTitle: 'Fusiones de entidades',
         mergesDesc: 'Las entidades fusionadas se muestran como un único elemento en la vista de conocimiento.',
+        listTab: 'Lista',
+        mergedTab: 'Fusionados',
         xSelected: '{count} seleccionados',
         mergedFrom: 'Fusionado de',
         mergeCreated: 'Fusión creada',
@@ -2167,6 +2175,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Êtes-vous sûr de vouloir supprimer',
         mergesTitle: 'Fusions d\'entités',
         mergesDesc: 'Les entités fusionnées apparaissent comme un seul élément dans la vue de connaissance.',
+        listTab: 'Liste',
+        mergedTab: 'Fusionnés',
         xSelected: '{count} sélectionnés',
         mergedFrom: 'Fusionné depuis',
         mergeCreated: 'Fusion créée',
@@ -2628,6 +2638,8 @@ const translations: Record<Locale, Translations> = {
         deleteConfirm: 'Sind Sie sicher, dass Sie löschen möchten',
         mergesTitle: 'Entitätszusammenführungen',
         mergesDesc: 'Zusammengeführte Entitäten werden in der Wissensansicht als ein Element angezeigt.',
+        listTab: 'Liste',
+        mergedTab: 'Zusammengeführt',
         xSelected: '{count} ausgewählt',
         mergedFrom: 'Zusammengeführt aus',
         mergeCreated: 'Zusammenführung erstellt',

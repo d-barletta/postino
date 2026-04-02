@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -21,8 +22,6 @@ import {
   X,
   GitMerge,
   Trash2,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import {
   Drawer,
@@ -234,7 +233,7 @@ export function KnowledgeTab() {
   const [mergeMode, setMergeMode] = useState(false);
   const [selectedChips, setSelectedChips] = useState<SelectedChip[]>([]);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
-  const [showManageMerges, setShowManageMerges] = useState(false);
+  const [exploreSubTab, setExploreSubTab] = useState<'list' | 'merged'>('list');
   const [pendingDeleteMerge, setPendingDeleteMerge] = useState<EntityMerge | null>(null);
   const [deletingMerge, setDeletingMerge] = useState(false);
 
@@ -305,6 +304,7 @@ export function KnowledgeTab() {
   const toggleMergeMode = useCallback(() => {
     setMergeMode((prev) => {
       if (prev) setSelectedChips([]);
+      else setExploreSubTab('list');
       return !prev;
     });
   }, []);
@@ -470,23 +470,6 @@ export function KnowledgeTab() {
             </Button>
           </div>
         </div>
-          {merges.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowManageMerges((v) => !v)}
-              aria-label={k.manageMerges}
-              className="gap-1.5 text-xs"
-            >
-              {k.manageMerges}
-              {showManageMerges ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          )}
-        {/* Action message removed — now using toast notifications */}
       </CardHeader>
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}
@@ -527,28 +510,173 @@ export function KnowledgeTab() {
         </div>
       )}
 
-      <CardContent className="space-y-5">
-        {/* Manage merges panel */}
-        {showManageMerges && (
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{k.mergesTitle}</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{k.mergesDesc}</p>
+      <CardContent className="space-y-0 pb-0">
+        <Tabs
+          value={exploreSubTab}
+          onValueChange={(v) => setExploreSubTab(v as 'list' | 'merged')}
+        >
+          <TabsList>
+            <TabsTrigger value="list">{k.listTab}</TabsTrigger>
+            <TabsTrigger value="merged" disabled={mergeMode}>{k.mergedTab}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="space-y-5 pt-5">
+            {/* Category filter pills */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.key}
+                  onClick={() => setActiveCategory(cat.key)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium shrink-0 transition-all',
+                    'border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
+                    activeCategory === cat.key
+                      ? 'bg-[#efd957] border-[#efd957] text-black shadow-sm'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#efd957]/60',
+                  )}
+                >
+                  {cat.icon}
+                  {categoryLabel(cat.key)}
+                </button>
+              ))}
+            </div>
+
+            {/* Text search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Filter tags…"
+                className={cn(
+                  'flex h-8 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-8 pr-8 py-1 text-sm shadow-sm',
+                  'transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500',
+                  'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#efd957] focus-visible:border-[#efd957]',
+                  'dark:bg-gray-800 dark:text-gray-100',
+                )}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Content area */}
+            {loading && (
+              <div className="space-y-4">
+                <SkeletonChips />
+              </div>
+            )}
+
+            {!loading && error && (
+              <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+            )}
+
+            {!loading && !error && !hasAnyData && data !== null && (
+              <div className="text-center py-12">
+                <Sparkles className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="text-base font-medium text-gray-600 dark:text-gray-400">
+                  {k.noData}
+                </p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">
+                  {k.noDataDesc}
+                </p>
+              </div>
+            )}
+
+            {!loading && !error && hasAnyData && activeCategory === 'all' && (
+              <div className="space-y-5">
+                {(['topics', 'people', 'organizations', 'places', 'events', 'tags'] as const).map((key) => (
+                  <Section
+                    key={key}
+                    title={k[key]}
+                    icon={SECTION_ICONS[key]}
+                    items={data?.[key] ?? []}
+                    category={key}
+                    highlight={searchQuery}
+                    mergeMode={mergeMode}
+                    selectedKeys={new Set(selectedChips.map((c) => `${c.category}:${c.value}`))}
+                    mergedCanonicals={mergedCanonicals}
+                    onChipClick={handleChipClick}
+                  />
+                ))}
+              </div>
+            )}
+
+            {!loading && !error && hasAnyData && activeCategory !== 'all' && (() => {
+              const filtered = searchQuery
+                ? activeItems.filter((i) => i.value.toLowerCase().includes(searchQuery.toLowerCase()))
+                : activeItems;
+              const selectedSet = new Set(selectedChips.map((c) => `${c.category}:${c.value}`));
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {filtered.length === 0 ? (
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                      {k.noData}
+                    </p>
+                  ) : (
+                    filtered.map((item) => (
+                      <Chip
+                        key={item.value}
+                        item={item}
+                        maxCount={activeMaxCount}
+                        detailed
+                        highlight={searchQuery}
+                        mergeMode={mergeMode}
+                        selected={selectedSet.has(`${activeCategory}:${item.value}`)}
+                        isMerged={mergedCanonicals.has(`${activeCategory}:${item.value}`)}
+                        onClick={() => handleChipClick(item.value, activeCategory)}
+                      />
+                    ))
+                  )}
+                </div>
+              );
+            })()}
+          </TabsContent>
+
+          <TabsContent value="merged" className="pb-2">
             {mergesLoading ? (
-              <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="py-6 space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-14 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                ))}
+              </div>
             ) : merges.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{k.noMerges}</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <GitMerge className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="text-base font-medium text-gray-600 dark:text-gray-400">{k.noMerges}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">{k.mergesDesc}</p>
+              </div>
             ) : (
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                 {merges.map((m) => (
-                  <li key={m.id} className="flex items-start justify-between gap-2 text-xs py-2 first:pt-0 last:pb-0">
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-gray-800 dark:text-gray-200">{m.canonical}</span>
-                      <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
-                        {k[m.category as keyof typeof k] as string ?? m.category}
-                      </Badge>
-                      <p className="text-gray-400 dark:text-gray-500 mt-0.5 truncate">
-                        {k.mergedFrom}: {m.aliases.join(', ')}
-                      </p>
+                  <li
+                    key={m.id}
+                    className="flex items-center justify-between gap-3 px-1 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                        <GitMerge className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                            {m.canonical}
+                          </span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                            {k[m.category as keyof typeof k] as string ?? m.category}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                          {k.mergedFrom}: {m.aliases.join(', ')}
+                        </p>
+                      </div>
                     </div>
                     <button
                       onClick={() => setPendingDeleteMerge(m)}
@@ -561,126 +689,8 @@ export function KnowledgeTab() {
                 ))}
               </ul>
             )}
-          </div>
-        )}
-
-        {/* Category filter pills */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium shrink-0 transition-all',
-                'border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
-                activeCategory === cat.key
-                  ? 'bg-[#efd957] border-[#efd957] text-black shadow-sm'
-                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#efd957]/60',
-              )}
-            >
-              {cat.icon}
-              {categoryLabel(cat.key)}
-            </button>
-          ))}
-        </div>
-
-        {/* Text search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-          <input
-            ref={searchInputRef}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter tags…"
-            className={cn(
-              'flex h-8 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-8 pr-8 py-1 text-sm shadow-sm',
-              'transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#efd957] focus-visible:border-[#efd957]',
-              'dark:bg-gray-800 dark:text-gray-100',
-            )}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              aria-label="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Content area */}
-        {loading && (
-          <div className="space-y-4">
-            <SkeletonChips />
-          </div>
-        )}
-
-        {!loading && error && (
-          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-        )}
-
-        {!loading && !error && !hasAnyData && data !== null && (
-          <div className="text-center py-12">
-            <Sparkles className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-base font-medium text-gray-600 dark:text-gray-400">
-              {k.noData}
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">
-              {k.noDataDesc}
-            </p>
-          </div>
-        )}
-
-        {!loading && !error && hasAnyData && activeCategory === 'all' && (
-          <div className="space-y-5">
-            {(['topics', 'people', 'organizations', 'places', 'events', 'tags'] as const).map((key) => (
-              <Section
-                key={key}
-                title={k[key]}
-                icon={SECTION_ICONS[key]}
-                items={data?.[key] ?? []}
-                category={key}
-                highlight={searchQuery}
-                mergeMode={mergeMode}
-                selectedKeys={new Set(selectedChips.map((c) => `${c.category}:${c.value}`))}
-                mergedCanonicals={mergedCanonicals}
-                onChipClick={handleChipClick}
-              />
-            ))}
-          </div>
-        )}
-
-        {!loading && !error && hasAnyData && activeCategory !== 'all' && (() => {
-          const filtered = searchQuery
-            ? activeItems.filter((i) => i.value.toLowerCase().includes(searchQuery.toLowerCase()))
-            : activeItems;
-          const selectedSet = new Set(selectedChips.map((c) => `${c.category}:${c.value}`));
-          return (
-            <div className="flex flex-wrap gap-2">
-              {filtered.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">
-                  {k.noData}
-                </p>
-              ) : (
-                filtered.map((item) => (
-                  <Chip
-                    key={item.value}
-                    item={item}
-                    maxCount={activeMaxCount}
-                    detailed
-                    highlight={searchQuery}
-                    mergeMode={mergeMode}
-                    selected={selectedSet.has(`${activeCategory}:${item.value}`)}
-                    isMerged={mergedCanonicals.has(`${activeCategory}:${item.value}`)}
-                    onClick={() => handleChipClick(item.value, activeCategory)}
-                  />
-                ))
-              )}
-            </div>
-          );
-        })()}
+          </TabsContent>
+        </Tabs>
       </CardContent>
 
       {modalChip && (
