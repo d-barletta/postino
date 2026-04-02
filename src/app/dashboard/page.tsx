@@ -22,7 +22,8 @@ import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
 import { Home, ListFilter, Inbox, Settings, Download, CheckCircle, Compass, Share2 } from 'lucide-react';
 
-type DashboardTab = 'overview' | 'rules' | 'inbox' | 'explore' | 'relations' | 'settings';
+const DASHBOARD_TABS = ['overview', 'rules', 'inbox', 'explore', 'relations', 'settings'] as const;
+type DashboardTab = typeof DASHBOARD_TABS[number];
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
@@ -45,13 +46,19 @@ export default function DashboardPage() {
   // browser Back button can navigate between previously-visited tabs.
   // ---------------------------------------------------------------------------
 
-  // Stamp the initial history entry with the current tab so popstate always
-  // knows which tab to restore when the user reaches the first entry.
+  // On mount, restore the tab stored in the current history entry (survives
+  // page refreshes).  If no valid tab is found, stamp the entry with the
+  // default 'overview' so that popstate always has a value to read.
   useEffect(() => {
-    window.history.replaceState(
-      { ...(window.history.state ?? {}), postinoTab: 'overview' },
-      '',
-    );
+    const savedTab = (window.history.state as Record<string, unknown> | null)?.postinoTab as DashboardTab | undefined;
+    if (savedTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(savedTab)) {
+      setActiveTab(savedTab);
+    } else {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoTab: 'overview' },
+        '',
+      );
+    }
   }, []);
 
   // Listen for browser Back/Forward and restore the tab stored in the state.
