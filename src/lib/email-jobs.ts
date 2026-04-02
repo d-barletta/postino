@@ -8,6 +8,26 @@ import {
 
 export type EmailJobStatus = 'pending' | 'processing' | 'retrying' | 'done' | 'failed';
 
+async function updateWebhookLogForJob(jobId: string, status: string, result?: string): Promise<void> {
+  const db = adminDb();
+  try {
+    const snap = await db
+      .collection('mailgunWebhookLogs')
+      .where('linked.jobId', '==', jobId)
+      .limit(1)
+      .get();
+    if (!snap.empty) {
+      await snap.docs[0].ref.update({
+        status,
+        ...(result !== undefined ? { result } : {}),
+        updatedAt: Timestamp.now(),
+      });
+    }
+  } catch (err) {
+    console.error('Failed to update webhook log status for job', jobId, err);
+  }
+}
+
 interface EmailJob {
   status: EmailJobStatus;
   payload: QueuedInboundPayload;
@@ -66,10 +86,15 @@ async function claimJob(
     if (!snap.exists) return null;
 
     const data = snap.data() as EmailJob;
-    if (data.status !== 'pending' && data.status !== 'retrying') return null;
 
-    const lockUntilMs = data.lockUntil?.toMillis?.() ?? 0;
-    if (lockUntilMs > now.getTime()) return null;
+    // Accept pending/retrying jobs, or processing jobs whose lease has expired.
+    const isClaimableStatus =
+      data.status === 'pending' ||
+      data.status === 'retrying' ||
+      data.status === 'processing';
+    if (!isClaimableStatus) return null;
+
+    if ((data.lockUntil?.toMillis?.() ?? 0) > now.getTime()) return null;
 
     const notBeforeMs = data.notBefore?.toMillis?.() ?? 0;
     if (notBeforeMs > now.getTime()) return null;
@@ -104,6 +129,7 @@ async function markJobDone(jobId: string): Promise<void> {
     updatedAt: Timestamp.now(),
     completedAt: Timestamp.now(),
   });
+  await updateWebhookLogForJob(jobId, 'processed', 'done');
 }
 
 async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Promise<void> {
@@ -124,6 +150,7 @@ async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Pro
     status: 'received',
     errorMessage: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
   });
+  await updateWebhookLogForJob(job.id, 'retrying', 'retrying');
 }
 
 async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Promise<void> {
@@ -150,6 +177,7 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
     job.payload.logId,
     'error'
   );
+  await updateWebhookLogForJob(job.id, 'failed', 'failed');
 }
 
 async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> {
@@ -159,6 +187,7 @@ async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> 
     status: 'processing',
     processingStartedAt: Timestamp.now(),
   });
+  await updateWebhookLogForJob(job.id, 'processing', 'processing');
 
   // Idempotency guard: if the log is already forwarded, skip side effects.
   const logSnap = await db.collection('emailLogs').doc(job.payload.logId).get();
@@ -193,7 +222,7 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
 
   const candidatesSnap = await db
     .collection('emailJobs')
-    .where('status', 'in', ['pending', 'retrying'])
+    .where('status', 'in', ['pending', 'retrying', 'processing'])
     .limit(Math.max(batchSize * 3, 15))
     .get();
 
@@ -218,8 +247,19 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
       } else {
         processed += 1;
       }
-    } catch {
+    } catch (err) {
       failed += 1;
+      // Rescue the job so it doesn't remain stuck in 'processing' forever.
+      const errMsg = err instanceof Error ? err.message : String(err);
+      try {
+        if (job.attempts >= job.maxAttempts) {
+          await markJobFailed(job, errMsg);
+        } else {
+          await markJobRetry(job, errMsg);
+        }
+      } catch {
+        // Best-effort; lease expiry will allow reclaiming on the next run.
+      }
     }
   }
 
