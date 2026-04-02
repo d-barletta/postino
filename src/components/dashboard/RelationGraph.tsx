@@ -219,12 +219,12 @@ function CytoscapeCanvas({
         ],
         layout: {
           name: 'cose',
-          animate: false,
-          randomize: true,
-          nodeRepulsion: () => 24000,
-          idealEdgeLength: () => 240,
-          edgeElasticity: () => 100,
-          nodeOverlap: 80,
+          animate: true,
+          randomize: false,
+          nodeRepulsion: () => 150000,
+          idealEdgeLength: () => 50,
+          edgeElasticity: () => 150,
+          nodeOverlap: 350,
           gravity: 0.15,
           numIter: 1500,
           initialTemp: 250,
@@ -295,7 +295,7 @@ function CytoscapeCanvas({
       });
 
       cy.on('layoutstop', () => {
-        cy.fit(undefined, 40);
+        if (!destroyed) cy.fit(undefined, 40);
       });
 
       return cy;
@@ -304,7 +304,12 @@ function CytoscapeCanvas({
     const cyPromise = init();
     return () => {
       destroyed = true;
-      cyPromise.then((cy) => cy?.destroy()).catch(() => {});
+      cyPromise.then((cy) => {
+        if (!cy) return;
+        cy.stop(true, true);
+        cy.removeAllListeners();
+        cy.destroy();
+      }).catch(() => {});
     };
   }, [graph, onNodeClick]);
 
