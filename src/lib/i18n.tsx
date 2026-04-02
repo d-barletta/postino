@@ -301,6 +301,7 @@ export interface Translations {
       mergeDialogDesc: string;
       canonicalName: string;
       canonicalNamePlaceholder: string;
+      mergeChipHint: string;
       createMerge: string;
       mergeSameCategoryWarning: string;
       manageMerges: string;
@@ -774,6 +775,7 @@ const translations: Record<Locale, Translations> = {
         mergeDialogDesc: 'These entities will be combined into one.',
         canonicalName: 'Canonical name',
         canonicalNamePlaceholder: 'Name to display',
+        mergeChipHint: 'Click a name to use it as the canonical name',
         createMerge: 'Create merge',
         mergeSameCategoryWarning: 'Select 2 or more entities from the same category to merge.',
         manageMerges: 'Manage merges',
@@ -1241,6 +1243,7 @@ const translations: Record<Locale, Translations> = {
         mergeDialogDesc: 'Queste entità verranno combinate in una sola.',
         canonicalName: 'Nome canonico',
         canonicalNamePlaceholder: 'Nome da visualizzare',
+        mergeChipHint: 'Clicca su un nome per usarlo come nome canonico',
         createMerge: 'Crea unione',
         mergeSameCategoryWarning: 'Seleziona 2 o più entità della stessa categoria per unirle.',
         manageMerges: 'Gestisci unioni',
@@ -1704,6 +1707,7 @@ const translations: Record<Locale, Translations> = {
         mergeDialogDesc: 'Estas entidades se combinarán en una sola.',
         canonicalName: 'Nombre canónico',
         canonicalNamePlaceholder: 'Nombre a mostrar',
+        mergeChipHint: 'Haz clic en un nombre para usarlo como nombre canónico',
         createMerge: 'Crear fusión',
         mergeSameCategoryWarning: 'Selecciona 2 o más entidades de la misma categoría para fusionar.',
         manageMerges: 'Gestionar fusiones',
@@ -2167,6 +2171,7 @@ const translations: Record<Locale, Translations> = {
         mergeDialogDesc: 'Ces entités seront combinées en une seule.',
         canonicalName: 'Nom canonique',
         canonicalNamePlaceholder: 'Nom à afficher',
+        mergeChipHint: 'Cliquez sur un nom pour l\'utiliser comme nom canonique',
         createMerge: 'Créer la fusion',
         mergeSameCategoryWarning: 'Sélectionnez 2 entités ou plus de la même catégorie pour les fusionner.',
         manageMerges: 'Gérer les fusions',
@@ -2630,6 +2635,7 @@ const translations: Record<Locale, Translations> = {
         mergeDialogDesc: 'Diese Entitäten werden zu einer zusammengefasst.',
         canonicalName: 'Kanonischer Name',
         canonicalNamePlaceholder: 'Anzuzeigender Name',
+        mergeChipHint: 'Klicken Sie auf einen Namen, um ihn als kanonischen Namen zu verwenden',
         createMerge: 'Zusammenführung erstellen',
         mergeSameCategoryWarning: 'Wählen Sie 2 oder mehr Entitäten der gleichen Kategorie aus.',
         manageMerges: 'Zusammenführungen verwalten',
