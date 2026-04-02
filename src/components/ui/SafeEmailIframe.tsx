@@ -42,72 +42,49 @@ export function SafeEmailIframe({
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe) return;
+    if (!iframe) { alert('[SafeEmailIframe] iframe ref is null'); return; }
     const doc = iframe.contentDocument;
-    if (!doc) return;
+    if (!doc) { alert('[SafeEmailIframe] contentDocument is null'); return; }
 
     doc.open();
     doc.write(cleanHtml);
     doc.close();
 
-    // Inject baseline styles before any email-provided styles so the email
-    // can still override them, but the default is a clean white/black canvas
-    // isolated from the parent app's CSS variables or dark-mode overrides.
+    const head = doc.head ?? doc.documentElement;
+    if (!head) { alert('[SafeEmailIframe] could not find head/documentElement'); return; }
+
+    // Inject <base target="_blank"> first so every link opens in a new tab
+    // natively. This is the only approach that works on iOS Safari, which
+    // blocks programmatic window.open() calls from iframe event handlers.
+    const base = doc.createElement('base');
+    base.target = '_blank';
+    head.insertBefore(base, head.firstChild);
+    alert('[SafeEmailIframe] <base target="_blank"> injected');
+
+    // Inject baseline styles: white background and black text isolated from
+    // the parent app's CSS variables and dark-mode overrides.
     const baseStyle = doc.createElement('style');
     baseStyle.textContent = 'html,body{background:#fff!important;color:#000!important;font-family:sans-serif;font-size:16px;}';
-    const head = doc.head ?? doc.documentElement;
     head.insertBefore(baseStyle, head.firstChild);
 
-    // iOS Safari blocks window.open() from iframe event contexts, so we create
-    // a temporary anchor in the parent document and programmatically click it.
-    const openLink = (href: string) => {
+    // Block any link whose protocol is not http/https (e.g. javascript:, data:).
+    // Valid http/https links are handled natively by the <base target="_blank">.
+    const onDocClick = (event: MouseEvent) => {
+      const link = (event.target as Element)?.closest('a');
+      if (!link) { alert('[SafeEmailIframe] click: no <a> found near target'); return; }
+      const href = link.getAttribute('href');
+      if (!href) { alert('[SafeEmailIframe] click: <a> has no href'); return; }
       const safeUrl = normalizeSafeExternalUrl(href);
-      if (!safeUrl) return;
-      const a = document.createElement('a');
-      a.href = safeUrl;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-
-    // touchHandled prevents the synthetic click that follows touchend from
-    // opening the link a second time on mobile browsers.
-    let touchHandled = false;
-
-    // iOS decides to follow a link at touchstart, so we must preventDefault
-    // there — calling it only on touchend is too late.
-    const onDocTouchStart = (event: any) => {
-      if (event.target?.closest('a[href]')) {
+      if (!safeUrl) {
+        alert(`[SafeEmailIframe] click: blocked unsafe href="${href}"`);
         event.preventDefault();
+        return;
       }
+      alert(`[SafeEmailIframe] click: allowing href="${safeUrl}" — browser will open it`);
     };
 
-    const onDocTouchEnd = (event: any) => {
-      const link = event.target?.closest('a[href]');
-      if (!link) return;
-      event.preventDefault();
-      touchHandled = true;
-      const href = link.getAttribute('href');
-      if (!href) return;
-      openLink(href);
-    };
-
-    const onDocClick = (event: any) => {
-      if (touchHandled) { touchHandled = false; return; }
-      const link = event.target?.closest('a[href]');
-      if (!link) return;
-      event.preventDefault();
-      const href = link.getAttribute('href');
-      if (!href) return;
-      openLink(href);
-    };
-
-    doc.addEventListener('touchstart', onDocTouchStart, { passive: false });
-    doc.addEventListener('touchend', onDocTouchEnd);
     doc.addEventListener('click', onDocClick);
+    alert('[SafeEmailIframe] click listener attached');
 
     if (autoResize) {
       const measuredHeight = doc.documentElement?.scrollHeight;
@@ -120,8 +97,6 @@ export function SafeEmailIframe({
     }
 
     return () => {
-      doc.removeEventListener('touchstart', onDocTouchStart);
-      doc.removeEventListener('touchend', onDocTouchEnd);
       doc.removeEventListener('click', onDocClick);
     };
   }, [cleanHtml, autoResize, maxAutoHeight]);
