@@ -202,6 +202,7 @@ export interface Translations {
       withAttachments: string;
       applyFilters: string;
       results: string;
+      messages: string;
       previous: string;
       next: string;
       page: string;
@@ -672,6 +673,7 @@ const translations: Record<Locale, Translations> = {
         withAttachments: 'With attachments',
         applyFilters: 'Search',
         results: 'results',
+        messages: 'messages',
         previous: 'Previous',
         next: 'Next',
         page: 'Page',
@@ -1136,6 +1138,7 @@ const translations: Record<Locale, Translations> = {
         withAttachments: 'Con allegati',
         applyFilters: 'Cerca',
         results: 'risultati',
+        messages: 'messaggi',
         previous: 'Precedente',
         next: 'Successivo',
         page: 'Pagina',
@@ -1596,6 +1599,7 @@ const translations: Record<Locale, Translations> = {
         withAttachments: 'Con adjuntos',
         applyFilters: 'Buscar',
         results: 'resultados',
+        messages: 'mensajes',
         previous: 'Anterior',
         next: 'Siguiente',
         page: 'Página',
@@ -2056,6 +2060,7 @@ const translations: Record<Locale, Translations> = {
         withAttachments: 'Avec pièces jointes',
         applyFilters: 'Rechercher',
         results: 'résultats',
+        messages: 'messages',
         previous: 'Précédent',
         next: 'Suivant',
         page: 'Page',
@@ -2516,6 +2521,7 @@ const translations: Record<Locale, Translations> = {
         withAttachments: 'Mit Anhängen',
         applyFilters: 'Suchen',
         results: 'Ergebnisse',
+        messages: 'Nachrichten',
         previous: 'Zurück',
         next: 'Weiter',
         page: 'Seite',

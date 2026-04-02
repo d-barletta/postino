@@ -363,6 +363,8 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [hasNextPage, setHasNextPage] = useState(false);
   const [totalPages, setTotalPages] = useState<number | undefined>(undefined);
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
+  const [totalEmailCount, setTotalEmailCount] = useState<number | undefined>(undefined);
+  const [totalEmailCountLoading, setTotalEmailCountLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
@@ -499,9 +501,39 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     }
   }, [firebaseUser, applied]);
 
+  const fetchTotalCount = useCallback(async () => {
+    if (!firebaseUser) return;
+    setTotalEmailCountLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/email/logs/count', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data: { count: number } = await res.json();
+        setTotalEmailCount(data.count);
+      } else {
+        console.error('Failed to fetch total email count:', res.status);
+      }
+    } finally {
+      setTotalEmailCountLoading(false);
+    }
+  }, [firebaseUser]);
+
   useEffect(() => {
     setPage(1);
     fetchLogs(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firebaseUser, applied]);
+
+  // Fetch total email count asynchronously when no filters are active.
+  useEffect(() => {
+    if (!firebaseUser) return;
+    setTotalEmailCount(undefined);
+    const hasActiveFilters = hasActiveFilter(applied);
+    if (!hasActiveFilters) {
+      fetchTotalCount();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, applied]);
 
@@ -520,6 +552,11 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
 
   const hasPendingChanges = !filtersEqual(pending, applied);
   const hasActive = hasActiveFilter(applied);
+
+  const handleRefresh = useCallback(() => {
+    fetchLogs(1, true);
+    if (!hasActive) fetchTotalCount();
+  }, [fetchLogs, fetchTotalCount, hasActive]);
 
   const handlePageChange = (newPage: number) => {
     setSelectedId(null);
@@ -590,6 +627,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         setLogs((prev) => prev.filter((l) => l.id !== deleteEmailId));
         if (selectedId === deleteEmailId) setSelectedId(null);
         if (totalCount !== undefined) setTotalCount((c) => (c !== undefined ? Math.max(0, c - 1) : undefined));
+        if (totalEmailCount !== undefined) setTotalEmailCount((c) => (c !== undefined ? Math.max(0, c - 1) : undefined));
         setDeleteEmailId(null);
       } else {
         console.error('Failed to delete email:', await res.text());
@@ -603,7 +641,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     } finally {
       setDeleting(false);
     }
-  }, [deleteEmailId, firebaseUser, selectedId, totalCount]);
+  }, [deleteEmailId, firebaseUser, selectedId, totalCount, totalEmailCount]);
 
   // Auto-expand when selectedEmailId prop is provided (e.g., from push notification link)
   useEffect(() => {
@@ -616,6 +654,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   useEffect(() => {
     if (refreshTrigger === undefined || refreshTrigger === 0) return;
     fetchLogs(1, true);
+    if (!hasActive) fetchTotalCount();
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
@@ -916,14 +955,20 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         <CardHeader className="py-2 px-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {!logsLoading && totalCount !== undefined && (
-                <>{totalCount} {t.dashboard.emailHistory.results}</>
-              )}
+              {hasActive ? (
+                !logsLoading && totalCount !== undefined && (
+                  <>{totalCount} {t.dashboard.emailHistory.results}</>
+                )
+              ) : totalEmailCountLoading ? (
+                <span className="inline-block h-4 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse align-middle" />
+              ) : totalEmailCount !== undefined ? (
+                <>{totalEmailCount} {t.dashboard.emailHistory.messages}</>
+              ) : null}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => fetchLogs(1, true)}
+              onClick={handleRefresh}
               disabled={refreshing}
               title={t.dashboard.emailHistory.refresh}
             >
@@ -1221,9 +1266,15 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
           {/* Mini results header */}
           <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {!logsLoading && totalCount !== undefined && <>{totalCount} {t.dashboard.emailHistory.results}</>}
+              {hasActive ? (
+                !logsLoading && totalCount !== undefined && <>{totalCount} {t.dashboard.emailHistory.results}</>
+              ) : totalEmailCountLoading ? (
+                <span className="inline-block h-4 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse align-middle" />
+              ) : totalEmailCount !== undefined ? (
+                <>{totalEmailCount} {t.dashboard.emailHistory.messages}</>
+              ) : null}
             </span>
-            <Button variant="ghost" size="icon" onClick={() => fetchLogs(1, true)} disabled={refreshing} title={t.dashboard.emailHistory.refresh}>
+            <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing} title={t.dashboard.emailHistory.refresh}>
               <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
             </Button>
           </div>
