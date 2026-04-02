@@ -491,7 +491,7 @@ export function KnowledgeTab() {
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}
       {mergeMode && (
-        <div className="sticky top-16 z-10 flex flex-col gap-1.5 min-[900px]:flex-row min-[800px]:items-center min-[800px]:justify-between border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
+        <div className="sticky top-16 z-10 flex flex-col gap-1.5 min-[800px]:flex-row min-[800px]:items-center min-[800px]:justify-between border-b border-[#efd957]/40 bg-[#fffbeb] dark:bg-[#1c1500] px-4 py-2 text-sm text-[#a3891f] dark:text-[#efd957]">
           {/* Status + warning (truncated) */}
           <div className="flex items-center gap-2 min-w-0">
             <span className="shrink-0 text-xs">
