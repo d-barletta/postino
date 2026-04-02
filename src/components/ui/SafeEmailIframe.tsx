@@ -43,7 +43,6 @@ export function SafeEmailIframe({
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
-
     const doc = iframe.contentDocument;
     if (!doc) return;
 
@@ -51,23 +50,18 @@ export function SafeEmailIframe({
     doc.write(cleanHtml);
     doc.close();
 
-    const onDocClick = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-
+    const onDocClick = (event: any) => {
       console.log(event);
-
-      const link = target.closest('a');
+      const link = event.target?.closest('a')?.getAttribute('href');
+      console.log(link);
       if (!link) return;
-
-      event.preventDefault();
-
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
       const href = link.getAttribute('href');
+      console.log(href);
       if (!href) return;
-
       const safeUrl = normalizeSafeExternalUrl(href);
       if (!safeUrl) return;
-
       window.open(safeUrl, '_blank', 'noopener,noreferrer');
     };
 
