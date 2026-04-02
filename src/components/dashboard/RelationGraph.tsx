@@ -60,8 +60,8 @@ interface RelationGraphProps {
 // ---------------------------------------------------------------------------
 function GraphSkeleton() {
   return (
-    <div className="flex items-center justify-center h-[520px] rounded-2xl bg-[#0d1117] animate-pulse">
-      <Share2 className="h-16 w-16 opacity-10 text-white" />
+    <div className="flex items-center justify-center h-130 rounded-2xl bg-gray-100 dark:bg-[#0d1117] animate-pulse">
+      <Share2 className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
     </div>
   );
 }
@@ -92,6 +92,22 @@ function CytoscapeCanvas({
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const syncTheme = () => setIsDarkMode(root.classList.contains('dark'));
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || graph.nodes.length === 0) return;
@@ -163,15 +179,15 @@ function CytoscapeCanvas({
               'text-halign': 'center',
               'font-size': '10px',
               'font-weight': 400,
-              color: '#e2e8f0',
+              color: isDarkMode ? '#e2e8f0' : '#1f2937',
               'text-margin-y': 6,
               'text-outline-width': 0,
-              'text-background-color': '#0d1117',
-              'text-background-opacity': 0.88,
-              'text-background-padding': '3px',
+              'text-background-color': isDarkMode ? '#0d1117' : '#f3f4f6',
+              'text-background-opacity': 0.58,
+              'text-background-padding': '2px',
               'text-background-shape': 'roundrectangle',
               'text-wrap': 'ellipsis',
-              'text-max-width': '80px',
+              'text-max-width': '100px',
               'min-zoomed-font-size': 7,
               width: (ele: cytoscape.NodeSingular) => {
                 const ratio =
@@ -328,13 +344,12 @@ function CytoscapeCanvas({
         cy.destroy();
       }).catch(() => {});
     };
-  }, [graph, onNodeClick]);
+  }, [graph, onNodeClick, isDarkMode]);
 
   return (
     <div
       ref={containerRef}
-      className="w-full h-full rounded-2xl overflow-hidden"
-      style={{ background: '#0d1117' }}
+      className="w-full h-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#0d1117]"
       aria-label="Entity relation graph"
     />
   );
