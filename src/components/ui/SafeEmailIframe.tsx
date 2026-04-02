@@ -43,12 +43,12 @@ export function SafeEmailIframe({
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) {
-      console.log('[SafeEmailIframe] iframe ref is null');
+      console.error('[SafeEmailIframe] iframe ref is null');
       return;
     }
     const doc = iframe.contentDocument;
     if (!doc) {
-      console.log('[SafeEmailIframe] contentDocument is null');
+      console.error('[SafeEmailIframe] contentDocument is null');
       return;
     }
 
@@ -58,7 +58,7 @@ export function SafeEmailIframe({
 
     const head = doc.head ?? doc.documentElement;
     if (!head) {
-      console.log('[SafeEmailIframe] could not find head/documentElement');
+      console.error('[SafeEmailIframe] could not find head/documentElement');
       return;
     }
 
@@ -68,7 +68,7 @@ export function SafeEmailIframe({
     const base = doc.createElement('base');
     base.target = '_blank';
     head.insertBefore(base, head.firstChild);
-    console.log('[SafeEmailIframe] <base target="_blank"> injected');
+    //console.log('[SafeEmailIframe] <base target="_blank"> injected');
 
     // Inject baseline styles: white background and black text isolated from
     // the parent app's CSS variables and dark-mode overrides.
@@ -82,25 +82,25 @@ export function SafeEmailIframe({
     const onDocClick = (event: MouseEvent) => {
       const link = (event.target as Element)?.closest('a');
       if (!link) {
-        console.log('[SafeEmailIframe] click: no <a> found near target');
+        console.error('[SafeEmailIframe] click: no <a> found near target');
         return;
       }
       const href = link.getAttribute('href');
       if (!href) {
-        console.log('[SafeEmailIframe] click: <a> has no href');
+        console.error('[SafeEmailIframe] click: <a> has no href');
         return;
       }
       const safeUrl = normalizeSafeExternalUrl(href);
       if (!safeUrl) {
-        console.log(`[SafeEmailIframe] click: blocked unsafe href="${href}"`);
+        console.error(`[SafeEmailIframe] click: blocked unsafe href="${href}"`);
         event.preventDefault();
         return;
       }
-      console.log(`[SafeEmailIframe] click: allowing href="${safeUrl}" — browser will open it`);
+      //console.log(`[SafeEmailIframe] click: allowing href="${safeUrl}" — browser will open it`);
     };
 
     doc.addEventListener('click', onDocClick);
-    console.log('[SafeEmailIframe] click listener attached');
+    //console.log('[SafeEmailIframe] click listener attached');
 
     if (autoResize) {
       const measuredHeight = doc.documentElement?.scrollHeight;
