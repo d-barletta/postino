@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --fix",
     "deploy:indexes": "firebase deploy --only firestore:indexes",
     "deploy:preview": "vercel",
     "deploy:prod": "vercel --prod"

@@ -248,7 +248,7 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
     if (deviceOS === 'ios' && browserType === 'firefox') return;
     const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setOpen(true);
   }, [triggerOpen, isAvailable, deviceOS, browserType]);
 
@@ -259,7 +259,7 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
     if (deviceOS === 'ios' && browserType === 'firefox') return;
     const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setOpen(true);
   }, [forceOpenTrigger, isAvailable, deviceOS, browserType]);
 
