@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       .trim();
     const langName = langCode ? (LANGUAGE_NAMES[langCode] ?? langCode) : null;
     const languageInstruction = langName
-      ? ` Write the reason field in ${langName}.`
+      ? `You MUST write the "reason" field in ${langName}. This is mandatory — do not use English unless ${langName} is English.`
       : '';
 
     // Check if there are already pending suggestions — if so, don't regenerate
@@ -202,7 +202,9 @@ export async function POST(request: NextRequest) {
       .map((cat) => `${cat}: ${categoryEntities[cat].join(', ')}`)
       .join('\n');
 
-    const systemPrompt = `You are an expert at identifying duplicate or equivalent named entities extracted from emails.
+    const systemPrompt = [
+      languageInstruction,
+      `You are an expert at identifying duplicate or equivalent named entities extracted from emails.
 Your task is to analyze lists of entities and identify groups of values that likely refer to the same real-world entity and should be merged.
 
 Rules:
@@ -210,8 +212,12 @@ Rules:
 - Do not suggest merging clearly distinct entities.
 - Each suggestion must have at least 2 aliases.
 - Prefer the most complete/formal name as the suggestedCanonical.
-- Return your response as a valid JSON object with a "suggestions" array.${languageInstruction}`;
+- Return your response as a valid JSON object with a "suggestions" array.`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
 
+    const reasonLanguageNote = langName ? ` (in ${langName})` : '';
     const userPrompt = `Here are the entities extracted from the user's emails, grouped by category:
 
 ${entityListText}
@@ -224,7 +230,7 @@ Return a JSON object with this structure:
       "category": "<category name, one of: topics, tags, people, organizations, places, events>",
       "aliases": ["<entity1>", "<entity2>", ...],
       "suggestedCanonical": "<best representative name>",
-      "reason": "<brief explanation in 1 sentence>"
+      "reason": "<brief explanation in 1 sentence${reasonLanguageNote}>"
     }
   ]
 }
