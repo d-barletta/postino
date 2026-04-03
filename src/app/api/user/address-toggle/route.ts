@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { isFirebaseAuthError } from '@/lib/api-auth';
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 export async function PATCH(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.substring(7);
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
 
     const body = await request.json();
     if (typeof body.isAddressEnabled !== 'boolean') {

@@ -15,6 +15,17 @@ export function isFirebaseAuthError(error: unknown): boolean {
 }
 
 /**
+ * Verifies that the request carries a valid Bearer token.
+ * Throws 'Unauthorized' if the token is missing or invalid.
+ */
+export async function verifyUserRequest(request: NextRequest): Promise<DecodedIdToken> {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
+  const token = authHeader.substring(7);
+  return adminAuth().verifyIdToken(token);
+}
+
+/**
  * Verifies that the request carries a valid Bearer token belonging to an admin
  * user. Throws 'Unauthorized' if the token is missing/invalid, or 'Forbidden'
  * if the user does not have the isAdmin flag.

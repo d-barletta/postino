@@ -1,24 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { AggregateField } from 'firebase-admin/firestore';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const token = authHeader.substring(7);
-  let uid: string;
   try {
-    const decoded = await adminAuth().verifyIdToken(token);
-    uid = decoded.uid;
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
+    const decoded = await verifyUserRequest(request);
     const db = adminDb();
-    const base = db.collection('emailLogs').where('userId', '==', uid);
+    const base = db.collection('emailLogs').where('userId', '==', decoded.uid);
 
     // Use server-side aggregation queries to avoid reading every document.
     const [totalResult, forwardedResult, errorResult, skippedResult, aggregateResult] =
@@ -47,6 +36,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ stats });
   } catch (err) {
+    if (isFirebaseAuthError(err)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('[/api/user/stats] Failed to fetch stats:', err);
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }

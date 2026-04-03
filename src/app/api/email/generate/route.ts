@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { generateAssignedEmail } from '@/lib/email';
 import { resolveAssignedEmailDomain } from '@/lib/email-utils';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const MAX_ATTEMPTS = 10;
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const token = authHeader.substring(7);
-  let decoded: Awaited<ReturnType<ReturnType<typeof adminAuth>['verifyIdToken']>>;
   try {
-    decoded = await adminAuth().verifyIdToken(token);
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+    const decoded = await verifyUserRequest(request);
 
-  try {
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const domain = resolveAssignedEmailDomain(settingsSnap.data());
@@ -49,6 +40,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ assignedEmail: newEmail });
   } catch (error) {
+    if (isFirebaseAuthError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Generate email error:', error);
     return NextResponse.json({ error: 'Failed to generate email' }, { status: 500 });
   }

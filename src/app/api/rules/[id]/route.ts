@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const MAX_RULE_NAME_LENGTH = 100;
 const MAX_PATTERN_LENGTH = 200;
 
-async function verifyUser(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.substring(7);
-  return adminAuth().verifyIdToken(token);
-}
-
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const { id } = await params;
     const db = adminDb();
     const ruleRef = db.collection('rules').doc(id);
@@ -139,6 +133,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await ruleRef.update(updateData);
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (isFirebaseAuthError(err)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('[rules/[id]] PATCH error:', err);
     return NextResponse.json({ error: 'Failed to update rule' }, { status: 500 });
   }
@@ -149,7 +146,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const { id } = await params;
     const db = adminDb();
     const ruleRef = db.collection('rules').doc(id);
@@ -162,6 +159,9 @@ export async function DELETE(
     await ruleRef.delete();
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (isFirebaseAuthError(err)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('[rules/[id]] DELETE error:', err);
     return NextResponse.json({ error: 'Failed to delete rule' }, { status: 500 });
   }

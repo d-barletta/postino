@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { EntityCategory } from '@/types';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const VALID_CATEGORIES: EntityCategory[] = [
   'topics',
@@ -12,17 +13,11 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'tags',
 ];
 
-async function verifyUser(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.substring(7);
-  return adminAuth().verifyIdToken(token);
-}
-
 export async function GET(request: NextRequest) {
-  let decoded: Awaited<ReturnType<typeof verifyUser>>;
+  let uid: string;
   try {
-    decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
+    uid = decoded.uid;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -30,7 +25,7 @@ export async function GET(request: NextRequest) {
     const db = adminDb();
     const snap = await db
       .collection('entityMerges')
-      .where('userId', '==', decoded.uid)
+      .where('userId', '==', uid)
       .orderBy('canonical', 'asc')
       .limit(500)
       .get();
@@ -50,7 +45,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const body = (await request.json()) as Record<string, unknown>;
     const { category, canonical, aliases } = body;
 
@@ -123,12 +118,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id: ref.id }, { status: 201 });
   } catch (err) {
-    const isAuthError =
-      err instanceof Error &&
-      (err.message.includes('auth') ||
-        err.message.includes('token') ||
-        err.message.includes('Unauthorized'));
-    if (isAuthError) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[entities/merges] POST error:', err);

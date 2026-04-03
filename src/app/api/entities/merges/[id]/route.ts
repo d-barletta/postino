@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import type { EntityCategory } from '@/types';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const VALID_CATEGORIES: EntityCategory[] = [
   'topics',
@@ -11,16 +12,9 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'tags',
 ];
 
-async function verifyUser(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.substring(7);
-  return adminAuth().verifyIdToken(token);
-}
-
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const { id } = await params;
 
     if (!id) {
@@ -105,12 +99,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    const isAuthError =
-      err instanceof Error &&
-      (err.message.includes('auth') ||
-        err.message.includes('token') ||
-        err.message.includes('Unauthorized'));
-    if (isAuthError) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[entities/merges/[id]] PATCH error:', err);
@@ -123,7 +112,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const { id } = await params;
 
     if (!id) {
@@ -145,12 +134,7 @@ export async function DELETE(
     await docRef.delete();
     return NextResponse.json({ success: true });
   } catch (err) {
-    const isAuthError =
-      err instanceof Error &&
-      (err.message.includes('auth') ||
-        err.message.includes('token') ||
-        err.message.includes('Unauthorized'));
-    if (isAuthError) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[entities/merges/[id]] DELETE error:', err);

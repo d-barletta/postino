@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.substring(7);
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
 
     const { id } = await params;
     const db = adminDb();
@@ -35,18 +31,11 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    const isAuthError =
-      msg.includes('auth') ||
-      msg.includes('token') ||
-      msg.includes('Firebase') ||
-      msg === 'Unauthorized' ||
-      msg === 'Forbidden';
-    if (isAuthError) {
-      const status = msg === 'Forbidden' ? 403 : 401;
-      return NextResponse.json({ error: msg }, { status });
+    if (isFirebaseAuthError(error) || (error instanceof Error && error.message === 'Forbidden')) {
+      const status = error instanceof Error && error.message === 'Forbidden' ? 403 : 401;
+      return NextResponse.json({ error: error instanceof Error ? error.message : 'Unauthorized' }, { status });
     }
-    console.error('Error deleting email:', msg);
+    console.error('Error deleting email:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

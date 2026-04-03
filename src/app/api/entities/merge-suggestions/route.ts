@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getOpenRouterClient } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 import type { EntityCategory } from '@/types';
+import { verifyUserRequest } from '@/lib/api-auth';
 
 const VALID_CATEGORIES: EntityCategory[] = [
   'topics',
@@ -50,20 +51,14 @@ function toTopN(map: CountMap, n = TOP_N): string[] {
     .map(([v]) => v);
 }
 
-async function verifyUser(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.substring(7);
-  return adminAuth().verifyIdToken(token);
-}
-
 // ---------------------------------------------------------------------------
 // GET – return existing suggestions for the user
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
-  let decoded: Awaited<ReturnType<typeof verifyUser>>;
+  let uid: string;
   try {
-    decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
+    uid = decoded.uid;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -72,7 +67,7 @@ export async function GET(request: NextRequest) {
     const db = adminDb();
     const snap = await db
       .collection('entityMergeSuggestions')
-      .where('userId', '==', decoded.uid)
+      .where('userId', '==', uid)
       .orderBy('suggestedCanonical', 'asc')
       .limit(200)
       .get();
@@ -94,9 +89,10 @@ export async function GET(request: NextRequest) {
 // POST – ask AI to generate merge suggestions from the user's knowledge data
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
-  let decoded: Awaited<ReturnType<typeof verifyUser>>;
+  let uid: string;
   try {
-    decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
+    uid = decoded.uid;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -105,7 +101,7 @@ export async function POST(request: NextRequest) {
     const db = adminDb();
 
     // Fetch user's analysis output language preference
-    const userDoc = await db.collection('users').doc(decoded.uid).get();
+    const userDoc = await db.collection('users').doc(uid).get();
     const langCode = (userDoc.data()?.analysisOutputLanguage as string | undefined)
       ?.toLowerCase()
       .trim();
@@ -117,7 +113,7 @@ export async function POST(request: NextRequest) {
     // Check if there are already pending suggestions — if so, don't regenerate
     const pendingSnap = await db
       .collection('entityMergeSuggestions')
-      .where('userId', '==', decoded.uid)
+      .where('userId', '==', uid)
       .where('status', '==', 'pending')
       .limit(1)
       .get();
@@ -133,11 +129,11 @@ export async function POST(request: NextRequest) {
     const [snap, mergesSnap] = await Promise.all([
       db
         .collection('emailLogs')
-        .where('userId', '==', decoded.uid)
+        .where('userId', '==', uid)
         .orderBy('receivedAt', 'desc')
         .limit(FETCH_LIMIT)
         .get(),
-      db.collection('entityMerges').where('userId', '==', decoded.uid).limit(MERGES_LIMIT).get(),
+      db.collection('entityMerges').where('userId', '==', uid).limit(MERGES_LIMIT).get(),
     ]);
 
     // Gather entity counts from email analysis
@@ -298,7 +294,7 @@ Return an empty array if no confident merges are found. Only include suggestions
     // Delete old rejected/accepted suggestions before storing new ones
     const oldSnap = await db
       .collection('entityMergeSuggestions')
-      .where('userId', '==', decoded.uid)
+      .where('userId', '==', uid)
       .get();
 
     const batch = db.batch();
@@ -312,7 +308,7 @@ Return an empty array if no confident merges are found. Only include suggestions
     const storedSuggestions = await Promise.all(
       validSuggestions.map(async (s) => {
         const ref = await db.collection('entityMergeSuggestions').add({
-          userId: decoded.uid,
+          userId: uid,
           category: s.category,
           aliases: s.aliases,
           suggestedCanonical: s.suggestedCanonical,
@@ -322,7 +318,7 @@ Return an empty array if no confident merges are found. Only include suggestions
         });
         return {
           id: ref.id,
-          userId: decoded.uid,
+          userId: uid,
           category: s.category,
           aliases: s.aliases,
           suggestedCanonical: s.suggestedCanonical,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import type { Query, DocumentSnapshot } from 'firebase-admin/firestore';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -15,12 +16,7 @@ const ARRAY_CONTAINS_ANY_LIMIT = 30;
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.substring(7);
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
 
     const { searchParams } = request.nextUrl;
     const pageParam = parseInt(searchParams.get('page') || '1', 10);
@@ -381,8 +377,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage, nextCursor });
     }
   } catch (err) {
-    const code = (err as { code?: string }).code;
-    if (code?.startsWith('auth/') || (err instanceof Error && err.message === 'Unauthorized')) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[email/logs] error:', err);

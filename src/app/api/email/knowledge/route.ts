@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const FETCH_LIMIT = 1000;
 const MERGES_LIMIT = 500;
@@ -48,12 +49,7 @@ function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: 
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.substring(7);
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
 
     const db = adminDb();
 
@@ -125,12 +121,7 @@ export async function GET(request: NextRequest) {
       totalEmails,
     });
   } catch (err) {
-    const isAuthError =
-      err instanceof Error &&
-      (err.message.includes('auth') ||
-        err.message.includes('token') ||
-        err.message.includes('Firebase'));
-    if (isAuthError) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[email/knowledge] error:', err);
