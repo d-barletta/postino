@@ -1,9 +1,16 @@
 {
   "name": "Postino.pro",
   "short_name": "Postino",
+  "id": "/dashboard",
   "start_url": "/dashboard",
   "scope": "/",
   "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/web-app-manifest-192x192.png",
       "sizes": "192x192",
@@ -14,7 +21,28 @@
       "src": "/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og_cover.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Postino dashboard"
+    },
+    {
+      "src": "/cover_mobile.png",
+      "sizes": "1074x1590",
+      "type": "image/png",
+      "label": "Postino dashboard"
     }
   ],
   "theme_color": "#ffffff",
