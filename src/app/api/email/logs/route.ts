@@ -34,8 +34,31 @@ export async function GET(request: NextRequest) {
     const hasActionItems = searchParams.get('hasActionItems') === 'true';
     const isUrgent = searchParams.get('isUrgent') === 'true';
     const languageFilter = (searchParams.get('language') || '').trim().toLowerCase();
-    const tagsFilter = (searchParams.get('tags') || '').trim().toLowerCase();
+    // tags supports multiple values (array-based filter)
+    const tagsFilter = searchParams
+      .getAll('tags')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+    // legacy single-value tags param for backward compatibility
+    const tagsFilterLegacy = (searchParams.get('tags') || '').trim().toLowerCase();
     const statusFilter = (searchParams.get('status') || '').trim().toLowerCase();
+    // entity filters – multi-value
+    const peopleFilter = searchParams
+      .getAll('people')
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
+    const orgsFilter = searchParams
+      .getAll('orgs')
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
+    const placesFilter = searchParams
+      .getAll('places')
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
+    const eventsFilter = searchParams
+      .getAll('events')
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
     // cursor-based pagination: pass the last document ID from the previous page
     const cursor = searchParams.get('cursor');
 
@@ -62,7 +85,12 @@ export async function GET(request: NextRequest) {
       hasActionItems ||
       isUrgent ||
       languageFilter ||
-      tagsFilter;
+      tagsFilter.length > 0 ||
+      tagsFilterLegacy ||
+      peopleFilter.length > 0 ||
+      orgsFilter.length > 0 ||
+      placesFilter.length > 0 ||
+      eventsFilter.length > 0;
     const hasAnyFilter =
       search || termsRaw.length > 0 || hasAttachments || statusFilter || analysisFiltersActive;
 
@@ -189,14 +217,79 @@ export async function GET(request: NextRequest) {
       docs = docs.filter((d) => d.emailAnalysis?.language?.toLowerCase() === languageFilter);
     }
 
-    if (tagsFilter) {
+    if (tagsFilter.length > 0) {
+      // multi-value: email must contain ALL specified tags (AND logic)
+      docs = docs.filter((d) =>
+        tagsFilter.every(
+          (tag) =>
+            Array.isArray(d.emailAnalysis?.tags) &&
+            d.emailAnalysis.tags.some(
+              (t: unknown) => typeof t === 'string' && t.toLowerCase().includes(tag),
+            ),
+        ),
+      );
+    } else if (tagsFilterLegacy) {
+      // backward compat: single-value tags filter
       docs = docs.filter(
         (d) =>
           Array.isArray(d.emailAnalysis?.tags) &&
           d.emailAnalysis.tags.some(
-            (tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(tagsFilter),
+            (tag: unknown) =>
+              typeof tag === 'string' && tag.toLowerCase().includes(tagsFilterLegacy),
           ),
       );
+    }
+
+    if (peopleFilter.length > 0) {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.people;
+        return (
+          Array.isArray(list) &&
+          peopleFilter.some((p) =>
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase().includes(p)),
+          )
+        );
+      });
+    }
+
+    if (orgsFilter.length > 0) {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.organizations;
+        return (
+          Array.isArray(list) &&
+          orgsFilter.some((o) =>
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase().includes(o)),
+          )
+        );
+      });
+    }
+
+    if (placesFilter.length > 0) {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.places;
+        return (
+          Array.isArray(list) &&
+          placesFilter.some((p) =>
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase().includes(p)),
+          )
+        );
+      });
+    }
+
+    if (eventsFilter.length > 0) {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.events;
+        return (
+          Array.isArray(list) &&
+          eventsFilter.some((e) =>
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase().includes(e)),
+          )
+        );
+      });
     }
 
     let hasNextPage = false;

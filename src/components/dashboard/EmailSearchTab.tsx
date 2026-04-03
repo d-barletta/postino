@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select';
+import { Combobox } from '@/components/ui/Combobox';
+import { ComboboxChips } from '@/components/ui/ComboboxChips';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { formatDate, cn } from '@/lib/utils';
@@ -49,6 +51,7 @@ import {
   Trash2,
   Maximize2,
   Eye,
+  ChevronDown,
 } from 'lucide-react';
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
@@ -94,7 +97,11 @@ interface FilterState {
   priority: string;
   senderType: string;
   language: string;
-  tags: string;
+  tags: string[];
+  people: string[];
+  orgs: string[];
+  places: string[];
+  events: string[];
   attachments: boolean;
   requiresResponse: boolean;
   hasActionItems: boolean;
@@ -109,7 +116,11 @@ const EMPTY_FILTERS: FilterState = {
   priority: '',
   senderType: '',
   language: '',
-  tags: '',
+  tags: [],
+  people: [],
+  orgs: [],
+  places: [],
+  events: [],
   attachments: false,
   requiresResponse: false,
   hasActionItems: false,
@@ -117,6 +128,8 @@ const EMPTY_FILTERS: FilterState = {
 };
 
 function filtersEqual(a: FilterState, b: FilterState): boolean {
+  const arrEq = (x: string[], y: string[]) =>
+    x.length === y.length && x.every((v, i) => v === y[i]);
   return (
     a.search.trim() === b.search.trim() &&
     a.status === b.status &&
@@ -125,7 +138,11 @@ function filtersEqual(a: FilterState, b: FilterState): boolean {
     a.priority === b.priority &&
     a.senderType === b.senderType &&
     a.language.trim().toLowerCase() === b.language.trim().toLowerCase() &&
-    a.tags.trim().toLowerCase() === b.tags.trim().toLowerCase() &&
+    arrEq([...a.tags].sort(), [...b.tags].sort()) &&
+    arrEq([...a.people].sort(), [...b.people].sort()) &&
+    arrEq([...a.orgs].sort(), [...b.orgs].sort()) &&
+    arrEq([...a.places].sort(), [...b.places].sort()) &&
+    arrEq([...a.events].sort(), [...b.events].sort()) &&
     a.attachments === b.attachments &&
     a.requiresResponse === b.requiresResponse &&
     a.hasActionItems === b.hasActionItems &&
@@ -142,7 +159,11 @@ function hasActiveFilter(f: FilterState): boolean {
     !!f.priority ||
     !!f.senderType ||
     !!f.language ||
-    !!f.tags ||
+    f.tags.length > 0 ||
+    f.people.length > 0 ||
+    f.orgs.length > 0 ||
+    f.places.length > 0 ||
+    f.events.length > 0 ||
     f.attachments ||
     f.requiresResponse ||
     f.hasActionItems ||
@@ -406,6 +427,78 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   // Applied = currently active server-side filters
   const [applied, setApplied] = useState<FilterState>(EMPTY_FILTERS);
 
+  // Advanced filters panel state
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Lazy-loaded entity suggestions
+  interface SuggestionItem { value: string; count: number }
+  interface Suggestions {
+    tags: SuggestionItem[];
+    people: SuggestionItem[];
+    organizations: SuggestionItem[];
+    places: SuggestionItem[];
+    events: SuggestionItem[];
+    languages: SuggestionItem[];
+  }
+  const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const suggestionsFetched = useRef(false);
+
+  const fetchSuggestions = useCallback(async () => {
+    if (!firebaseUser || suggestionsFetched.current) return;
+    suggestionsFetched.current = true;
+    setSuggestionsLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/email/knowledge', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSuggestions({
+          tags: data.tags ?? [],
+          people: data.people ?? [],
+          organizations: data.organizations ?? [],
+          places: data.places ?? [],
+          events: data.events ?? [],
+          languages: data.languages ?? [],
+        });
+      }
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, [firebaseUser]);
+
+  // Fetch suggestions when advanced section is first opened
+  useEffect(() => {
+    if (advancedOpen) fetchSuggestions();
+  }, [advancedOpen, fetchSuggestions]);
+
+  /** Convert a SuggestionItem array to ComboboxChips options (sorted by count desc, then a-z). */
+  function toChipsOptions(items: SuggestionItem[]) {
+    return [...items]
+      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+      .map((item) => ({ value: item.value, label: item.value }));
+  }
+
+  /** Convert language suggestions to Combobox options with display names where known. */
+  const LANGUAGE_NAMES: Record<string, string> = {
+    en: 'English', it: 'Italiano', es: 'Español', fr: 'Français',
+    de: 'Deutsch', pt: 'Português', nl: 'Nederlands', ru: 'Русский',
+    zh: '中文', ja: '日本語', ar: 'العربية', ko: '한국어', pl: 'Polski',
+    sv: 'Svenska', da: 'Dansk', fi: 'Suomi', no: 'Norsk', tr: 'Türkçe',
+  };
+  function toLanguageOptions(items: SuggestionItem[]) {
+    return [...items]
+      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+      .map((item) => ({
+        value: item.value,
+        label: LANGUAGE_NAMES[item.value]
+          ? `${LANGUAGE_NAMES[item.value]} (${item.value})`
+          : item.value.toUpperCase(),
+      }));
+  }
+
   const statusLabel: Record<string, string> = {
     received: t.dashboard.charts.received,
     processing: t.dashboard.charts.processing,
@@ -505,7 +598,11 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         if (applied.priority) params.set('priority', applied.priority);
         if (applied.senderType) params.set('senderType', applied.senderType);
         if (applied.language) params.set('language', applied.language.trim().toLowerCase());
-        if (applied.tags) params.set('tags', applied.tags.trim().toLowerCase());
+        applied.tags.forEach((tag) => params.append('tags', tag));
+        applied.people.forEach((p) => params.append('people', p));
+        applied.orgs.forEach((o) => params.append('orgs', o));
+        applied.places.forEach((p) => params.append('places', p));
+        applied.events.forEach((e) => params.append('events', e));
         if (applied.attachments) params.set('hasAttachments', 'true');
         if (applied.requiresResponse) params.set('requiresResponse', 'true');
         if (applied.hasActionItems) params.set('hasActionItems', 'true');
@@ -769,207 +866,289 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                   />
                 </div>
 
-                {/* Dropdown + language filters grid (6 items, 2 cols → 3 cols on sm) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {ts.filterStatus}
-                    </label>
-                    <Select
-                      value={pending.status || ALL_VALUE}
-                      onValueChange={(v) =>
-                        setPending((p) => ({ ...p, status: v === ALL_VALUE ? '' : v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {STATUS_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {ts.filterSentiment}
-                    </label>
-                    <Select
-                      value={pending.sentiment || ALL_VALUE}
-                      onValueChange={(v) =>
-                        setPending((p) => ({ ...p, sentiment: v === ALL_VALUE ? '' : v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {SENTIMENT_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {ts.filterCategory}
-                    </label>
-                    <Select
-                      value={pending.emailType || ALL_VALUE}
-                      onValueChange={(v) =>
-                        setPending((p) => ({ ...p, emailType: v === ALL_VALUE ? '' : v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {EMAIL_TYPE_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {ts.filterPriority}
-                    </label>
-                    <Select
-                      value={pending.priority || ALL_VALUE}
-                      onValueChange={(v) =>
-                        setPending((p) => ({ ...p, priority: v === ALL_VALUE ? '' : v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {PRIORITY_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {ts.filterSenderType}
-                    </label>
-                    <Select
-                      value={pending.senderType || ALL_VALUE}
-                      onValueChange={(v) =>
-                        setPending((p) => ({ ...p, senderType: v === ALL_VALUE ? '' : v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {SENDER_TYPE_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {ts.filterLanguage}
-                    </label>
-                    <input
-                      type="text"
-                      value={pending.language}
-                      onChange={(e) => setPending((p) => ({ ...p, language: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
-                      }}
-                      placeholder={ts.languagePlaceholder}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                {/* Advanced filters — collapsible sub-section */}
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedOpen((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <span>{ts.advancedFilters}</span>
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 transition-transform duration-200',
+                        advancedOpen ? 'rotate-180' : '',
+                      )}
                     />
-                  </div>
-                </div>
+                  </button>
 
-                {/* Tags — full row */}
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                    {ts.filterTags}
-                  </label>
-                  <input
-                    type="text"
-                    value={pending.tags}
-                    onChange={(e) => setPending((p) => ({ ...p, tags: e.target.value }))}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
-                    }}
-                    placeholder={ts.tagsPlaceholder}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-                  />
-                </div>
+                  {advancedOpen && (
+                    <div className="px-4 pb-4 pt-2 space-y-4 border-t border-gray-200 dark:border-gray-700">
+                      {/* Dropdown filters grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterStatus}
+                          </label>
+                          <Select
+                            value={pending.status || ALL_VALUE}
+                            onValueChange={(v) =>
+                              setPending((p) => ({ ...p, status: v === ALL_VALUE ? '' : v }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                {/* Toggle filters row */}
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Switch
-                      checked={pending.attachments}
-                      onCheckedChange={(v) => setPending((p) => ({ ...p, attachments: v }))}
-                      aria-label={ts.withAttachments}
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {ts.withAttachments}
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Switch
-                      checked={pending.requiresResponse}
-                      onCheckedChange={(v) => setPending((p) => ({ ...p, requiresResponse: v }))}
-                      aria-label={ts.requiresResponse}
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {ts.requiresResponse}
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Switch
-                      checked={pending.hasActionItems}
-                      onCheckedChange={(v) => setPending((p) => ({ ...p, hasActionItems: v }))}
-                      aria-label={ts.hasActionItems}
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {ts.hasActionItems}
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Switch
-                      checked={pending.isUrgent}
-                      onCheckedChange={(v) => setPending((p) => ({ ...p, isUrgent: v }))}
-                      aria-label={ts.isUrgent}
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{ts.isUrgent}</span>
-                  </label>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterSentiment}
+                          </label>
+                          <Select
+                            value={pending.sentiment || ALL_VALUE}
+                            onValueChange={(v) =>
+                              setPending((p) => ({ ...p, sentiment: v === ALL_VALUE ? '' : v }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {SENTIMENT_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterCategory}
+                          </label>
+                          <Select
+                            value={pending.emailType || ALL_VALUE}
+                            onValueChange={(v) =>
+                              setPending((p) => ({ ...p, emailType: v === ALL_VALUE ? '' : v }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {EMAIL_TYPE_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterPriority}
+                          </label>
+                          <Select
+                            value={pending.priority || ALL_VALUE}
+                            onValueChange={(v) =>
+                              setPending((p) => ({ ...p, priority: v === ALL_VALUE ? '' : v }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {PRIORITY_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterSenderType}
+                          </label>
+                          <Select
+                            value={pending.senderType || ALL_VALUE}
+                            onValueChange={(v) =>
+                              setPending((p) => ({ ...p, senderType: v === ALL_VALUE ? '' : v }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {SENDER_TYPE_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterLanguage}
+                          </label>
+                          <Combobox
+                            options={suggestions ? toLanguageOptions(suggestions.languages) : []}
+                            value={pending.language}
+                            onValueChange={(v) => setPending((p) => ({ ...p, language: v }))}
+                            placeholder={ts.languagePlaceholder}
+                            searchPlaceholder={ts.languagePlaceholder}
+                            clearable
+                            disabled={suggestionsLoading}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Entity + tag combobox chips — 2-col grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterTags}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.tags) : []}
+                            values={pending.tags}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, tags: v }))}
+                            placeholder={ts.tagsPlaceholder}
+                            searchPlaceholder={ts.tagsPlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterPeople}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.people) : []}
+                            values={pending.people}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, people: v }))}
+                            placeholder={ts.peoplePlaceholder}
+                            searchPlaceholder={ts.peoplePlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterOrgs}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.organizations) : []}
+                            values={pending.orgs}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, orgs: v }))}
+                            placeholder={ts.orgsPlaceholder}
+                            searchPlaceholder={ts.orgsPlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterPlaces}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.places) : []}
+                            values={pending.places}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, places: v }))}
+                            placeholder={ts.placesPlaceholder}
+                            searchPlaceholder={ts.placesPlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterEvents}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.events) : []}
+                            values={pending.events}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, events: v }))}
+                            placeholder={ts.eventsPlaceholder}
+                            searchPlaceholder={ts.eventsPlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Toggle filters row */}
+                      <div className="flex flex-wrap gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Switch
+                            checked={pending.attachments}
+                            onCheckedChange={(v) => setPending((p) => ({ ...p, attachments: v }))}
+                            aria-label={ts.withAttachments}
+                          />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {ts.withAttachments}
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Switch
+                            checked={pending.requiresResponse}
+                            onCheckedChange={(v) =>
+                              setPending((p) => ({ ...p, requiresResponse: v }))
+                            }
+                            aria-label={ts.requiresResponse}
+                          />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {ts.requiresResponse}
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Switch
+                            checked={pending.hasActionItems}
+                            onCheckedChange={(v) =>
+                              setPending((p) => ({ ...p, hasActionItems: v }))
+                            }
+                            aria-label={ts.hasActionItems}
+                          />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {ts.hasActionItems}
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Switch
+                            checked={pending.isUrgent}
+                            onCheckedChange={(v) => setPending((p) => ({ ...p, isUrgent: v }))}
+                            aria-label={ts.isUrgent}
+                          />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {ts.isUrgent}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Search button — last row, full width on mobile */}
@@ -1088,19 +1267,71 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
               </button>
             </span>
           )}
-          {applied.tags && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
-              {ts.filterTags}: {applied.tags}
+          {applied.tags.map((tag) => (
+            <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
+              {ts.filterTags}: {tag}
               <button
                 onClick={() => {
-                  setPending((p) => ({ ...p, tags: '' }));
-                  setApplied((a) => ({ ...a, tags: '' }));
+                  setPending((p) => ({ ...p, tags: p.tags.filter((t) => t !== tag) }));
+                  setApplied((a) => ({ ...a, tags: a.tags.filter((t) => t !== tag) }));
                 }}
               >
                 <X className="h-3 w-3" />
               </button>
             </span>
-          )}
+          ))}
+          {applied.people.map((person) => (
+            <span key={person} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+              {ts.filterPeople}: {person}
+              <button
+                onClick={() => {
+                  setPending((p) => ({ ...p, people: p.people.filter((v) => v !== person) }));
+                  setApplied((a) => ({ ...a, people: a.people.filter((v) => v !== person) }));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {applied.orgs.map((org) => (
+            <span key={org} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+              {ts.filterOrgs}: {org}
+              <button
+                onClick={() => {
+                  setPending((p) => ({ ...p, orgs: p.orgs.filter((v) => v !== org) }));
+                  setApplied((a) => ({ ...a, orgs: a.orgs.filter((v) => v !== org) }));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {applied.places.map((place) => (
+            <span key={place} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+              {ts.filterPlaces}: {place}
+              <button
+                onClick={() => {
+                  setPending((p) => ({ ...p, places: p.places.filter((v) => v !== place) }));
+                  setApplied((a) => ({ ...a, places: a.places.filter((v) => v !== place) }));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {applied.events.map((event) => (
+            <span key={event} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+              {ts.filterEvents}: {event}
+              <button
+                onClick={() => {
+                  setPending((p) => ({ ...p, events: p.events.filter((v) => v !== event) }));
+                  setApplied((a) => ({ ...a, events: a.events.filter((v) => v !== event) }));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
           {applied.attachments && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
               {ts.withAttachments}

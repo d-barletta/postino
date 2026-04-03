@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
     const organizations: CountMap = {};
     const places: CountMap = {};
     const events: CountMap = {};
+    const languages: CountMap = {};
 
     let totalEmails = 0;
 
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
       totalEmails++;
       incrementAll(topics, analysis.topics);
       incrementAll(tags, analysis.tags);
+      increment(languages, analysis.language);
       const entities = analysis.entities as Record<string, unknown> | undefined;
       if (entities) {
         incrementAll(people, entities.people);
@@ -119,6 +121,7 @@ export async function GET(request: NextRequest) {
       organizations: toSortedArray(organizations),
       places: toSortedArray(places),
       events: toSortedArray(events),
+      languages: toSortedArray(languages),
       totalEmails,
     });
   } catch (err) {
