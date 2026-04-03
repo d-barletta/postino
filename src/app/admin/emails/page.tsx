@@ -237,9 +237,14 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
         </div>
       )}
 
-      <EmailLogsCharts logs={logs} loading={loading} />
+      <div className="flex flex-col gap-6">
+        {/* On mobile: email list first (order-1), charts second (order-2). On md+: reversed. */}
+        <div className="order-2 md:order-1">
+          <EmailLogsCharts logs={logs} loading={loading} />
+        </div>
 
-      <Card>
+        <div className="order-1 md:order-2">
+        <Card>
         <CardHeader>
           <div className="flex flex-col gap-3">
             {/* Row 1: Title + Refresh */}
@@ -361,7 +366,199 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Mobile card list (hidden on md+) */}
+              <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                {logs.map((log) => (
+                  <Fragment key={log.id}>
+                    <div
+                      className="px-4 py-3 cursor-pointer hover:bg-yellow-50/60 dark:hover:bg-yellow-900/10 transition-colors"
+                      onClick={() => setExpanded(expanded === log.id ? null : log.id)}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate flex-1">
+                          {log.subject || '(no subject)'}
+                        </p>
+                        <Badge variant={STATUS_VARIANT[log.status] || 'default'} className="shrink-0">
+                          {log.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-0.5">
+                        From: {log.fromAddress}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-0.5">
+                        User: {log.userEmail || log.userId}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 dark:text-gray-500">
+                        <span>{formatDate(log.receivedAt)}</span>
+                        {log.tokensUsed != null && (
+                          <span>{log.tokensUsed.toLocaleString()} tokens</span>
+                        )}
+                        {log.estimatedCost != null && (
+                          <span>${log.estimatedCost.toFixed(5)}</span>
+                        )}
+                      </div>
+                    </div>
+                    {expanded === log.id && (
+                      <div className="bg-yellow-50/40 dark:bg-yellow-900/5 px-4 py-3">
+                        <Tabs defaultValue="details">
+                          <TabsList>
+                            <TabsTrigger value="details">Details</TabsTrigger>
+                            {asAgentTrace(log.agentTrace) && (
+                              <TabsTrigger value="trace">Trace</TabsTrigger>
+                            )}
+                          </TabsList>
+
+                          <TabsContent value="details">
+                            <dl className="mt-3 grid grid-cols-1 gap-y-2 text-xs">
+                              <div>
+                                <dt className="font-medium text-gray-500 dark:text-gray-400">Email ID</dt>
+                                <dd className="text-gray-700 dark:text-gray-300 font-mono break-all">{log.id}</dd>
+                              </div>
+                              <div>
+                                <dt className="font-medium text-gray-500 dark:text-gray-400">To (Postino address)</dt>
+                                <dd className="text-gray-700 dark:text-gray-300 break-all">{log.toAddress}</dd>
+                              </div>
+                              <div>
+                                <dt className="font-medium text-gray-500 dark:text-gray-400">Processed at</dt>
+                                <dd className="text-gray-700 dark:text-gray-300">{formatDate(log.processedAt)}</dd>
+                              </div>
+                              <div>
+                                <dt className="font-medium text-gray-500 dark:text-gray-400">Processing time</dt>
+                                <dd className="text-gray-700 dark:text-gray-300">{processingTime(log.receivedAt, log.processedAt)}</dd>
+                              </div>
+                              {log.ruleApplied && (
+                                <div>
+                                  <dt className="font-medium text-gray-500 dark:text-gray-400">Rule applied</dt>
+                                  <dd className="text-gray-700 dark:text-gray-300">{log.ruleApplied}</dd>
+                                </div>
+                              )}
+                              {(log.attachmentCount ?? 0) > 0 && (
+                                <div>
+                                  <dt className="font-medium text-gray-500 dark:text-gray-400">Attachments</dt>
+                                  <dd className="text-gray-700 dark:text-gray-300">
+                                    {(log.attachmentNames ?? []).join(', ') || `${log.attachmentCount} file(s)`}
+                                  </dd>
+                                </div>
+                              )}
+                              {log.errorMessage && (
+                                <div>
+                                  <dt className="font-medium text-red-500 dark:text-red-400">Error</dt>
+                                  <dd className="text-red-600 dark:text-red-400 wrap-break-word">{log.errorMessage}</dd>
+                                </div>
+                              )}
+                            </dl>
+                          </TabsContent>
+
+                          {asAgentTrace(log.agentTrace) && (
+                            <TabsContent value="trace">
+                              {(() => {
+                                const trace = asAgentTrace(log.agentTrace)!;
+                                const filteredSteps = warningsOnly
+                                  ? trace.steps.filter(
+                                      (s) => s.status === 'warning' || s.status === 'error',
+                                    )
+                                  : trace.steps;
+
+                                return (
+                                  <div className="mt-3 space-y-3 text-xs">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Badge variant="info">Model: {trace.model}</Badge>
+                                      <Badge variant="default">Mode: {trace.mode}</Badge>
+                                      <Badge variant="default">
+                                        HTML input: {trace.isHtmlInput ? 'yes' : 'no'}
+                                      </Badge>
+                                      <Badge variant="default">Steps: {trace.steps.length}</Badge>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setWarningsOnly((v) => !v)}
+                                      >
+                                        <Filter className="h-3.5 w-3.5 mr-1" />
+                                        {warningsOnly ? 'Show all steps' : 'Only warnings/errors'}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleCopyTrace(log.id, trace)}
+                                      >
+                                        <Copy className="h-3.5 w-3.5 mr-1" />
+                                        {copiedTraceId === log.id ? 'Copied' : 'Copy trace JSON'}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() =>
+                                          setRawJsonLogId((v) => (v === log.id ? null : log.id))
+                                        }
+                                      >
+                                        <FileJson className="h-3.5 w-3.5 mr-1" />
+                                        {rawJsonLogId === log.id ? 'Hide raw JSON' : 'View raw JSON'}
+                                      </Button>
+                                    </div>
+
+                                    <div className="space-y-2 max-h-64 overflow-auto pr-1">
+                                      {filteredSteps.length === 0 ? (
+                                        <p className="text-gray-500 dark:text-gray-400">
+                                          No warning/error steps found for this trace.
+                                        </p>
+                                      ) : (
+                                        filteredSteps.map((step, idx) => (
+                                          <div
+                                            key={`${step.ts}-${idx}`}
+                                            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/30 p-2"
+                                          >
+                                            <div className="flex items-center justify-between gap-2">
+                                              <p className="font-medium text-gray-800 dark:text-gray-100">
+                                                {step.step}
+                                              </p>
+                                              <Badge
+                                                variant={
+                                                  step.status === 'ok'
+                                                    ? 'success'
+                                                    : step.status === 'warning'
+                                                      ? 'warning'
+                                                      : 'error'
+                                                }
+                                              >
+                                                {step.status}
+                                              </Badge>
+                                            </div>
+                                            {step.detail && (
+                                              <p className="mt-1 text-gray-600 dark:text-gray-300 wrap-break-word">
+                                                {step.detail}
+                                              </p>
+                                            )}
+                                            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                              {formatDate(step.ts)}
+                                            </p>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+
+                                    {rawJsonLogId === log.id && (
+                                      <pre className="mt-2 max-h-96 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 text-[11px] leading-relaxed whitespace-pre-wrap wrap-break-word">
+                                        {JSON.stringify(trace, null, 2)}
+                                      </pre>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </TabsContent>
+                          )}
+                        </Tabs>
+                      </div>
+                    )}
+                  </Fragment>
+                ))}
+              </div>
+
+              {/* Desktop table (hidden on mobile) */}
+              <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
@@ -620,6 +817,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                   ))}
                 </tbody>
               </table>
+              </div>
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
                 <Button
                   variant="ghost"
@@ -644,10 +842,12 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 }
