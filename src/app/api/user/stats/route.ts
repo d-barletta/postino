@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (!authHeader?.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const token = authHeader.split('Bearer ')[1];
+  const token = authHeader.substring(7);
   let uid: string;
   try {
     const decoded = await adminAuth().verifyIdToken(token);

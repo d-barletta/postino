@@ -7,7 +7,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.split('Bearer ')[1];
+    const token = authHeader.substring(7);
     const decoded = await adminAuth().verifyIdToken(token);
 
     const { id } = await params;
@@ -43,7 +43,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error fetching original email:', msg);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const code = (error as { code?: string }).code;
+    if (
+      code?.startsWith('auth/') ||
+      msg === 'Unauthorized' ||
+      msg.includes('token') ||
+      msg.includes('Firebase ID token')
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.error('Error fetching original email:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

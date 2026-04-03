@@ -295,8 +295,11 @@ function resolveStoreAttachmentUrl(
       'api.mailgun.net',
       'api.eu.mailgun.net',
     ]);
+    // Mailgun regional storage hosts follow the pattern storage-<region>.api[.eu].mailgun.net.
+    // Using an anchored regex prevents overly broad suffix matching that could admit
+    // attacker-controlled subdomains (e.g. evil.api.mailgun.net).
     const isTrustedStorageHost =
-      resolved.host.endsWith('.api.mailgun.net') || resolved.host.endsWith('.api.eu.mailgun.net');
+      /^storage-[a-z0-9-]+\.api(?:\.eu)?\.mailgun\.net$/.test(resolved.host);
 
     if (!trustedHosts.has(resolved.host) && !isTrustedStorageHost) return null;
 

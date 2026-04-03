@@ -31,6 +31,9 @@ export async function POST(request: Request) {
   if (!fcmToken || typeof fcmToken !== 'string') {
     return NextResponse.json({ success: false, error: 'fcmToken is required' }, { status: 400 });
   }
+  if (fcmToken.length > 512) {
+    return NextResponse.json({ success: false, error: 'fcmToken is too long' }, { status: 400 });
+  }
 
   try {
     await adminDb()
@@ -63,6 +66,9 @@ export async function DELETE(request: Request) {
   const fcmToken = (body as Record<string, unknown>)?.fcmToken;
   if (!fcmToken || typeof fcmToken !== 'string') {
     return NextResponse.json({ success: false, error: 'fcmToken is required' }, { status: 400 });
+  }
+  if (fcmToken.length > 512) {
+    return NextResponse.json({ success: false, error: 'fcmToken is too long' }, { status: 400 });
   }
 
   try {

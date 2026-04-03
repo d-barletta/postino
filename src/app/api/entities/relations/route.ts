@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.split('Bearer ')[1];
+    const token = authHeader.substring(7);
     const decoded = await adminAuth().verifyIdToken(token);
     const db = adminDb();
 
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.split('Bearer ')[1];
+    const token = authHeader.substring(7);
     const decoded = await adminAuth().verifyIdToken(token);
     const db = adminDb();
 

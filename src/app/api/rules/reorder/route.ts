@@ -6,7 +6,7 @@ const MAX_REORDER_IDS = 200;
 async function verifyUser(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
+  const token = authHeader.substring(7);
   return adminAuth().verifyIdToken(token);
 }
 

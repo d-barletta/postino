@@ -10,7 +10,7 @@ export async function PATCH(request: NextRequest) {
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.split('Bearer ')[1];
+    const token = authHeader.substring(7);
     const decoded = await adminAuth().verifyIdToken(token);
 
     const body = await request.json();
@@ -41,7 +41,12 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, analysisOutputLanguage: value });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const code = (error as { code?: string }).code;
+    if (code?.startsWith('auth/') || msg === 'Unauthorized' || msg.includes('Firebase ID token')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Analysis language update error:', error);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

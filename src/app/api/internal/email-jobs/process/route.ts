@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { processEmailJobsBatch } from '@/lib/email-jobs';
+
+function timingSafeStringEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 function isAuthorized(request: NextRequest): boolean {
   const workerSecret = process.env.EMAIL_JOBS_WORKER_SECRET || '';
   const cronSecret = process.env.CRON_SECRET || '';
 
   const workerHeader = request.headers.get('x-worker-secret') || '';
-  if (workerSecret && workerHeader.length > 0 && workerHeader === workerSecret) {
+  if (workerSecret && workerHeader.length > 0 && timingSafeStringEqual(workerHeader, workerSecret)) {
     return true;
   }
 
   const authHeader = request.headers.get('authorization') || '';
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+  const expectedCronHeader = cronSecret ? `Bearer ${cronSecret}` : '';
+  if (cronSecret && authHeader.length > 0 && timingSafeStringEqual(authHeader, expectedCronHeader)) {
     return true;
   }
 

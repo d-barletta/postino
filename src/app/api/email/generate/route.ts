@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   if (!authHeader?.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const token = authHeader.split('Bearer ')[1];
+  const token = authHeader.substring(7);
   let decoded: Awaited<ReturnType<ReturnType<typeof adminAuth>['verifyIdToken']>>;
   try {
     decoded = await adminAuth().verifyIdToken(token);
