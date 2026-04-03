@@ -210,6 +210,10 @@ interface BlogContentRendererProps {
 }
 
 export function BlogContentRenderer({ content, className }: BlogContentRendererProps) {
+  // Tiptap emits empty paragraphs as <p></p> which browsers collapse.
+  // Replace them with <p><br></p> so vertical spacing is preserved.
+  const html = content.replace(/<p><\/p>/g, '<p><br></p>');
+
   return (
     <div
       className={cn(
@@ -222,7 +226,7 @@ export function BlogContentRenderer({ content, className }: BlogContentRendererP
         'prose-img:rounded-xl prose-img:shadow-md',
         className,
       )}
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }
