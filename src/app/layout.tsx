@@ -81,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppFooter />
           </ClientProviders>
         </div>
-        <Toaster richColors position="bottom-right" />
+        <Toaster position="top-center" />
         <Analytics />
         <SpeedInsights />
       </body>
