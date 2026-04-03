@@ -14,6 +14,14 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'tags',
 ];
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  it: 'Italian',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+};
+
 const FETCH_LIMIT = 1000;
 const MERGES_LIMIT = 500;
 const TOP_N = 50;
@@ -95,6 +103,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const db = adminDb();
+
+    // Fetch user's analysis output language preference
+    const userDoc = await db.collection('users').doc(decoded.uid).get();
+    const langCode = (userDoc.data()?.analysisOutputLanguage as string | undefined)
+      ?.toLowerCase()
+      .trim();
+    const langName = langCode ? (LANGUAGE_NAMES[langCode] ?? langCode) : null;
+    const languageInstruction = langName
+      ? ` Write the reason field in ${langName}.`
+      : '';
 
     // Check if there are already pending suggestions — if so, don't regenerate
     const pendingSnap = await db
@@ -192,7 +210,7 @@ Rules:
 - Do not suggest merging clearly distinct entities.
 - Each suggestion must have at least 2 aliases.
 - Prefer the most complete/formal name as the suggestedCanonical.
-- Return your response as a valid JSON object with a "suggestions" array.`;
+- Return your response as a valid JSON object with a "suggestions" array.${languageInstruction}`;
 
     const userPrompt = `Here are the entities extracted from the user's emails, grouped by category:
 

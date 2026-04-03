@@ -886,7 +886,7 @@ export function KnowledgeTab() {
               return (
                 <>
                   {/* Generate button */}
-                  <div className="flex flex-col items-center gap-2 py-4">
+                  <div className="flex flex-col items-center gap-2 py-4 pt-0">
                     <Button
                       size="sm"
                       onClick={generateSuggestions}
