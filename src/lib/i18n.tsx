@@ -577,7 +577,7 @@ const translations: Record<Locale, Translations> = {
         ],
       },
       blog: {
-        title: 'Blog',
+        title: 'Postino Blog',
         subtitle: 'Tips, updates and insights from the Postino team',
         readMore: 'Read more',
         backToBlog: 'Back to Blog',
@@ -1114,7 +1114,7 @@ const translations: Record<Locale, Translations> = {
         ],
       },
       blog: {
-        title: 'Blog',
+        title: 'Postino Blog',
         subtitle: 'Consigli, aggiornamenti e approfondimenti dal team di Postino',
         readMore: 'Leggi di più',
         backToBlog: 'Torna al Blog',
@@ -1651,7 +1651,7 @@ const translations: Record<Locale, Translations> = {
         ],
       },
       blog: {
-        title: 'Blog',
+        title: 'Postino Blog',
         subtitle: 'Consejos, actualizaciones e información del equipo de Postino',
         readMore: 'Leer más',
         backToBlog: 'Volver al Blog',
@@ -2188,7 +2188,7 @@ const translations: Record<Locale, Translations> = {
         ],
       },
       blog: {
-        title: 'Blog',
+        title: 'Postino Blog',
         subtitle: "Conseils, mises à jour et informations de l'équipe Postino",
         readMore: 'Lire la suite',
         backToBlog: 'Retour au Blog',
@@ -2726,7 +2726,7 @@ const translations: Record<Locale, Translations> = {
         ],
       },
       blog: {
-        title: 'Blog',
+        title: 'Postino Blog',
         subtitle: 'Tipps, Updates und Einblicke vom Postino-Team',
         readMore: 'Mehr lesen',
         backToBlog: 'Zurück zum Blog',

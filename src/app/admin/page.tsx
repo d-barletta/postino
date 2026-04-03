@@ -108,13 +108,13 @@ export default function AdminPage() {
             <Activity className="h-4 w-4 shrink-0" />
             <span>Jobs</span>
           </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="h-4 w-4 shrink-0" />
-            <span>Settings</span>
-          </TabsTrigger>
           <TabsTrigger value="blog">
             <BookOpen className="h-4 w-4 shrink-0" />
             <span>Blog</span>
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="h-4 w-4 shrink-0" />
+            <span>Settings</span>
           </TabsTrigger>
         </TabsList>
 
