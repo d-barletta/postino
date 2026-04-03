@@ -165,16 +165,17 @@ export async function GET(request: NextRequest) {
       // to narrow the result set; fetch up to TEXT_SEARCH_FETCH_LIMIT docs for in-memory filtering.
       snap = await firestoreQuery.limit(TEXT_SEARCH_FETCH_LIMIT).get();
     } else if (structuredFiltersActive) {
-      // All filters pushed to Firestore — run count + paginated data query in parallel.
-      const offset = (page - 1) * pageSize;
-      const [dataSnap, countSnap] = await Promise.all([
-        firestoreQuery.offset(offset).limit(pageSize + 1).get(),
+      // Fetch a large batch with the structured Firestore filters already applied, then
+      // paginate in-memory. Using .offset().limit() with array-contains-any can silently return
+      // zero docs even when a count() on the same query returns results, so we avoid offset here.
+      const [batchSnap, countSnap] = await Promise.all([
+        firestoreQuery.limit(TEXT_SEARCH_FETCH_LIMIT).get(),
         firestoreQuery
           .count()
           .get()
           .catch(() => null),
       ]);
-      snap = dataSnap;
+      snap = batchSnap;
       totalCountFromFirestore = countSnap?.data().count ?? undefined;
     } else if (cursor) {
       // No filters, cursor provided for pagination.
@@ -354,14 +355,15 @@ export async function GET(request: NextRequest) {
         totalPages,
       });
     } else if (structuredFiltersActive) {
-      // Firestore-filtered: use the count from the aggregation query for totalCount/totalPages.
-      const hasNextPage = docs.length > pageSize;
-      const paginatedDocs = docs.slice(0, pageSize);
-      const totalCount = totalCountFromFirestore;
-      const totalPages =
-        totalCount !== undefined ? Math.max(1, Math.ceil(totalCount / pageSize)) : undefined;
-      const nextCursor =
-        hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
+      // In-memory pagination over the batch fetched above.
+      const total = docs.length;
+      const start = (page - 1) * pageSize;
+      const paginatedDocs = docs.slice(start, start + pageSize);
+      const hasNextPage = start + pageSize < total;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      // If we hit the fetch limit, the in-memory count is a lower bound; prefer the Firestore
+      // count aggregation in that case. Otherwise the in-memory count is exact.
+      const totalCount = total >= TEXT_SEARCH_FETCH_LIMIT ? (totalCountFromFirestore ?? total) : total;
       return NextResponse.json({
         logs: paginatedDocs,
         page,
@@ -369,7 +371,6 @@ export async function GET(request: NextRequest) {
         hasNextPage,
         totalCount,
         totalPages,
-        nextCursor,
       });
     } else {
       // No filters: cursor-based pagination.
