@@ -38,26 +38,25 @@ async function getPublishedArticles(): Promise<BlogArticle[]> {
     const db = adminDb();
     const snap = await db
       .collection('blogArticles')
+      .where('published', '==', true)
       .orderBy('createdAt', 'desc')
-      .select('title', 'slug', 'tags', 'thumbnailUrl', 'language', 'published', 'createdAt', 'updatedAt')
+      .select('title', 'slug', 'tags', 'thumbnailUrl', 'language', 'createdAt', 'updatedAt')
       .get();
-      return snap.docs
-        .map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            title: data.title,
-            slug: data.slug,
-            content: '',
-            tags: data.tags ?? [],
-            thumbnailUrl: data.thumbnailUrl ?? '',
-            published: data.published === true,
-            language: data.language ?? 'en',
-            createdAt: data.createdAt?.toDate?.() ?? new Date(),
-            updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
-          };
-        })
-        .filter((a) => a.published);
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        title: data.title,
+        slug: data.slug,
+        content: '',
+        tags: data.tags ?? [],
+        thumbnailUrl: data.thumbnailUrl ?? '',
+        published: true,
+        language: data.language ?? 'en',
+        createdAt: data.createdAt?.toDate?.() ?? new Date(),
+        updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
+      };
+    });
   } catch {
     return [];
   }

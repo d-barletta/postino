@@ -12,13 +12,12 @@ async function getArticle(slug: string): Promise<BlogArticle | null> {
     const snap = await db
       .collection('blogArticles')
       .where('slug', '==', slug)
+      .where('published', '==', true)
       .limit(1)
       .get();
     if (snap.empty) return null;
     const d = snap.docs[0];
     const data = d.data();
-    // Guard: only serve published articles
-    if (!data.published) return null;
     return {
       id: d.id,
       title: data.title,
