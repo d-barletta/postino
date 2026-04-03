@@ -18,7 +18,6 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject, generateText } from 'ai';
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
-import { JSDOM } from 'jsdom';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
@@ -691,6 +690,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 async function htmlToMarkdown(html: string): Promise<string> {
   try {
     const { Defuddle } = await import('defuddle/node');
+    const { JSDOM } = await import('jsdom');
     const dom = new JSDOM(html, { url: 'https://email.local' });
     const result = await Defuddle(dom.window.document, 'https://email.local', { markdown: true });
     const md = (result.content || '').trim();
