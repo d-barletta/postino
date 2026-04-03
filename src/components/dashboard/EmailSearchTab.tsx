@@ -128,8 +128,13 @@ const EMPTY_FILTERS: FilterState = {
 };
 
 function filtersEqual(a: FilterState, b: FilterState): boolean {
-  const arrEq = (x: string[], y: string[]) =>
-    x.length === y.length && x.every((v, i) => v === y[i]);
+  /** Set-based comparison: order-independent equality for string arrays. */
+  const setEq = (x: string[], y: string[]) => {
+    if (x.length !== y.length) return false;
+    const sorted = [...x].sort();
+    const sortedY = [...y].sort();
+    return sorted.every((v, i) => v === sortedY[i]);
+  };
   return (
     a.search.trim() === b.search.trim() &&
     a.status === b.status &&
@@ -138,11 +143,11 @@ function filtersEqual(a: FilterState, b: FilterState): boolean {
     a.priority === b.priority &&
     a.senderType === b.senderType &&
     a.language.trim().toLowerCase() === b.language.trim().toLowerCase() &&
-    arrEq([...a.tags].sort(), [...b.tags].sort()) &&
-    arrEq([...a.people].sort(), [...b.people].sort()) &&
-    arrEq([...a.orgs].sort(), [...b.orgs].sort()) &&
-    arrEq([...a.places].sort(), [...b.places].sort()) &&
-    arrEq([...a.events].sort(), [...b.events].sort()) &&
+    setEq(a.tags, b.tags) &&
+    setEq(a.people, b.people) &&
+    setEq(a.orgs, b.orgs) &&
+    setEq(a.places, b.places) &&
+    setEq(a.events, b.events) &&
     a.attachments === b.attachments &&
     a.requiresResponse === b.requiresResponse &&
     a.hasActionItems === b.hasActionItems &&
@@ -192,6 +197,37 @@ interface ExpandedEmailData {
   attachmentNames: string[];
   loading: boolean;
   error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Suggestion helpers — defined outside the component to avoid recreation.
+// ---------------------------------------------------------------------------
+interface SuggestionItem { value: string; count: number }
+
+/** Convert a SuggestionItem array to ComboboxChips options (sorted by count desc, then a-z). */
+function toChipsOptions(items: SuggestionItem[]) {
+  return [...items]
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+    .map((item) => ({ value: item.value, label: item.value }));
+}
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English', it: 'Italiano', es: 'Español', fr: 'Français',
+  de: 'Deutsch', pt: 'Português', nl: 'Nederlands', ru: 'Русский',
+  zh: '中文', ja: '日本語', ar: 'العربية', ko: '한국어', pl: 'Polski',
+  sv: 'Svenska', da: 'Dansk', fi: 'Suomi', no: 'Norsk', tr: 'Türkçe',
+};
+
+/** Convert language suggestions to Combobox options with display names where known. */
+function toLanguageOptions(items: SuggestionItem[]) {
+  return [...items]
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+    .map((item) => ({
+      value: item.value,
+      label: LANGUAGE_NAMES[item.value]
+        ? `${LANGUAGE_NAMES[item.value]} (${item.value})`
+        : item.value.toUpperCase(),
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -431,7 +467,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Lazy-loaded entity suggestions
-  interface SuggestionItem { value: string; count: number }
   interface Suggestions {
     tags: SuggestionItem[];
     people: SuggestionItem[];
@@ -473,31 +508,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   useEffect(() => {
     if (advancedOpen) fetchSuggestions();
   }, [advancedOpen, fetchSuggestions]);
-
-  /** Convert a SuggestionItem array to ComboboxChips options (sorted by count desc, then a-z). */
-  function toChipsOptions(items: SuggestionItem[]) {
-    return [...items]
-      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
-      .map((item) => ({ value: item.value, label: item.value }));
-  }
-
-  /** Convert language suggestions to Combobox options with display names where known. */
-  const LANGUAGE_NAMES: Record<string, string> = {
-    en: 'English', it: 'Italiano', es: 'Español', fr: 'Français',
-    de: 'Deutsch', pt: 'Português', nl: 'Nederlands', ru: 'Русский',
-    zh: '中文', ja: '日本語', ar: 'العربية', ko: '한국어', pl: 'Polski',
-    sv: 'Svenska', da: 'Dansk', fi: 'Suomi', no: 'Norsk', tr: 'Türkçe',
-  };
-  function toLanguageOptions(items: SuggestionItem[]) {
-    return [...items]
-      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
-      .map((item) => ({
-        value: item.value,
-        label: LANGUAGE_NAMES[item.value]
-          ? `${LANGUAGE_NAMES[item.value]} (${item.value})`
-          : item.value.toUpperCase(),
-      }));
-  }
 
   const statusLabel: Record<string, string> = {
     received: t.dashboard.charts.received,

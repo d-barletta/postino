@@ -62,8 +62,9 @@ export function ComboboxChips({
     onValuesChange([]);
   };
 
-  const selectedLabels = values.map(
-    (v) => options.find((o) => o.value === v)?.label ?? v,
+  const selectedLabels = React.useMemo(
+    () => values.map((v) => options.find((o) => o.value === v)?.label ?? v),
+    [values, options],
   );
 
   return (

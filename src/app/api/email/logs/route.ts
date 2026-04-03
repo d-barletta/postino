@@ -218,9 +218,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (tagsFilter.length > 0) {
-      // multi-value: email must contain ALL specified tags (AND logic)
+      // Tags filter uses OR logic: email must contain AT LEAST ONE of the specified tags.
+      // (An email with many tags is more likely to match user intent if any tag matches.)
       docs = docs.filter((d) =>
-        tagsFilter.every(
+        tagsFilter.some(
           (tag) =>
             Array.isArray(d.emailAnalysis?.tags) &&
             d.emailAnalysis.tags.some(
