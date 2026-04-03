@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
     const baseSlug = slugify(title);
     let slug = baseSlug;
     let counter = 1;
-    while (true) {
+    const MAX_SLUG_ITERATIONS = 100;
+    while (counter <= MAX_SLUG_ITERATIONS) {
       const existing = await db
         .collection('blogArticles')
         .where('slug', '==', slug)
@@ -56,6 +57,9 @@ export async function POST(request: NextRequest) {
         .get();
       if (existing.empty) break;
       slug = `${baseSlug}-${counter++}`;
+    }
+    if (counter > MAX_SLUG_ITERATIONS) {
+      return NextResponse.json({ error: 'Could not generate a unique slug' }, { status: 409 });
     }
 
     const now = new Date();

@@ -10,6 +10,7 @@ async function getBlogSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       .collection('blogArticles')
       .where('published', '==', true)
       .orderBy('updatedAt', 'desc')
+      .select('slug', 'updatedAt')
       .get();
     return snap.docs.map((d) => ({
       url: `${appUrl.replace(/\/$/, '')}/blog/${d.data().slug}`,

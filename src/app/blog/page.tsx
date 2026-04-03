@@ -40,6 +40,7 @@ async function getPublishedArticles(): Promise<BlogArticle[]> {
       .collection('blogArticles')
       .where('published', '==', true)
       .orderBy('createdAt', 'desc')
+      .select('title', 'slug', 'tags', 'thumbnailUrl', 'createdAt', 'updatedAt')
       .get();
     return snap.docs.map((d) => {
       const data = d.data();
