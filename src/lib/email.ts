@@ -67,6 +67,9 @@ async function sendViaMailgun(options: {
   body.append('subject', stripCrlf(options.subject));
   body.append('html', options.html);
   body.append('text', options.text);
+  // Disable Mailgun click and open tracking so links are not rewritten
+  // through the Mailgun tracking proxy (e.g. http://[track]/https://...).
+  body.append('o:tracking', 'no');
 
   if (options.replyTo) {
     body.append('h:Reply-To', stripCrlf(options.replyTo));
