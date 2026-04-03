@@ -13,9 +13,13 @@ export function DashboardLink() {
 
   return (
     <div className="mt-4 text-center">
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t.auth.dashboardLink.alreadySignedIn}</p>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        {t.auth.dashboardLink.alreadySignedIn}
+      </p>
       <Link href="/dashboard">
-        <Button variant="secondary" size="sm">{t.auth.dashboardLink.goToDashboard}</Button>
+        <Button variant="secondary" size="sm">
+          {t.auth.dashboardLink.goToDashboard}
+        </Button>
       </Link>
     </div>
   );

@@ -18,10 +18,7 @@ async function verifyUser(request: NextRequest) {
   return adminAuth().verifyIdToken(token);
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const decoded = await verifyUser(request);
     const { id } = await params;
@@ -30,7 +27,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Missing merge ID' }, { status: 400 });
     }
 
-    const body = await request.json() as Record<string, unknown>;
+    const body = (await request.json()) as Record<string, unknown>;
     const { category, canonical, aliases } = body;
 
     if (!category || !VALID_CATEGORIES.includes(category as EntityCategory)) {

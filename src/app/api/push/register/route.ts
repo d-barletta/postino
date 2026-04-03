@@ -33,9 +33,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    await adminDb().collection('users').doc(userId).update({
-      fcmTokens: FieldValue.arrayUnion(fcmToken),
-    });
+    await adminDb()
+      .collection('users')
+      .doc(userId)
+      .update({
+        fcmTokens: FieldValue.arrayUnion(fcmToken),
+      });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Failed to save FCM token:', err);
@@ -63,9 +66,12 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    await adminDb().collection('users').doc(userId).update({
-      fcmTokens: FieldValue.arrayRemove(fcmToken),
-    });
+    await adminDb()
+      .collection('users')
+      .doc(userId)
+      .update({
+        fcmTokens: FieldValue.arrayRemove(fcmToken),
+      });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Failed to remove FCM token:', err);

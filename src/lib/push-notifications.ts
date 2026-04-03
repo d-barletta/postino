@@ -28,7 +28,7 @@ export function getNotificationPermission(): NotificationPermission | null {
  * @returns `true` when the subscription succeeds, `false` otherwise.
  */
 export async function subscribeToPushNotifications(
-  getIdToken: () => Promise<string>
+  getIdToken: () => Promise<string>,
 ): Promise<boolean> {
   if (!isPushSupported() || !app || !VAPID_KEY) return false;
 
@@ -71,14 +71,16 @@ export async function subscribeToPushNotifications(
  * @returns `true` when the unsubscription succeeds, `false` otherwise.
  */
 export async function unsubscribeFromPushNotifications(
-  getIdToken: () => Promise<string>
+  getIdToken: () => Promise<string>,
 ): Promise<boolean> {
   if (!isPushSupported() || !app || !VAPID_KEY) return false;
 
   try {
     // We need the current token before deleting it so we can remove it from the server.
     const registrations = await navigator.serviceWorker.getRegistrations();
-    const swRegistration = registrations.find((r) => r.active?.scriptURL.includes('firebase-messaging-sw'));
+    const swRegistration = registrations.find((r) =>
+      r.active?.scriptURL.includes('firebase-messaging-sw'),
+    );
 
     const messaging = getMessaging(app);
     let currentToken: string | null = null;

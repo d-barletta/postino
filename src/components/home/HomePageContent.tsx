@@ -60,7 +60,10 @@ export function HomePageContent() {
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link href="/register">
-              <Button size="lg" className="shadow-lg shadow-yellow-200/70 dark:shadow-violet-900/40">
+              <Button
+                size="lg"
+                className="shadow-lg shadow-yellow-200/70 dark:shadow-violet-900/40"
+              >
                 {hero.startFree}
               </Button>
             </Link>
@@ -88,7 +91,9 @@ export function HomePageContent() {
         </section>
 
         <section className="py-16 ui-fade-up">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">{exampleRules.title}</h2>
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            {exampleRules.title}
+          </h2>
           <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto ui-stagger">
             {exampleRules.rules.map((rule) => (
               <div

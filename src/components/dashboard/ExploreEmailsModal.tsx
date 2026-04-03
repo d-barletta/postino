@@ -324,7 +324,12 @@ export function ExploreEmailsModal({
 
   return (
     <>
-      <Dialog open={!!term} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog
+        open={!!term}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
         <DialogContent
           animation="slide-from-bottom"
           className="w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0"
@@ -394,32 +399,39 @@ export function ExploreEmailsModal({
                                     <span
                                       className={cn(
                                         'inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium',
-                                        TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR,
+                                        TYPE_COLORS[log.emailAnalysis.emailType] ??
+                                          DEFAULT_BADGE_COLOR,
                                       )}
                                     >
-                                      {rowTypeLabel[log.emailAnalysis.emailType] ?? log.emailAnalysis.emailType}
+                                      {rowTypeLabel[log.emailAnalysis.emailType] ??
+                                        log.emailAnalysis.emailType}
                                     </span>
                                   )}
                                   {log.emailAnalysis.sentiment && (
                                     <span
                                       className={cn(
                                         'inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium',
-                                        SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR,
+                                        SENTIMENT_COLORS[log.emailAnalysis.sentiment] ??
+                                          DEFAULT_BADGE_COLOR,
                                       )}
                                     >
-                                      {rowSentimentLabel[log.emailAnalysis.sentiment] ?? log.emailAnalysis.sentiment}
+                                      {rowSentimentLabel[log.emailAnalysis.sentiment] ??
+                                        log.emailAnalysis.sentiment}
                                     </span>
                                   )}
-                                  {log.emailAnalysis.priority && log.emailAnalysis.priority !== 'normal' && (
-                                    <span
-                                      className={cn(
-                                        'inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium',
-                                        PRIORITY_COLORS[log.emailAnalysis.priority] ?? DEFAULT_BADGE_COLOR,
-                                      )}
-                                    >
-                                      {rowPriorityLabel[log.emailAnalysis.priority] ?? log.emailAnalysis.priority}
-                                    </span>
-                                  )}
+                                  {log.emailAnalysis.priority &&
+                                    log.emailAnalysis.priority !== 'normal' && (
+                                      <span
+                                        className={cn(
+                                          'inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium',
+                                          PRIORITY_COLORS[log.emailAnalysis.priority] ??
+                                            DEFAULT_BADGE_COLOR,
+                                        )}
+                                      >
+                                        {rowPriorityLabel[log.emailAnalysis.priority] ??
+                                          log.emailAnalysis.priority}
+                                      </span>
+                                    )}
                                   {log.emailAnalysis.requiresResponse && (
                                     <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
                                       {t.dashboard.emailHistory.analysisRequiresResponse}
@@ -466,7 +478,10 @@ export function ExploreEmailsModal({
                         >
                           <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
                             <TabsList>
-                              <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}>
+                              <TabsTrigger
+                                value="content"
+                                title={t.dashboard.emailHistory.tabContent}
+                              >
                                 <Mail className="h-3.5 w-3.5 shrink-0mr-1.5" />
                                 {t.dashboard.emailHistory.tabContent}
                               </TabsTrigger>
@@ -515,8 +530,13 @@ export function ExploreEmailsModal({
                                 <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
                                   {emailData?.loading ? (
                                     <span className="text-gray-400">…</span>
-                                  ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-                                    <AttachmentList names={emailData?.attachmentNames ?? log.attachmentNames ?? []} />
+                                  ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) >
+                                    0 ? (
+                                    <AttachmentList
+                                      names={
+                                        emailData?.attachmentNames ?? log.attachmentNames ?? []
+                                      }
+                                    />
                                   ) : (
                                     <span className="text-gray-400">
                                       {t.dashboard.emailHistory.noAttachmentsShort}
@@ -565,13 +585,19 @@ export function ExploreEmailsModal({
                                         e.stopPropagation();
                                         const emailData = expandedData[log.id];
                                         if (emailData?.originalBody) {
-                                          onRequestFullscreen({ subject: log.subject, body: emailData.originalBody });
+                                          onRequestFullscreen({
+                                            subject: log.subject,
+                                            body: emailData.originalBody,
+                                          });
                                         }
                                       }}
                                       className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                                       title={t.emailOriginal.openFullPageView}
                                     >
-                                      <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
+                                      <i
+                                        className="bi bi-fullscreen text-[11px]"
+                                        aria-hidden="true"
+                                      />
                                       {t.dashboard.emailHistory.viewFullPage}
                                     </button>
                                     {isAdmin && (
@@ -627,11 +653,13 @@ export function ExploreEmailsModal({
               aria-live="polite"
               className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5"
             >
-              {loading
-                ? <RefreshCw className="h-3 w-3 animate-spin" />
-                : totalCount !== undefined
-                  ? <>{totalCount} {t.dashboard.emailHistory.results}</>
-                  : null}
+              {loading ? (
+                <RefreshCw className="h-3 w-3 animate-spin" />
+              ) : totalCount !== undefined ? (
+                <>
+                  {totalCount} {t.dashboard.emailHistory.results}
+                </>
+              ) : null}
             </span>
 
             {/* Center: pagination (only when needed) */}
@@ -672,7 +700,6 @@ export function ExploreEmailsModal({
               {t.dashboard.rules.close}
             </Button>
           </div>
-
         </DialogContent>
       </Dialog>
     </>

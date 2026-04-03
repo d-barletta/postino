@@ -49,12 +49,16 @@ export default function VerifyEmailPage() {
         <div className="text-6xl mb-6">📧</div>
         <h1 className="text-2xl font-bold text-gray-900 mb-3">Verify your email</h1>
         <p className="text-gray-600 mb-6">
-          We&apos;ve sent a verification link to your email address.<br/> 
-          Click the link to verify and access your dashboard.<br/> 
+          We&apos;ve sent a verification link to your email address.
+          <br />
+          Click the link to verify and access your dashboard.
+          <br />
           Check also the spam folder.
         </p>
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-          <p className="text-sm text-gray-500">This page will automatically redirect once verified.</p>
+          <p className="text-sm text-gray-500">
+            This page will automatically redirect once verified.
+          </p>
           {sent && (
             <div className="bg-green-50 text-green-700 rounded-lg p-3 text-sm">
               Verification email sent!

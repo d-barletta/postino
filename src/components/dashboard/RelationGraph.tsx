@@ -13,15 +13,13 @@ import type { EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
 // Category colours
 // ---------------------------------------------------------------------------
 export const CATEGORY_COLORS: Record<EntityGraphNodeCategory, string> = {
-  topics: '#818cf8',      // indigo-400
-  people: '#4ade80',      // green-400
+  topics: '#818cf8', // indigo-400
+  people: '#4ade80', // green-400
   organizations: '#fb923c', // orange-400
-  places: '#38bdf8',      // sky-400
-  events: '#f472b6',      // pink-400
-  tags: '#c084fc',        // purple-400
+  places: '#38bdf8', // sky-400
+  events: '#f472b6', // pink-400
+  tags: '#c084fc', // purple-400
 };
-
-
 
 // ---------------------------------------------------------------------------
 // Props
@@ -101,14 +99,20 @@ function CytoscapeCanvas({
   const getLabelThemeColors = useCallback(() => {
     const container = containerRef.current;
     if (!container) {
-      return { labelColor: '#1f2937', labelBackgroundColor: '#f3f4f6', edgeColor: '#334155', edgeHighlightedColor: '#64748b' };
+      return {
+        labelColor: '#1f2937',
+        labelBackgroundColor: '#f3f4f6',
+        edgeColor: '#334155',
+        edgeHighlightedColor: '#64748b',
+      };
     }
 
     const styles = getComputedStyle(container);
     const labelColor = styles.getPropertyValue('--rg-label-color').trim() || '#1f2937';
     const labelBackgroundColor = styles.getPropertyValue('--rg-label-bg').trim() || '#f3f4f6';
     const edgeColor = styles.getPropertyValue('--rg-edge-color').trim() || '#334155';
-    const edgeHighlightedColor = styles.getPropertyValue('--rg-edge-highlighted-color').trim() || '#64748b';
+    const edgeHighlightedColor =
+      styles.getPropertyValue('--rg-edge-highlighted-color').trim() || '#64748b';
 
     return { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor };
   }, []);
@@ -116,7 +120,8 @@ function CytoscapeCanvas({
   const applyLabelThemeToCy = useCallback(() => {
     const cy = cyRef.current;
     if (!cy || cy.destroyed()) return;
-    const { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor } = getLabelThemeColors();
+    const { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor } =
+      getLabelThemeColors();
     cy.nodes().style('color', labelColor);
     cy.nodes().style('text-background-color', labelBackgroundColor);
     cy.edges().not('.edge-highlighted').style('line-color', edgeColor);
@@ -190,7 +195,8 @@ function CytoscapeCanvas({
         };
       });
 
-      const { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor } = getLabelThemeColors();
+      const { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor } =
+        getLabelThemeColors();
 
       const cy = cytoscape({
         container: containerRef.current,
@@ -245,8 +251,7 @@ function CytoscapeCanvas({
           {
             selector: 'edge',
             style: {
-              width: (ele: cytoscape.EdgeSingular) =>
-                0.8 + (ele.data('weight') / maxWeight) * 2.5,
+              width: (ele: cytoscape.EdgeSingular) => 0.8 + (ele.data('weight') / maxWeight) * 2.5,
               'line-color': edgeColor,
               opacity: 0.6,
               'curve-style': 'bezier',
@@ -370,12 +375,14 @@ function CytoscapeCanvas({
     const cyPromise = init();
     return () => {
       destroyed = true;
-      cyPromise.then((cy) => {
-        if (!cy || cy.destroyed()) return;
-        if (cyRef.current === cy) cyRef.current = null;
-        cy.removeAllListeners();
-        cy.destroy();
-      }).catch(() => {});
+      cyPromise
+        .then((cy) => {
+          if (!cy || cy.destroyed()) return;
+          if (cyRef.current === cy) cyRef.current = null;
+          cy.removeAllListeners();
+          cy.destroy();
+        })
+        .catch(() => {});
     };
   }, [graph, onNodeClick, applyLabelThemeToCy, getLabelThemeColors]);
 
@@ -401,9 +408,7 @@ export function RelationGraph({
   onExpandFullPage,
   translations: tr,
 }: RelationGraphProps) {
-  const formattedDate = graph?.generatedAt
-    ? new Date(graph.generatedAt).toLocaleString()
-    : null;
+  const formattedDate = graph?.generatedAt ? new Date(graph.generatedAt).toLocaleString() : null;
 
   const isEmpty = graph && graph.nodes.length === 0;
   const isResolvingInitialState = loading && !graph && !generating;
@@ -441,11 +446,7 @@ export function RelationGraph({
               variant={graph ? 'ghost' : 'primary'}
             >
               <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
-              {generating
-                ? tr.generating
-                : graph
-                ? tr.regenerate
-                : tr.generate}
+              {generating ? tr.generating : graph ? tr.regenerate : tr.generate}
             </Button>
           )}
         </div>
@@ -459,7 +460,9 @@ export function RelationGraph({
           <Share2 className="h-12 w-12 text-gray-300 dark:text-gray-600" />
           <div className="text-center">
             <p className="text-base font-medium text-gray-600 dark:text-gray-400">{tr.noGraph}</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-xs mx-auto">{tr.noGraphDesc}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-xs mx-auto">
+              {tr.noGraphDesc}
+            </p>
           </div>
           <Button
             onClick={onGenerate}
@@ -585,4 +588,3 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
 
   return { graph, hasFetched, loading, generating, error, fetchGraph, generateGraph };
 }
-

@@ -38,7 +38,14 @@ export type EmailStatus = 'received' | 'processing' | 'forwarded' | 'error' | 's
  */
 export interface EmailAnalysis {
   /** Primary category of the email. */
-  emailType: 'newsletter' | 'transactional' | 'promotional' | 'personal' | 'notification' | 'automated' | 'other';
+  emailType:
+    | 'newsletter'
+    | 'transactional'
+    | 'promotional'
+    | 'personal'
+    | 'notification'
+    | 'automated'
+    | 'other';
   /** 1-2 sentence summary of the email content. */
   summary: string;
   /** Key topics or themes mentioned in the email. */

@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (activeRulesSnap.size >= maxActiveRules) {
           return NextResponse.json(
             { error: `You have reached the maximum of ${maxActiveRules} active rules` },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -58,7 +58,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       if (name.trim().length > MAX_RULE_NAME_LENGTH) {
-        return NextResponse.json({ error: `Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters` }, { status: 400 });
+        return NextResponse.json(
+          { error: `Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters` },
+          { status: 400 },
+        );
       }
 
       // Check name uniqueness (exclude current rule)
@@ -70,32 +73,59 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         .get();
 
       if (!existingSnap.empty && existingSnap.docs[0].id !== id) {
-        return NextResponse.json({ error: 'A rule with this name already exists' }, { status: 409 });
+        return NextResponse.json(
+          { error: 'A rule with this name already exists' },
+          { status: 409 },
+        );
       }
     }
 
     if (text !== undefined) {
       if (typeof text !== 'string' || !text.trim()) {
-        return NextResponse.json({ error: 'Rule text must be a non-empty string' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Rule text must be a non-empty string' },
+          { status: 400 },
+        );
       }
 
       const settingsSnap = await db.collection('settings').doc('global').get();
       const maxRuleLength = settingsSnap.data()?.maxRuleLength ?? 1000;
       if (text.length > maxRuleLength) {
-        return NextResponse.json({ error: `Rule exceeds maximum length of ${maxRuleLength}` }, { status: 400 });
+        return NextResponse.json(
+          { error: `Rule exceeds maximum length of ${maxRuleLength}` },
+          { status: 400 },
+        );
       }
     }
 
-    if (matchSender !== undefined && (typeof matchSender !== 'string' || matchSender.length > MAX_PATTERN_LENGTH)) {
-      return NextResponse.json({ error: `Sender pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    if (
+      matchSender !== undefined &&
+      (typeof matchSender !== 'string' || matchSender.length > MAX_PATTERN_LENGTH)
+    ) {
+      return NextResponse.json(
+        { error: `Sender pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` },
+        { status: 400 },
+      );
     }
 
-    if (matchSubject !== undefined && (typeof matchSubject !== 'string' || matchSubject.length > MAX_PATTERN_LENGTH)) {
-      return NextResponse.json({ error: `Subject pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    if (
+      matchSubject !== undefined &&
+      (typeof matchSubject !== 'string' || matchSubject.length > MAX_PATTERN_LENGTH)
+    ) {
+      return NextResponse.json(
+        { error: `Subject pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` },
+        { status: 400 },
+      );
     }
 
-    if (matchBody !== undefined && (typeof matchBody !== 'string' || matchBody.length > MAX_PATTERN_LENGTH)) {
-      return NextResponse.json({ error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    if (
+      matchBody !== undefined &&
+      (typeof matchBody !== 'string' || matchBody.length > MAX_PATTERN_LENGTH)
+    ) {
+      return NextResponse.json(
+        { error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` },
+        { status: 400 },
+      );
     }
 
     const updateData: Record<string, unknown> = { updatedAt: Timestamp.now() };
@@ -114,7 +144,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const decoded = await verifyUser(request);
     const { id } = await params;

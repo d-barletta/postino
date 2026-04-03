@@ -17,11 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const db = adminDb();
-    const result = await db
-      .collection('emailLogs')
-      .where('userId', '==', uid)
-      .count()
-      .get();
+    const result = await db.collection('emailLogs').where('userId', '==', uid).count().get();
 
     return NextResponse.json({ count: result.data().count });
   } catch (err) {

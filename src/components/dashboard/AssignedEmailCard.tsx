@@ -15,7 +15,12 @@ interface AssignedEmailCardProps {
   onToggle: (enabled: boolean) => Promise<void>;
 }
 
-export function AssignedEmailCard({ assignedEmail, userEmail, isAddressEnabled, onToggle }: AssignedEmailCardProps) {
+export function AssignedEmailCard({
+  assignedEmail,
+  userEmail,
+  isAddressEnabled,
+  onToggle,
+}: AssignedEmailCardProps) {
   const [copied, setCopied] = useState(false);
   const [toggling, setToggling] = useState(false);
   const { t } = useI18n();
@@ -56,12 +61,25 @@ export function AssignedEmailCard({ assignedEmail, userEmail, isAddressEnabled, 
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-500 mb-3">
-          {isAddressEnabled
-            ? <>{tr.activeDescription} <span className={cn('inline-block font-mono text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5')}>{userEmail}</span></>
-            : tr.disabledDescription}
+          {isAddressEnabled ? (
+            <>
+              {tr.activeDescription}{' '}
+              <span
+                className={cn(
+                  'inline-block font-mono text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5',
+                )}
+              >
+                {userEmail}
+              </span>
+            </>
+          ) : (
+            tr.disabledDescription
+          )}
         </p>
         <div className="flex items-center gap-2">
-          <div className={`flex-1 font-mono text-sm border rounded-lg px-3 py-2 truncate ${isAddressEnabled ? 'bg-gray-50 border-gray-200' : 'bg-gray-100 border-gray-200 text-gray-400 dark:bg-gray-800 dark:text-gray-500'}`}>
+          <div
+            className={`flex-1 font-mono text-sm border rounded-lg px-3 py-2 truncate ${isAddressEnabled ? 'bg-gray-50 border-gray-200' : 'bg-gray-100 border-gray-200 text-gray-400 dark:bg-gray-800 dark:text-gray-500'}`}
+          >
             {assignedEmail}
           </div>
           <Button variant="secondary" size="sm" onClick={handleCopy}>

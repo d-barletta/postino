@@ -31,7 +31,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             'disabled:cursor-not-allowed disabled:opacity-50',
             'dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-100',
             error && 'border-red-400 focus-visible:ring-red-400 focus-visible:border-red-400',
-            className
+            className,
           )}
           ref={ref}
           {...props}
@@ -45,7 +45,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             <p
               className={cn(
                 'text-xs tabular-nums',
-                charCount.current > charCount.max ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'
+                charCount.current > charCount.max
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-gray-400 dark:text-gray-500',
               )}
             >
               {charCount.current}/{charCount.max}
@@ -54,7 +56,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 Textarea.displayName = 'Textarea';
 

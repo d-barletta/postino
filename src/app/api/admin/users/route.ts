@@ -12,11 +12,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const pageSizeParam = parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10);
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam));
+    const pageSize = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam),
+    );
     // cursor is the last document ID from the previous page
     const cursor = searchParams.get('cursor');
 
-    let q = db.collection('users').orderBy('createdAt', 'desc').limit(pageSize + 1);
+    let q = db
+      .collection('users')
+      .orderBy('createdAt', 'desc')
+      .limit(pageSize + 1);
     if (cursor) {
       const cursorDoc = await db.collection('users').doc(cursor).get();
       if (cursorDoc.exists) {

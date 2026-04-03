@@ -8,7 +8,11 @@ import {
 
 export type EmailJobStatus = 'pending' | 'processing' | 'retrying' | 'done' | 'failed';
 
-async function updateWebhookLogForJob(jobId: string, status: string, result?: string): Promise<void> {
+async function updateWebhookLogForJob(
+  jobId: string,
+  status: string,
+  result?: string,
+): Promise<void> {
   const db = adminDb();
   try {
     const snap = await db
@@ -52,7 +56,10 @@ function computeRetryDelayMs(attempts: number): number {
   return RETRY_BACKOFF_MS[idx];
 }
 
-export async function enqueueEmailJob(payload: QueuedInboundPayload, idempotencyKey: string): Promise<boolean> {
+export async function enqueueEmailJob(
+  payload: QueuedInboundPayload,
+  idempotencyKey: string,
+): Promise<boolean> {
   const db = adminDb();
   const now = Timestamp.now();
   const jobRef = db.collection('emailJobs').doc(idempotencyKey);
@@ -76,7 +83,7 @@ export async function enqueueEmailJob(payload: QueuedInboundPayload, idempotency
 async function claimJob(
   jobId: string,
   workerId: string,
-  now: Date
+  now: Date,
 ): Promise<(EmailJob & { id: string }) | null> {
   const db = adminDb();
   const jobRef = db.collection('emailJobs').doc(jobId);
@@ -89,9 +96,7 @@ async function claimJob(
 
     // Accept pending/retrying jobs, or processing jobs whose lease has expired.
     const isClaimableStatus =
-      data.status === 'pending' ||
-      data.status === 'retrying' ||
-      data.status === 'processing';
+      data.status === 'pending' || data.status === 'retrying' || data.status === 'processing';
     if (!isClaimableStatus) return null;
 
     if ((data.lockUntil?.toMillis?.() ?? 0) > now.getTime()) return null;
@@ -140,10 +145,13 @@ async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Pro
   // Update the email log first so that even if the job status update fails, the
   // log reflects a non-stuck state. The job will remain re-claimable via lease
   // expiry and will be retried on the next worker run.
-  await db.collection('emailLogs').doc(job.payload.logId).update({
-    status: 'received',
-    errorMessage: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
-  });
+  await db
+    .collection('emailLogs')
+    .doc(job.payload.logId)
+    .update({
+      status: 'received',
+      errorMessage: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
+    });
 
   await db.collection('emailJobs').doc(job.id).update({
     status: 'retrying',
@@ -183,7 +191,7 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
     job.payload.sender,
     job.payload.subject,
     job.payload.logId,
-    'error'
+    'error',
   );
   await updateWebhookLogForJob(job.id, 'failed', 'failed');
 }
@@ -197,8 +205,14 @@ async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> 
   // Terminal states: forwarded / error / skipped → skip re-processing, just close
   // the job so it is not re-queued.
   const logSnap = await db.collection('emailLogs').doc(job.payload.logId).get();
-  const currentLogStatus = logSnap.exists ? (logSnap.data()?.status as string | undefined) : undefined;
-  if (currentLogStatus === 'forwarded' || currentLogStatus === 'error' || currentLogStatus === 'skipped') {
+  const currentLogStatus = logSnap.exists
+    ? (logSnap.data()?.status as string | undefined)
+    : undefined;
+  if (
+    currentLogStatus === 'forwarded' ||
+    currentLogStatus === 'error' ||
+    currentLogStatus === 'skipped'
+  ) {
     await markJobDone(job.id);
     return;
   }
@@ -218,7 +232,12 @@ async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> 
     try {
       await markJobDone(job.id);
     } catch (doneErr) {
-      console.error('Failed to mark job done after successful processing (job:', job.id, '):', doneErr);
+      console.error(
+        'Failed to mark job done after successful processing (job:',
+        job.id,
+        '):',
+        doneErr,
+      );
       // The job lease will expire and it will be re-claimed; the idempotency guard
       // above will then recognise the 'forwarded' log state and mark it done.
     }

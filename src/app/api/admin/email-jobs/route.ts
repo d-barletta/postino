@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
 
     const countSnaps = await Promise.all(
       STATUSES.map((status) =>
-        db.collection('emailJobs').where('status', '==', status).count().get()
-      )
+        db.collection('emailJobs').where('status', '==', status).count().get(),
+      ),
     );
 
     const counts = emptyCounts();
@@ -101,66 +101,68 @@ export async function GET(request: NextRequest) {
       .limit(MAX_WEBHOOK_LOGS_DISPLAY)
       .get();
 
-    const recentWebhookRequests: MailgunWebhookLogSummary[] = recentWebhookLogsSnap.docs.map((doc) => {
-      const data = doc.data() as {
-        receivedAt?: { toDate?: () => Date };
-        updatedAt?: { toDate?: () => Date };
-        status?: string;
-        result?: string;
-        reason?: string;
-        parsed?: {
-          sender?: string;
-          recipient?: string;
-          subject?: string;
-          messageId?: string;
-          attachmentCount?: number;
+    const recentWebhookRequests: MailgunWebhookLogSummary[] = recentWebhookLogsSnap.docs.map(
+      (doc) => {
+        const data = doc.data() as {
+          receivedAt?: { toDate?: () => Date };
+          updatedAt?: { toDate?: () => Date };
+          status?: string;
+          result?: string;
+          reason?: string;
+          parsed?: {
+            sender?: string;
+            recipient?: string;
+            subject?: string;
+            messageId?: string;
+            attachmentCount?: number;
+          };
+          request?: {
+            ip?: string;
+            userAgent?: string;
+            method?: string;
+            url?: string;
+            host?: string;
+            contentType?: string;
+            headers?: Record<string, string>;
+            payloadStoragePath?: string | null;
+          };
+          linked?: {
+            emailLogId?: string;
+            jobId?: string;
+          };
+          details?: unknown;
         };
-        request?: {
-          ip?: string;
-          userAgent?: string;
-          method?: string;
-          url?: string;
-          host?: string;
-          contentType?: string;
-          headers?: Record<string, string>;
-          payloadStoragePath?: string | null;
-        };
-        linked?: {
-          emailLogId?: string;
-          jobId?: string;
-        };
-        details?: unknown;
-      };
 
-      return {
-        id: doc.id,
-        receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
-        status: data.status || 'received',
-        result: data.result || 'pending',
-        reason: data.reason || null,
-        sender: data.parsed?.sender || 'Unknown sender',
-        recipient: data.parsed?.recipient || 'Unknown recipient',
-        subject: data.parsed?.subject || '(no subject)',
-        messageId: data.parsed?.messageId || '',
-        attachmentCount:
-          typeof data.parsed?.attachmentCount === 'number' ? data.parsed.attachmentCount : 0,
-        ip: data.request?.ip || '—',
-        userAgent: data.request?.userAgent || '—',
-        emailLogId: data.linked?.emailLogId || null,
-        jobId: data.linked?.jobId || null,
-        details: {
-          request: data.request ?? null,
-          parsed: data.parsed ?? null,
-          linked: data.linked ?? null,
-          details: data.details ?? null,
-        },
-      };
-    });
+        return {
+          id: doc.id,
+          receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
+          status: data.status || 'received',
+          result: data.result || 'pending',
+          reason: data.reason || null,
+          sender: data.parsed?.sender || 'Unknown sender',
+          recipient: data.parsed?.recipient || 'Unknown recipient',
+          subject: data.parsed?.subject || '(no subject)',
+          messageId: data.parsed?.messageId || '',
+          attachmentCount:
+            typeof data.parsed?.attachmentCount === 'number' ? data.parsed.attachmentCount : 0,
+          ip: data.request?.ip || '—',
+          userAgent: data.request?.userAgent || '—',
+          emailLogId: data.linked?.emailLogId || null,
+          jobId: data.linked?.jobId || null,
+          details: {
+            request: data.request ?? null,
+            parsed: data.parsed ?? null,
+            linked: data.linked ?? null,
+            details: data.details ?? null,
+          },
+        };
+      },
+    );
 
     const latestUpdatedAt = recentUpdatedSnap.empty
       ? null
-      : recentUpdatedSnap.docs[0].data().updatedAt?.toDate?.()?.toISOString() ?? null;
+      : (recentUpdatedSnap.docs[0].data().updatedAt?.toDate?.()?.toISOString() ?? null);
 
     return NextResponse.json({
       counts,
@@ -189,7 +191,7 @@ export async function PUT(request: NextRequest) {
     if (typeof body.webhookLoggingEnabled !== 'boolean') {
       return NextResponse.json(
         { error: 'Invalid payload: webhookLoggingEnabled must be a boolean' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -198,7 +200,7 @@ export async function PUT(request: NextRequest) {
       {
         mailgunWebhookLoggingEnabled: body.webhookLoggingEnabled,
       },
-      { merge: true }
+      { merge: true },
     );
 
     return NextResponse.json({ success: true, webhookLoggingEnabled: body.webhookLoggingEnabled });

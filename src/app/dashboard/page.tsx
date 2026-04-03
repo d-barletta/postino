@@ -21,7 +21,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
-import { Home, ListFilter, Inbox, Settings, Download, CheckCircle, Compass, Share2 } from 'lucide-react';
+import {
+  Home,
+  ListFilter,
+  Inbox,
+  Settings,
+  Download,
+  CheckCircle,
+  Compass,
+  Share2,
+} from 'lucide-react';
 
 const EMPTY_STATS: UserStats = {
   totalEmailsReceived: 0,
@@ -33,7 +42,7 @@ const EMPTY_STATS: UserStats = {
 };
 
 const DASHBOARD_TABS = ['overview', 'rules', 'inbox', 'explore', 'relations', 'settings'] as const;
-type DashboardTab = typeof DASHBOARD_TABS[number];
+type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
@@ -61,24 +70,21 @@ export default function DashboardPage() {
   // browser restarts).  If no valid tab is found anywhere, stamp the entry
   // with the default 'overview' so that popstate always has a value to read.
   useEffect(() => {
-    const historyTab = (window.history.state as Record<string, unknown> | null)?.postinoTab as DashboardTab | undefined;
+    const historyTab = (window.history.state as Record<string, unknown> | null)?.postinoTab as
+      | DashboardTab
+      | undefined;
     const localTab = localStorage.getItem('postinoActiveTab') as DashboardTab | null;
-    const savedTab = (historyTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(historyTab))
-      ? historyTab
-      : (localTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(localTab))
-        ? localTab
-        : null;
+    const savedTab =
+      historyTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(historyTab)
+        ? historyTab
+        : localTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(localTab)
+          ? localTab
+          : null;
     if (savedTab) {
       setActiveTab(savedTab);
-      window.history.replaceState(
-        { ...(window.history.state ?? {}), postinoTab: savedTab },
-        '',
-      );
+      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: savedTab }, '');
     } else {
-      window.history.replaceState(
-        { ...(window.history.state ?? {}), postinoTab: 'overview' },
-        '',
-      );
+      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: 'overview' }, '');
     }
   }, []);
 
@@ -104,16 +110,10 @@ export default function DashboardPage() {
     if (selectedEmailId) {
       // Update history state to reflect the URL-forced tab so that Back works
       // correctly if the user later opens a modal from this tab.
-      window.history.replaceState(
-        { ...(window.history.state ?? {}), postinoTab: 'inbox' },
-        '',
-      );
+      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: 'inbox' }, '');
       setActiveTab('inbox');
     } else if (editRuleId) {
-      window.history.replaceState(
-        { ...(window.history.state ?? {}), postinoTab: 'rules' },
-        '',
-      );
+      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: 'rules' }, '');
       setActiveTab('rules');
     }
   }, [selectedEmailId, editRuleId]);
@@ -125,8 +125,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const ua = navigator.userAgent;
     const isIOS =
-      /iphone|ipad|ipod/i.test(ua) ||
-      (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+      /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
     const isAndroid = /android/i.test(ua);
     const isIOSFirefox = isIOS && /fxios/i.test(ua);
 
@@ -144,14 +143,18 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch('/api/settings/public')
       .then((r) => r.json())
-      .then((d) => { if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength); })
+      .then((d) => {
+        if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength);
+      })
       .catch(() => {});
   }, []);
 
   const fetchLogs = useCallback(async () => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
-    const res = await fetch('/api/email/logs?pageSize=50', { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch('/api/email/logs?pageSize=50', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (res.ok) {
       const data = await res.json();
       setLogs(data.logs || []);
@@ -204,56 +207,65 @@ export default function DashboardPage() {
     };
   }, [firebaseUser, handleLogsRefresh]);
 
-  const handleAddressToggle = useCallback(async (enabled: boolean) => {
-    if (!firebaseUser) return;
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/user/address-toggle', {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isAddressEnabled: enabled }),
-      });
-      if (!res.ok) throw new Error();
-      await refreshUser();
-      toast.success(t.dashboard.toasts.settingSaved);
-    } catch {
-      toast.error(t.dashboard.toasts.failedToUpdateEmailSetting);
-    }
-  }, [firebaseUser, refreshUser]);
+  const handleAddressToggle = useCallback(
+    async (enabled: boolean) => {
+      if (!firebaseUser) return;
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/user/address-toggle', {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isAddressEnabled: enabled }),
+        });
+        if (!res.ok) throw new Error();
+        await refreshUser();
+        toast.success(t.dashboard.toasts.settingSaved);
+      } catch {
+        toast.error(t.dashboard.toasts.failedToUpdateEmailSetting);
+      }
+    },
+    [firebaseUser, refreshUser],
+  );
 
-  const handleForwardingHeaderToggle = useCallback(async (enabled: boolean) => {
-    if (!firebaseUser) return;
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/user/forwarding-header-toggle', {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isForwardingHeaderEnabled: enabled }),
-      });
-      if (!res.ok) throw new Error();
-      await refreshUser();
-      toast.success(t.dashboard.toasts.settingSaved);
-    } catch {
-      toast.error(t.dashboard.toasts.failedToUpdateForwardingHeaderSetting);
-    }
-  }, [firebaseUser, refreshUser]);
+  const handleForwardingHeaderToggle = useCallback(
+    async (enabled: boolean) => {
+      if (!firebaseUser) return;
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/user/forwarding-header-toggle', {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isForwardingHeaderEnabled: enabled }),
+        });
+        if (!res.ok) throw new Error();
+        await refreshUser();
+        toast.success(t.dashboard.toasts.settingSaved);
+      } catch {
+        toast.error(t.dashboard.toasts.failedToUpdateForwardingHeaderSetting);
+      }
+    },
+    [firebaseUser, refreshUser],
+  );
 
-  const handleAnalysisLanguageChange = useCallback(async (language: string | null) => {
-    if (!firebaseUser) return;
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/user/analysis-language', {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ analysisOutputLanguage: language }),
-      });
-      if (!res.ok) throw new Error();
-      await refreshUser();
-      toast.success(t.dashboard.toasts.settingSaved);
-    } catch {
-      toast.error(t.dashboard.toasts.failedToUpdateAnalysisLanguageSetting);
-    }
-  }, [firebaseUser, refreshUser]);
+  const handleAnalysisLanguageChange = useCallback(
+    async (language: string | null) => {
+      if (!firebaseUser) return;
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/user/analysis-language', {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analysisOutputLanguage: language }),
+        });
+        if (!res.ok) throw new Error();
+        await refreshUser();
+        toast.success(t.dashboard.toasts.settingSaved);
+      } catch {
+        toast.error(t.dashboard.toasts.failedToUpdateAnalysisLanguageSetting);
+      }
+    },
+    [firebaseUser, refreshUser],
+  );
 
   if (loading || logsLoading) {
     return (
@@ -338,34 +350,42 @@ export default function DashboardPage() {
               currentLanguage={user?.analysisOutputLanguage}
               onSave={handleAnalysisLanguageChange}
             />
-            {(isPwa || canShowInstallCard) && <Card>
-              <CardHeader>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {t.dashboard.installApp.title}
-                </h2>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5 shrink-0 bg-white dark:bg-white" style={{ backgroundColor: '#ffffff' }}>
-                    <PostinoLogo className="h-11 w-11" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                      {t.dashboard.installApp.description}
-                    </p>
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={() => setInstallPwaTrigger((n) => n + 1)}
-                        disabled={isPwa}
-                      >
-                        {isPwa ? <CheckCircle className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                        {isPwa ? t.dashboard.installApp.alreadyInstalled : t.dashboard.installApp.buttonLabel}
-                      </Button>
+            {(isPwa || canShowInstallCard) && (
+              <Card>
+                <CardHeader>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {t.dashboard.installApp.title}
+                  </h2>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-4">
+                    <div
+                      className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5 shrink-0 bg-white dark:bg-white"
+                      style={{ backgroundColor: '#ffffff' }}
+                    >
+                      <PostinoLogo className="h-11 w-11" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        {t.dashboard.installApp.description}
+                      </p>
+                      <div className="flex justify-end">
+                        <Button onClick={() => setInstallPwaTrigger((n) => n + 1)} disabled={isPwa}>
+                          {isPwa ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                          {isPwa
+                            ? t.dashboard.installApp.alreadyInstalled
+                            : t.dashboard.installApp.buttonLabel}
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
       </Tabs>
@@ -373,4 +393,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

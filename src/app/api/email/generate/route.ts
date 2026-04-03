@@ -39,7 +39,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!newEmail) {
-      return NextResponse.json({ error: 'Could not generate a unique email address' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Could not generate a unique email address' },
+        { status: 500 },
+      );
     }
 
     await db.collection('users').doc(decoded.uid).update({ assignedEmail: newEmail });

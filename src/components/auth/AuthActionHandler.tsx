@@ -53,7 +53,10 @@ export function AuthActionHandler() {
         if (mode === 'verifyEmail') {
           await applyActionCode(auth, oobCode);
           await auth.currentUser?.getIdToken(true);
-          setState({ status: 'success', message: 'Email verified successfully. You can now sign in.' });
+          setState({
+            status: 'success',
+            message: 'Email verified successfully. You can now sign in.',
+          });
           return;
         }
 
@@ -72,8 +75,14 @@ export function AuthActionHandler() {
         });
       } catch (err: unknown) {
         const firebaseError = err as { code?: string };
-        if (firebaseError.code === 'auth/expired-action-code' || firebaseError.code === 'auth/invalid-action-code') {
-          setState({ status: 'error', message: 'This link is invalid or expired. Please request a new one.' });
+        if (
+          firebaseError.code === 'auth/expired-action-code' ||
+          firebaseError.code === 'auth/invalid-action-code'
+        ) {
+          setState({
+            status: 'error',
+            message: 'This link is invalid or expired. Please request a new one.',
+          });
           return;
         }
 

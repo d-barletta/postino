@@ -19,7 +19,10 @@ import { db } from './firebase';
 import type { User, Rule, EmailLog, Settings } from '@/types';
 
 function getDb(): Firestore {
-  if (!db) throw new Error('Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.');
+  if (!db)
+    throw new Error(
+      'Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.',
+    );
   return db;
 }
 
@@ -53,7 +56,7 @@ export async function getRulesByUser(userId: string, limitCount = 200): Promise<
     collection(getDb(), 'rules'),
     where('userId', '==', userId),
     orderBy('createdAt', 'desc'),
-    limit(limitCount)
+    limit(limitCount),
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({
@@ -89,7 +92,7 @@ export async function getEmailLogsByUser(userId: string, limitCount = 50): Promi
     collection(getDb(), 'emailLogs'),
     where('userId', '==', userId),
     orderBy('receivedAt', 'desc'),
-    limit(limitCount)
+    limit(limitCount),
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({

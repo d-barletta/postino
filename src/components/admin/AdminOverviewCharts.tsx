@@ -16,8 +16,18 @@ import {
 } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/Card';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/Chart';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/Accordion';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/Chart';
 import type { Stats } from '@/types';
 
 type TimeRange = '24h' | '7d' | '30d';
@@ -121,7 +131,7 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
       const token = await firebaseUser.getIdToken();
       const res = await fetch(
         `/api/admin/stats/timeseries?range=${range}&granularity=${granularity}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (res.ok) {
         const data = await res.json();
@@ -204,7 +214,10 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
                 ) : (
                   <>
                     <ChartContainer config={chartConfig} className="h-56 sm:h-65">
-                      <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                      <ComposedChart
+                        data={chartData}
+                        margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                      >
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis
                           dataKey="label"
@@ -241,11 +254,46 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
                             />
                           }
                         />
-                        <Bar yAxisId="count" dataKey="received" stackId="s" radius={0} fill="var(--color-received)" isAnimationActive={false} />
-                        <Bar yAxisId="count" dataKey="processing" stackId="s" radius={0} fill="var(--color-processing)" isAnimationActive={false} />
-                        <Bar yAxisId="count" dataKey="forwarded" stackId="s" radius={0} fill="var(--color-forwarded)" isAnimationActive={false} />
-                        <Bar yAxisId="count" dataKey="skipped" stackId="s" radius={0} fill="var(--color-skipped)" isAnimationActive={false} />
-                        <Bar yAxisId="count" dataKey="error" stackId="s" radius={[2, 2, 0, 0]} fill="var(--color-error)" isAnimationActive={false} />
+                        <Bar
+                          yAxisId="count"
+                          dataKey="received"
+                          stackId="s"
+                          radius={0}
+                          fill="var(--color-received)"
+                          isAnimationActive={false}
+                        />
+                        <Bar
+                          yAxisId="count"
+                          dataKey="processing"
+                          stackId="s"
+                          radius={0}
+                          fill="var(--color-processing)"
+                          isAnimationActive={false}
+                        />
+                        <Bar
+                          yAxisId="count"
+                          dataKey="forwarded"
+                          stackId="s"
+                          radius={0}
+                          fill="var(--color-forwarded)"
+                          isAnimationActive={false}
+                        />
+                        <Bar
+                          yAxisId="count"
+                          dataKey="skipped"
+                          stackId="s"
+                          radius={0}
+                          fill="var(--color-skipped)"
+                          isAnimationActive={false}
+                        />
+                        <Bar
+                          yAxisId="count"
+                          dataKey="error"
+                          stackId="s"
+                          radius={[2, 2, 0, 0]}
+                          fill="var(--color-error)"
+                          isAnimationActive={false}
+                        />
                         <Line
                           yAxisId="cost"
                           type="monotone"
@@ -259,16 +307,24 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
                       </ComposedChart>
                     </ChartContainer>
                     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600 dark:text-gray-300">
-                      {(['received', 'forwarded', 'processing', 'error', 'skipped'] as const).map((key) => (
-                        <span key={key} className="inline-flex items-center gap-1.5">
-                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[key].color }} aria-hidden />
-                          {chartConfig[key].label}
-                        </span>
-                      ))}
+                      {(['received', 'forwarded', 'processing', 'error', 'skipped'] as const).map(
+                        (key) => (
+                          <span key={key} className="inline-flex items-center gap-1.5">
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: chartConfig[key].color }}
+                              aria-hidden
+                            />
+                            {chartConfig[key].label}
+                          </span>
+                        ),
+                      )}
                       <span className="inline-flex items-center gap-1.5">
                         <span
                           className="h-0.5 w-4 rounded-full"
-                          style={{ backgroundColor: isDarkMode ? COST_COLOR_DARK : chartConfig.cost.color }}
+                          style={{
+                            backgroundColor: isDarkMode ? COST_COLOR_DARK : chartConfig.cost.color,
+                          }}
                           aria-hidden
                         />
                         Cost (line)
@@ -310,12 +366,21 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
                 </ChartContainer>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   {userSplitData.map((entry) => (
-                    <div key={entry.name} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
+                    <div
+                      key={entry.name}
+                      className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40"
+                    >
                       <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.fill }} aria-hidden />
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: entry.fill }}
+                          aria-hidden
+                        />
                         <span>{entry.name}</span>
                       </div>
-                      <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{entry.value.toLocaleString()}</p>
+                      <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">
+                        {entry.value.toLocaleString()}
+                      </p>
                     </div>
                   ))}
                 </div>

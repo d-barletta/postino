@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "bootstrap-icons/font/bootstrap-icons.css";
+@import 'tailwindcss';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -34,7 +34,7 @@
 }
 
 html {
-  background-color: #ffffff ;
+  background-color: #ffffff;
 }
 
 html.dark {
@@ -155,12 +155,24 @@ textarea::placeholder {
   animation: fade-up 420ms ease-out both;
 }
 
-.ui-stagger > *:nth-child(1) { animation-delay: 40ms; }
-.ui-stagger > *:nth-child(2) { animation-delay: 90ms; }
-.ui-stagger > *:nth-child(3) { animation-delay: 140ms; }
-.ui-stagger > *:nth-child(4) { animation-delay: 190ms; }
-.ui-stagger > *:nth-child(5) { animation-delay: 240ms; }
-.ui-stagger > *:nth-child(6) { animation-delay: 290ms; }
+.ui-stagger > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+.ui-stagger > *:nth-child(2) {
+  animation-delay: 90ms;
+}
+.ui-stagger > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+.ui-stagger > *:nth-child(4) {
+  animation-delay: 190ms;
+}
+.ui-stagger > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+.ui-stagger > *:nth-child(6) {
+  animation-delay: 290ms;
+}
 
 .ui-accent-pulse {
   animation: soft-pulse 2.4s ease-in-out infinite;
@@ -191,7 +203,7 @@ textarea::placeholder {
 
 /* .home-tree-lines::before, */
 .home-tree-lines::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: -20%;
   pointer-events: none;
@@ -220,14 +232,13 @@ textarea::placeholder {
 } */
 
 .home-tree-lines::after {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgb(167 139 250 / 14%) 0px,
-      rgb(167 139 250 / 14%) 1px,
-      transparent 1px,
-      transparent 42px
-    );
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(167 139 250 / 14%) 0px,
+    rgb(167 139 250 / 14%) 1px,
+    transparent 1px,
+    transparent 42px
+  );
   mix-blend-mode: normal;
   opacity: 0.6;
   animation: tree-lines-drift 10s ease-in-out infinite alternate;
@@ -258,14 +269,13 @@ textarea::placeholder {
 }
 
 .dark .home-tree-lines::after {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgb(177 133 255 / 18%) 0px,
-      rgb(177 133 255 / 18%) 1px,
-      transparent 1px,
-      transparent 42px
-    );
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(177 133 255 / 18%) 0px,
+    rgb(177 133 255 / 18%) 1px,
+    transparent 1px,
+    transparent 42px
+  );
   mix-blend-mode: normal;
   opacity: 0.46;
 }
@@ -336,10 +346,18 @@ textarea::placeholder {
 
 /* Word 1 at -1.5s → at t=0 it's at 12.5% of cycle (mid visible window). */
 /* Each subsequent word starts 3s later, entering exactly as the previous one exits. */
-.looping-hero-word:nth-child(1) { animation-delay: -1.5s; }
-.looping-hero-word:nth-child(2) { animation-delay: 1.5s; }
-.looping-hero-word:nth-child(3) { animation-delay: 4.5s; }
-.looping-hero-word:nth-child(4) { animation-delay: 7.5s; }
+.looping-hero-word:nth-child(1) {
+  animation-delay: -1.5s;
+}
+.looping-hero-word:nth-child(2) {
+  animation-delay: 1.5s;
+}
+.looping-hero-word:nth-child(3) {
+  animation-delay: 4.5s;
+}
+.looping-hero-word:nth-child(4) {
+  animation-delay: 7.5s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .ui-fade-up,

@@ -73,7 +73,12 @@ function getInboundHeaderMap(formData: FormData): Map<string, string> {
     }
   }
 
-  const explicitHeaders = [LOOP_MARKER_HEADER, 'auto-submitted', 'precedence', 'x-auto-response-suppress'];
+  const explicitHeaders = [
+    LOOP_MARKER_HEADER,
+    'auto-submitted',
+    'precedence',
+    'x-auto-response-suppress',
+  ];
   explicitHeaders.forEach((header) => {
     if (headerMap.has(header)) return;
     const value = formData.get(header) ?? formData.get(header.toUpperCase());
@@ -126,7 +131,7 @@ function serializeRequestHeaders(headers: Headers): Record<string, string> {
 function appendField(
   target: Record<string, WebhookLogFieldValue>,
   key: string,
-  value: string
+  value: string,
 ): void {
   const existing = target[key];
   if (existing === undefined) {
@@ -140,7 +145,12 @@ function appendField(
   target[key] = [existing, value];
 }
 
-function toPreviewValue(value: string, budget: { used: number }, truncatedFields: string[], fieldName: string): string {
+function toPreviewValue(
+  value: string,
+  budget: { used: number },
+  truncatedFields: string[],
+  fieldName: string,
+): string {
   const remaining = Math.max(0, WEBHOOK_LOG_FIELDS_TOTAL_MAX_CHARS - budget.used);
   if (remaining === 0) {
     truncatedFields.push(fieldName);
@@ -206,10 +216,12 @@ function parseStoreAttachments(formData: FormData): StoreAttachmentRef[] {
         const rawUrl = typeof record.url === 'string' ? record.url.trim() : '';
         if (!rawUrl) return null;
         const rawName = typeof record.name === 'string' ? record.name.trim() : '';
-        const rawType = typeof record['content-type'] === 'string' ? record['content-type'].trim() : '';
-        const rawSize = typeof record.size === 'number' && Number.isFinite(record.size)
-          ? Math.max(0, Math.floor(record.size))
-          : undefined;
+        const rawType =
+          typeof record['content-type'] === 'string' ? record['content-type'].trim() : '';
+        const rawSize =
+          typeof record.size === 'number' && Number.isFinite(record.size)
+            ? Math.max(0, Math.floor(record.size))
+            : undefined;
 
         return {
           url: rawUrl,
@@ -241,10 +253,12 @@ function parseAttachmentsFromStoredMessage(data: unknown): StoreAttachmentRef[] 
       const rawUrl = typeof record.url === 'string' ? record.url.trim() : '';
       if (!rawUrl) return null;
       const rawName = typeof record.name === 'string' ? record.name.trim() : '';
-      const rawType = typeof record['content-type'] === 'string' ? record['content-type'].trim() : '';
-      const rawSize = typeof record.size === 'number' && Number.isFinite(record.size)
-        ? Math.max(0, Math.floor(record.size))
-        : undefined;
+      const rawType =
+        typeof record['content-type'] === 'string' ? record['content-type'].trim() : '';
+      const rawSize =
+        typeof record.size === 'number' && Number.isFinite(record.size)
+          ? Math.max(0, Math.floor(record.size))
+          : undefined;
 
       return {
         url: rawUrl,
@@ -259,7 +273,7 @@ function parseAttachmentsFromStoredMessage(data: unknown): StoreAttachmentRef[] 
 function resolveStoreAttachmentUrl(
   rawUrl: string,
   mailgunBaseUrl: string,
-  envMailgunBaseUrl?: string
+  envMailgunBaseUrl?: string,
 ): string | null {
   try {
     const base = new URL(mailgunBaseUrl);
@@ -282,8 +296,7 @@ function resolveStoreAttachmentUrl(
       'api.eu.mailgun.net',
     ]);
     const isTrustedStorageHost =
-      resolved.host.endsWith('.api.mailgun.net') ||
-      resolved.host.endsWith('.api.eu.mailgun.net');
+      resolved.host.endsWith('.api.mailgun.net') || resolved.host.endsWith('.api.eu.mailgun.net');
 
     if (!trustedHosts.has(resolved.host) && !isTrustedStorageHost) return null;
 
@@ -326,9 +339,10 @@ function parseFilenameFromContentDisposition(header: string): string | null {
   // Basic: filename="quoted name.pdf" or filename=unquoted.pdf
   const basic = header.match(/filename\s*=\s*"((?:[^"\\]|\\.)*)"|filename\s*=\s*([^\s;]+)/i);
   if (basic) {
-    const name = (basic[1] !== undefined
-      ? basic[1].replace(/\\(.)/g, '$1')  // unescape backslash sequences
-      : basic[2] ?? ''
+    const name = (
+      basic[1] !== undefined
+        ? basic[1].replace(/\\(.)/g, '$1') // unescape backslash sequences
+        : (basic[2] ?? '')
     ).trim();
     if (name) return name;
   }
@@ -421,13 +435,14 @@ function getMailgunBaseHost(baseUrl: string): string {
 
 function buildCanonicalStoredMessageUrl(
   rawStoredMessageUrl: string,
-  mailgunBaseUrl: string
+  mailgunBaseUrl: string,
 ): string | null {
   try {
     const parsed = new URL(rawStoredMessageUrl);
     const segments = parsed.pathname.split('/').filter(Boolean);
     if (segments.length < 5) return null;
-    if (segments[0] !== 'v3' || segments[1] !== 'domains' || segments[3] !== 'messages') return null;
+    if (segments[0] !== 'v3' || segments[1] !== 'domains' || segments[3] !== 'messages')
+      return null;
 
     const domain = segments[2]?.trim();
     const storageKey = segments[4]?.trim();
@@ -487,7 +502,7 @@ function isMessageRetrievalDisabledResponseSnippet(snippet: string): boolean {
 
 async function uploadWebhookPayloadSnapshot(
   logId: string,
-  payload: unknown
+  payload: unknown,
 ): Promise<string | null> {
   try {
     const storage = adminStorage();
@@ -526,8 +541,7 @@ function scheduleProcessingTrigger(request: NextRequest): void {
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const host = request.headers.get('host') || 'localhost:3000';
     const proto =
-      request.headers.get('x-forwarded-proto') ||
-      (host.startsWith('localhost') ? 'http' : 'https');
+      request.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https');
     const baseUrl = appUrl || `${proto}://${host}`;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -554,7 +568,8 @@ export async function POST(request: NextRequest) {
   let finalUserId: string | null = null;
   let finalSender = '';
   let finalSubject = '';
-  let webhookLogRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData> | null = null;
+  let webhookLogRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData> | null =
+    null;
 
   async function updateWebhookLog(update: Record<string, unknown>): Promise<void> {
     if (!webhookLogRef) return;
@@ -579,12 +594,16 @@ export async function POST(request: NextRequest) {
     const subjectForLog = stripCrlf((formData.get('subject') as string) || '');
     const messageIdForLog = stripCrlf((formData.get('Message-Id') as string) || '');
     const storeAttachmentsForLog = parseStoreAttachments(formData);
-    const rawAttachmentCountForLog = parseInt((formData.get('attachment-count') as string) || '0', 10);
-    const attachmentCountForLog = storeAttachmentsForLog.length > 0
-      ? storeAttachmentsForLog.length
-      : Number.isFinite(rawAttachmentCountForLog)
-      ? Math.max(0, rawAttachmentCountForLog)
-      : 0;
+    const rawAttachmentCountForLog = parseInt(
+      (formData.get('attachment-count') as string) || '0',
+      10,
+    );
+    const attachmentCountForLog =
+      storeAttachmentsForLog.length > 0
+        ? storeAttachmentsForLog.length
+        : Number.isFinite(rawAttachmentCountForLog)
+          ? Math.max(0, rawAttachmentCountForLog)
+          : 0;
 
     if (webhookLoggingEnabled) {
       webhookLogRef = await db.collection('mailgunWebhookLogs').add({
@@ -639,7 +658,11 @@ export async function POST(request: NextRequest) {
 
     if (settings?.maintenanceMode === true) {
       console.log('Maintenance mode is active, email not forwarded');
-      await updateWebhookLog({ status: 'skipped', result: 'maintenance-mode', reason: 'Maintenance mode is active' });
+      await updateWebhookLog({
+        status: 'skipped',
+        result: 'maintenance-mode',
+        reason: 'Maintenance mode is active',
+      });
       return NextResponse.json({ message: 'Service is under maintenance. Email not forwarded.' });
     }
 
@@ -648,14 +671,16 @@ export async function POST(request: NextRequest) {
     const signature = formData.get('signature') as string;
 
     if (!timestamp || !token || !signature) {
-      await updateWebhookLog({ status: 'rejected', result: 'missing-signature-fields', reason: 'Missing webhook signature fields' });
+      await updateWebhookLog({
+        status: 'rejected',
+        result: 'missing-signature-fields',
+        reason: 'Missing webhook signature fields',
+      });
       return NextResponse.json({ error: 'Missing webhook signature fields' }, { status: 400 });
     }
 
     const mailgunWebhookSigningKey =
-      settings?.mailgunWebhookSigningKey ||
-      process.env.MAILGUN_WEBHOOK_SIGNING_KEY ||
-      '';
+      settings?.mailgunWebhookSigningKey || process.env.MAILGUN_WEBHOOK_SIGNING_KEY || '';
     const mailgunDomain =
       settings?.mailgunSandboxEmail ||
       settings?.mailgunDomain ||
@@ -667,40 +692,59 @@ export async function POST(request: NextRequest) {
 
     if (!mailgunWebhookSigningKey) {
       console.error('Mailgun webhook signing key is missing; refusing inbound webhook');
-      await updateWebhookLog({ status: 'rejected', result: 'missing-signing-key', reason: 'MAILGUN_WEBHOOK_SIGNING_KEY is not configured' });
-      return NextResponse.json({ error: 'Webhook signature key is not configured' }, { status: 503 });
+      await updateWebhookLog({
+        status: 'rejected',
+        result: 'missing-signing-key',
+        reason: 'MAILGUN_WEBHOOK_SIGNING_KEY is not configured',
+      });
+      return NextResponse.json(
+        { error: 'Webhook signature key is not configured' },
+        { status: 503 },
+      );
     }
 
     if (!isMailgunTimestampFresh(timestamp)) {
-      await updateWebhookLog({ status: 'rejected', result: 'stale-timestamp', reason: 'Stale webhook timestamp' });
+      await updateWebhookLog({
+        status: 'rejected',
+        result: 'stale-timestamp',
+        reason: 'Stale webhook timestamp',
+      });
       return NextResponse.json({ error: 'Stale webhook timestamp' }, { status: 403 });
     }
 
     if (!verifyMailgunSignature(timestamp, token, signature, mailgunWebhookSigningKey)) {
-      await updateWebhookLog({ status: 'rejected', result: 'invalid-signature', reason: 'Invalid webhook signature' });
+      await updateWebhookLog({
+        status: 'rejected',
+        result: 'invalid-signature',
+        reason: 'Invalid webhook signature',
+      });
       return NextResponse.json(
         {
           error: 'Invalid signature',
           hint: `Check Mailgun webhook signing key and endpoint (${mailgunBaseUrl})`,
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
-    const nonceId = crypto
-      .createHash('sha256')
-      .update(`${timestamp}:${token}`)
-      .digest('hex');
+    const nonceId = crypto.createHash('sha256').update(`${timestamp}:${token}`).digest('hex');
 
     try {
       const nonceExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await db.collection('mailgunWebhookNonces').doc(nonceId).create({
-        timestamp,
-        usedAt: Timestamp.now(),
-        expiresAt: Timestamp.fromDate(nonceExpiry),
-      });
+      await db
+        .collection('mailgunWebhookNonces')
+        .doc(nonceId)
+        .create({
+          timestamp,
+          usedAt: Timestamp.now(),
+          expiresAt: Timestamp.fromDate(nonceExpiry),
+        });
     } catch {
-      await updateWebhookLog({ status: 'rejected', result: 'replay-detected', reason: 'Webhook replay detected' });
+      await updateWebhookLog({
+        status: 'rejected',
+        result: 'replay-detected',
+        reason: 'Webhook replay detected',
+      });
       return NextResponse.json({ error: 'Webhook replay detected' }, { status: 409 });
     }
 
@@ -712,14 +756,20 @@ export async function POST(request: NextRequest) {
     const normalizedRecipients = recipients.map((recipient) =>
       recipient.includes('@') || !mailgunDomain
         ? recipient
-        : `${recipient}@${mailgunDomain}`.toLowerCase()
+        : `${recipient}@${mailgunDomain}`.toLowerCase(),
     );
 
     const sender = stripCrlf((formData.get('sender') as string) || '');
-    const fromHeader = stripCrlf((formData.get('From') as string) || (formData.get('from') as string) || '');
+    const fromHeader = stripCrlf(
+      (formData.get('From') as string) || (formData.get('from') as string) || '',
+    );
     const replyToHeader = stripCrlf((formData.get('Reply-To') as string) || '');
-    const ccHeader = stripCrlf((formData.get('Cc') as string) || (formData.get('cc') as string) || '');
-    const bccHeader = stripCrlf((formData.get('Bcc') as string) || (formData.get('bcc') as string) || '');
+    const ccHeader = stripCrlf(
+      (formData.get('Cc') as string) || (formData.get('cc') as string) || '',
+    );
+    const bccHeader = stripCrlf(
+      (formData.get('Bcc') as string) || (formData.get('bcc') as string) || '',
+    );
     const subject = stripCrlf((formData.get('subject') as string) || '');
     finalSender = sender;
     finalSubject = subject;
@@ -735,24 +785,32 @@ export async function POST(request: NextRequest) {
     const storeAttachments = parseStoreAttachments(formData);
     // Treat as store-mode when message-url is present (even if the webhook attachments JSON is absent).
     const hasStoreAttachments = storeAttachments.length > 0 || rawMessageUrl.length > 0;
-    const attachmentCount = storeAttachments.length > 0
-      ? storeAttachments.length
-      : Number.isFinite(rawAttachmentCount)
-      ? Math.max(0, rawAttachmentCount)
-      : 0;
+    const attachmentCount =
+      storeAttachments.length > 0
+        ? storeAttachments.length
+        : Number.isFinite(rawAttachmentCount)
+          ? Math.max(0, rawAttachmentCount)
+          : 0;
 
     await updateWebhookLog({
       'parsed.attachmentCount': attachmentCount,
       'parsed.attachmentSource': rawMessageUrl
         ? 'store-message-url'
         : hasStoreAttachments
-        ? 'store'
-        : 'multipart',
+          ? 'store'
+          : 'multipart',
     });
 
     if (attachmentCount > MAX_ATTACHMENTS) {
-      await updateWebhookLog({ status: 'rejected', result: 'too-many-attachments', reason: `Too many attachments (max ${MAX_ATTACHMENTS})` });
-      return NextResponse.json({ error: `Too many attachments (max ${MAX_ATTACHMENTS})` }, { status: 413 });
+      await updateWebhookLog({
+        status: 'rejected',
+        result: 'too-many-attachments',
+        reason: `Too many attachments (max ${MAX_ATTACHMENTS})`,
+      });
+      return NextResponse.json(
+        { error: `Too many attachments (max ${MAX_ATTACHMENTS})` },
+        { status: 413 },
+      );
     }
 
     // Parse content-id-map to identify inline attachments (e.g. CID-referenced images).
@@ -786,7 +844,10 @@ export async function POST(request: NextRequest) {
           result: 'missing-mailgun-api-key',
           reason: 'MAILGUN_API_KEY is required to fetch Store attachment URLs',
         });
-        return NextResponse.json({ error: 'Mailgun API key is required for Store attachment retrieval' }, { status: 503 });
+        return NextResponse.json(
+          { error: 'Mailgun API key is required for Store attachment retrieval' },
+          { status: 503 },
+        );
       }
 
       const authHeader = `Basic ${Buffer.from(`api:${mailgunApiKey}`).toString('base64')}`;
@@ -804,7 +865,7 @@ export async function POST(request: NextRequest) {
         const safeMessageUrl = resolveStoreAttachmentUrl(
           rawMessageUrl,
           mailgunBaseUrl,
-          process.env.MAILGUN_BASE_URL || ''
+          process.env.MAILGUN_BASE_URL || '',
         );
         if (!safeMessageUrl) {
           await updateWebhookLog({
@@ -865,12 +926,15 @@ export async function POST(request: NextRequest) {
         let fallbackResponseSnippet = '';
 
         if (!storedMessageResponse.ok && storedMessageResponse.status === 404) {
-          const canonicalMessageUrl = buildCanonicalStoredMessageUrl(safeMessageUrl, mailgunBaseUrl);
+          const canonicalMessageUrl = buildCanonicalStoredMessageUrl(
+            safeMessageUrl,
+            mailgunBaseUrl,
+          );
           if (canonicalMessageUrl && canonicalMessageUrl !== safeMessageUrl) {
             const safeCanonicalMessageUrl = resolveStoreAttachmentUrl(
               canonicalMessageUrl,
               mailgunBaseUrl,
-              process.env.MAILGUN_BASE_URL || ''
+              process.env.MAILGUN_BASE_URL || '',
             );
 
             if (safeCanonicalMessageUrl) {
@@ -918,7 +982,8 @@ export async function POST(request: NextRequest) {
 
         if (!responseUsed.ok) {
           const primaryResponseSnippet = await readResponseSnippet(storedMessageResponse);
-          const finalStatus = fallbackAttempted && fallbackStatus > 0 ? fallbackStatus : storedMessageResponse.status;
+          const finalStatus =
+            fallbackAttempted && fallbackStatus > 0 ? fallbackStatus : storedMessageResponse.status;
           const failureClass = classifyStoredMessageFetchFailure(finalStatus);
           const retrievalDisabled =
             isMessageRetrievalDisabledResponseSnippet(primaryResponseSnippet) ||
@@ -943,44 +1008,54 @@ export async function POST(request: NextRequest) {
               },
             });
           } else {
-          await updateWebhookLog({
-            status: 'error',
-            result: 'stored-message-fetch-failed',
-            reason: `Stored message fetch failed: ${failureClass.message} (primary=${storedMessageResponse.status}${fallbackAttempted ? `, fallback=${fallbackStatus || 'none'}` : ''}) for ${safeMessageUrl}`,
-            'details.storedMessageFetch': {
-              ...storedMessageLogContext,
-              attempt: 'failed',
-              failureClass: failureClass.classCode,
-              primaryStatus: storedMessageResponse.status,
-              primaryResponseSnippet,
-              fallbackAttempted,
-              fallbackHost: fallbackUrlHost,
-              fallbackPath: fallbackUrlPath,
-              fallbackStatus,
-              fallbackResponseSnippet,
-            },
-          });
-          return NextResponse.json({ error: 'Failed to fetch stored message' }, { status: 502 });
+            await updateWebhookLog({
+              status: 'error',
+              result: 'stored-message-fetch-failed',
+              reason: `Stored message fetch failed: ${failureClass.message} (primary=${storedMessageResponse.status}${fallbackAttempted ? `, fallback=${fallbackStatus || 'none'}` : ''}) for ${safeMessageUrl}`,
+              'details.storedMessageFetch': {
+                ...storedMessageLogContext,
+                attempt: 'failed',
+                failureClass: failureClass.classCode,
+                primaryStatus: storedMessageResponse.status,
+                primaryResponseSnippet,
+                fallbackAttempted,
+                fallbackHost: fallbackUrlHost,
+                fallbackPath: fallbackUrlPath,
+                fallbackStatus,
+                fallbackResponseSnippet,
+              },
+            });
+            return NextResponse.json({ error: 'Failed to fetch stored message' }, { status: 502 });
           }
         }
 
         storedMessageResponse = responseUsed;
 
         try {
-          const messageData = await storedMessageResponse.json() as unknown;
+          const messageData = (await storedMessageResponse.json()) as unknown;
           const messageAttachments = parseAttachmentsFromStoredMessage(messageData);
           if (messageAttachments.length > 0) {
             effectiveStoreAttachments = messageAttachments;
           }
         } catch (parseErr) {
           // JSON parse error — fall back to webhook attachment list, if any.
-          console.warn('Failed to parse stored message JSON; falling back to webhook attachment list:', parseErr);
+          console.warn(
+            'Failed to parse stored message JSON; falling back to webhook attachment list:',
+            parseErr,
+          );
         }
 
         // Re-validate count using the authoritative list from the stored message.
         if (effectiveStoreAttachments.length > MAX_ATTACHMENTS) {
-          await updateWebhookLog({ status: 'rejected', result: 'too-many-attachments', reason: `Too many attachments (max ${MAX_ATTACHMENTS})` });
-          return NextResponse.json({ error: `Too many attachments (max ${MAX_ATTACHMENTS})` }, { status: 413 });
+          await updateWebhookLog({
+            status: 'rejected',
+            result: 'too-many-attachments',
+            reason: `Too many attachments (max ${MAX_ATTACHMENTS})`,
+          });
+          return NextResponse.json(
+            { error: `Too many attachments (max ${MAX_ATTACHMENTS})` },
+            { status: 413 },
+          );
         }
       }
 
@@ -989,7 +1064,7 @@ export async function POST(request: NextRequest) {
         const safeUrl = resolveStoreAttachmentUrl(
           attachmentRef.url,
           mailgunBaseUrl,
-          process.env.MAILGUN_BASE_URL || ''
+          process.env.MAILGUN_BASE_URL || '',
         );
         if (!safeUrl) {
           await updateWebhookLog({
@@ -1031,14 +1106,28 @@ export async function POST(request: NextRequest) {
 
         if (attachmentSize > MAX_ATTACHMENT_BYTES) {
           const attachmentName = attachmentRef.name || `attachment-${i + 1}`;
-          await updateWebhookLog({ status: 'rejected', result: 'attachment-too-large', reason: `Attachment too large: ${attachmentName}` });
-          return NextResponse.json({ error: `Attachment too large: ${attachmentName}` }, { status: 413 });
+          await updateWebhookLog({
+            status: 'rejected',
+            result: 'attachment-too-large',
+            reason: `Attachment too large: ${attachmentName}`,
+          });
+          return NextResponse.json(
+            { error: `Attachment too large: ${attachmentName}` },
+            { status: 413 },
+          );
         }
 
         totalAttachmentBytes += attachmentSize;
         if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENTS_BYTES) {
-          await updateWebhookLog({ status: 'rejected', result: 'attachments-total-too-large', reason: 'Total attachment size exceeds allowed limit' });
-          return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
+          await updateWebhookLog({
+            status: 'rejected',
+            result: 'attachments-total-too-large',
+            reason: 'Total attachment size exceeds allowed limit',
+          });
+          return NextResponse.json(
+            { error: 'Total attachment size exceeds allowed limit' },
+            { status: 413 },
+          );
         }
 
         const resolvedContentType =
@@ -1050,12 +1139,14 @@ export async function POST(request: NextRequest) {
         // Priority: Mailgun metadata name → Content-Disposition response header → generic fallback.
         // Always ensure the filename carries a file extension so email clients and
         // operating systems can determine the correct application to open the file.
-        const contentDispositionHeader = attachmentResponse.headers.get('content-disposition') || '';
+        const contentDispositionHeader =
+          attachmentResponse.headers.get('content-disposition') || '';
         const filenameFromHeader = parseFilenameFromContentDisposition(contentDispositionHeader);
         const rawFilename = attachmentRef.name || filenameFromHeader || `attachment-${i + 1}`;
         const resolvedFilename = ensureFilenameExtension(rawFilename, resolvedContentType);
 
-        const contentId = contentIdFieldMap.get(attachmentRef.url) || contentIdFieldMap.get(safeUrl);
+        const contentId =
+          contentIdFieldMap.get(attachmentRef.url) || contentIdFieldMap.get(safeUrl);
         attachments.push({
           filename: resolvedFilename,
           content,
@@ -1074,14 +1165,28 @@ export async function POST(request: NextRequest) {
         const file = rawFile;
 
         if (file.size > MAX_ATTACHMENT_BYTES) {
-          await updateWebhookLog({ status: 'rejected', result: 'attachment-too-large', reason: `Attachment too large: ${file.name}` });
-          return NextResponse.json({ error: `Attachment too large: ${file.name}` }, { status: 413 });
+          await updateWebhookLog({
+            status: 'rejected',
+            result: 'attachment-too-large',
+            reason: `Attachment too large: ${file.name}`,
+          });
+          return NextResponse.json(
+            { error: `Attachment too large: ${file.name}` },
+            { status: 413 },
+          );
         }
 
         totalAttachmentBytes += file.size;
         if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENTS_BYTES) {
-          await updateWebhookLog({ status: 'rejected', result: 'attachments-total-too-large', reason: 'Total attachment size exceeds allowed limit' });
-          return NextResponse.json({ error: 'Total attachment size exceeds allowed limit' }, { status: 413 });
+          await updateWebhookLog({
+            status: 'rejected',
+            result: 'attachments-total-too-large',
+            reason: 'Total attachment size exceeds allowed limit',
+          });
+          return NextResponse.json(
+            { error: 'Total attachment size exceeds allowed limit' },
+            { status: 413 },
+          );
         }
 
         const fieldName = `attachment-${i}`;
@@ -1097,7 +1202,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (normalizedRecipients.length === 0) {
-      await updateWebhookLog({ status: 'rejected', result: 'missing-recipient', reason: 'Missing recipient' });
+      await updateWebhookLog({
+        status: 'rejected',
+        result: 'missing-recipient',
+        reason: 'Missing recipient',
+      });
       return NextResponse.json({ error: 'Missing recipient' }, { status: 400 });
     }
 
@@ -1107,7 +1216,8 @@ export async function POST(request: NextRequest) {
       recipientChunks.push(normalizedRecipients.slice(i, i + 10));
     }
 
-    let userDoc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData> | null = null;
+    let userDoc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData> | null =
+      null;
     for (const chunk of recipientChunks) {
       const usersSnap = await db
         .collection('users')
@@ -1125,7 +1235,11 @@ export async function POST(request: NextRequest) {
     if (!userDoc) {
       const recipientsText = normalizedRecipients.join(',');
       console.log(`No active user found for email(s): ${recipientsText}`);
-      await updateWebhookLog({ status: 'skipped', result: 'no-matching-user', reason: `No active user found for recipient(s): ${recipientsText}` });
+      await updateWebhookLog({
+        status: 'skipped',
+        result: 'no-matching-user',
+        reason: `No active user found for recipient(s): ${recipientsText}`,
+      });
       return NextResponse.json({ message: `No active user found for email(s): ${recipientsText}` });
     }
 
@@ -1147,7 +1261,12 @@ export async function POST(request: NextRequest) {
         ...(messageId ? { messageId } : {}),
       });
       await sendEmailCompletionPushNotification(userId, sender, subject, skippedRef.id, 'skipped');
-      await updateWebhookLog({ status: 'skipped', result: 'mail-loop-detected', reason: 'Possible mail loop detected', linked: { emailLogId: skippedRef.id } });
+      await updateWebhookLog({
+        status: 'skipped',
+        result: 'mail-loop-detected',
+        reason: 'Possible mail loop detected',
+        linked: { emailLogId: skippedRef.id },
+      });
       return NextResponse.json({ message: 'Possible mail loop detected, email skipped' });
     }
 
@@ -1185,7 +1304,12 @@ export async function POST(request: NextRequest) {
       });
       await sendEmailCompletionPushNotification(userId, sender, subject, skippedRef.id, 'skipped');
       console.log(`User ${userId} has address disabled, email skipped`);
-      await updateWebhookLog({ status: 'skipped', result: 'address-disabled', reason: `User ${userId} has address disabled`, linked: { emailLogId: skippedRef.id } });
+      await updateWebhookLog({
+        status: 'skipped',
+        result: 'address-disabled',
+        reason: `User ${userId} has address disabled`,
+        linked: { emailLogId: skippedRef.id },
+      });
       return NextResponse.json({ message: 'Address disabled, email skipped' });
     }
 
@@ -1194,9 +1318,10 @@ export async function POST(request: NextRequest) {
     // Attachments exceeding this threshold are uploaded to Firebase Storage instead.
     const totalBase64Size = attachments.reduce(
       (sum, att) => sum + Math.ceil((att.content.byteLength * 4) / 3),
-      0
+      0,
     );
-    const attachmentsTooLargeForQueue = attachments.length > 0 && totalBase64Size > MAX_QUEUE_ATTACHMENT_BYTES;
+    const attachmentsTooLargeForQueue =
+      attachments.length > 0 && totalBase64Size > MAX_QUEUE_ATTACHMENT_BYTES;
 
     // Serialize attachments for queue storage.
     // Small attachments (≤ MAX_QUEUE_ATTACHMENT_BYTES total) are stored inline as base64.
@@ -1229,13 +1354,19 @@ export async function POST(request: NextRequest) {
       ...(ccHeader ? { ccAddress: ccHeader } : {}),
       ...(bccHeader ? { bccAddress: bccHeader } : {}),
       ...(messageId ? { messageId } : {}),
-      ...(attachments.length > 0 ? {
-        attachmentCount: attachments.length,
-        attachmentNames: attachments.map((a) => a.filename),
-      } : {}),
+      ...(attachments.length > 0
+        ? {
+            attachmentCount: attachments.length,
+            attachmentNames: attachments.map((a) => a.filename),
+          }
+        : {}),
     });
     logId = logRef.id;
-    await updateWebhookLog({ status: 'accepted', result: 'log-created', linked: { emailLogId: logRef.id } });
+    await updateWebhookLog({
+      status: 'accepted',
+      result: 'log-created',
+      linked: { emailLogId: logRef.id },
+    });
 
     // Upload large attachments to Firebase Storage now that we have the logId for the path.
     if (attachmentsTooLargeForQueue) {
@@ -1253,7 +1384,7 @@ export async function POST(request: NextRequest) {
             storagePath,
             ...(att.contentId ? { contentId: att.contentId } : {}),
           };
-        })
+        }),
       );
 
       const allUploaded = uploaded.every((r) => r !== null);
@@ -1339,12 +1470,21 @@ export async function POST(request: NextRequest) {
     });
     if (logId) {
       try {
-        await adminDb().collection('emailLogs').doc(logId).update({
-          status: 'error',
-          errorMessage: error instanceof Error ? error.message : String(error),
-        });
+        await adminDb()
+          .collection('emailLogs')
+          .doc(logId)
+          .update({
+            status: 'error',
+            errorMessage: error instanceof Error ? error.message : String(error),
+          });
         if (finalUserId) {
-          await sendEmailCompletionPushNotification(finalUserId, finalSender, finalSubject, logId, 'error');
+          await sendEmailCompletionPushNotification(
+            finalUserId,
+            finalSender,
+            finalSubject,
+            logId,
+            'error',
+          );
         }
       } catch (updateError) {
         console.error('Failed to update email log with error status:', updateError);

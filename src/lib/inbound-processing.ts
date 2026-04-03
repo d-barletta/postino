@@ -170,7 +170,7 @@ function sanitizeForFirestore<T>(value: T): T {
 export async function uploadAttachmentToStorage(
   attachment: EmailAttachment,
   logId: string,
-  index: number
+  index: number,
 ): Promise<string | null> {
   try {
     const storage = adminStorage();
@@ -230,7 +230,7 @@ async function sendEmailPushNotification(
   sender: string,
   subject: string,
   logId: string,
-  status: 'forwarded' | 'error' | 'skipped'
+  status: 'forwarded' | 'error' | 'skipped',
 ): Promise<void> {
   try {
     const db = adminDb();
@@ -239,7 +239,9 @@ async function sendEmailPushNotification(
     if (!fcmTokens || fcmTokens.length === 0) return;
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
-    const iconUrl = appUrl ? `${appUrl}/web-app-manifest-192x192.png` : '/web-app-manifest-192x192.png';
+    const iconUrl = appUrl
+      ? `${appUrl}/web-app-manifest-192x192.png`
+      : '/web-app-manifest-192x192.png';
     const relativeEmailUrl = `/dashboard?tab=emails&selectedEmail=${encodeURIComponent(logId)}`;
     const absoluteEmailUrl = appUrl ? `${appUrl}${relativeEmailUrl}` : '';
 
@@ -298,7 +300,7 @@ async function sendEmailPushNotification(
 
 export async function processQueuedInboundPayload(
   payload: QueuedInboundPayload,
-  attachments?: EmailAttachment[]
+  attachments?: EmailAttachment[],
 ): Promise<void> {
   const db = adminDb();
   const logRef = db.collection('emailLogs').doc(payload.logId);
@@ -306,9 +308,10 @@ export async function processQueuedInboundPayload(
   // Fetch user preferences. isForwardingHeaderEnabled defaults to true when unset.
   const userSnap = await db.collection('users').doc(payload.userId).get();
   const isForwardingHeaderEnabled = userSnap.data()?.isForwardingHeaderEnabled !== false;
-  const analysisOutputLanguage = typeof userSnap.data()?.analysisOutputLanguage === 'string'
-    ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
-    : undefined;
+  const analysisOutputLanguage =
+    typeof userSnap.data()?.analysisOutputLanguage === 'string'
+      ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
+      : undefined;
 
   // If no attachments were provided directly (queue path), deserialize from payload.
   // Attachments may be stored as inline base64 (small) or in Firebase Storage (large).
@@ -325,7 +328,7 @@ export async function processQueuedInboundPayload(
           if (!content) {
             console.error(
               `Failed to download attachment "${att.filename}" from Firebase Storage (path: ${att.storagePath}). ` +
-              'Ensure FIREBASE_STORAGE_BUCKET is configured and the storage bucket exists.'
+                'Ensure FIREBASE_STORAGE_BUCKET is configured and the storage bucket exists.',
             );
           }
         } else if (att.contentBase64) {
@@ -334,12 +337,20 @@ export async function processQueuedInboundPayload(
             // buf.buffer is the underlying pool ArrayBuffer; slice() copies only the
             // relevant segment so the resulting ArrayBuffer is a standalone allocation
             // with byteOffset === 0 and the correct byteLength.
-            content = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+            content = buf.buffer.slice(
+              buf.byteOffset,
+              buf.byteOffset + buf.byteLength,
+            ) as ArrayBuffer;
           } catch (decodeErr) {
-            console.error(`Failed to decode base64 content for attachment "${att.filename}":`, decodeErr);
+            console.error(
+              `Failed to decode base64 content for attachment "${att.filename}":`,
+              decodeErr,
+            );
           }
         } else {
-          console.warn(`Attachment "${att.filename}" has neither storagePath nor contentBase64; skipping`);
+          console.warn(
+            `Attachment "${att.filename}" has neither storagePath nor contentBase64; skipping`,
+          );
         }
 
         if (!content) {
@@ -353,13 +364,13 @@ export async function processQueuedInboundPayload(
           contentType: att.contentType,
           ...(att.contentId ? { contentId: att.contentId } : {}),
         };
-      })
+      }),
     );
     const validAttachments = resolved.filter((a): a is EmailAttachment => a !== null);
     if (validAttachments.length < payload.attachments.length) {
       console.error(
         `${payload.attachments.length - validAttachments.length} of ${payload.attachments.length} ` +
-        `attachment(s) could not be deserialized for log ${payload.logId}`
+          `attachment(s) could not be deserialized for log ${payload.logId}`,
       );
     }
     effectiveAttachments = validAttachments.length > 0 ? validAttachments : undefined;
@@ -375,8 +386,14 @@ export async function processQueuedInboundPayload(
   // so rules are always applied in a deterministic order that matches what the user sees.
   const allRules = rulesSnap.docs
     .sort((a, b) => {
-      const aOrder = typeof a.data().sortOrder === 'number' ? (a.data().sortOrder as number) : Number.MAX_SAFE_INTEGER;
-      const bOrder = typeof b.data().sortOrder === 'number' ? (b.data().sortOrder as number) : Number.MAX_SAFE_INTEGER;
+      const aOrder =
+        typeof a.data().sortOrder === 'number'
+          ? (a.data().sortOrder as number)
+          : Number.MAX_SAFE_INTEGER;
+      const bOrder =
+        typeof b.data().sortOrder === 'number'
+          ? (b.data().sortOrder as number)
+          : Number.MAX_SAFE_INTEGER;
       if (aOrder !== bOrder) return aOrder - bOrder;
       return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
     })
@@ -394,13 +411,16 @@ export async function processQueuedInboundPayload(
     (r) =>
       matchesPattern(payload.sender, r.matchSender) &&
       matchesPattern(payload.subject, r.matchSubject) &&
-      matchesPattern(payload.emailBody, r.matchBody)
+      matchesPattern(payload.emailBody, r.matchBody),
   );
 
   // Collect attachment names for the LLM prompt and the notification box.
-  const attachmentNames = effectiveAttachments && effectiveAttachments.length > 0
-    ? effectiveAttachments.map((att) => att.filename).filter((name): name is string => Boolean(name))
-    : undefined;
+  const attachmentNames =
+    effectiveAttachments && effectiveAttachments.length > 0
+      ? effectiveAttachments
+          .map((att) => att.filename)
+          .filter((name): name is string => Boolean(name))
+      : undefined;
 
   const result = await processEmailWithAgent(
     payload.userId,
@@ -425,12 +445,13 @@ export async function processQueuedInboundPayload(
       ? matchingRules
           .map(
             (rule) =>
-              `<a href="${escapeHtml(`${appUrl}/dashboard?editRule=${rule.id}`)}" style="font-weight: bold; text-decoration: underline;">${escapeHtml(rule.name)}</a>`
+              `<a href="${escapeHtml(`${appUrl}/dashboard?editRule=${rule.id}`)}" style="font-weight: bold; text-decoration: underline;">${escapeHtml(rule.name)}</a>`,
           )
           .join(', ')
       : `<strong>${escapeHtml(result.ruleApplied)}</strong>`;
 
-  const notificationBox = isForwardingHeaderEnabled ? `<div style="clear: both; margin-top: 24px; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563; line-height: 1.4;">
+  const notificationBox = isForwardingHeaderEnabled
+    ? `<div style="clear: both; margin-top: 24px; font-family: Arial, sans-serif; font-size: 13px; color: #4b5563; line-height: 1.4;">
         <hr style="border: none; border-top: 2px solid #e5e7eb; margin: 0;">
         <div style="background: #f0f4ff; padding: 12px 16px; border-left: 3px solid #6366f1;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; margin-bottom: 8px;">
@@ -447,7 +468,8 @@ export async function processQueuedInboundPayload(
           ${payload.bccAddress ? `<div style="margin-bottom: 6px; color: #4b5563; font-size: 13px;">Bcc: ${escapeHtml(payload.bccAddress)}</div>` : ''}
           <div style="color: #4b5563; font-size: 13px;">Rule: ${ruleDisplayHtml}</div>
         </div>
-      </div>` : '';
+      </div>`
+    : '';
 
   // Inject the notification box outside the original email HTML body.
   // If result.body is a complete HTML document (has a closing </body> tag), insert
@@ -460,13 +482,15 @@ export async function processQueuedInboundPayload(
   // emails with non-lowercase tags or unusual formatting.
   const lastBodyClose = [...result.body.matchAll(/<\/body>/gi)].pop();
   const emailHtml = lastBodyClose
-    ? result.body.slice(0, lastBodyClose.index) + notificationBox + result.body.slice(lastBodyClose.index)
+    ? result.body.slice(0, lastBodyClose.index) +
+      notificationBox +
+      result.body.slice(lastBodyClose.index)
     : result.body + notificationBox;
 
   if (effectiveAttachments && effectiveAttachments.length > 0) {
     console.log(
       `Forwarding ${effectiveAttachments.length} attachment(s) for log ${payload.logId}: ` +
-      effectiveAttachments.map((a) => `${a.filename} (${a.contentType})`).join(', ')
+        effectiveAttachments.map((a) => `${a.filename} (${a.contentType})`).join(', '),
     );
   }
 
@@ -476,7 +500,8 @@ export async function processQueuedInboundPayload(
     html: emailHtml,
     replyTo: payload.replyToHeader || payload.sender,
     senderName: resolveSenderDisplayValue(payload.fromHeader || '', payload.sender),
-    attachments: effectiveAttachments && effectiveAttachments.length > 0 ? effectiveAttachments : undefined,
+    attachments:
+      effectiveAttachments && effectiveAttachments.length > 0 ? effectiveAttachments : undefined,
     headers: {
       'X-Postino-Processed': 'true',
       'Auto-Submitted': 'auto-generated',
@@ -510,13 +535,19 @@ export async function processQueuedInboundPayload(
     await Promise.all(
       payload.attachments
         .filter((att) => att.storagePath)
-        .map((att) => deleteAttachmentFromStorage(att.storagePath!))
+        .map((att) => deleteAttachmentFromStorage(att.storagePath!)),
     );
   }
 
   // Fire-and-forget push notification — runs after the log update and storage cleanup
   // so that a notification failure never blocks or rolls back the email-processing result.
-  await sendEmailPushNotification(payload.userId, payload.sender, result.subject, payload.logId, finalStatus);
+  await sendEmailPushNotification(
+    payload.userId,
+    payload.sender,
+    result.subject,
+    payload.logId,
+    finalStatus,
+  );
 }
 
 export async function sendEmailCompletionPushNotification(
@@ -524,7 +555,7 @@ export async function sendEmailCompletionPushNotification(
   sender: string,
   subject: string,
   logId: string,
-  status: 'forwarded' | 'error' | 'skipped'
+  status: 'forwarded' | 'error' | 'skipped',
 ): Promise<void> {
   await sendEmailPushNotification(userId, sender, subject, logId, status);
 }

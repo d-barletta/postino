@@ -41,7 +41,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     if (!firebaseUser) return;
     try {
       const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
@@ -71,7 +73,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     }
   }, [firebaseUser, nextCursor]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const executeAction = async () => {
     if (!firebaseUser || !confirmAction) return;
@@ -96,10 +100,15 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       }
       await fetchUsers();
       const label =
-        confirmAction.action === 'delete' ? t.admin.toasts.userDeleted :
-        confirmAction.action === 'admin'
-          ? (confirmAction.current ? t.admin.toasts.adminRemoved : t.admin.toasts.adminGranted)
-          : (confirmAction.current ? t.admin.toasts.userSuspended : t.admin.toasts.userActivated);
+        confirmAction.action === 'delete'
+          ? t.admin.toasts.userDeleted
+          : confirmAction.action === 'admin'
+            ? confirmAction.current
+              ? t.admin.toasts.adminRemoved
+              : t.admin.toasts.adminGranted
+            : confirmAction.current
+              ? t.admin.toasts.userSuspended
+              : t.admin.toasts.userActivated;
       toast.success(label);
     } finally {
       setConfirming(false);
@@ -112,14 +121,18 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     confirmAction?.action === 'delete'
       ? 'Delete user'
       : confirmAction?.action === 'admin'
-      ? confirmAction.current ? 'Remove admin privileges' : 'Grant admin privileges'
-      : confirmAction?.current ? 'Suspend user' : 'Activate user';
+        ? confirmAction.current
+          ? 'Remove admin privileges'
+          : 'Grant admin privileges'
+        : confirmAction?.current
+          ? 'Suspend user'
+          : 'Activate user';
   const confirmDesc =
     confirmAction?.action === 'delete'
       ? `Permanently delete ${confirmUser?.email} and all their data (rules, email logs)? This cannot be undone.`
       : confirmAction?.action === 'admin'
-      ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
-      : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
+        ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
+        : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
 
   return (
     <div className="space-y-6">
@@ -133,7 +146,10 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>All Users</CardTitle>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{users.length}{hasNextPage ? '+' : ''} total users</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {users.length}
+            {hasNextPage ? '+' : ''} total users
+          </p>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -155,20 +171,32 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{user.email}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                          {user.email}
+                        </p>
                         {user.isAdmin && <Badge variant="info">Admin</Badge>}
                         <Badge variant={user.isActive ? 'success' : 'error'}>
                           {user.isActive ? 'Active' : 'Suspended'}
                         </Badge>
                       </div>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-mono truncate">{user.assignedEmail}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Joined {formatDate(user.createdAt)}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-mono truncate">
+                        {user.assignedEmail}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        Joined {formatDate(user.createdAt)}
+                      </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => setConfirmAction({ uid: user.uid, action: 'admin', current: user.isAdmin })}
+                        onClick={() =>
+                          setConfirmAction({
+                            uid: user.uid,
+                            action: 'admin',
+                            current: user.isAdmin,
+                          })
+                        }
                       >
                         {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
                       </Button>
@@ -176,7 +204,13 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                         <Button
                           size="sm"
                           variant={user.isActive ? 'danger' : 'secondary'}
-                          onClick={() => setConfirmAction({ uid: user.uid, action: 'active', current: user.isActive })}
+                          onClick={() =>
+                            setConfirmAction({
+                              uid: user.uid,
+                              action: 'active',
+                              current: user.isActive,
+                            })
+                          }
                         >
                           {user.isActive ? 'Suspend' : 'Activate'}
                         </Button>
@@ -218,7 +252,12 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
               Cancel
             </Button>
             <Button
-              variant={confirmAction?.action === 'delete' || (confirmAction?.action === 'active' && confirmAction.current) ? 'danger' : 'primary'}
+              variant={
+                confirmAction?.action === 'delete' ||
+                (confirmAction?.action === 'active' && confirmAction.current)
+                  ? 'danger'
+                  : 'primary'
+              }
               onClick={executeAction}
               loading={confirming}
             >

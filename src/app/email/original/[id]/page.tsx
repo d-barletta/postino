@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
@@ -65,12 +70,16 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
         .then((r) => r.json())
         .then((data) => setModels((data.models || []) as OpenRouterModel[]))
         .catch(() => setModels([]))
-        .finally(() => setModelsLoading(false))
+        .finally(() => setModelsLoading(false)),
     );
   }, [firebaseUser, user?.isAdmin]);
 
   const handleBack = () => {
-    if (typeof window !== 'undefined' && document.referrer && document.referrer.startsWith(window.location.origin)) {
+    if (
+      typeof window !== 'undefined' &&
+      document.referrer &&
+      document.referrer.startsWith(window.location.origin)
+    ) {
       router.back();
     } else {
       router.push('/dashboard');
@@ -157,10 +166,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           <CardContent className="text-center py-8">
             <i className="bi bi-exclamation-circle text-3xl text-red-500 mb-3" aria-hidden="true" />
             <p className="text-gray-700 dark:text-gray-300">{error}</p>
-            <button
-              className="mt-4 text-sm text-[#d0b53f] hover:underline"
-              onClick={handleBack}
-            >
+            <button className="mt-4 text-sm text-[#d0b53f] hover:underline" onClick={handleBack}>
               {t.emailOriginal.back}
             </button>
           </CardContent>
@@ -184,7 +190,9 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
             <i className="bi bi-arrow-left" aria-hidden="true" />
             {t.emailOriginal.back}
           </button>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white min-w-0 truncate">{email.subject}</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white min-w-0 truncate">
+            {email.subject}
+          </h1>
         </div>
 
         <Card>
@@ -196,39 +204,68 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
               <AccordionContent>
                 <CardContent className="p-0 pb-5 space-y-3 text-sm">
                   <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.from}</dt>
-                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.fromAddress}</dd>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.to}</dt>
-                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.toAddress}</dd>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                      {t.emailOriginal.from}
+                    </dt>
+                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">
+                      {email.fromAddress}
+                    </dd>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                      {t.emailOriginal.to}
+                    </dt>
+                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">
+                      {email.toAddress}
+                    </dd>
                     {email.ccAddress && (
                       <>
-                        <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.cc}</dt>
-                        <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.ccAddress}</dd>
+                        <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                          {t.emailOriginal.cc}
+                        </dt>
+                        <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">
+                          {email.ccAddress}
+                        </dd>
                       </>
                     )}
                     {email.bccAddress && (
                       <>
-                        <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.bcc}</dt>
-                        <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">{email.bccAddress}</dd>
+                        <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                          {t.emailOriginal.bcc}
+                        </dt>
+                        <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">
+                          {email.bccAddress}
+                        </dd>
                       </>
                     )}
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.subject}</dt>
-                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{email.subject}</dd>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.received}</dt>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                      {t.emailOriginal.subject}
+                    </dt>
+                    <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">
+                      {email.subject}
+                    </dd>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                      {t.emailOriginal.received}
+                    </dt>
                     <dd className="text-gray-800 dark:text-gray-200">{receivedDate}</dd>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.attachments}</dt>
+                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                      {t.emailOriginal.attachments}
+                    </dt>
                     <dd className="text-gray-800 dark:text-gray-200">
                       {email.attachmentCount > 0 ? (
                         <ul className="list-none space-y-0.5">
                           {email.attachmentNames.map((name, i) => (
                             <li key={i} className="flex items-center gap-1.5 min-w-0">
-                              <i className="bi bi-paperclip shrink-0 text-gray-400" aria-hidden="true" />
+                              <i
+                                className="bi bi-paperclip shrink-0 text-gray-400"
+                                aria-hidden="true"
+                              />
                               <span className="truncate">{name}</span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500">{t.emailOriginal.noAttachments}</span>
+                        <span className="text-gray-400 dark:text-gray-500">
+                          {t.emailOriginal.noAttachments}
+                        </span>
                       )}
                     </dd>
                   </dl>
@@ -269,7 +306,9 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                       />
                     </div>
                   ) : (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm py-1">{t.emailOriginal.noOriginalContent}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm py-1">
+                      {t.emailOriginal.noOriginalContent}
+                    </p>
                   )}
                 </CardContent>
               </AccordionContent>
@@ -289,10 +328,17 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                     <div className="flex flex-wrap items-center justify-end gap-3">
                       <div className="flex-1 min-w-48 max-w-xs">
                         <Combobox
-                          options={models.map((m) => ({ value: m.id, label: `${m.name} (${m.id})` }) as ComboboxOption)}
+                          options={models.map(
+                            (m) =>
+                              ({ value: m.id, label: `${m.name} (${m.id})` }) as ComboboxOption,
+                          )}
                           value={selectedModel}
                           onValueChange={setSelectedModel}
-                          placeholder={modelsLoading ? t.emailOriginal.admin.loadingModels : t.emailOriginal.admin.defaultModel}
+                          placeholder={
+                            modelsLoading
+                              ? t.emailOriginal.admin.loadingModels
+                              : t.emailOriginal.admin.defaultModel
+                          }
                           searchPlaceholder={t.emailOriginal.admin.searchModels}
                           emptyText={t.emailOriginal.admin.noModelsFound}
                           disabled={modelsLoading}
@@ -322,17 +368,35 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                     {reprocessResult && (
                       <>
                         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.subject}</dt>
-                          <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">{reprocessResult.subject}</dd>
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.admin.ruleApplied}</dt>
-                          <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.ruleApplied}</dd>
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.admin.tokensUsed}</dt>
-                          <dd className="text-gray-800 dark:text-gray-200">{reprocessResult.tokensUsed.toLocaleString()}</dd>
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">{t.emailOriginal.admin.estCost}</dt>
-                          <dd className="text-gray-800 dark:text-gray-200">${reprocessResult.estimatedCost.toFixed(6)}</dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                            {t.emailOriginal.subject}
+                          </dt>
+                          <dd className="text-gray-800 dark:text-gray-200 min-w-0 wrap-break-word">
+                            {reprocessResult.subject}
+                          </dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                            {t.emailOriginal.admin.ruleApplied}
+                          </dt>
+                          <dd className="text-gray-800 dark:text-gray-200">
+                            {reprocessResult.ruleApplied}
+                          </dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                            {t.emailOriginal.admin.tokensUsed}
+                          </dt>
+                          <dd className="text-gray-800 dark:text-gray-200">
+                            {reprocessResult.tokensUsed.toLocaleString()}
+                          </dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                            {t.emailOriginal.admin.estCost}
+                          </dt>
+                          <dd className="text-gray-800 dark:text-gray-200">
+                            ${reprocessResult.estimatedCost.toFixed(6)}
+                          </dd>
                         </dl>
                         <div>
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.emailOriginal.admin.processedBody}</p>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {t.emailOriginal.admin.processedBody}
+                          </p>
                           <SafeEmailIframe
                             html={reprocessResult.body}
                             className="rounded-lg"

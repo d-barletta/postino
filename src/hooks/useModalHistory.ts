@@ -90,4 +90,3 @@ export function useModalHistory(isOpen: boolean, onBack: () => void): void {
     };
   }, [isOpen]);
 }
-

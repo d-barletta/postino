@@ -51,18 +51,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const decoded = await verifyUser(request);
-    const body = await request.json() as Record<string, unknown>;
+    const body = (await request.json()) as Record<string, unknown>;
     const { category, canonical, aliases } = body;
 
     if (!category || !VALID_CATEGORIES.includes(category as EntityCategory)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
     }
 
-    if (
-      !canonical ||
-      typeof canonical !== 'string' ||
-      !canonical.trim()
-    ) {
+    if (!canonical || typeof canonical !== 'string' || !canonical.trim()) {
       return NextResponse.json({ error: 'Canonical name is required' }, { status: 400 });
     }
 
@@ -95,7 +91,10 @@ export async function POST(request: NextRequest) {
       const overlap = trimmedAliases.some((a) => existingAliases.includes(a));
       if (overlap) {
         return NextResponse.json(
-          { error: 'One or more aliases already belong to another merge in this category', existingId: doc.id },
+          {
+            error: 'One or more aliases already belong to another merge in this category',
+            existingId: doc.id,
+          },
           { status: 409 },
         );
       }

@@ -30,7 +30,10 @@ export function RegisterForm() {
       try {
         const res = await fetch('/api/settings/public', { cache: 'no-store' });
         if (!res.ok) return;
-        const data = (await res.json()) as { assignedEmailDomain?: string; signupMaintenanceMode?: boolean };
+        const data = (await res.json()) as {
+          assignedEmailDomain?: string;
+          signupMaintenanceMode?: boolean;
+        };
         if (mounted) {
           setAssignedEmailDomain((data.assignedEmailDomain || '').trim().toLowerCase());
           setSignupMaintenance(data.signupMaintenanceMode === true);
@@ -127,12 +130,21 @@ export function RegisterForm() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button type="submit" loading={loading} className="w-full" size="md" disabled={signupMaintenance}>
+      <Button
+        type="submit"
+        loading={loading}
+        className="w-full"
+        size="md"
+        disabled={signupMaintenance}
+      >
         {tr.button}
       </Button>
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         {tr.alreadyHaveAccount}{' '}
-        <Link href="/login" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+        <Link
+          href="/login"
+          className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium"
+        >
           {tr.signIn}
         </Link>
       </p>

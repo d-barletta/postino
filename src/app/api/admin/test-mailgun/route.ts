@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!recipient) {
       return NextResponse.json(
         { error: 'Missing recipient email. Enter a test recipient.' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
             '',
             `Timestamp: ${nowIso}`,
           ].join('\n'),
-          'utf-8'
-        )
+          'utf-8',
+        ),
       ),
       contentType: 'text/plain',
     };

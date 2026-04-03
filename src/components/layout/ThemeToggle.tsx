@@ -7,7 +7,6 @@ export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-     
     setIsDark(document.documentElement.classList.contains('dark'));
   }, []);
 
@@ -26,7 +25,10 @@ export function ThemeToggle() {
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
     >
-      <i className={`bi ${isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'} text-sm`} aria-hidden="true" />
+      <i
+        className={`bi ${isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'} text-sm`}
+        aria-hidden="true"
+      />
     </button>
   );
 }

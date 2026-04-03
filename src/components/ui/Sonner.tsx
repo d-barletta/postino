@@ -35,7 +35,8 @@ export function Toaster(props: ToasterProps) {
           error: '!border-l-4 !border-l-red-500',
           warning: '!border-l-4 !border-l-yellow-500',
           info: '!border-l-4 !border-l-blue-500',
-          closeButton: '!bg-[var(--surface-muted)] !border-[var(--border)] !text-[var(--muted-text)]',
+          closeButton:
+            '!bg-[var(--surface-muted)] !border-[var(--border)] !text-[var(--muted-text)]',
         },
       }}
       {...props}

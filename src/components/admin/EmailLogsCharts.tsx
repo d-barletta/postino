@@ -1,10 +1,30 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bar, Cell, Pie, PieChart, CartesianGrid, XAxis, YAxis, ComposedChart, Line } from 'recharts';
+import {
+  Bar,
+  Cell,
+  Pie,
+  PieChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  ComposedChart,
+  Line,
+} from 'recharts';
 import { Card } from '@/components/ui/Card';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/Chart';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/Accordion';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/Chart';
 
 interface AdminEmailLogChartItem {
   id: string;
@@ -69,7 +89,12 @@ function getRangeCutoff(range: TimeRange): number {
 function formatBucket(bucket: string, granularity: TimeGranularity): string {
   const date = new Date(bucket);
   if (granularity === 'hour') {
-    return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
   if (granularity === 'week') {
     return `Week of ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
@@ -85,7 +110,11 @@ function getBucketKey(iso: string | null, granularity: TimeGranularity): string 
   }
   if (granularity === 'week') {
     const startOfWeek = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
-    return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate()).toISOString();
+    return new Date(
+      startOfWeek.getFullYear(),
+      startOfWeek.getMonth(),
+      startOfWeek.getDate(),
+    ).toISOString();
   }
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
 }
@@ -185,9 +214,17 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                 ) : (
                   <ChartContainer config={chartConfig} className="h-56 sm:h-65">
                     <PieChart>
-                      <ChartTooltip content={<ChartTooltipContent formatter={(v) => Number(v || 0).toLocaleString()} />} />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent formatter={(v) => Number(v || 0).toLocaleString()} />
+                        }
+                      />
                       <Pie
-                        data={pieData.length > 0 ? pieData : [{ status: 'received', count: 0, fill: 'var(--color-received)' }]}
+                        data={
+                          pieData.length > 0
+                            ? pieData
+                            : [{ status: 'received', count: 0, fill: 'var(--color-received)' }]
+                        }
                         dataKey="count"
                         nameKey="status"
                         innerRadius={44}
@@ -195,7 +232,10 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                         strokeWidth={0}
                         isAnimationActive={false}
                       >
-                        {(pieData.length > 0 ? pieData : [{ status: 'received', fill: 'var(--color-received)' }]).map((entry) => (
+                        {(pieData.length > 0
+                          ? pieData
+                          : [{ status: 'received', fill: 'var(--color-received)' }]
+                        ).map((entry) => (
                           <Cell key={entry.status} fill={entry.fill} />
                         ))}
                       </Pie>
@@ -206,15 +246,24 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                   {byStatus.map((item) => {
                     const statusKey = item.status as keyof typeof chartConfig;
                     return (
-                      <div key={item.status} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
+                      <div
+                        key={item.status}
+                        className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40"
+                      >
                         <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[statusKey]?.color }} aria-hidden />
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: chartConfig[statusKey]?.color }}
+                            aria-hidden
+                          />
                           <span>{chartConfig[statusKey]?.label ?? item.status}</span>
                         </div>
                         {loading ? (
                           <div className="mt-0.5 h-4 w-8 animate-pulse bg-gray-200 dark:bg-gray-700 rounded" />
                         ) : (
-                          <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">{item.count.toLocaleString()}</p>
+                          <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">
+                            {item.count.toLocaleString()}
+                          </p>
                         )}
                       </div>
                     );
@@ -271,10 +320,26 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                       </div>
                     </div>
                     <ChartContainer config={chartConfig} className="h-75 sm:h-85">
-                      <ComposedChart data={timeData} margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
+                      <ComposedChart
+                        data={timeData}
+                        margin={{ top: 8, right: 12, left: 8, bottom: 8 }}
+                      >
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-                        <YAxis yAxisId="tokens" allowDecimals={false} tickLine={false} axisLine={false} width={34} tick={{ fontSize: 12 }} />
+                        <XAxis
+                          dataKey="label"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 12 }}
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis
+                          yAxisId="tokens"
+                          allowDecimals={false}
+                          tickLine={false}
+                          axisLine={false}
+                          width={34}
+                          tick={{ fontSize: 12 }}
+                        />
                         <YAxis
                           yAxisId="cost"
                           orientation="right"
@@ -295,7 +360,13 @@ export function EmailLogsCharts({ logs, loading }: EmailLogsChartsProps) {
                             />
                           }
                         />
-                        <Bar yAxisId="tokens" dataKey="tokens" radius={0} fill="var(--color-tokens)" isAnimationActive={false} />
+                        <Bar
+                          yAxisId="tokens"
+                          dataKey="tokens"
+                          radius={0}
+                          fill="var(--color-tokens)"
+                          isAnimationActive={false}
+                        />
                         <Line
                           yAxisId="cost"
                           type="monotone"

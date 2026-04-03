@@ -13,7 +13,9 @@ function getBootstrapLocale(): string {
   try {
     const stored = localStorage.getItem('locale');
     if (stored && (SUPPORTED_LOCALES as readonly string[]).includes(stored)) return stored;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   if (typeof navigator !== 'undefined') {
     const primary = (navigator.language || '').split('-')[0].toLowerCase();
     if ((SUPPORTED_LOCALES as readonly string[]).includes(primary)) return primary;

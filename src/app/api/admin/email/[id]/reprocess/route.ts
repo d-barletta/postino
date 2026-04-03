@@ -10,10 +10,7 @@ function matchesPattern(value: string, pattern?: string): boolean {
   return value.toLowerCase().includes(pattern.toLowerCase());
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await verifyAdminRequest(request);
 
@@ -44,9 +41,10 @@ export async function POST(
 
     // Fetch the email owner's analysis language preference
     const userSnap = await db.collection('users').doc(userId).get();
-    const analysisOutputLanguage = typeof userSnap.data()?.analysisOutputLanguage === 'string'
-      ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
-      : undefined;
+    const analysisOutputLanguage =
+      typeof userSnap.data()?.analysisOutputLanguage === 'string'
+        ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
+        : undefined;
 
     // Fetch active rules for this email's owner
     const rulesSnap = await db
@@ -59,8 +57,14 @@ export async function POST(
     // so rules are always applied in a deterministic order that matches what the user sees.
     const allRules = rulesSnap.docs
       .sort((a, b) => {
-        const aOrder = typeof a.data().sortOrder === 'number' ? a.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
-        const bOrder = typeof b.data().sortOrder === 'number' ? b.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        const aOrder =
+          typeof a.data().sortOrder === 'number'
+            ? (a.data().sortOrder as number)
+            : Number.MAX_SAFE_INTEGER;
+        const bOrder =
+          typeof b.data().sortOrder === 'number'
+            ? (b.data().sortOrder as number)
+            : Number.MAX_SAFE_INTEGER;
         if (aOrder !== bOrder) return aOrder - bOrder;
         return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
       })
@@ -78,7 +82,7 @@ export async function POST(
       (r) =>
         matchesPattern(emailFrom, r.matchSender) &&
         matchesPattern(emailSubject, r.matchSubject) &&
-        matchesPattern(originalBody, r.matchBody)
+        matchesPattern(originalBody, r.matchBody),
     );
 
     // Detect whether the original body is HTML

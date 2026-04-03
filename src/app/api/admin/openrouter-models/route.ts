@@ -20,14 +20,14 @@ export async function GET(request: NextRequest) {
     const db = adminDb();
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settings = settingsSnap.data();
-    const apiKey =
-      settings?.llmApiKey ||
-      process.env.OPEN_ROUTER_API_KEY ||
-      '';
+    const apiKey = settings?.llmApiKey || process.env.OPEN_ROUTER_API_KEY || '';
     const normalizedApiKey = apiKey.trim();
 
     if (!normalizedApiKey) {
-      return NextResponse.json({ models: [], error: 'Missing OpenRouter API key' }, { status: 400 });
+      return NextResponse.json(
+        { models: [], error: 'Missing OpenRouter API key' },
+        { status: 400 },
+      );
     }
 
     const response = await fetch('https://openrouter.ai/api/v1/models', {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       const details = await response.text();
       return NextResponse.json(
         { models: [], error: `OpenRouter request failed (${response.status})`, details },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -54,7 +54,9 @@ export async function GET(request: NextRequest) {
     const models: OpenRouterModel[] = (payload.data || [])
       .filter(
         (m): m is OpenRouterModelRaw & { id: string } =>
-          Boolean(m.id) && Array.isArray(m.supported_parameters) && m.supported_parameters.includes('structured_outputs')
+          Boolean(m.id) &&
+          Array.isArray(m.supported_parameters) &&
+          m.supported_parameters.includes('structured_outputs'),
       )
       .map((m) => ({ id: m.id, name: m.name || m.id }))
       .sort((a, b) => a.id.localeCompare(b.id));

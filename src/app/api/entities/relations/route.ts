@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import type { EntityGraphNode, EntityGraphEdge, EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
+import type {
+  EntityGraphNode,
+  EntityGraphEdge,
+  EntityRelationGraph,
+  EntityGraphNodeCategory,
+} from '@/types';
 
 /** Maximum number of email logs fetched for analysis (matches knowledge route). */
 const FETCH_LIMIT = 1000;
@@ -13,7 +18,12 @@ const MIN_EDGE_WEIGHT = 1;
 
 /** All entity graph node categories in a fixed order for consistent processing. */
 const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
-  'topics', 'tags', 'people', 'organizations', 'places', 'events',
+  'topics',
+  'tags',
+  'people',
+  'organizations',
+  'places',
+  'events',
 ];
 
 /** Returns true when the error is a Firebase authentication / token error. */
@@ -30,10 +40,7 @@ interface CountMap {
   [value: string]: number;
 }
 
-function applyMerges(
-  map: CountMap,
-  merges: Array<{ canonical: string; aliases: string[] }>,
-): void {
+function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: string[] }>): void {
   for (const merge of merges) {
     let total = 0;
     for (const alias of merge.aliases) {
@@ -141,11 +148,7 @@ export async function POST(request: NextRequest) {
         .orderBy('receivedAt', 'desc')
         .limit(FETCH_LIMIT)
         .get(),
-      db
-        .collection('entityMerges')
-        .where('userId', '==', decoded.uid)
-        .limit(MERGES_LIMIT)
-        .get(),
+      db.collection('entityMerges').where('userId', '==', decoded.uid).limit(MERGES_LIMIT).get(),
     ]);
 
     // Build merges by category
@@ -154,7 +157,10 @@ export async function POST(request: NextRequest) {
       const d = doc.data();
       const cat = d.category as string;
       if (!mergesByCategory[cat]) mergesByCategory[cat] = [];
-      mergesByCategory[cat].push({ canonical: d.canonical as string, aliases: d.aliases as string[] });
+      mergesByCategory[cat].push({
+        canonical: d.canonical as string,
+        aliases: d.aliases as string[],
+      });
     }
 
     // -------------------------------------------------------------------
@@ -283,11 +289,14 @@ export async function POST(request: NextRequest) {
     const graph: EntityRelationGraph = { nodes, edges, generatedAt, totalEmails };
 
     // Persist to Firestore (merge: true to overwrite)
-    await db.collection('entityRelations').doc(decoded.uid).set({
-      ...graph,
-      userId: decoded.uid,
-      updatedAt: new Date(),
-    });
+    await db
+      .collection('entityRelations')
+      .doc(decoded.uid)
+      .set({
+        ...graph,
+        userId: decoded.uid,
+        updatedAt: new Date(),
+      });
 
     return NextResponse.json({ graph });
   } catch (err) {

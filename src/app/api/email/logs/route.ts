@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
     const pageSizeParam = parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10);
     const search = (searchParams.get('search') || '').trim().toLowerCase();
     // `terms` supports multiple OR-matched search terms (e.g. for merged entities)
-    const termsRaw = searchParams.getAll('terms').map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const termsRaw = searchParams
+      .getAll('terms')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
     const hasAttachments = searchParams.get('hasAttachments') === 'true';
     const sentimentFilter = (searchParams.get('sentiment') || '').trim().toLowerCase();
     const emailTypeFilter = (searchParams.get('emailType') || '').trim().toLowerCase();
@@ -37,7 +40,10 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor');
 
     const page = Math.max(1, isNaN(pageParam) ? 1 : pageParam);
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam));
+    const pageSize = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam),
+    );
 
     const db = adminDb();
     const query: Query = db
@@ -47,8 +53,18 @@ export async function GET(request: NextRequest) {
 
     // Push status filter to Firestore when it is the only active filter (avoids
     // fetching a large batch just to discard most results in JavaScript).
-    const analysisFiltersActive = sentimentFilter || emailTypeFilter || priorityFilter || senderTypeFilter || requiresResponse || hasActionItems || isUrgent || languageFilter || tagsFilter;
-    const hasAnyFilter = search || termsRaw.length > 0 || hasAttachments || statusFilter || analysisFiltersActive;
+    const analysisFiltersActive =
+      sentimentFilter ||
+      emailTypeFilter ||
+      priorityFilter ||
+      senderTypeFilter ||
+      requiresResponse ||
+      hasActionItems ||
+      isUrgent ||
+      languageFilter ||
+      tagsFilter;
+    const hasAnyFilter =
+      search || termsRaw.length > 0 || hasAttachments || statusFilter || analysisFiltersActive;
 
     let snap;
     if (hasAnyFilter) {
@@ -57,13 +73,19 @@ export async function GET(request: NextRequest) {
       // Cursor-based pagination: start after the provided document snapshot.
       const cursorDoc: DocumentSnapshot = await db.collection('emailLogs').doc(cursor).get();
       if (cursorDoc.exists) {
-        snap = await query.startAfter(cursorDoc).limit(pageSize + 1).get();
+        snap = await query
+          .startAfter(cursorDoc)
+          .limit(pageSize + 1)
+          .get();
       } else {
         snap = await query.limit(pageSize + 1).get();
       }
     } else {
       const offset = (page - 1) * pageSize;
-      snap = await query.offset(offset).limit(pageSize + 1).get();
+      snap = await query
+        .offset(offset)
+        .limit(pageSize + 1)
+        .get();
     }
 
     let docs = snap.docs.map((d) => ({
@@ -92,15 +114,27 @@ export async function GET(request: NextRequest) {
         d.subject.toLowerCase().includes(term) ||
         d.fromAddress.toLowerCase().includes(term) ||
         (d.toAddress && d.toAddress.toLowerCase().includes(term)) ||
-        (d.emailAnalysis?.summary && String(d.emailAnalysis.summary).toLowerCase().includes(term)) ||
+        (d.emailAnalysis?.summary &&
+          String(d.emailAnalysis.summary).toLowerCase().includes(term)) ||
         (d.emailAnalysis?.intent && String(d.emailAnalysis.intent).toLowerCase().includes(term)) ||
-        (Array.isArray(d.emailAnalysis?.tags) && d.emailAnalysis.tags.some((tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(term))) ||
-        (Array.isArray(d.emailAnalysis?.topics) && d.emailAnalysis.topics.some((topic: unknown) => typeof topic === 'string' && topic.toLowerCase().includes(term)))
-      ) return true;
+        (Array.isArray(d.emailAnalysis?.tags) &&
+          d.emailAnalysis.tags.some(
+            (tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(term),
+          )) ||
+        (Array.isArray(d.emailAnalysis?.topics) &&
+          d.emailAnalysis.topics.some(
+            (topic: unknown) => typeof topic === 'string' && topic.toLowerCase().includes(term),
+          ))
+      )
+        return true;
       const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
       if (entities) {
         for (const list of Object.values(entities)) {
-          if (Array.isArray(list) && list.some((v) => typeof v === 'string' && v.toLowerCase().includes(term))) return true;
+          if (
+            Array.isArray(list) &&
+            list.some((v) => typeof v === 'string' && v.toLowerCase().includes(term))
+          )
+            return true;
         }
       }
       return false;
@@ -156,9 +190,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (tagsFilter) {
-      docs = docs.filter((d) =>
-        Array.isArray(d.emailAnalysis?.tags) &&
-        d.emailAnalysis.tags.some((tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(tagsFilter))
+      docs = docs.filter(
+        (d) =>
+          Array.isArray(d.emailAnalysis?.tags) &&
+          d.emailAnalysis.tags.some(
+            (tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(tagsFilter),
+          ),
       );
     }
 
@@ -170,11 +207,19 @@ export async function GET(request: NextRequest) {
       paginatedDocs = docs.slice(start, start + pageSize);
       hasNextPage = start + pageSize < docs.length;
       const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-      return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage, totalCount, totalPages });
+      return NextResponse.json({
+        logs: paginatedDocs,
+        page,
+        pageSize,
+        hasNextPage,
+        totalCount,
+        totalPages,
+      });
     } else {
       hasNextPage = docs.length > pageSize;
       paginatedDocs = docs.slice(0, pageSize);
-      const nextCursor = hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
+      const nextCursor =
+        hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
       return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage, nextCursor });
     }
   } catch (err) {

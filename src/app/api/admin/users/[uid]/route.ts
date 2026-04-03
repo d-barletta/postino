@@ -5,7 +5,10 @@ import { verifyAdminRequest } from '@/lib/api-auth';
 /** Maximum write operations per Firestore batch (hard limit is 500). */
 const BATCH_SIZE = 400;
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+) {
   try {
     await verifyAdminRequest(request);
     const updates = await request.json();
@@ -14,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const allowed = ['isAdmin', 'isActive'];
     const filtered = Object.fromEntries(
-      Object.entries(updates).filter(([k]) => allowed.includes(k))
+      Object.entries(updates).filter(([k]) => allowed.includes(k)),
     );
 
     if ('isActive' in filtered) {
@@ -35,7 +38,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+) {
   try {
     await verifyAdminRequest(request);
     const { uid } = await params;

@@ -45,17 +45,23 @@ function ChartContainer({ id, className, config, children, ...props }: ChartCont
           '[&_.recharts-cartesian-grid_line[stroke="#ccc"]]:stroke-gray-200',
           'dark:[&_.recharts-cartesian-grid_line[stroke="#ccc"]]:stroke-gray-700',
           '[&_.recharts-legend-item-text]:text-gray-600 dark:[&_.recharts-legend-item-text]:text-gray-300',
-          className
+          className,
         )}
-        style={
-          Object.entries(config).reduce((acc, [key, value]) => {
+        style={Object.entries(config).reduce(
+          (acc, [key, value]) => {
             acc[`--color-${key}`] = value.color;
             return acc;
-          }, {} as Record<string, string>)
-        }
+          },
+          {} as Record<string, string>,
+        )}
         {...props}
       >
-        <RechartsPrimitive.ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+        <RechartsPrimitive.ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={1}
+          minHeight={1}
+        >
           {children}
         </RechartsPrimitive.ResponsiveContainer>
       </div>
@@ -80,7 +86,7 @@ type ChartTooltipPayloadProps = {
     value: unknown,
     name: unknown,
     item: TooltipEntry,
-    payload: TooltipEntry[]
+    payload: TooltipEntry[],
   ) => React.ReactNode;
   hideLabel?: boolean;
 };
@@ -114,10 +120,16 @@ function ChartTooltipContent({
           return (
             <div key={key} className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} aria-hidden />
+                <span
+                  className="h-2.5 w-2.5 rounded-sm"
+                  style={{ backgroundColor: color }}
+                  aria-hidden
+                />
                 <span>{displayLabel}</span>
               </div>
-              <span className="font-medium text-gray-900 dark:text-gray-100">{value as React.ReactNode}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                {value as React.ReactNode}
+              </span>
             </div>
           );
         })}

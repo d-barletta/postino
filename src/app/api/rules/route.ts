@@ -13,17 +13,20 @@ export async function GET(request: NextRequest) {
   try {
     const decoded = await verifyUser(request);
     const db = adminDb();
-    const snap = await db
-      .collection('rules')
-      .where('userId', '==', decoded.uid)
-      .get();
+    const snap = await db.collection('rules').where('userId', '==', decoded.uid).get();
 
     // Sort rules by sortOrder ASC (user-defined), then by createdAt ASC as tiebreaker.
     // This keeps the display order consistent with processing order.
     const rules = snap.docs
       .sort((a, b) => {
-        const aOrder = typeof a.data().sortOrder === 'number' ? a.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
-        const bOrder = typeof b.data().sortOrder === 'number' ? b.data().sortOrder as number : Number.MAX_SAFE_INTEGER;
+        const aOrder =
+          typeof a.data().sortOrder === 'number'
+            ? (a.data().sortOrder as number)
+            : Number.MAX_SAFE_INTEGER;
+        const bOrder =
+          typeof b.data().sortOrder === 'number'
+            ? (b.data().sortOrder as number)
+            : Number.MAX_SAFE_INTEGER;
         if (aOrder !== bOrder) return aOrder - bOrder;
         return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
       })
@@ -57,23 +60,44 @@ export async function POST(request: NextRequest) {
     }
 
     if (name.trim().length > MAX_RULE_NAME_LENGTH) {
-      return NextResponse.json({ error: `Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters` }, { status: 400 });
+      return NextResponse.json(
+        { error: `Rule name must be at most ${MAX_RULE_NAME_LENGTH} characters` },
+        { status: 400 },
+      );
     }
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'Rule text is required' }, { status: 400 });
     }
 
-    if (matchSender !== undefined && (typeof matchSender !== 'string' || matchSender.length > MAX_PATTERN_LENGTH)) {
-      return NextResponse.json({ error: `Sender pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    if (
+      matchSender !== undefined &&
+      (typeof matchSender !== 'string' || matchSender.length > MAX_PATTERN_LENGTH)
+    ) {
+      return NextResponse.json(
+        { error: `Sender pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` },
+        { status: 400 },
+      );
     }
 
-    if (matchSubject !== undefined && (typeof matchSubject !== 'string' || matchSubject.length > MAX_PATTERN_LENGTH)) {
-      return NextResponse.json({ error: `Subject pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    if (
+      matchSubject !== undefined &&
+      (typeof matchSubject !== 'string' || matchSubject.length > MAX_PATTERN_LENGTH)
+    ) {
+      return NextResponse.json(
+        { error: `Subject pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` },
+        { status: 400 },
+      );
     }
 
-    if (matchBody !== undefined && (typeof matchBody !== 'string' || matchBody.length > MAX_PATTERN_LENGTH)) {
-      return NextResponse.json({ error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` }, { status: 400 });
+    if (
+      matchBody !== undefined &&
+      (typeof matchBody !== 'string' || matchBody.length > MAX_PATTERN_LENGTH)
+    ) {
+      return NextResponse.json(
+        { error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` },
+        { status: 400 },
+      );
     }
 
     const db = adminDb();
@@ -94,7 +118,10 @@ export async function POST(request: NextRequest) {
     const maxRuleLength = settingsSnap.data()?.maxRuleLength ?? 1000;
 
     if (text.length > maxRuleLength) {
-      return NextResponse.json({ error: `Rule exceeds maximum length of ${maxRuleLength}` }, { status: 400 });
+      return NextResponse.json(
+        { error: `Rule exceeds maximum length of ${maxRuleLength}` },
+        { status: 400 },
+      );
     }
 
     const maxActiveRules = settingsSnap.data()?.maxActiveRules ?? 3;
@@ -111,7 +138,7 @@ export async function POST(request: NextRequest) {
       if (activeRulesSnap.size >= maxActiveRules) {
         return NextResponse.json(
           { error: `You have reached the maximum of ${maxActiveRules} active rules` },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }

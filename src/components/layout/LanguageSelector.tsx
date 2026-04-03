@@ -38,8 +38,13 @@ export function LanguageSelector() {
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 rounded-lg px-2.5 h-9 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors"
       >
-        <span aria-hidden="true" className="text-base leading-none">{current.flag}</span>
-        <i className={cn('bi bi-chevron-up text-[10px] transition-transform', !open && 'rotate-180')} aria-hidden="true" />
+        <span aria-hidden="true" className="text-base leading-none">
+          {current.flag}
+        </span>
+        <i
+          className={cn('bi bi-chevron-up text-[10px] transition-transform', !open && 'rotate-180')}
+          aria-hidden="true"
+        />
       </button>
 
       {open && (
@@ -62,7 +67,9 @@ export function LanguageSelector() {
                   : 'text-gray-700 dark:text-gray-300 hover:bg-yellow-50/80 dark:hover:bg-yellow-300/10',
               )}
             >
-              <span aria-hidden="true" className="text-base leading-none">{loc.flag}</span>
+              <span aria-hidden="true" className="text-base leading-none">
+                {loc.flag}
+              </span>
               {loc.label}
             </button>
           ))}

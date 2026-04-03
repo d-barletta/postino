@@ -89,15 +89,29 @@ function pickPositiveInt(value: unknown, fallback: number): number {
     : fallback;
 }
 
-function resolveAgentRuntimeSettings(settings: Record<string, unknown> | undefined): AgentRuntimeSettings {
+function resolveAgentRuntimeSettings(
+  settings: Record<string, unknown> | undefined,
+): AgentRuntimeSettings {
   return {
     chunkThresholdChars: pickPositiveInt(settings?.agentChunkThresholdChars, CHUNK_THRESHOLD_CHARS),
     chunkSizeChars: pickPositiveInt(settings?.agentChunkSizeChars, CHUNK_SIZE_CHARS),
-    chunkExtractMaxTokens: pickPositiveInt(settings?.agentChunkExtractMaxTokens, CHUNK_EXTRACT_MAX_TOKENS),
+    chunkExtractMaxTokens: pickPositiveInt(
+      settings?.agentChunkExtractMaxTokens,
+      CHUNK_EXTRACT_MAX_TOKENS,
+    ),
     analysisMaxTokens: pickPositiveInt(settings?.agentAnalysisMaxTokens, ANALYSIS_MAX_TOKENS),
-    bodyAnalysisMaxChars: pickPositiveInt(settings?.agentBodyAnalysisMaxChars, BODY_ANALYSIS_MAX_CHARS),
-    chunkFallbackMaxChars: pickPositiveInt(settings?.agentChunkFallbackMaxChars, CHUNK_FALLBACK_MAX_CHARS),
-    fallbackPassMaxTokens: pickPositiveInt(settings?.agentFallbackMaxTokens, FALLBACK_PASS_MAX_TOKENS),
+    bodyAnalysisMaxChars: pickPositiveInt(
+      settings?.agentBodyAnalysisMaxChars,
+      BODY_ANALYSIS_MAX_CHARS,
+    ),
+    chunkFallbackMaxChars: pickPositiveInt(
+      settings?.agentChunkFallbackMaxChars,
+      CHUNK_FALLBACK_MAX_CHARS,
+    ),
+    fallbackPassMaxTokens: pickPositiveInt(
+      settings?.agentFallbackMaxTokens,
+      FALLBACK_PASS_MAX_TOKENS,
+    ),
   };
 }
 
@@ -180,7 +194,7 @@ export function buildMemoryContext(entries: EmailMemoryEntry[], senderEmail: str
   };
 
   const senderEntries = entries.filter(
-    (e) => extractEmail(e.fromAddress) === extractEmail(normalizedSender)
+    (e) => extractEmail(e.fromAddress) === extractEmail(normalizedSender),
   );
 
   if (senderEntries.length === 0) return '';
@@ -256,7 +270,14 @@ interface DomPatch {
   /** CSS selector targeting the element(s) to operate on. */
   selector: string;
   /** DOM operation to perform. */
-  operation: 'prepend' | 'append' | 'before' | 'after' | 'replace_content' | 'replace_element' | 'remove';
+  operation:
+    | 'prepend'
+    | 'append'
+    | 'before'
+    | 'after'
+    | 'replace_content'
+    | 'replace_element'
+    | 'remove';
   /** HTML content for the operation; empty string for 'remove'. */
   html: string;
   /**
@@ -271,28 +292,37 @@ interface DomPatch {
 
 /** Zod schema for a single DOM patch — shared by both the standard and map-reduce LLM call schemas. */
 const domPatchSchema = z.object({
-  selector: z.string().describe(
-    'CSS selector for the element to modify. MUST be as specific as possible to match exactly one element. ' +
-    'Prefer: element ID (#id), child combinator (parent > child), attribute selectors ([data-x="y"]), ' +
-    'or :nth-of-type(n) pseudo-class over generic tag names like "p", "td", "div", "span". ' +
-    'AVOID broad selectors that would match many elements unintentionally.'
-  ),
-  operation: z.enum([
-    'prepend',         // insert as first child
-    'append',          // insert as last child
-    'before',          // insert immediately before the element
-    'after',           // insert immediately after the element
-    'replace_content', // replace innerHTML
-    'replace_element', // replace outerHTML
-    'remove',          // remove the element entirely
-  ]).describe('DOM operation to apply to the targeted element'),
+  selector: z
+    .string()
+    .describe(
+      'CSS selector for the element to modify. MUST be as specific as possible to match exactly one element. ' +
+        'Prefer: element ID (#id), child combinator (parent > child), attribute selectors ([data-x="y"]), ' +
+        'or :nth-of-type(n) pseudo-class over generic tag names like "p", "td", "div", "span". ' +
+        'AVOID broad selectors that would match many elements unintentionally.',
+    ),
+  operation: z
+    .enum([
+      'prepend', // insert as first child
+      'append', // insert as last child
+      'before', // insert immediately before the element
+      'after', // insert immediately after the element
+      'replace_content', // replace innerHTML
+      'replace_element', // replace outerHTML
+      'remove', // remove the element entirely
+    ])
+    .describe('DOM operation to apply to the targeted element'),
   html: z.string().describe('HTML to inject. Use an empty string for "remove".'),
-  targetIndex: z.number().int().nonnegative().nullable().describe(
-    'Set to null when targeting the first (or only) match. ' +
-    'Set to a non-negative 0-based index when the selector inevitably matches multiple elements and ' +
-    'you need to target a specific occurrence (e.g. 1 for the second match). ' +
-    'Use this as a last resort when a perfectly unique selector cannot be written.'
-  ),
+  targetIndex: z
+    .number()
+    .int()
+    .nonnegative()
+    .nullable()
+    .describe(
+      'Set to null when targeting the first (or only) match. ' +
+        'Set to a non-negative 0-based index when the selector inevitably matches multiple elements and ' +
+        'you need to target a specific occurrence (e.g. 1 for the second match). ' +
+        'Use this as a last resort when a perfectly unique selector cannot be written.',
+    ),
 });
 
 /**
@@ -328,25 +358,39 @@ function applyDomPatches(html: string, patches: DomPatch[]): string {
         if (safeIdx !== targetIdx) {
           console.warn(
             `DOM patch: targetIndex ${targetIdx} out of bounds for selector "${patch.selector}" ` +
-            `(matched ${$all.length}), clamping to ${safeIdx}.`
+              `(matched ${$all.length}), clamping to ${safeIdx}.`,
           );
         } else {
           console.warn(
             `DOM patch: selector "${patch.selector}" matched ${$all.length} elements; ` +
-            `applying "${patch.operation}" to element at index ${safeIdx} only.`
+              `applying "${patch.operation}" to element at index ${safeIdx} only.`,
           );
         }
         $el = $all.eq(safeIdx);
       }
 
       switch (patch.operation) {
-        case 'prepend':          $el.prepend(patch.html);      break;
-        case 'append':           $el.append(patch.html);       break;
-        case 'before':           $el.before(patch.html);       break;
-        case 'after':            $el.after(patch.html);        break;
-        case 'replace_content':  $el.html(patch.html);         break;
-        case 'replace_element':  $el.replaceWith(patch.html);  break;
-        case 'remove':           $el.remove();                 break;
+        case 'prepend':
+          $el.prepend(patch.html);
+          break;
+        case 'append':
+          $el.append(patch.html);
+          break;
+        case 'before':
+          $el.before(patch.html);
+          break;
+        case 'after':
+          $el.after(patch.html);
+          break;
+        case 'replace_content':
+          $el.html(patch.html);
+          break;
+        case 'replace_element':
+          $el.replaceWith(patch.html);
+          break;
+        case 'remove':
+          $el.remove();
+          break;
       }
     } catch (err) {
       console.warn(`DOM patch failed for selector "${patch.selector}":`, err);
@@ -376,10 +420,15 @@ function extractHtmlStructure(html: string): string {
   const $ = cheerio.load(html, null, false);
 
   /** Returns "tag[#id][.class1][.class2]" label for an element. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   function label(el: any): string {
-    const id  = el.attribs?.id ? `#${el.attribs.id}` : '';
-    const cls = (el.attribs?.class ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((c: string) => `.${c}`).join('');
+    const id = el.attribs?.id ? `#${el.attribs.id}` : '';
+    const cls = (el.attribs?.class ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((c: string) => `.${c}`)
+      .join('');
     return `${el.name}${id}${cls}`;
   }
 
@@ -389,13 +438,12 @@ function extractHtmlStructure(html: string): string {
    * back to the element's full descendant text so the preview is never blank
    * for elements with visible content.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   function textSnippet(el: any): string {
     // Direct text nodes first
     const direct = $(el)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .contents().filter((_: number, n: any) => n.type === 'text')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .contents()
+      .filter((_: number, n: any) => n.type === 'text')
       .map((_: number, n: any) => (n.data as string).replace(/\s+/g, ' ').trim())
       .get()
       .filter(Boolean)
@@ -411,13 +459,15 @@ function extractHtmlStructure(html: string): string {
    * Counts how many direct children of `parent` share each tag name.
    * Used to decide when [n/total] positional labels are needed.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   function tagCounts(parent: any): Record<string, number> {
     const counts: Record<string, number> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    $(parent).children().each((_: number, child: any) => {
-      if (child.type === 'tag') counts[child.name] = (counts[child.name] ?? 0) + 1;
-    });
+
+    $(parent)
+      .children()
+      .each((_: number, child: any) => {
+        if (child.type === 'tag') counts[child.name] = (counts[child.name] ?? 0) + 1;
+      });
     return counts;
   }
 
@@ -427,60 +477,65 @@ function extractHtmlStructure(html: string): string {
   // Count top-level tags for nth labelling at the root level
   const topTagCounts: Record<string, number> = {};
   const topTagIndex: Record<string, number> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  $.root().children().each((_: number, el: any) => {
-    if (el.type === 'tag') topTagCounts[el.name] = (topTagCounts[el.name] ?? 0) + 1;
-  });
+
+  $.root()
+    .children()
+    .each((_: number, el: any) => {
+      if (el.type === 'tag') topTagCounts[el.name] = (topTagCounts[el.name] ?? 0) + 1;
+    });
 
   // In cheerio fragment mode (isDocument=false), html/body wrappers are stripped,
   // so $.root().children() gives us the actual top-level content elements.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  $.root().children().each((_: number, el: any) => {
-    if (++topCount > 24) return false;
-    if (el.type !== 'tag') return;
 
-    topTagIndex[el.name] = (topTagIndex[el.name] ?? 0) + 1;
-    const topNth = topTagCounts[el.name] > 1
-      ? ` [${topTagIndex[el.name]}/${topTagCounts[el.name]}]`
-      : '';
-    lines.push(`${label(el)}${topNth}${textSnippet(el)}`);
+  $.root()
+    .children()
+    .each((_: number, el: any) => {
+      if (++topCount > 24) return false;
+      if (el.type !== 'tag') return;
 
-    // --- Level 2 (direct children) ---
-    const lvl2Counts = tagCounts(el);
-    const lvl2Index: Record<string, number> = {};
-    let lvl2Count = 0;
+      topTagIndex[el.name] = (topTagIndex[el.name] ?? 0) + 1;
+      const topNth =
+        topTagCounts[el.name] > 1 ? ` [${topTagIndex[el.name]}/${topTagCounts[el.name]}]` : '';
+      lines.push(`${label(el)}${topNth}${textSnippet(el)}`);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    $(el).children().each((_2: number, child: any) => {
-      if (++lvl2Count > 12) return false;
-      if (child.type !== 'tag') return;
+      // --- Level 2 (direct children) ---
+      const lvl2Counts = tagCounts(el);
+      const lvl2Index: Record<string, number> = {};
+      let lvl2Count = 0;
 
-      lvl2Index[child.name] = (lvl2Index[child.name] ?? 0) + 1;
-      const nth2 = lvl2Counts[child.name] > 1
-        ? ` [${lvl2Index[child.name]}/${lvl2Counts[child.name]}]`
-        : '';
+      $(el)
+        .children()
+        .each((_2: number, child: any) => {
+          if (++lvl2Count > 12) return false;
+          if (child.type !== 'tag') return;
 
-      lines.push(`  ${label(child)}${nth2}${textSnippet(child)}`);
+          lvl2Index[child.name] = (lvl2Index[child.name] ?? 0) + 1;
+          const nth2 =
+            lvl2Counts[child.name] > 1
+              ? ` [${lvl2Index[child.name]}/${lvl2Counts[child.name]}]`
+              : '';
 
-      // --- Level 3 (grandchildren) ---
-      const lvl3Counts = tagCounts(child);
-      const lvl3Index: Record<string, number> = {};
-      let lvl3Count = 0;
+          lines.push(`  ${label(child)}${nth2}${textSnippet(child)}`);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      $(child).children().each((_3: number, gc: any) => {
-        if (++lvl3Count > 8) return false;
-        if (gc.type !== 'tag') return;
+          // --- Level 3 (grandchildren) ---
+          const lvl3Counts = tagCounts(child);
+          const lvl3Index: Record<string, number> = {};
+          let lvl3Count = 0;
 
-        lvl3Index[gc.name] = (lvl3Index[gc.name] ?? 0) + 1;
-        const nth3 = lvl3Counts[gc.name] > 1
-          ? ` [${lvl3Index[gc.name]}/${lvl3Counts[gc.name]}]`
-          : '';
+          $(child)
+            .children()
+            .each((_3: number, gc: any) => {
+              if (++lvl3Count > 8) return false;
+              if (gc.type !== 'tag') return;
 
-        lines.push(`    ${label(gc)}${nth3}${textSnippet(gc)}`);
-      });
+              lvl3Index[gc.name] = (lvl3Index[gc.name] ?? 0) + 1;
+              const nth3 =
+                lvl3Counts[gc.name] > 1 ? ` [${lvl3Index[gc.name]}/${lvl3Counts[gc.name]}]` : '';
+
+              lines.push(`    ${label(gc)}${nth3}${textSnippet(gc)}`);
+            });
+        });
     });
-  });
 
   return lines.length > 0 ? lines.join('\n') : '(no structured elements found)';
 }
@@ -496,54 +551,93 @@ function extractHtmlStructure(html: string): string {
  * future reference.
  */
 const emailAnalysisSchema = z.object({
-  emailType: z.enum([
-    'newsletter',
-    'transactional',
-    'promotional',
-    'personal',
-    'notification',
-    'automated',
-    'other',
-  ]).describe('The primary category of this email'),
-  summary: z.string().describe(
-    'A 1-2 sentence summary of what this email is about. Focus on the actual content, not the metadata.'
-  ),
+  emailType: z
+    .enum([
+      'newsletter',
+      'transactional',
+      'promotional',
+      'personal',
+      'notification',
+      'automated',
+      'other',
+    ])
+    .describe('The primary category of this email'),
+  summary: z
+    .string()
+    .describe(
+      'A 1-2 sentence summary of what this email is about. Focus on the actual content, not the metadata.',
+    ),
   topics: z.array(z.string()).describe('Key topics or themes mentioned in the email'),
-  tags: z.array(z.string()).describe(
-    'Specific descriptive tags for this email, such as company name, product, event type, or other identifiers'
-  ),
-  hasActionItems: z.boolean().describe(
-    'True if this email requests or requires action from the recipient (e.g. click, reply, verify, purchase)'
-  ),
-  isUrgent: z.boolean().describe(
-    'True if this email is explicitly marked as urgent or time-sensitive'
-  ),
-  requiresResponse: z.boolean().describe(
-    'True if this email explicitly or implicitly expects a direct reply from the recipient (e.g. asks a question, requests confirmation, or awaits feedback)'
-  ),
-  language: z.string().describe(
-    'ISO 639-1 language code of the email body (e.g. "en" for English, "it" for Italian, "es" for Spanish)'
-  ),
-  sentiment: z.enum(['positive', 'neutral', 'negative']).describe(
-    'Overall emotional tone of the email'
-  ),
-  priority: z.enum(['low', 'normal', 'high', 'critical']).describe(
-    'Processing priority inferred from content and urgency signals'
-  ),
-  intent: z.string().describe(
-    'Concise description of the sender\'s primary intent (e.g. "Confirming order", "Requesting payment", "Promoting product", "Sharing update")'
-  ),
-  senderType: z.enum(['human', 'automated', 'business', 'newsletter']).describe(
-    'Characterises who sent the email: human (individual person), automated (system/bot), business (company communication), newsletter (subscription content)'
-  ),
-  entities: z.object({
-    places: z.array(z.string()).describe('Physical or geographic locations mentioned in the email (cities, addresses, venues, countries, etc.)'),
-    events: z.array(z.string()).describe('Events mentioned in the email (meetings, conferences, deadlines, appointments, etc.)'),
-    dates: z.array(z.string()).describe('Specific dates, times, or time references mentioned in the email (e.g. "March 15", "next Monday", "3pm CET")'),
-    people: z.array(z.string()).describe('Names of people mentioned in the email (senders, recipients, contacts, etc.)'),
-    organizations: z.array(z.string()).describe('Company, brand, or organization names mentioned in the email'),
-  }).describe('Named entities extracted from the email content'),
-  prices: z.array(z.string()).optional().describe('Prices, costs, or monetary amounts mentioned in the email (e.g. "$19.99/month", "€50 discount", "free trial")'),
+  tags: z
+    .array(z.string())
+    .describe(
+      'Specific descriptive tags for this email, such as company name, product, event type, or other identifiers',
+    ),
+  hasActionItems: z
+    .boolean()
+    .describe(
+      'True if this email requests or requires action from the recipient (e.g. click, reply, verify, purchase)',
+    ),
+  isUrgent: z
+    .boolean()
+    .describe('True if this email is explicitly marked as urgent or time-sensitive'),
+  requiresResponse: z
+    .boolean()
+    .describe(
+      'True if this email explicitly or implicitly expects a direct reply from the recipient (e.g. asks a question, requests confirmation, or awaits feedback)',
+    ),
+  language: z
+    .string()
+    .describe(
+      'ISO 639-1 language code of the email body (e.g. "en" for English, "it" for Italian, "es" for Spanish)',
+    ),
+  sentiment: z
+    .enum(['positive', 'neutral', 'negative'])
+    .describe('Overall emotional tone of the email'),
+  priority: z
+    .enum(['low', 'normal', 'high', 'critical'])
+    .describe('Processing priority inferred from content and urgency signals'),
+  intent: z
+    .string()
+    .describe(
+      'Concise description of the sender\'s primary intent (e.g. "Confirming order", "Requesting payment", "Promoting product", "Sharing update")',
+    ),
+  senderType: z
+    .enum(['human', 'automated', 'business', 'newsletter'])
+    .describe(
+      'Characterises who sent the email: human (individual person), automated (system/bot), business (company communication), newsletter (subscription content)',
+    ),
+  entities: z
+    .object({
+      places: z
+        .array(z.string())
+        .describe(
+          'Physical or geographic locations mentioned in the email (cities, addresses, venues, countries, etc.)',
+        ),
+      events: z
+        .array(z.string())
+        .describe(
+          'Events mentioned in the email (meetings, conferences, deadlines, appointments, etc.)',
+        ),
+      dates: z
+        .array(z.string())
+        .describe(
+          'Specific dates, times, or time references mentioned in the email (e.g. "March 15", "next Monday", "3pm CET")',
+        ),
+      people: z
+        .array(z.string())
+        .describe('Names of people mentioned in the email (senders, recipients, contacts, etc.)'),
+      organizations: z
+        .array(z.string())
+        .describe('Company, brand, or organization names mentioned in the email'),
+    })
+    .describe('Named entities extracted from the email content'),
+  prices: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Prices, costs, or monetary amounts mentioned in the email (e.g. "$19.99/month", "€50 discount", "free trial")',
+    ),
 });
 
 // EmailAnalysis is imported from @/types — the Zod schema above must match that interface.
@@ -605,8 +699,7 @@ async function preAnalyzeEmail(
     const { object, usage } = await generateObject({
       model: openrouterProvider(model),
       schema: emailAnalysisSchema,
-      system:
-        `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values.${languageInstruction}`,
+      system: `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values.${languageInstruction}`,
       prompt: `Analyze and classify this email in detail:
 
 FROM: ${sanitizeEmailField(emailFrom)}
@@ -662,7 +755,8 @@ function buildAnalysisSection(analysis: EmailAnalysis | null): string {
   const { entities } = analysis;
   if (entities) {
     if (entities.people.length > 0) lines.push(`People: ${entities.people.join(', ')}`);
-    if (entities.organizations.length > 0) lines.push(`Organizations: ${entities.organizations.join(', ')}`);
+    if (entities.organizations.length > 0)
+      lines.push(`Organizations: ${entities.organizations.join(', ')}`);
     if (entities.places.length > 0) lines.push(`Places: ${entities.places.join(', ')}`);
     if (entities.events.length > 0) lines.push(`Events: ${entities.events.join(', ')}`);
     if (entities.dates.length > 0) lines.push(`Dates/times: ${entities.dates.join(', ')}`);
@@ -745,7 +839,13 @@ async function processEmailInChunks(
   fallbackSubject: string,
   agentRuntimeSettings: AgentRuntimeSettings,
   attachmentNames?: string[],
-): Promise<{ subject: string; body: string; tokensUsed: number; promptTokens: number; completionTokens: number }> {
+): Promise<{
+  subject: string;
+  body: string;
+  tokensUsed: number;
+  promptTokens: number;
+  completionTokens: number;
+}> {
   const chunks = splitIntoChunks(plainTextBody, agentRuntimeSettings.chunkSizeChars);
   let totalTokens = 0;
   let totalPromptTokens = 0;
@@ -812,7 +912,9 @@ ${isHtml ? 'The original HTML email structure will be preserved — use targeted
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
 ${attachmentsLine}${htmlStructureSection}
-${isHtml ? `SELECTOR RULES:
+${
+  isHtml
+    ? `SELECTOR RULES:
 - Each patch MUST target exactly one element. Use the structure above to pick a unique selector.
 - Prefer: ID selectors (#id), child combinators (parent > child), :nth-of-type(n), [attribute] selectors.
 - AVOID generic tag selectors (p, td, div, span) unless they are unique in the document.
@@ -826,33 +928,43 @@ CHECKLIST BEFORE RETURNING PATCHES:
 EXAMPLE PATCH:
 [{"selector":"table.main > tbody > tr:nth-of-type(2) > td","operation":"replace_content","html":"<p>Updated content</p>","targetIndex":null}]
 
-` : ''}EXTRACTED CONTENT (${chunks.length} chunks combined):
+`
+    : ''
+}EXTRACTED CONTENT (${chunks.length} chunks combined):
 ${combinedContent}
 
 <user_rules>
 ${rulesText}
 </user_rules>
 
-${isHtml
+${
+  isHtml
     ? 'Respond with requiresFullBodyReplacement=false and an ordered patches array of DOM operations that target selectors from the HTML structure above. Set requiresFullBodyReplacement=true only when the rules require translating or completely rewriting the entire content.'
-    : 'Set requiresFullBodyReplacement=true and provide the full replacementBody as HTML.'}`;
+    : 'Set requiresFullBodyReplacement=true and provide the full replacementBody as HTML.'
+}`;
 
   const { object, usage } = await generateObject({
     model: openrouterProvider(model),
     schema: z.object({
       subject: z.string().describe('The processed email subject line'),
-      requiresFullBodyReplacement: z.boolean().describe(
-        'Set to true ONLY when the rules require transforming the entire body (e.g. translate, ' +
-        'fully rewrite). Set to false for surgical changes like annotations or content edits.'
-      ),
-      patches: z.array(domPatchSchema).describe(
-        'Ordered list of DOM patch operations to apply to the original HTML. ' +
-        'Used when requiresFullBodyReplacement is false. Empty array if no changes are needed.'
-      ),
-      replacementBody: z.string().describe(
-        'Full replacement email body in HTML format. ' +
-        'Only populated when requiresFullBodyReplacement is true. Empty string otherwise.'
-      ),
+      requiresFullBodyReplacement: z
+        .boolean()
+        .describe(
+          'Set to true ONLY when the rules require transforming the entire body (e.g. translate, ' +
+            'fully rewrite). Set to false for surgical changes like annotations or content edits.',
+        ),
+      patches: z
+        .array(domPatchSchema)
+        .describe(
+          'Ordered list of DOM patch operations to apply to the original HTML. ' +
+            'Used when requiresFullBodyReplacement is false. Empty array if no changes are needed.',
+        ),
+      replacementBody: z
+        .string()
+        .describe(
+          'Full replacement email body in HTML format. ' +
+            'Only populated when requiresFullBodyReplacement is true. Empty string otherwise.',
+        ),
     }),
     system: reduceSystemPrompt,
     prompt: reducePrompt,
@@ -867,9 +979,10 @@ ${isHtml
   // Only fall back to a full regeneration when the rules explicitly require it.
   let finalBody: string;
   if (isHtml && !object.requiresFullBodyReplacement) {
-    finalBody = object.patches.length > 0
-      ? applyDomPatches(originalBody, object.patches as DomPatch[])
-      : originalBody;
+    finalBody =
+      object.patches.length > 0
+        ? applyDomPatches(originalBody, object.patches as DomPatch[])
+        : originalBody;
   } else {
     finalBody = object.replacementBody || combinedContent;
   }
@@ -949,10 +1062,7 @@ function parseSubjectBodyFromText(raw: string): { subject: string; body: string 
     .replace(/\s*```$/i, '')
     .trim();
 
-  const candidates = [
-    withoutFence,
-    extractFirstJsonObject(withoutFence) || '',
-  ].filter(Boolean);
+  const candidates = [withoutFence, extractFirstJsonObject(withoutFence) || ''].filter(Boolean);
 
   for (const candidate of candidates) {
     try {
@@ -1051,7 +1161,7 @@ ${rulesText}
     step: string,
     status: AgentTraceStep['status'],
     detail?: string,
-    data?: Record<string, unknown>
+    data?: Record<string, unknown>,
   ) => {
     if (!tracingEnabled) return;
     traceSteps.push({ step, status, detail, data, ts: new Date().toISOString() });
@@ -1124,16 +1234,22 @@ ${emailBodyForPrompt}`;
         model: openrouterProvider(model),
         schema: z.object({
           subject: z.string().describe('The processed email subject line'),
-          requiresFullBodyReplacement: z.boolean().describe(
-            'true only when rules require a full content rewrite or translation; false for surgical changes.'
-          ),
-          patches: z.array(domPatchSchema).describe(
-            'Ordered DOM patch operations to apply to the original HTML when requiresFullBodyReplacement is false. ' +
-            'Empty array if no structural changes are needed.'
-          ),
-          replacementBody: z.string().describe(
-            'Full HTML replacement body. Only when requiresFullBodyReplacement is true. Empty string otherwise.'
-          ),
+          requiresFullBodyReplacement: z
+            .boolean()
+            .describe(
+              'true only when rules require a full content rewrite or translation; false for surgical changes.',
+            ),
+          patches: z
+            .array(domPatchSchema)
+            .describe(
+              'Ordered DOM patch operations to apply to the original HTML when requiresFullBodyReplacement is false. ' +
+                'Empty array if no structural changes are needed.',
+            ),
+          replacementBody: z
+            .string()
+            .describe(
+              'Full HTML replacement body. Only when requiresFullBodyReplacement is true. Empty string otherwise.',
+            ),
         }),
         system: systemPrompt,
         prompt: userPrompt,
@@ -1142,8 +1258,10 @@ ${emailBodyForPrompt}`;
 
       subject = object.subject || fallbackSubject;
       body = !object.requiresFullBodyReplacement
-        ? (object.patches.length > 0 ? applyDomPatches(emailBody, object.patches as DomPatch[]) : emailBody)
-        : (object.replacementBody || emailBody);
+        ? object.patches.length > 0
+          ? applyDomPatches(emailBody, object.patches as DomPatch[])
+          : emailBody
+        : object.replacementBody || emailBody;
       tokensUsed = usage?.totalTokens ?? 0;
       promptTokens = usage?.inputTokens ?? 0;
       completionTokens = usage?.outputTokens ?? 0;
@@ -1160,7 +1278,7 @@ ${emailBodyForPrompt}`;
                   subject: object.subject,
                   requiresFullBodyReplacement: object.requiresFullBodyReplacement,
                   patchesCount: object.patches.length,
-                })
+                }),
               ),
             }
           : {}),
@@ -1171,9 +1289,9 @@ ${emailBodyForPrompt}`;
           emailBodyLength: emailBodyForPrompt.length,
         });
       } else {
-      pushStep('pass_mode', 'ok', 'Plain-text mode selected', {
-        emailBodyLength: emailBodyForPrompt.length,
-      });
+        pushStep('pass_mode', 'ok', 'Plain-text mode selected', {
+          emailBodyLength: emailBodyForPrompt.length,
+        });
       }
       const userPrompt = `Process this incoming email:
 
@@ -1207,7 +1325,9 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
         ...(includeTraceExcerpts
           ? {
               promptExcerpt: excerptForTrace(userPrompt),
-              responseExcerpt: excerptForTrace(JSON.stringify({ subject: object.subject, body: object.body })),
+              responseExcerpt: excerptForTrace(
+                JSON.stringify({ subject: object.subject, body: object.body }),
+              ),
             }
           : {}),
       });
@@ -1260,12 +1380,15 @@ ${emailBodyForPrompt}`;
         ...(includeTraceExcerpts
           ? {
               promptExcerpt: excerptForTrace(fallbackPrompt),
-              responseExcerpt: excerptForTrace(JSON.stringify({ subject: object.subject, body: object.body })),
+              responseExcerpt: excerptForTrace(
+                JSON.stringify({ subject: object.subject, body: object.body }),
+              ),
             }
           : {}),
       });
     } catch (fallbackError) {
-      const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : 'Unknown error';
+      const fallbackMessage =
+        fallbackError instanceof Error ? fallbackError.message : 'Unknown error';
       console.error('Fallback pass also failed, trying text-recovery fallback:', fallbackMessage);
       pushStep('fallback_pass_failed', 'warning', fallbackMessage);
 
@@ -1317,9 +1440,8 @@ ${emailBodyForPrompt}`;
             : {}),
         });
       } catch (textRecoveryError) {
-        const textRecoveryMessage = textRecoveryError instanceof Error
-          ? textRecoveryError.message
-          : 'Unknown error';
+        const textRecoveryMessage =
+          textRecoveryError instanceof Error ? textRecoveryError.message : 'Unknown error';
         console.error('Text-recovery fallback also failed:', textRecoveryMessage);
         parseError = `LLM request failed: ${message}; fallback failed: ${fallbackMessage}; text-recovery failed: ${textRecoveryMessage}; email forwarded as-is`;
         subject = fallbackSubject;
@@ -1376,7 +1498,7 @@ export async function processEmailWithAgent(
     step: string,
     status: AgentTraceStep['status'],
     detail?: string,
-    data?: Record<string, unknown>
+    data?: Record<string, unknown>,
   ) => {
     if (!tracingEnabled) return;
     traceSteps.push({ step, status, detail, data, ts: new Date().toISOString() });
@@ -1404,7 +1526,9 @@ export async function processEmailWithAgent(
       ? settings.llmMaxTokens
       : 4000;
 
-  const agentRuntimeSettings = resolveAgentRuntimeSettings(settings as Record<string, unknown> | undefined);
+  const agentRuntimeSettings = resolveAgentRuntimeSettings(
+    settings as Record<string, unknown> | undefined,
+  );
   // Keep DOM patch mode opt-in because some models/providers are unstable with nested patch schemas.
   const htmlDomPatchEnabled = settings?.agentHtmlDomPatchEnabled === true;
   tracingEnabled = settings?.agentTracingEnabled !== false;
@@ -1439,18 +1563,39 @@ export async function processEmailWithAgent(
   // 3. Run pre-analysis and load user memory in parallel — neither depends on
   //    the other, so launching both concurrently reduces overall latency.
   const [
-    { analysis, tokensUsed: analysisTotalTokens, promptTokens: analysisPromptTokens, completionTokens: analysisCompletionTokens },
+    {
+      analysis,
+      tokensUsed: analysisTotalTokens,
+      promptTokens: analysisPromptTokens,
+      completionTokens: analysisCompletionTokens,
+    },
     memory,
   ] = await Promise.all([
-    preAnalyzeEmail(emailFrom, emailSubject, emailBody, isHtml, openrouter, model, agentRuntimeSettings, analysisOutputLanguage),
+    preAnalyzeEmail(
+      emailFrom,
+      emailSubject,
+      emailBody,
+      isHtml,
+      openrouter,
+      model,
+      agentRuntimeSettings,
+      analysisOutputLanguage,
+    ),
     getUserMemory(userId),
   ]);
-  pushTrace('pre_analysis', analysis ? 'ok' : 'warning', analysis ? 'Pre-analysis completed' : 'Pre-analysis unavailable', {
-    emailType: analysis?.emailType,
-    topicsCount: analysis?.topics?.length ?? 0,
-    analysisTokens: analysisTotalTokens,
-    ...(includeTraceExcerpts ? { summaryExcerpt: analysis?.summary ? excerptForTrace(analysis.summary) : '' } : {}),
-  });
+  pushTrace(
+    'pre_analysis',
+    analysis ? 'ok' : 'warning',
+    analysis ? 'Pre-analysis completed' : 'Pre-analysis unavailable',
+    {
+      emailType: analysis?.emailType,
+      topicsCount: analysis?.topics?.length ?? 0,
+      analysisTokens: analysisTotalTokens,
+      ...(includeTraceExcerpts
+        ? { summaryExcerpt: analysis?.summary ? excerptForTrace(analysis.summary) : '' }
+        : {}),
+    },
+  );
   pushTrace('memory_loaded', 'ok', 'Loaded user memory', {
     entries: memory.entries.length,
   });
@@ -1576,10 +1721,15 @@ export async function processEmailWithAgent(
       totalCompletionTokens += pass.completionTokens;
       if (pass.parseError) lastParseError = pass.parseError;
       traceSteps.push(...pass.traceSteps);
-      pushTrace('sequential_pass_complete', 'ok', `Completed pass ${passIndex + 1}/${rulesToProcess.length}`, {
-        subjectPreview: currentSubject.slice(0, 120),
-        passTokens: pass.tokensUsed,
-      });
+      pushTrace(
+        'sequential_pass_complete',
+        'ok',
+        `Completed pass ${passIndex + 1}/${rulesToProcess.length}`,
+        {
+          subjectPreview: currentSubject.slice(0, 120),
+          passTokens: pass.tokensUsed,
+        },
+      );
     }
   }
 
@@ -1621,7 +1771,9 @@ export async function processEmailWithAgent(
     ...(analysis?.tags?.length ? { tags: analysis.tags } : {}),
     ...(analysis?.intent ? { intent: analysis.intent } : {}),
     ...(analysis?.senderType ? { senderType: analysis.senderType } : {}),
-    ...(analysis?.requiresResponse !== undefined ? { requiresResponse: analysis.requiresResponse } : {}),
+    ...(analysis?.requiresResponse !== undefined
+      ? { requiresResponse: analysis.requiresResponse }
+      : {}),
     ...(analysis?.entities ? { entities: analysis.entities } : {}),
   };
 

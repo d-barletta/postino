@@ -24,10 +24,13 @@ export async function GET(request: NextRequest) {
       db.collection('emailLogs').where('status', '==', 'forwarded').count().get(),
       db.collection('emailLogs').where('status', '==', 'error').count().get(),
       db.collection('emailLogs').where('status', '==', 'skipped').count().get(),
-      db.collection('emailLogs').aggregate({
-        totalTokensUsed: AggregateField.sum('tokensUsed'),
-        totalEstimatedCost: AggregateField.sum('estimatedCost'),
-      }).get(),
+      db
+        .collection('emailLogs')
+        .aggregate({
+          totalTokensUsed: AggregateField.sum('tokensUsed'),
+          totalEstimatedCost: AggregateField.sum('estimatedCost'),
+        })
+        .get(),
     ]);
 
     const stats = {

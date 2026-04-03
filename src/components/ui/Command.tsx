@@ -15,7 +15,7 @@ const Command = React.forwardRef<
     className={cn(
       'flex h-full w-full flex-col overflow-hidden rounded-xl',
       'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100',
-      className
+      className,
     )}
     {...props}
   />
@@ -38,7 +38,10 @@ const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b border-gray-200 dark:border-gray-700 px-3" cmdk-input-wrapper="">
+  <div
+    className="flex items-center border-b border-gray-200 dark:border-gray-700 px-3"
+    cmdk-input-wrapper=""
+  >
     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
     <CommandPrimitive.Input
       ref={ref}
@@ -46,7 +49,7 @@ const CommandInput = React.forwardRef<
         'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none',
         'placeholder:text-gray-400 dark:placeholder:text-gray-500',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        className
+        className,
       )}
       {...props}
     />
@@ -87,7 +90,7 @@ const CommandGroup = React.forwardRef<
     className={cn(
       'overflow-hidden p-1 text-gray-900 dark:text-gray-100',
       '**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-gray-500',
-      className
+      className,
     )}
     {...props}
   />
@@ -118,7 +121,7 @@ const CommandItem = React.forwardRef<
       'data-[selected=true]:text-gray-900 dark:data-[selected=true]:text-gray-100',
       'data-[disabled=true]:opacity-50',
       '[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-      className
+      className,
     )}
     {...props}
   />

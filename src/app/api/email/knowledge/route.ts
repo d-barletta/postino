@@ -31,10 +31,7 @@ function incrementAll(map: CountMap, values: unknown): void {
 
 /** Apply entity merges to a CountMap in-place.
  *  For each merge, sum all alias counts into the canonical key and delete the aliases. */
-function applyMerges(
-  map: CountMap,
-  merges: Array<{ canonical: string; aliases: string[] }>,
-): void {
+function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: string[] }>): void {
   for (const merge of merges) {
     let total = 0;
     for (const alias of merge.aliases) {
@@ -68,11 +65,7 @@ export async function GET(request: NextRequest) {
         .orderBy('receivedAt', 'desc')
         .limit(FETCH_LIMIT)
         .get(),
-      db
-        .collection('entityMerges')
-        .where('userId', '==', decoded.uid)
-        .limit(MERGES_LIMIT)
-        .get(),
+      db.collection('entityMerges').where('userId', '==', decoded.uid).limit(MERGES_LIMIT).get(),
     ]);
 
     // Group merges by category
@@ -131,7 +124,9 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     const isAuthError =
       err instanceof Error &&
-      (err.message.includes('auth') || err.message.includes('token') || err.message.includes('Firebase'));
+      (err.message.includes('auth') ||
+        err.message.includes('token') ||
+        err.message.includes('Firebase'));
     if (isAuthError) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

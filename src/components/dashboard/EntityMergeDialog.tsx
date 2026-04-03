@@ -73,13 +73,16 @@ export function EntityMergeDialog({
   };
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="max-w-md" aria-describedby="merge-dialog-desc">
         <DialogHeader>
           <DialogTitle>{k.mergeDialogTitle}</DialogTitle>
-          <DialogDescription id="merge-dialog-desc">
-            {k.mergeDialogDesc}
-          </DialogDescription>
+          <DialogDescription id="merge-dialog-desc">{k.mergeDialogDesc}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -157,9 +160,7 @@ export function EntityMergeDialog({
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={loading}>
@@ -172,11 +173,7 @@ export function EntityMergeDialog({
               disabled={loading || !canonical.trim()}
               className="bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
             >
-              {loading ? (
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                k.createMerge
-              )}
+              {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : k.createMerge}
             </Button>
           </div>
         </form>

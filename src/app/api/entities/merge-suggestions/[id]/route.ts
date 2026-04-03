@@ -11,10 +11,7 @@ async function verifyUser(request: NextRequest) {
 // ---------------------------------------------------------------------------
 // PATCH – accept or reject a suggestion
 // ---------------------------------------------------------------------------
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let decoded: Awaited<ReturnType<typeof verifyUser>>;
   try {
     decoded = await verifyUser(request);
@@ -24,7 +21,7 @@ export async function PATCH(
 
   try {
     const { id } = await params;
-    const body = await request.json() as Record<string, unknown>;
+    const body = (await request.json()) as Record<string, unknown>;
     const { status } = body;
 
     if (status !== 'accepted' && status !== 'rejected') {

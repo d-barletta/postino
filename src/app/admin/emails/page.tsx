@@ -115,58 +115,61 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
   const [statusFilter, setStatusFilter] = useState('');
   const [hasAttachmentsFilter, setHasAttachmentsFilter] = useState(false);
 
-  const fetchLogs = useCallback(async (targetPage: number, isRefresh = false) => {
-    if (!firebaseUser) return;
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setTotalCount(undefined);
-    try {
-      let token = await firebaseUser.getIdToken();
-      const params = new URLSearchParams({
-        page: String(targetPage),
-        pageSize: String(PAGE_SIZE),
-        ...(searchQuery ? { search: searchQuery } : {}),
-        ...(statusFilter ? { status: statusFilter } : {}),
-        ...(hasAttachmentsFilter ? { hasAttachments: 'true' } : {}),
-      });
+  const fetchLogs = useCallback(
+    async (targetPage: number, isRefresh = false) => {
+      if (!firebaseUser) return;
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setTotalCount(undefined);
+      try {
+        let token = await firebaseUser.getIdToken();
+        const params = new URLSearchParams({
+          page: String(targetPage),
+          pageSize: String(PAGE_SIZE),
+          ...(searchQuery ? { search: searchQuery } : {}),
+          ...(statusFilter ? { status: statusFilter } : {}),
+          ...(hasAttachmentsFilter ? { hasAttachments: 'true' } : {}),
+        });
 
-      let res = await fetch(`/api/admin/emails?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // Retry once with a forced token refresh for transient auth expiration.
-      if (res.status === 401) {
-        token = await firebaseUser.getIdToken(true);
-        res = await fetch(`/api/admin/emails?${params}`, {
+        let res = await fetch(`/api/admin/emails?${params}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-      }
 
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.logs || []);
-        setPage(data.page ?? targetPage);
-        setHasNextPage(data.hasNextPage ?? false);
-        setTotalPages(data.totalPages);
-        setTotalCount(data.totalCount);
-        setExpanded(null);
-        setFetchError('');
-      } else {
+        // Retry once with a forced token refresh for transient auth expiration.
         if (res.status === 401) {
-          setFetchError('Unauthorized. Please sign in again.');
-        } else if (res.status === 403) {
-          setFetchError('Forbidden. Admin access is required.');
-        } else {
-          setFetchError('Failed to load email logs.');
+          token = await firebaseUser.getIdToken(true);
+          res = await fetch(`/api/admin/emails?${params}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
         }
+
+        if (res.ok) {
+          const data = await res.json();
+          setLogs(data.logs || []);
+          setPage(data.page ?? targetPage);
+          setHasNextPage(data.hasNextPage ?? false);
+          setTotalPages(data.totalPages);
+          setTotalCount(data.totalCount);
+          setExpanded(null);
+          setFetchError('');
+        } else {
+          if (res.status === 401) {
+            setFetchError('Unauthorized. Please sign in again.');
+          } else if (res.status === 403) {
+            setFetchError('Forbidden. Admin access is required.');
+          } else {
+            setFetchError('Failed to load email logs.');
+          }
+        }
+      } catch {
+        setFetchError('Failed to load email logs.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch {
-      setFetchError('Failed to load email logs.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter]);
+    },
+    [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter],
+  );
 
   useEffect(() => {
     setPage(1);
@@ -228,7 +231,9 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
       {showPageHeader && (
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Logs</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Details of all emails processed by Postino</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Details of all emails processed by Postino
+          </p>
         </div>
       )}
 
@@ -259,7 +264,9 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                   type="search"
                   value={pendingSearch}
                   onChange={(e) => setPendingSearch(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
+                  }}
                   placeholder="Search subject, from, user..."
                   className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
                 />
@@ -301,9 +308,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                   onCheckedChange={setPendingAttachments}
                   aria-label="With attachments"
                 />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  With attachments
-                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">With attachments</span>
               </div>
               {!loading && (
                 <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -360,14 +365,30 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Received</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">User</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">From</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Subject</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Status</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Time</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Tokens</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Cost</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                      Received
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                      User
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                      From
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                      Subject
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">
+                      Time
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">
+                      Tokens
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">
+                      Cost
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -377,18 +398,28 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                         className="border-b border-gray-100 dark:border-gray-800 hover:bg-yellow-50/60 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors"
                         onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                       >
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{formatDate(log.receivedAt)}</td>
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          <div className="max-w-35 truncate" title={log.userEmail || log.userId}>{log.userEmail || log.userId}</div>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                          {formatDate(log.receivedAt)}
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          <div className="max-w-35 truncate" title={log.fromAddress}>{log.fromAddress}</div>
+                          <div className="max-w-35 truncate" title={log.userEmail || log.userId}>
+                            {log.userEmail || log.userId}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          <div className="max-w-35 truncate" title={log.fromAddress}>
+                            {log.fromAddress}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                          <div className="max-w-50 truncate" title={log.subject}>{log.subject}</div>
+                          <div className="max-w-50 truncate" title={log.subject}>
+                            {log.subject}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant={STATUS_VARIANT[log.status] || 'default'}>{log.status}</Badge>
+                          <Badge variant={STATUS_VARIANT[log.status] || 'default'}>
+                            {log.status}
+                          </Badge>
                         </td>
                         <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400 whitespace-nowrap">
                           {processingTime(log.receivedAt, log.processedAt)}
@@ -397,7 +428,9 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                           {log.tokensUsed != null ? log.tokensUsed.toLocaleString() : '\u2014'}
                         </td>
                         <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                          {log.estimatedCost != null ? `$${log.estimatedCost.toFixed(5)}` : '\u2014'}
+                          {log.estimatedCost != null
+                            ? `$${log.estimatedCost.toFixed(5)}`
+                            : '\u2014'}
                         </td>
                       </tr>
                       {expanded === log.id && (
@@ -406,41 +439,66 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                             <Tabs defaultValue="details">
                               <TabsList>
                                 <TabsTrigger value="details">Details</TabsTrigger>
-                                {asAgentTrace(log.agentTrace) && <TabsTrigger value="trace">Trace</TabsTrigger>}
+                                {asAgentTrace(log.agentTrace) && (
+                                  <TabsTrigger value="trace">Trace</TabsTrigger>
+                                )}
                               </TabsList>
 
                               <TabsContent value="details">
                                 <dl className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-xs">
                                   <div>
-                                    <dt className="font-medium text-gray-500 dark:text-gray-400">Email ID</dt>
-                                    <dd className="text-gray-700 dark:text-gray-300 font-mono break-all">{log.id}</dd>
+                                    <dt className="font-medium text-gray-500 dark:text-gray-400">
+                                      Email ID
+                                    </dt>
+                                    <dd className="text-gray-700 dark:text-gray-300 font-mono break-all">
+                                      {log.id}
+                                    </dd>
                                   </div>
                                   <div>
-                                    <dt className="font-medium text-gray-500 dark:text-gray-400">To (Postino address)</dt>
-                                    <dd className="text-gray-700 dark:text-gray-300 break-all">{log.toAddress}</dd>
+                                    <dt className="font-medium text-gray-500 dark:text-gray-400">
+                                      To (Postino address)
+                                    </dt>
+                                    <dd className="text-gray-700 dark:text-gray-300 break-all">
+                                      {log.toAddress}
+                                    </dd>
                                   </div>
                                   <div>
-                                    <dt className="font-medium text-gray-500 dark:text-gray-400">Processed at</dt>
-                                    <dd className="text-gray-700 dark:text-gray-300">{formatDate(log.processedAt)}</dd>
+                                    <dt className="font-medium text-gray-500 dark:text-gray-400">
+                                      Processed at
+                                    </dt>
+                                    <dd className="text-gray-700 dark:text-gray-300">
+                                      {formatDate(log.processedAt)}
+                                    </dd>
                                   </div>
                                   {log.ruleApplied && (
                                     <div className="col-span-2 md:col-span-3">
-                                      <dt className="font-medium text-gray-500 dark:text-gray-400">Rule applied</dt>
-                                      <dd className="text-gray-700 dark:text-gray-300">{log.ruleApplied}</dd>
+                                      <dt className="font-medium text-gray-500 dark:text-gray-400">
+                                        Rule applied
+                                      </dt>
+                                      <dd className="text-gray-700 dark:text-gray-300">
+                                        {log.ruleApplied}
+                                      </dd>
                                     </div>
                                   )}
                                   {(log.attachmentCount ?? 0) > 0 && (
                                     <div className="col-span-2 md:col-span-3">
-                                      <dt className="font-medium text-gray-500 dark:text-gray-400">Attachments</dt>
+                                      <dt className="font-medium text-gray-500 dark:text-gray-400">
+                                        Attachments
+                                      </dt>
                                       <dd className="text-gray-700 dark:text-gray-300">
-                                        {(log.attachmentNames ?? []).join(', ') || `${log.attachmentCount} file(s)`}
+                                        {(log.attachmentNames ?? []).join(', ') ||
+                                          `${log.attachmentCount} file(s)`}
                                       </dd>
                                     </div>
                                   )}
                                   {log.errorMessage && (
                                     <div className="col-span-2 md:col-span-3">
-                                      <dt className="font-medium text-red-500 dark:text-red-400">Error</dt>
-                                      <dd className="text-red-600 dark:text-red-400 wrap-break-word">{log.errorMessage}</dd>
+                                      <dt className="font-medium text-red-500 dark:text-red-400">
+                                        Error
+                                      </dt>
+                                      <dd className="text-red-600 dark:text-red-400 wrap-break-word">
+                                        {log.errorMessage}
+                                      </dd>
                                     </div>
                                   )}
                                 </dl>
@@ -451,7 +509,9 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                   {(() => {
                                     const trace = asAgentTrace(log.agentTrace)!;
                                     const filteredSteps = warningsOnly
-                                      ? trace.steps.filter((s) => s.status === 'warning' || s.status === 'error')
+                                      ? trace.steps.filter(
+                                          (s) => s.status === 'warning' || s.status === 'error',
+                                        )
                                       : trace.steps;
 
                                     return (
@@ -459,8 +519,12 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                         <div className="flex flex-wrap items-center gap-2">
                                           <Badge variant="info">Model: {trace.model}</Badge>
                                           <Badge variant="default">Mode: {trace.mode}</Badge>
-                                          <Badge variant="default">HTML input: {trace.isHtmlInput ? 'yes' : 'no'}</Badge>
-                                          <Badge variant="default">Steps: {trace.steps.length}</Badge>
+                                          <Badge variant="default">
+                                            HTML input: {trace.isHtmlInput ? 'yes' : 'no'}
+                                          </Badge>
+                                          <Badge variant="default">
+                                            Steps: {trace.steps.length}
+                                          </Badge>
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2">
@@ -470,7 +534,9 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                             onClick={() => setWarningsOnly((v) => !v)}
                                           >
                                             <Filter className="h-3.5 w-3.5 mr-1" />
-                                            {warningsOnly ? 'Show all steps' : 'Only warnings/errors'}
+                                            {warningsOnly
+                                              ? 'Show all steps'
+                                              : 'Only warnings/errors'}
                                           </Button>
                                           <Button
                                             size="sm"
@@ -478,34 +544,59 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                             onClick={() => handleCopyTrace(log.id, trace)}
                                           >
                                             <Copy className="h-3.5 w-3.5 mr-1" />
-                                            {copiedTraceId === log.id ? 'Copied' : 'Copy trace JSON'}
+                                            {copiedTraceId === log.id
+                                              ? 'Copied'
+                                              : 'Copy trace JSON'}
                                           </Button>
                                           <Button
                                             size="sm"
                                             variant="ghost"
-                                            onClick={() => setRawJsonLogId((v) => (v === log.id ? null : log.id))}
+                                            onClick={() =>
+                                              setRawJsonLogId((v) => (v === log.id ? null : log.id))
+                                            }
                                           >
                                             <FileJson className="h-3.5 w-3.5 mr-1" />
-                                            {rawJsonLogId === log.id ? 'Hide raw JSON' : 'View raw JSON'}
+                                            {rawJsonLogId === log.id
+                                              ? 'Hide raw JSON'
+                                              : 'View raw JSON'}
                                           </Button>
                                         </div>
 
                                         <div className="space-y-2 max-h-64 overflow-auto pr-1">
                                           {filteredSteps.length === 0 ? (
-                                            <p className="text-gray-500 dark:text-gray-400">No warning/error steps found for this trace.</p>
+                                            <p className="text-gray-500 dark:text-gray-400">
+                                              No warning/error steps found for this trace.
+                                            </p>
                                           ) : (
                                             filteredSteps.map((step, idx) => (
-                                              <div key={`${step.ts}-${idx}`} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/30 p-2">
+                                              <div
+                                                key={`${step.ts}-${idx}`}
+                                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/30 p-2"
+                                              >
                                                 <div className="flex items-center justify-between gap-2">
-                                                  <p className="font-medium text-gray-800 dark:text-gray-100">{step.step}</p>
-                                                  <Badge variant={step.status === 'ok' ? 'success' : step.status === 'warning' ? 'warning' : 'error'}>
+                                                  <p className="font-medium text-gray-800 dark:text-gray-100">
+                                                    {step.step}
+                                                  </p>
+                                                  <Badge
+                                                    variant={
+                                                      step.status === 'ok'
+                                                        ? 'success'
+                                                        : step.status === 'warning'
+                                                          ? 'warning'
+                                                          : 'error'
+                                                    }
+                                                  >
                                                     {step.status}
                                                   </Badge>
                                                 </div>
                                                 {step.detail && (
-                                                  <p className="mt-1 text-gray-600 dark:text-gray-300 wrap-break-word">{step.detail}</p>
+                                                  <p className="mt-1 text-gray-600 dark:text-gray-300 wrap-break-word">
+                                                    {step.detail}
+                                                  </p>
                                                 )}
-                                                <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{formatDate(step.ts)}</p>
+                                                <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                                  {formatDate(step.ts)}
+                                                </p>
                                               </div>
                                             ))
                                           )}
@@ -530,14 +621,25 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                 </tbody>
               </table>
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-                <Button variant="ghost" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
+                >
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Previous
                 </Button>
                 <span className="text-xs text-gray-400 dark:text-gray-500">
-                  Page {page}{totalPages != null ? ` / ${totalPages}` : ''}
+                  Page {page}
+                  {totalPages != null ? ` / ${totalPages}` : ''}
                 </span>
-                <Button variant="ghost" size="sm" onClick={() => handlePageChange(page + 1)} disabled={!hasNextPage}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={!hasNextPage}
+                >
                   Next
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>

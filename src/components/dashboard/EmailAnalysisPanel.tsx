@@ -70,16 +70,22 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
   return (
     <div className="mt-2 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 p-3 space-y-2">
       <div className="flex flex-wrap gap-1.5">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${TYPE_COLORS[analysis.emailType] ?? DEFAULT_BADGE_COLOR}`}>
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${TYPE_COLORS[analysis.emailType] ?? DEFAULT_BADGE_COLOR}`}
+        >
           {typeLabel[analysis.emailType] ?? analysis.emailType}
         </span>
         {analysis.sentiment && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${SENTIMENT_COLORS[analysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}>
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${SENTIMENT_COLORS[analysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}
+          >
             {sentimentLabel[analysis.sentiment] ?? analysis.sentiment}
           </span>
         )}
         {analysis.priority && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${PRIORITY_COLORS[analysis.priority] ?? DEFAULT_BADGE_COLOR}`}>
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${PRIORITY_COLORS[analysis.priority] ?? DEFAULT_BADGE_COLOR}`}
+          >
             {priorityLabel[analysis.priority] ?? analysis.priority}
           </span>
         )}
@@ -89,7 +95,9 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
           </span>
         )}
         {analysis.language && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${DEFAULT_BADGE_COLOR}`}>
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${DEFAULT_BADGE_COLOR}`}
+          >
             {analysis.language.toUpperCase()}
           </span>
         )}
@@ -135,38 +143,62 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
           {entities && entities.people.length > 0 && (
             <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPeople}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.people.join(', ')}</dd>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {eh.analysisEntitiesPeople}
+              </dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
+                {entities.people.join(', ')}
+              </dd>
             </>
           )}
           {entities && entities.organizations.length > 0 && (
             <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesOrganizations}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.organizations.join(', ')}</dd>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {eh.analysisEntitiesOrganizations}
+              </dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
+                {entities.organizations.join(', ')}
+              </dd>
             </>
           )}
           {entities && entities.places.length > 0 && (
             <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPlaces}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.places.join(', ')}</dd>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {eh.analysisEntitiesPlaces}
+              </dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
+                {entities.places.join(', ')}
+              </dd>
             </>
           )}
           {entities && entities.events.length > 0 && (
             <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesEvents}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.events.join(', ')}</dd>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {eh.analysisEntitiesEvents}
+              </dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
+                {entities.events.join(', ')}
+              </dd>
             </>
           )}
           {entities && entities.dates.length > 0 && (
             <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesDates}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{entities.dates.join(', ')}</dd>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {eh.analysisEntitiesDates}
+              </dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
+                {entities.dates.join(', ')}
+              </dd>
             </>
           )}
           {analysis.prices && analysis.prices.length > 0 && (
             <>
-              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">{eh.analysisEntitiesPrices}</dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{analysis.prices.join(', ')}</dd>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {eh.analysisEntitiesPrices}
+              </dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
+                {analysis.prices.join(', ')}
+              </dd>
             </>
           )}
         </dl>

@@ -23,7 +23,9 @@ function resolveBatchSize(request: NextRequest, bodyBatchSize?: number): number 
   const queryBatchSize = Number.parseInt(url.searchParams.get('batchSize') || '', 10);
   const rawBatchSize = Number.isFinite(queryBatchSize)
     ? queryBatchSize
-    : (typeof bodyBatchSize === 'number' ? Math.floor(bodyBatchSize) : 10);
+    : typeof bodyBatchSize === 'number'
+      ? Math.floor(bodyBatchSize)
+      : 10;
 
   return Math.min(Math.max(rawBatchSize, 1), 50);
 }

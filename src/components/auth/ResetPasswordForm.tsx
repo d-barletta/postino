@@ -79,7 +79,10 @@ export function ResetPasswordForm() {
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
 
-      if (firebaseError.code === 'auth/expired-action-code' || firebaseError.code === 'auth/invalid-action-code') {
+      if (
+        firebaseError.code === 'auth/expired-action-code' ||
+        firebaseError.code === 'auth/invalid-action-code'
+      ) {
         setError('This reset link is invalid or expired. Request a new one.');
       } else if (firebaseError.code === 'auth/weak-password') {
         setError('Password is too weak');
@@ -94,7 +97,9 @@ export function ResetPasswordForm() {
   if (validating) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Validating reset link...</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+          Validating reset link...
+        </p>
       </div>
     );
   }
@@ -151,7 +156,10 @@ export function ResetPasswordForm() {
 
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         Back to{' '}
-        <Link href="/login" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+        <Link
+          href="/login"
+          className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium"
+        >
           sign in
         </Link>
       </p>
@@ -159,7 +167,10 @@ export function ResetPasswordForm() {
       {!success && (
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
           Need a new link?{' '}
-          <Link href="/forgot-password" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+          <Link
+            href="/forgot-password"
+            className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium"
+          >
             Request password reset
           </Link>
         </p>

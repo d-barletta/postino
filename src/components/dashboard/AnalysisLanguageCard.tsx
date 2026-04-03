@@ -37,14 +37,10 @@ export function AnalysisLanguageCard({ currentLanguage, onSave }: AnalysisLangua
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {ts.title}
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{ts.title}</h2>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          {ts.description}
-        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{ts.description}</p>
         <Select value={selectValue} onValueChange={handleChange} disabled={saving}>
           <SelectTrigger className="w-full sm:w-64">
             <SelectValue placeholder={ts.selectPlaceholder} />

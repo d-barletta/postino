@@ -88,28 +88,31 @@ export default function EmailJobsLiveTab() {
   const [loggingSaving, setLoggingSaving] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
 
-  const fetchOverview = useCallback(async (silent = false) => {
-    if (!firebaseUser) return;
-    if (!silent) setLoading(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/admin/email-jobs', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
+  const fetchOverview = useCallback(
+    async (silent = false) => {
+      if (!firebaseUser) return;
+      if (!silent) setLoading(true);
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/admin/email-jobs', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          setError('Failed to fetch queue data');
+          return;
+        }
+        const body = (await res.json()) as JobsOverviewResponse;
+        setData(body);
+        setError('');
+      } catch {
         setError('Failed to fetch queue data');
-        return;
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      const body = (await res.json()) as JobsOverviewResponse;
-      setData(body);
-      setError('');
-    } catch {
-      setError('Failed to fetch queue data');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [firebaseUser]);
+    },
+    [firebaseUser],
+  );
 
   useEffect(() => {
     fetchOverview();
@@ -151,39 +154,42 @@ export default function EmailJobsLiveTab() {
     }
   }, [firebaseUser, fetchOverview]);
 
-  const handleToggleWebhookLogging = useCallback(async (enabled: boolean) => {
-    if (!firebaseUser) return;
-    setLoggingSaving(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/admin/email-jobs', {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ webhookLoggingEnabled: enabled }),
-      });
+  const handleToggleWebhookLogging = useCallback(
+    async (enabled: boolean) => {
+      if (!firebaseUser) return;
+      setLoggingSaving(true);
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/admin/email-jobs', {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ webhookLoggingEnabled: enabled }),
+        });
 
-      if (!res.ok) {
+        if (!res.ok) {
+          toast.error(t.admin.toasts.failedToUpdateMailgunSetting);
+          return;
+        }
+
+        setData((prev) => (prev ? { ...prev, webhookLoggingEnabled: enabled } : prev));
+        await fetchOverview(true);
+      } catch {
         toast.error(t.admin.toasts.failedToUpdateMailgunSetting);
-        return;
+      } finally {
+        setLoggingSaving(false);
       }
-
-      setData((prev) => (prev ? { ...prev, webhookLoggingEnabled: enabled } : prev));
-      await fetchOverview(true);
-    } catch {
-      toast.error(t.admin.toasts.failedToUpdateMailgunSetting);
-    } finally {
-      setLoggingSaving(false);
-    }
-  }, [firebaseUser, fetchOverview]);
+    },
+    [firebaseUser, fetchOverview],
+  );
 
   const handleClearWebhookLogs = useCallback(async () => {
     if (!firebaseUser || clearingLogs) return;
 
     const confirmed = window.confirm(
-      'Delete all Mailgun inbound webhook request logs? This action cannot be undone.'
+      'Delete all Mailgun inbound webhook request logs? This action cannot be undone.',
     );
     if (!confirmed) return;
 
@@ -215,8 +221,16 @@ export default function EmailJobsLiveTab() {
     return [
       { label: 'Backlog', value: data?.backlog ?? 0, tone: 'text-amber-600 dark:text-amber-300' },
       { label: 'Pending', value: counts?.pending ?? 0, tone: 'text-blue-600 dark:text-blue-300' },
-      { label: 'Processing', value: counts?.processing ?? 0, tone: 'text-amber-600 dark:text-amber-300' },
-      { label: 'Retrying', value: counts?.retrying ?? 0, tone: 'text-orange-600 dark:text-orange-300' },
+      {
+        label: 'Processing',
+        value: counts?.processing ?? 0,
+        tone: 'text-amber-600 dark:text-amber-300',
+      },
+      {
+        label: 'Retrying',
+        value: counts?.retrying ?? 0,
+        tone: 'text-orange-600 dark:text-orange-300',
+      },
       { label: 'Failed', value: counts?.failed ?? 0, tone: 'text-red-600 dark:text-red-300' },
       { label: 'Done', value: counts?.done ?? 0, tone: 'text-green-600 dark:text-green-300' },
     ];
@@ -278,7 +292,10 @@ export default function EmailJobsLiveTab() {
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
             {cards.map((card) => (
-              <div key={card.label} className="rounded-lg border border-gray-200 bg-white/70 px-3 py-2 dark:border-gray-700 dark:bg-gray-900/40">
+              <div
+                key={card.label}
+                className="rounded-lg border border-gray-200 bg-white/70 px-3 py-2 dark:border-gray-700 dark:bg-gray-900/40"
+              >
                 <p className="text-xs text-gray-500 dark:text-gray-400">{card.label}</p>
                 <p className={`text-xl font-bold ${card.tone}`}>{card.value.toLocaleString()}</p>
               </div>
@@ -338,31 +355,50 @@ export default function EmailJobsLiveTab() {
                     <div className="mb-1 flex flex-wrap items-center gap-2">
                       <Badge variant="info">{row.status}</Badge>
                       <Badge variant="secondary">{row.result}</Badge>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(row.receivedAt)}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">attachments: {row.attachmentCount}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatDate(row.receivedAt)}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        attachments: {row.attachmentCount}
+                      </span>
                     </div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{row.subject || '(no subject)'}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {row.subject || '(no subject)'}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">from {row.sender}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">to {row.recipient}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">ip {row.ip}</p>
                     {row.reason ? (
-                      <p className="mt-1 break-all text-xs text-amber-700 dark:text-amber-300">{row.reason}</p>
+                      <p className="mt-1 break-all text-xs text-amber-700 dark:text-amber-300">
+                        {row.reason}
+                      </p>
                     ) : null}
                   </summary>
 
                   <div className="mt-3 space-y-2 border-t border-blue-200 pt-3 dark:border-blue-900">
                     {row.emailLogId ? (
-                      <a className="text-xs text-blue-600 underline dark:text-blue-300" href={`/email/original/${row.emailLogId}`} target="_blank" rel="noreferrer">
+                      <a
+                        className="text-xs text-blue-600 underline dark:text-blue-300"
+                        href={`/email/original/${row.emailLogId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         open linked email log
                       </a>
                     ) : null}
                     {row.jobId ? (
-                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">job id: {row.jobId}</p>
+                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">
+                        job id: {row.jobId}
+                      </p>
                     ) : null}
                     {row.messageId ? (
-                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">message id: {row.messageId}</p>
+                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">
+                        message id: {row.messageId}
+                      </p>
                     ) : null}
-                    <p className="break-all text-xs text-gray-500 dark:text-gray-400">user-agent: {row.userAgent || '—'}</p>
+                    <p className="break-all text-xs text-gray-500 dark:text-gray-400">
+                      user-agent: {row.userAgent || '—'}
+                    </p>
                     <pre className="max-h-80 overflow-auto rounded-md bg-gray-900 p-3 text-[11px] leading-5 text-gray-100">
                       {toPrettyJson(row.details)}
                     </pre>
@@ -371,7 +407,9 @@ export default function EmailJobsLiveTab() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No inbound webhook requests logged yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No inbound webhook requests logged yet.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -392,17 +430,32 @@ export default function EmailJobsLiveTab() {
                 >
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <Badge variant="error">failed</Badge>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(row.updatedAt)}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">attempts: {row.attempts}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatDate(row.updatedAt)}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      attempts: {row.attempts}
+                    </span>
                     {row.logId ? (
-                      <a className="text-xs text-blue-600 underline dark:text-blue-300" href={`/email/original/${row.logId}`} target="_blank" rel="noreferrer">
+                      <a
+                        className="text-xs text-blue-600 underline dark:text-blue-300"
+                        href={`/email/original/${row.logId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         open email
                       </a>
                     ) : null}
                   </div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{row.subject}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {row.subject}
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">from {row.sender}</p>
-                  {row.userEmail ? <p className="text-xs text-gray-500 dark:text-gray-400">to user {row.userEmail}</p> : null}
+                  {row.userEmail ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      to user {row.userEmail}
+                    </p>
+                  ) : null}
                   <p className="mt-2 break-all text-xs text-red-700 dark:text-red-300">
                     <AlertTriangle className="mr-1 inline-block h-3.5 w-3.5" />
                     {compactError(row.error)}
@@ -411,7 +464,9 @@ export default function EmailJobsLiveTab() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No failed jobs in the recent queue history.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No failed jobs in the recent queue history.
+            </p>
           )}
         </CardContent>
       </Card>

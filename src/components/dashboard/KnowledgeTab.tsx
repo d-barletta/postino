@@ -131,7 +131,16 @@ interface ChipProps {
   onClick: () => void;
 }
 
-function Chip({ item, maxCount, detailed = false, highlight = '', mergeMode, selected, isMerged = false, onClick }: ChipProps) {
+function Chip({
+  item,
+  maxCount,
+  detailed = false,
+  highlight = '',
+  mergeMode,
+  selected,
+  isMerged = false,
+  onClick,
+}: ChipProps) {
   const freqClass = detailed ? getFrequencyClass(item.count, maxCount) : 'text-xs px-2 py-0.5';
   return (
     <button
@@ -143,15 +152,17 @@ function Chip({ item, maxCount, detailed = false, highlight = '', mergeMode, sel
         mergeMode && selected
           ? 'border-[#efd957] bg-[#efd957]/20 text-[#a3891f] dark:text-[#efd957] ring-2 ring-[#efd957]/40'
           : mergeMode
-          ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-[#efd957]/60 cursor-pointer'
-          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-[#efd957] hover:bg-[#efd957]/10 hover:text-[#a3891f] dark:hover:text-[#efd957]',
+            ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-[#efd957]/60 cursor-pointer'
+            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-[#efd957] hover:bg-[#efd957]/10 hover:text-[#a3891f] dark:hover:text-[#efd957]',
       )}
     >
       {mergeMode && (
-        <span className={cn(
-          'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border',
-          selected ? 'border-[#a3891f] bg-[#efd957]' : 'border-gray-400 dark:border-gray-500',
-        )} />
+        <span
+          className={cn(
+            'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border',
+            selected ? 'border-[#a3891f] bg-[#efd957]' : 'border-gray-400 dark:border-gray-500',
+          )}
+        />
       )}
       {isMerged && !mergeMode && (
         <GitMerge className="h-3 w-3 shrink-0 text-gray-400 dark:text-gray-500" />
@@ -181,7 +192,17 @@ interface SectionProps {
   onChipClick: (value: string, category: string) => void;
 }
 
-function Section({ title, icon, items, category, highlight = '', mergeMode, selectedKeys, mergedCanonicals, onChipClick }: SectionProps) {
+function Section({
+  title,
+  icon,
+  items,
+  category,
+  highlight = '',
+  mergeMode,
+  selectedKeys,
+  mergedCanonicals,
+  onChipClick,
+}: SectionProps) {
   const filtered = highlight
     ? items.filter((i) => i.value.toLowerCase().includes(highlight.toLowerCase()))
     : items;
@@ -226,8 +247,15 @@ export function KnowledgeTab() {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [modalChip, setModalChip] = useState<{ value: string; category: string; label: string; aliases?: string[] } | null>(null);
-  const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(null);
+  const [modalChip, setModalChip] = useState<{
+    value: string;
+    category: string;
+    label: string;
+    aliases?: string[];
+  } | null>(null);
+  const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(
+    null,
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Entity merges
@@ -244,7 +272,8 @@ export function KnowledgeTab() {
   const [suggestions, setSuggestions] = useState<EntityMergeSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
-  const [pendingAcceptSuggestion, setPendingAcceptSuggestion] = useState<EntityMergeSuggestion | null>(null);
+  const [pendingAcceptSuggestion, setPendingAcceptSuggestion] =
+    useState<EntityMergeSuggestion | null>(null);
 
   // Integrate the fullscreen email dialog with browser history.
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
@@ -278,7 +307,7 @@ export function KnowledgeTab() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const json = await res.json() as { merges: EntityMerge[] };
+        const json = (await res.json()) as { merges: EntityMerge[] };
         setMerges(json.merges ?? []);
       } else {
         toast.error(k.failedToLoadMerges);
@@ -297,7 +326,7 @@ export function KnowledgeTab() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const json = await res.json() as { suggestions: EntityMergeSuggestion[] };
+        const json = (await res.json()) as { suggestions: EntityMergeSuggestion[] };
         setSuggestions(json.suggestions ?? []);
       } else {
         toast.error(k.failedToLoadSuggestions);
@@ -324,7 +353,7 @@ export function KnowledgeTab() {
         toast.error(k.suggestionsError);
         return;
       }
-      const json = await res.json() as { suggestions: EntityMergeSuggestion[] };
+      const json = (await res.json()) as { suggestions: EntityMergeSuggestion[] };
       setSuggestions(json.suggestions ?? []);
       toast.success(k.suggestionsGenerated);
     } catch {
@@ -334,24 +363,27 @@ export function KnowledgeTab() {
     }
   }, [firebaseUser, k]);
 
-  const handleRejectSuggestion = useCallback(async (id: string) => {
-    if (!firebaseUser) return;
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(`/api/entities/merge-suggestions/${id}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'rejected' }),
-      });
-      if (res.ok) {
-        setSuggestions((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, status: 'rejected' } : s)),
-        );
+  const handleRejectSuggestion = useCallback(
+    async (id: string) => {
+      if (!firebaseUser) return;
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch(`/api/entities/merge-suggestions/${id}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'rejected' }),
+        });
+        if (res.ok) {
+          setSuggestions((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, status: 'rejected' } : s)),
+          );
+        }
+      } catch {
+        // silently ignore
       }
-    } catch {
-      // silently ignore
-    }
-  }, [firebaseUser]);
+    },
+    [firebaseUser],
+  );
 
   const handleAcceptSuggestion = useCallback(
     async (canonical: string, aliases: string[], category: EntityCategory) => {
@@ -367,7 +399,7 @@ export function KnowledgeTab() {
       });
 
       if (res.status === 409) {
-        const json = await res.json() as { existingId?: string; error?: string };
+        const json = (await res.json()) as { existingId?: string; error?: string };
         const existingId = json.existingId;
         if (!existingId) throw new Error(json.error ?? 'Failed to create merge');
 
@@ -385,11 +417,11 @@ export function KnowledgeTab() {
           body: JSON.stringify({ canonical, aliases: mergedAliases, category }),
         });
         if (!patchRes.ok) {
-          const patchJson = await patchRes.json() as { error?: string };
+          const patchJson = (await patchRes.json()) as { error?: string };
           throw new Error(patchJson.error ?? 'Failed to update merge');
         }
       } else if (!res.ok) {
-        const json = await res.json() as { error?: string };
+        const json = (await res.json()) as { error?: string };
         throw new Error(json.error ?? 'Failed to create merge');
       }
 
@@ -429,10 +461,7 @@ export function KnowledgeTab() {
 
   /** Map from "category:canonical" → aliases for ExploreEmailsModal. */
   const mergeAliasMap = useMemo(
-    () =>
-      new Map<string, string[]>(
-        merges.map((m) => [`${m.category}:${m.canonical}`, m.aliases]),
-      ),
+    () => new Map<string, string[]>(merges.map((m) => [`${m.category}:${m.canonical}`, m.aliases])),
     [merges],
   );
 
@@ -461,10 +490,7 @@ export function KnowledgeTab() {
         return;
       }
       const catKey = category as CategoryKey;
-      const label =
-        catKey === 'all'
-          ? k.allCategories
-          : (k[catKey] ?? category);
+      const label = catKey === 'all' ? k.allCategories : (k[catKey] ?? category);
       const mergeKey = `${category}:${value}`;
       const aliases = mergeAliasMap.get(mergeKey);
       setModalChip({ value, category, label, aliases });
@@ -474,8 +500,7 @@ export function KnowledgeTab() {
 
   /** True when all selected chips share the same category and there are at least 2. */
   const canMergeSelected =
-    selectedChips.length >= 2 &&
-    new Set(selectedChips.map((c) => c.category)).size === 1;
+    selectedChips.length >= 2 && new Set(selectedChips.map((c) => c.category)).size === 1;
 
   const handleCreateMerge = useCallback(
     async (canonical: string, aliases: string[], category: EntityCategory) => {
@@ -492,7 +517,7 @@ export function KnowledgeTab() {
 
       if (res.status === 409) {
         // Some aliases already belong to an existing merge — update it with the union
-        const json = await res.json() as { existingId?: string; error?: string };
+        const json = (await res.json()) as { existingId?: string; error?: string };
         const existingId = json.existingId;
         if (!existingId) throw new Error(json.error ?? 'Failed to create merge');
 
@@ -510,7 +535,7 @@ export function KnowledgeTab() {
           body: JSON.stringify({ canonical, aliases: mergedAliases, category }),
         });
         if (!patchRes.ok) {
-          const patchJson = await patchRes.json() as { error?: string };
+          const patchJson = (await patchRes.json()) as { error?: string };
           throw new Error(patchJson.error ?? 'Failed to update merge');
         }
         await Promise.all([fetchKnowledge(), fetchMerges()]);
@@ -521,7 +546,7 @@ export function KnowledgeTab() {
       }
 
       if (!res.ok) {
-        const json = await res.json() as { error?: string };
+        const json = (await res.json()) as { error?: string };
         throw new Error(json.error ?? 'Failed to create merge');
       }
       await Promise.all([fetchKnowledge(), fetchMerges()]);
@@ -532,25 +557,22 @@ export function KnowledgeTab() {
     [firebaseUser, fetchKnowledge, fetchMerges, merges, k],
   );
 
-  const handleDeleteMerge = useCallback(
-    async () => {
-      if (!firebaseUser || !pendingDeleteMerge) return;
-      setDeletingMerge(true);
-      try {
-        const token = await firebaseUser.getIdToken();
-        await fetch(`/api/entities/merges/${pendingDeleteMerge.id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        await Promise.all([fetchKnowledge(), fetchMerges()]);
-        toast.success(k.mergeDeleted);
-      } finally {
-        setDeletingMerge(false);
-        setPendingDeleteMerge(null);
-      }
-    },
-    [firebaseUser, pendingDeleteMerge, fetchKnowledge, fetchMerges, k],
-  );
+  const handleDeleteMerge = useCallback(async () => {
+    if (!firebaseUser || !pendingDeleteMerge) return;
+    setDeletingMerge(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      await fetch(`/api/entities/merges/${pendingDeleteMerge.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await Promise.all([fetchKnowledge(), fetchMerges()]);
+      toast.success(k.mergeDeleted);
+    } finally {
+      setDeletingMerge(false);
+      setPendingDeleteMerge(null);
+    }
+  }, [firebaseUser, pendingDeleteMerge, fetchKnowledge, fetchMerges, k]);
 
   const hasAnyData =
     data &&
@@ -575,12 +597,8 @@ export function KnowledgeTab() {
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {k.title}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {k.subtitle}
-            </p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{k.title}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{k.subtitle}</p>
             {data && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 {k.emailsAnalyzed.replace('{count}', String(data.totalEmails))}
@@ -602,7 +620,10 @@ export function KnowledgeTab() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { fetchKnowledge(); fetchMerges(); }}
+              onClick={() => {
+                fetchKnowledge();
+                fetchMerges();
+              }}
               disabled={loading}
               aria-label="Refresh"
             >
@@ -630,12 +651,7 @@ export function KnowledgeTab() {
           </div>
           {/* Action buttons on same row at ≥800px, own row below */}
           <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs"
-              onClick={toggleMergeMode}
-            >
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={toggleMergeMode}>
               {k.cancelMerge}
             </Button>
             <Button
@@ -660,11 +676,19 @@ export function KnowledgeTab() {
               <Sparkles className="h-3.5 w-3.5" />
               {k.listTab}
             </TabsTrigger>
-            <TabsTrigger value="merged" disabled={mergeMode} className="inline-flex items-center gap-1.5">
+            <TabsTrigger
+              value="merged"
+              disabled={mergeMode}
+              className="inline-flex items-center gap-1.5"
+            >
               <GitMerge className="h-3.5 w-3.5" />
               {k.mergedTab}
             </TabsTrigger>
-            <TabsTrigger value="suggestions" disabled={mergeMode} className="inline-flex items-center gap-1.5">
+            <TabsTrigger
+              value="suggestions"
+              disabled={mergeMode}
+              className="inline-flex items-center gap-1.5"
+            >
               <Wand2 className="h-3.5 w-3.5" />
               {k.suggestionsTab}
             </TabsTrigger>
@@ -708,7 +732,10 @@ export function KnowledgeTab() {
               />
               {searchQuery && (
                 <button
-                  onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                  onClick={() => {
+                    setSearchQuery('');
+                    searchInputRef.current?.focus();
+                  }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                   aria-label="Clear search"
                 >
@@ -724,16 +751,12 @@ export function KnowledgeTab() {
               </div>
             )}
 
-            {!loading && error && (
-              <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-            )}
+            {!loading && error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
 
             {!loading && !error && !hasAnyData && data !== null && (
               <div className="text-center py-12">
                 <Sparkles className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                <p className="text-base font-medium text-gray-600 dark:text-gray-400">
-                  {k.noData}
-                </p>
+                <p className="text-base font-medium text-gray-600 dark:text-gray-400">{k.noData}</p>
                 <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">
                   {k.noDataDesc}
                 </p>
@@ -742,66 +765,79 @@ export function KnowledgeTab() {
 
             {!loading && !error && hasAnyData && activeCategory === 'all' && (
               <div className="space-y-5">
-                {(['topics', 'people', 'organizations', 'places', 'events', 'tags'] as const).map((key) => (
-                  <Section
-                    key={key}
-                    title={k[key]}
-                    icon={SECTION_ICONS[key]}
-                    items={data?.[key] ?? []}
-                    category={key}
-                    highlight={searchQuery}
-                    mergeMode={mergeMode}
-                    selectedKeys={new Set(selectedChips.map((c) => `${c.category}:${c.value}`))}
-                    mergedCanonicals={mergedCanonicals}
-                    onChipClick={handleChipClick}
-                  />
-                ))}
+                {(['topics', 'people', 'organizations', 'places', 'events', 'tags'] as const).map(
+                  (key) => (
+                    <Section
+                      key={key}
+                      title={k[key]}
+                      icon={SECTION_ICONS[key]}
+                      items={data?.[key] ?? []}
+                      category={key}
+                      highlight={searchQuery}
+                      mergeMode={mergeMode}
+                      selectedKeys={new Set(selectedChips.map((c) => `${c.category}:${c.value}`))}
+                      mergedCanonicals={mergedCanonicals}
+                      onChipClick={handleChipClick}
+                    />
+                  ),
+                )}
               </div>
             )}
 
-            {!loading && !error && hasAnyData && activeCategory !== 'all' && (() => {
-              const filtered = searchQuery
-                ? activeItems.filter((i) => i.value.toLowerCase().includes(searchQuery.toLowerCase()))
-                : activeItems;
-              const selectedSet = new Set(selectedChips.map((c) => `${c.category}:${c.value}`));
-              return (
-                <div className="flex flex-wrap gap-2">
-                  {filtered.length === 0 ? (
-                    <p className="text-sm text-gray-400 dark:text-gray-500">
-                      {k.noData}
-                    </p>
-                  ) : (
-                    filtered.map((item) => (
-                      <Chip
-                        key={item.value}
-                        item={item}
-                        maxCount={activeMaxCount}
-                        detailed
-                        highlight={searchQuery}
-                        mergeMode={mergeMode}
-                        selected={selectedSet.has(`${activeCategory}:${item.value}`)}
-                        isMerged={mergedCanonicals.has(`${activeCategory}:${item.value}`)}
-                        onClick={() => handleChipClick(item.value, activeCategory)}
-                      />
-                    ))
-                  )}
-                </div>
-              );
-            })()}
+            {!loading &&
+              !error &&
+              hasAnyData &&
+              activeCategory !== 'all' &&
+              (() => {
+                const filtered = searchQuery
+                  ? activeItems.filter((i) =>
+                      i.value.toLowerCase().includes(searchQuery.toLowerCase()),
+                    )
+                  : activeItems;
+                const selectedSet = new Set(selectedChips.map((c) => `${c.category}:${c.value}`));
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    {filtered.length === 0 ? (
+                      <p className="text-sm text-gray-400 dark:text-gray-500">{k.noData}</p>
+                    ) : (
+                      filtered.map((item) => (
+                        <Chip
+                          key={item.value}
+                          item={item}
+                          maxCount={activeMaxCount}
+                          detailed
+                          highlight={searchQuery}
+                          mergeMode={mergeMode}
+                          selected={selectedSet.has(`${activeCategory}:${item.value}`)}
+                          isMerged={mergedCanonicals.has(`${activeCategory}:${item.value}`)}
+                          onClick={() => handleChipClick(item.value, activeCategory)}
+                        />
+                      ))
+                    )}
+                  </div>
+                );
+              })()}
           </TabsContent>
 
           <TabsContent value="merged" className="pb-2">
             {mergesLoading ? (
               <div className="py-6 space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-14 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-14 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse"
+                  />
                 ))}
               </div>
             ) : merges.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <GitMerge className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                <p className="text-base font-medium text-gray-600 dark:text-gray-400">{k.noMerges}</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">{k.mergesDesc}</p>
+                <p className="text-base font-medium text-gray-600 dark:text-gray-400">
+                  {k.noMerges}
+                </p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">
+                  {k.mergesDesc}
+                </p>
               </div>
             ) : (
               <ul className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -820,7 +856,7 @@ export function KnowledgeTab() {
                             {m.canonical}
                           </span>
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-                            {k[m.category as keyof typeof k] as string ?? m.category}
+                            {(k[m.category as keyof typeof k] as string) ?? m.category}
                           </Badge>
                         </div>
                         <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
@@ -876,13 +912,18 @@ export function KnowledgeTab() {
                   {suggestionsLoading || generatingSuggestions ? (
                     <div className="space-y-3">
                       {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-20 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                        <div
+                          key={i}
+                          className="h-20 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse"
+                        />
                       ))}
                     </div>
                   ) : suggestions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <Wand2 className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                      <p className="text-base font-medium text-gray-600 dark:text-gray-400">{k.suggestionsEmpty}</p>
+                      <p className="text-base font-medium text-gray-600 dark:text-gray-400">
+                        {k.suggestionsEmpty}
+                      </p>
                     </div>
                   ) : (
                     <ul className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -897,14 +938,16 @@ export function KnowledgeTab() {
                           )}
                         >
                           <div className="flex items-start gap-3 min-w-0 flex-1">
-                            <div className={cn(
-                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5',
-                              s.status === 'accepted'
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                                : s.status === 'rejected'
-                                ? 'bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400'
-                                : 'bg-[#efd957]/20 text-[#a3891f] dark:text-[#efd957]',
-                            )}>
+                            <div
+                              className={cn(
+                                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5',
+                                s.status === 'accepted'
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                  : s.status === 'rejected'
+                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400'
+                                    : 'bg-[#efd957]/20 text-[#a3891f] dark:text-[#efd957]',
+                              )}
+                            >
                               {s.status === 'accepted' ? (
                                 <CheckCircle className="h-4 w-4" />
                               ) : s.status === 'rejected' ? (
@@ -918,8 +961,11 @@ export function KnowledgeTab() {
                                 <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                   {s.suggestedCanonical}
                                 </span>
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-                                  {k[s.category as keyof typeof k] as string ?? s.category}
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0 shrink-0"
+                                >
+                                  {(k[s.category as keyof typeof k] as string) ?? s.category}
                                 </Badge>
                               </div>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -984,7 +1030,7 @@ export function KnowledgeTab() {
       {showMergeDialog && selectedChips.length >= 2 && selectedCategory && (
         <EntityMergeDialog
           selected={selectedChips}
-          categoryLabel={k[selectedCategory as keyof typeof k] as string ?? selectedCategory}
+          categoryLabel={(k[selectedCategory as keyof typeof k] as string) ?? selectedCategory}
           onClose={() => setShowMergeDialog(false)}
           onMerge={handleCreateMerge}
         />
@@ -997,7 +1043,10 @@ export function KnowledgeTab() {
             value: alias,
             category: pendingAcceptSuggestion.category,
           }))}
-          categoryLabel={k[pendingAcceptSuggestion.category as keyof typeof k] as string ?? pendingAcceptSuggestion.category}
+          categoryLabel={
+            (k[pendingAcceptSuggestion.category as keyof typeof k] as string) ??
+            pendingAcceptSuggestion.category
+          }
           defaultCanonical={pendingAcceptSuggestion.suggestedCanonical}
           onClose={() => setPendingAcceptSuggestion(null)}
           onMerge={handleAcceptSuggestion}
@@ -1005,21 +1054,32 @@ export function KnowledgeTab() {
       )}
 
       {/* Delete merge confirmation drawer */}
-      <Drawer open={!!pendingDeleteMerge} onOpenChange={(open) => { if (!open) setPendingDeleteMerge(null); }}>
+      <Drawer
+        open={!!pendingDeleteMerge}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteMerge(null);
+        }}
+      >
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>{k.deleteMerge}</DrawerTitle>
             <DrawerDescription>
               {k.deleteConfirm}{' '}
-              <span className="font-semibold text-gray-900 dark:text-gray-100">&ldquo;{pendingDeleteMerge?.canonical}&rdquo;</span>?
-              {' '}{k.cannotBeUndone}
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                &ldquo;{pendingDeleteMerge?.canonical}&rdquo;
+              </span>
+              ? {k.cannotBeUndone}
             </DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="pb-8">
             <Button variant="danger" onClick={handleDeleteMerge} disabled={deletingMerge}>
               {deletingMerge ? '…' : k.deleteMerge}
             </Button>
-            <Button variant="ghost" onClick={() => setPendingDeleteMerge(null)} disabled={deletingMerge}>
+            <Button
+              variant="ghost"
+              onClick={() => setPendingDeleteMerge(null)}
+              disabled={deletingMerge}
+            >
               {k.cancelMerge}
             </Button>
           </DrawerFooter>

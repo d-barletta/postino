@@ -12,7 +12,10 @@ import { auth } from './firebase';
 import { getUserById } from './firestore';
 
 function getAuth() {
-  if (!auth) throw new Error('Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.');
+  if (!auth)
+    throw new Error(
+      'Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.',
+    );
   return auth;
 }
 

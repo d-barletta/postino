@@ -24,15 +24,21 @@ export async function PATCH(request: NextRequest) {
     const decoded = await verifyUser(request);
     const body = await request.json();
 
-    if (!Array.isArray(body.orderedIds) || body.orderedIds.some((id: unknown) => typeof id !== 'string')) {
-      return NextResponse.json({ error: 'orderedIds must be an array of strings' }, { status: 400 });
+    if (
+      !Array.isArray(body.orderedIds) ||
+      body.orderedIds.some((id: unknown) => typeof id !== 'string')
+    ) {
+      return NextResponse.json(
+        { error: 'orderedIds must be an array of strings' },
+        { status: 400 },
+      );
     }
 
     const orderedIds: string[] = body.orderedIds;
     if (orderedIds.length > MAX_REORDER_IDS) {
       return NextResponse.json(
         { error: `orderedIds cannot exceed ${MAX_REORDER_IDS} items` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

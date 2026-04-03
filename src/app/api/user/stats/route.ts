@@ -21,22 +21,19 @@ export async function GET(request: NextRequest) {
     const base = db.collection('emailLogs').where('userId', '==', uid);
 
     // Use server-side aggregation queries to avoid reading every document.
-    const [
-      totalResult,
-      forwardedResult,
-      errorResult,
-      skippedResult,
-      aggregateResult,
-    ] = await Promise.all([
-      base.count().get(),
-      base.where('status', '==', 'forwarded').count().get(),
-      base.where('status', '==', 'error').count().get(),
-      base.where('status', '==', 'skipped').count().get(),
-      base.aggregate({
-        totalTokensUsed: AggregateField.sum('tokensUsed'),
-        totalEstimatedCost: AggregateField.sum('estimatedCost'),
-      }).get(),
-    ]);
+    const [totalResult, forwardedResult, errorResult, skippedResult, aggregateResult] =
+      await Promise.all([
+        base.count().get(),
+        base.where('status', '==', 'forwarded').count().get(),
+        base.where('status', '==', 'error').count().get(),
+        base.where('status', '==', 'skipped').count().get(),
+        base
+          .aggregate({
+            totalTokensUsed: AggregateField.sum('tokensUsed'),
+            totalEstimatedCost: AggregateField.sum('estimatedCost'),
+          })
+          .get(),
+      ]);
 
     const stats = {
       totalEmailsReceived: totalResult.data().count,

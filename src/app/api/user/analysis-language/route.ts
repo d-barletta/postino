@@ -16,14 +16,22 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     // Allow null or one of the supported language codes; null clears the preference.
     if (body.analysisOutputLanguage !== null && typeof body.analysisOutputLanguage !== 'string') {
-      return NextResponse.json({ error: 'analysisOutputLanguage must be a string or null' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'analysisOutputLanguage must be a string or null' },
+        { status: 400 },
+      );
     }
 
-    const raw = body.analysisOutputLanguage === null ? null : (body.analysisOutputLanguage as string).trim() || null;
+    const raw =
+      body.analysisOutputLanguage === null
+        ? null
+        : (body.analysisOutputLanguage as string).trim() || null;
     if (raw !== null && !SUPPORTED_ANALYSIS_LANGUAGES.has(raw)) {
       return NextResponse.json(
-        { error: `analysisOutputLanguage must be one of: ${[...SUPPORTED_ANALYSIS_LANGUAGES].join(', ')}` },
-        { status: 400 }
+        {
+          error: `analysisOutputLanguage must be one of: ${[...SUPPORTED_ANALYSIS_LANGUAGES].join(', ')}`,
+        },
+        { status: 400 },
       );
     }
     const value = raw;

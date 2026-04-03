@@ -37,7 +37,7 @@ export function useRules() {
     text: string,
     matchSender?: string,
     matchSubject?: string,
-    matchBody?: string
+    matchBody?: string,
   ) => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
@@ -76,7 +76,7 @@ export function useRules() {
     isActive: boolean,
     matchSender?: string,
     matchSubject?: string,
-    matchBody?: string
+    matchBody?: string,
   ) => {
     if (!firebaseUser) return;
     const previousRules = rules;
@@ -93,8 +93,8 @@ export function useRules() {
               matchSubject: matchSubject ?? r.matchSubject,
               matchBody: matchBody ?? r.matchBody,
             }
-          : r
-      )
+          : r,
+      ),
     );
     try {
       const token = await firebaseUser.getIdToken();
@@ -126,7 +126,9 @@ export function useRules() {
     if (!firebaseUser) return;
     const previousRules = rules;
     // Optimistic reorder
-    const reordered = orderedIds.map((id) => rules.find((r) => r.id === id)).filter(Boolean) as Rule[];
+    const reordered = orderedIds
+      .map((id) => rules.find((r) => r.id === id))
+      .filter(Boolean) as Rule[];
     setRules(reordered);
     try {
       const token = await firebaseUser.getIdToken();
@@ -146,5 +148,14 @@ export function useRules() {
     }
   };
 
-  return { rules, loading, error, createRule, updateRule, deleteRule, reorderRules, refetch: fetchRules };
+  return {
+    rules,
+    loading,
+    error,
+    createRule,
+    updateRule,
+    deleteRule,
+    reorderRules,
+    refetch: fetchRules,
+  };
 }

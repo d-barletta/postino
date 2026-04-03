@@ -7,7 +7,14 @@ import type { EmailAnalysis } from '@/types';
 
 interface DomPatch {
   selector: string;
-  operation: 'prepend' | 'append' | 'before' | 'after' | 'replace_content' | 'replace_element' | 'remove';
+  operation:
+    | 'prepend'
+    | 'append'
+    | 'before'
+    | 'after'
+    | 'replace_content'
+    | 'replace_element'
+    | 'remove';
   html: string;
 }
 
@@ -159,24 +166,27 @@ export async function getModelPricing(model: string, apiKey: string): Promise<Mo
 export function calculateCost(
   promptTokens: number,
   completionTokens: number,
-  pricing: ModelPricing | null
+  pricing: ModelPricing | null,
 ): number {
   if (!pricing) {
     // Fallback: approximate cost at $0.30/M tokens (openai/gpt-4o-mini approximate rate)
-    return ((promptTokens + completionTokens) / 1_000_000) * 0.30;
+    return ((promptTokens + completionTokens) / 1_000_000) * 0.3;
   }
-  return promptTokens * pricing.promptCostPerToken + completionTokens * pricing.completionCostPerToken;
+  return (
+    promptTokens * pricing.promptCostPerToken + completionTokens * pricing.completionCostPerToken
+  );
 }
 
-export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: string; apiKey: string }> {
+export async function getOpenRouterClient(): Promise<{
+  client: OpenAI;
+  model: string;
+  apiKey: string;
+}> {
   const db = adminDb();
   const settingsSnap = await db.collection('settings').doc('global').get();
   const settings = settingsSnap.data();
 
-  const apiKey =
-    settings?.llmApiKey ||
-    process.env.OPEN_ROUTER_API_KEY ||
-    '';
+  const apiKey = settings?.llmApiKey || process.env.OPEN_ROUTER_API_KEY || '';
   const model = settings?.llmModel || process.env.LLM_MODEL || 'openai/gpt-4o-mini';
   const normalizedApiKey = apiKey.trim();
 
@@ -199,14 +209,16 @@ export async function getOpenRouterClient(): Promise<{ client: OpenAI; model: st
  * - Collapses runs of whitespace so multi-line injections are flattened
  */
 export function sanitizeRule(rule: string): string {
-  return rule
-    // Remove XML/HTML-like tags (e.g. </user_rules>, <system>, etc.)
-    .replace(/<[^>]*>/g, '')
-    // Remove ASCII control characters (except space/tab which are handled next)
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    // Collapse runs of whitespace / newlines so multi-line injections are flattened
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (
+    rule
+      // Remove XML/HTML-like tags (e.g. </user_rules>, <system>, etc.)
+      .replace(/<[^>]*>/g, '')
+      // Remove ASCII control characters (except space/tab which are handled next)
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      // Collapse runs of whitespace / newlines so multi-line injections are flattened
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 /**
@@ -233,21 +245,23 @@ export function sanitizeEmailField(value: string): string {
  * - Removes non-printable control characters (preserves \t, \n, \r for readability)
  */
 export function sanitizeEmailBody(body: string): string {
-  return body
-    // Strip HTML tags so the LLM receives plain text, not raw markup
-    .replace(/<[^>]*>/g, ' ')
-    // Decode common HTML entities so the LLM sees actual content
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    // Collapse excess whitespace left by removed tags
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    .trim();
+  return (
+    body
+      // Strip HTML tags so the LLM receives plain text, not raw markup
+      .replace(/<[^>]*>/g, ' ')
+      // Decode common HTML entities so the LLM sees actual content
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      // Collapse excess whitespace left by removed tags
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      .trim()
+  );
 }
 
 /**
@@ -268,7 +282,10 @@ export function sanitizeHtmlBodyForPrompt(body: string): string {
   let result = body.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // Remove structural-delimiter lookalikes that could confuse the LLM prompt parser
-  result = result.replace(/<\/?(user_rules|system|assistant|human|prompt|instruction)\b[^>]*>/gi, '');
+  result = result.replace(
+    /<\/?(user_rules|system|assistant|human|prompt|instruction)\b[^>]*>/gi,
+    '',
+  );
 
   // Neutralise <script> / </script> tags by HTML-encoding their leading '<'.
   // The encoded form (&lt;script>) is inert in any HTML rendering context and is
@@ -290,7 +307,7 @@ export async function processEmailWithRules(
   emailSubject: string,
   emailBody: string,
   rules: RuleForProcessing[],
-  isHtml = false
+  isHtml = false,
 ): Promise<ProcessEmailResult> {
   const { client, model, apiKey } = await getOpenRouterClient();
 
@@ -301,12 +318,14 @@ export async function processEmailWithRules(
   const db = adminDb();
   const settingsSnap = await db.collection('settings').doc('global').get();
   const settings = settingsSnap.data();
-  const basePrompt = (typeof settings?.llmSystemPrompt === 'string' && settings.llmSystemPrompt.trim())
-    ? settings.llmSystemPrompt.trim()
-    : DEFAULT_SYSTEM_PROMPT;
-  const maxTokens = (typeof settings?.llmMaxTokens === 'number' && settings.llmMaxTokens > 0)
-    ? settings.llmMaxTokens
-    : 4000;
+  const basePrompt =
+    typeof settings?.llmSystemPrompt === 'string' && settings.llmSystemPrompt.trim()
+      ? settings.llmSystemPrompt.trim()
+      : DEFAULT_SYSTEM_PROMPT;
+  const maxTokens =
+    typeof settings?.llmMaxTokens === 'number' && settings.llmMaxTokens > 0
+      ? settings.llmMaxTokens
+      : 4000;
   const subjectPrefix =
     typeof settings?.emailSubjectPrefix === 'string'
       ? settings.emailSubjectPrefix.trim()
@@ -315,9 +334,10 @@ export async function processEmailWithRules(
     subjectPrefix.length > 0 ? `${subjectPrefix} ${subjectValue}`.trim() : subjectValue;
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
-  const rulesText = activeRules.length > 0
-    ? activeRules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
-    : 'No specific rules. Forward the email as-is with a brief summary prepended.';
+  const rulesText =
+    activeRules.length > 0
+      ? activeRules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
+      : 'No specific rules. Forward the email as-is with a brief summary prepended.';
 
   const systemPrompt = `${basePrompt}
 
@@ -403,7 +423,8 @@ Respond with a JSON object containing: subject (processed subject line) and body
   }
 
   const subject = (() => {
-    const raw = typeof parsed.subject === 'string' ? parsed.subject : buildFallbackSubject(emailSubject);
+    const raw =
+      typeof parsed.subject === 'string' ? parsed.subject : buildFallbackSubject(emailSubject);
     if (subjectPrefix.length > 0 && !raw.startsWith(subjectPrefix)) {
       return `${subjectPrefix} ${raw}`.trim();
     }
@@ -419,14 +440,14 @@ Respond with a JSON object containing: subject (processed subject line) and body
 
     body = !requiresFullBodyReplacement
       ? applyDomPatches(emailBody, patches)
-      : (replacementBody || emailBody);
+      : replacementBody || emailBody;
   } else {
     body = typeof parsed.body === 'string' ? parsed.body : emailBody;
   }
 
   const promptTokens = response.usage?.prompt_tokens || 0;
   const completionTokens = response.usage?.completion_tokens || 0;
-  const tokensUsed = response.usage?.total_tokens || (promptTokens + completionTokens);
+  const tokensUsed = response.usage?.total_tokens || promptTokens + completionTokens;
 
   const pricing = await getModelPricing(model, apiKey);
   const estimatedCost = calculateCost(promptTokens, completionTokens, pricing);
@@ -436,9 +457,8 @@ Respond with a JSON object containing: subject (processed subject line) and body
     body,
     tokensUsed,
     estimatedCost,
-    ruleApplied: activeRules.length > 0
-      ? activeRules.map((r) => r.name).join(', ')
-      : 'No rule applied',
+    ruleApplied:
+      activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied',
     ...(parseError ? { parseError } : {}),
   };
 }

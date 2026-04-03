@@ -1,17 +1,20 @@
- 'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Bar,
-  ComposedChart,
-  CartesianGrid,
-  Line,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Bar, ComposedChart, CartesianGrid, Line, XAxis, YAxis } from 'recharts';
 import { Card } from '@/components/ui/Card';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/Accordion';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/Chart';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/Accordion';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/Chart';
 import { useI18n } from '@/lib/i18n';
 import type { EmailLog, UserStats } from '@/types';
 
@@ -54,8 +57,15 @@ type VolumePoint = {
   cost: number;
 };
 
-function normalizeStatus(status: string): 'received' | 'processing' | 'forwarded' | 'error' | 'skipped' {
-  if (status === 'processing' || status === 'forwarded' || status === 'error' || status === 'skipped') {
+function normalizeStatus(
+  status: string,
+): 'received' | 'processing' | 'forwarded' | 'error' | 'skipped' {
+  if (
+    status === 'processing' ||
+    status === 'forwarded' ||
+    status === 'error' ||
+    status === 'skipped'
+  ) {
     return status;
   }
   return 'received';
@@ -66,13 +76,25 @@ function getBucketStart(date: Date, granularity: TimeGranularity | 'week'): numb
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).getTime();
   }
   if (granularity === 'week') {
-    const startOfWeek = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay());
-    return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate()).getTime();
+    const startOfWeek = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate() - date.getDay(),
+    );
+    return new Date(
+      startOfWeek.getFullYear(),
+      startOfWeek.getMonth(),
+      startOfWeek.getDate(),
+    ).getTime();
   }
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
-function formatBucketLabel(bucketStart: number, granularity: TimeGranularity | 'week', weekOfLabel: string): string {
+function formatBucketLabel(
+  bucketStart: number,
+  granularity: TimeGranularity | 'week',
+  weekOfLabel: string,
+): string {
   const date = new Date(bucketStart);
   if (granularity === 'hour') {
     return date.toLocaleString(undefined, {
@@ -103,7 +125,9 @@ function toDate(value: EmailLog['receivedAt']): Date | null {
 export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
   const { t } = useI18n();
   const [range, setRange] = useState<TimeRange>('7d');
-  const [granularity, setGranularity] = useState<TimeGranularity | 'week'>(DEFAULT_GRANULARITY['7d']);
+  const [granularity, setGranularity] = useState<TimeGranularity | 'week'>(
+    DEFAULT_GRANULARITY['7d'],
+  );
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const chartConfig: ChartConfig = {
@@ -180,14 +204,43 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
       }));
   }, [granularity, logs, range, t]);
 
-  const legendItems = useMemo(() => [
-    { key: 'received' as const, label: t.dashboard.charts.received, value: stats.totalEmailsReceived },
-    { key: 'processing' as const, label: t.dashboard.charts.processing, value: Math.max(stats.totalEmailsReceived - stats.totalEmailsForwarded - stats.totalEmailsError - stats.totalEmailsSkipped, 0) },
-    { key: 'forwarded' as const, label: t.dashboard.charts.forwarded, value: stats.totalEmailsForwarded },
-    { key: 'error' as const, label: t.dashboard.charts.error, value: stats.totalEmailsError },
-    { key: 'skipped' as const, label: t.dashboard.charts.skipped, value: stats.totalEmailsSkipped },
-    { key: 'cost' as const, label: t.dashboard.charts.estCost, value: `$${stats.totalEstimatedCost.toFixed(5)}` },
-  ], [t, stats]);
+  const legendItems = useMemo(
+    () => [
+      {
+        key: 'received' as const,
+        label: t.dashboard.charts.received,
+        value: stats.totalEmailsReceived,
+      },
+      {
+        key: 'processing' as const,
+        label: t.dashboard.charts.processing,
+        value: Math.max(
+          stats.totalEmailsReceived -
+            stats.totalEmailsForwarded -
+            stats.totalEmailsError -
+            stats.totalEmailsSkipped,
+          0,
+        ),
+      },
+      {
+        key: 'forwarded' as const,
+        label: t.dashboard.charts.forwarded,
+        value: stats.totalEmailsForwarded,
+      },
+      { key: 'error' as const, label: t.dashboard.charts.error, value: stats.totalEmailsError },
+      {
+        key: 'skipped' as const,
+        label: t.dashboard.charts.skipped,
+        value: stats.totalEmailsSkipped,
+      },
+      {
+        key: 'cost' as const,
+        label: t.dashboard.charts.estCost,
+        value: `$${stats.totalEstimatedCost.toFixed(5)}`,
+      },
+    ],
+    [t, stats],
+  );
 
   return (
     <Card>
@@ -233,8 +286,21 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
               <ChartContainer config={chartConfig}>
                 <ComposedChart data={volumeData} margin={{ top: 8, right: 12, left: 8, bottom: 8 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-                  <YAxis yAxisId="count" allowDecimals={false} tickLine={false} axisLine={false} width={30} tick={{ fontSize: 12 }} />
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 12 }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    yAxisId="count"
+                    allowDecimals={false}
+                    tickLine={false}
+                    axisLine={false}
+                    width={30}
+                    tick={{ fontSize: 12 }}
+                  />
                   <YAxis
                     yAxisId="cost"
                     orientation="right"
@@ -255,11 +321,41 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                       />
                     }
                   />
-                  <Bar yAxisId="count" dataKey="received" stackId="emails" radius={0} fill="var(--color-received)" />
-                  <Bar yAxisId="count" dataKey="processing" stackId="emails" radius={0} fill="var(--color-processing)" />
-                  <Bar yAxisId="count" dataKey="forwarded" stackId="emails" radius={0} fill="var(--color-forwarded)" />
-                  <Bar yAxisId="count" dataKey="error" stackId="emails" radius={0} fill="var(--color-error)" />
-                  <Bar yAxisId="count" dataKey="skipped" stackId="emails" radius={0} fill="var(--color-skipped)" />
+                  <Bar
+                    yAxisId="count"
+                    dataKey="received"
+                    stackId="emails"
+                    radius={0}
+                    fill="var(--color-received)"
+                  />
+                  <Bar
+                    yAxisId="count"
+                    dataKey="processing"
+                    stackId="emails"
+                    radius={0}
+                    fill="var(--color-processing)"
+                  />
+                  <Bar
+                    yAxisId="count"
+                    dataKey="forwarded"
+                    stackId="emails"
+                    radius={0}
+                    fill="var(--color-forwarded)"
+                  />
+                  <Bar
+                    yAxisId="count"
+                    dataKey="error"
+                    stackId="emails"
+                    radius={0}
+                    fill="var(--color-error)"
+                  />
+                  <Bar
+                    yAxisId="count"
+                    dataKey="skipped"
+                    stackId="emails"
+                    radius={0}
+                    fill="var(--color-skipped)"
+                  />
                   <Line
                     yAxisId="cost"
                     type="monotone"
@@ -273,9 +369,16 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
               </ChartContainer>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 md:grid-cols-6">
                 {legendItems.map((item) => (
-                  <div key={item.key} className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40">
+                  <div
+                    key={item.key}
+                    className="rounded-lg border border-gray-200 bg-white/60 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/40"
+                  >
                     <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartColors[item.key] }} aria-hidden />
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: chartColors[item.key] }}
+                        aria-hidden
+                      />
                       <span>{item.label}</span>
                     </div>
                     <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100">

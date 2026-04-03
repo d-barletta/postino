@@ -91,13 +91,18 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
               aria-expanded={mobileMenuOpen}
               onClick={() => setMobileMenuOpen((v) => !v)}
             >
-              <i className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`} aria-hidden="true" />
+              <i
+                className={`bi ${mobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-lg`}
+                aria-hidden="true"
+              />
             </button>
           </div>
         </div>
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">
-            <div className="px-3 pt-1 text-xs text-gray-500 dark:text-gray-400 truncate">{firebaseUser.email}</div>
+            <div className="px-3 pt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+              {firebaseUser.email}
+            </div>
             <Button
               variant="ghost"
               size="sm"

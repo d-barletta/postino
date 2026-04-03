@@ -119,11 +119,7 @@ export async function POST(request: NextRequest) {
         .orderBy('receivedAt', 'desc')
         .limit(FETCH_LIMIT)
         .get(),
-      db
-        .collection('entityMerges')
-        .where('userId', '==', decoded.uid)
-        .limit(MERGES_LIMIT)
-        .get(),
+      db.collection('entityMerges').where('userId', '==', decoded.uid).limit(MERGES_LIMIT).get(),
     ]);
 
     // Gather entity counts from email analysis
@@ -154,7 +150,7 @@ export async function POST(request: NextRequest) {
       const d = doc.data();
       const cat = d.category as string;
       if (!mergedAliasesByCategory[cat]) mergedAliasesByCategory[cat] = new Set();
-      for (const alias of (d.aliases as string[])) {
+      for (const alias of d.aliases as string[]) {
         mergedAliasesByCategory[cat].add(alias.toLowerCase());
       }
     }
@@ -173,9 +169,7 @@ export async function POST(request: NextRequest) {
     for (const cat of VALID_CATEGORIES) {
       const merged = mergedAliasesByCategory[cat];
       if (merged) {
-        categoryEntities[cat] = categoryEntities[cat].filter(
-          (v) => !merged.has(v.toLowerCase()),
-        );
+        categoryEntities[cat] = categoryEntities[cat].filter((v) => !merged.has(v.toLowerCase()));
       }
     }
 
@@ -186,8 +180,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build AI prompt
-    const entityListText = VALID_CATEGORIES
-      .filter((cat) => categoryEntities[cat].length > 0)
+    const entityListText = VALID_CATEGORIES.filter((cat) => categoryEntities[cat].length > 0)
       .map((cat) => `${cat}: ${categoryEntities[cat].join(', ')}`)
       .join('\n');
 

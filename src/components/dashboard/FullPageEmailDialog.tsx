@@ -41,12 +41,20 @@ export function FullPageEmailDialog({
   const { t } = useI18n();
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
       <DialogContent
         hideCloseButton
         animation="slide-from-bottom"
         overlayClassName={overlayClassName}
-        className={cn('w-[99vw] max-w-5xl h-[99vh] flex flex-col p-0 overflow-hidden gap-0', contentClassName)}
+        className={cn(
+          'w-[99vw] max-w-5xl h-[99vh] flex flex-col p-0 overflow-hidden gap-0',
+          contentClassName,
+        )}
         aria-describedby={undefined}
       >
         {loading && (
@@ -54,12 +62,7 @@ export function FullPageEmailDialog({
             <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         )}
-        {!loading && body && (
-          <SafeEmailIframe
-            html={body}
-            className="flex-1"
-          />
-        )}
+        {!loading && body && <SafeEmailIframe html={body} className="flex-1" />}
         {!loading && !body && (
           <div className="flex flex-1 items-center justify-center text-sm text-gray-400 dark:text-gray-500">
             {t.emailOriginal.noOriginalContent}

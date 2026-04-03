@@ -46,7 +46,10 @@ export function LoginForm() {
       router.push('/dashboard');
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
-      if (firebaseError.code === 'auth/invalid-credential' || firebaseError.code === 'auth/user-not-found') {
+      if (
+        firebaseError.code === 'auth/invalid-credential' ||
+        firebaseError.code === 'auth/user-not-found'
+      ) {
         setError(tr.errors.invalidCredential);
       } else if (firebaseError.code === 'auth/too-many-requests') {
         setError(tr.errors.tooManyRequests);
@@ -81,9 +84,18 @@ export function LoginForm() {
         <div className="flex flex-col gap-3">
           <Button className="w-full" size="md" onClick={handleGoToDashboard} loading={redirecting}>
             <LayoutDashboard className="h-4 w-4" />
-            {redirecting ? t.auth.dashboardLink.loadingDashboard : t.auth.dashboardLink.goToDashboard}
+            {redirecting
+              ? t.auth.dashboardLink.loadingDashboard
+              : t.auth.dashboardLink.goToDashboard}
           </Button>
-          <Button variant="secondary" size="md" className="w-full" onClick={handleSignOut} loading={signingOut} disabled={redirecting}>
+          <Button
+            variant="secondary"
+            size="md"
+            className="w-full"
+            onClick={handleSignOut}
+            loading={signingOut}
+            disabled={redirecting}
+          >
             <LogOut className="h-4 w-4" />
             {t.nav.signOut}
           </Button>
@@ -113,7 +125,10 @@ export function LoginForm() {
         placeholder="••••••••"
       />
       <div className="text-right">
-        <Link href="/forgot-password" className="text-sm text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+        <Link
+          href="/forgot-password"
+          className="text-sm text-yellow-700 dark:text-yellow-300 hover:underline font-medium"
+        >
           {tr.forgotPassword}
         </Link>
       </div>
@@ -128,7 +143,10 @@ export function LoginForm() {
       </Button>
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         {tr.noAccount}{' '}
-        <Link href="/register" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+        <Link
+          href="/register"
+          className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium"
+        >
           {tr.signUp}
         </Link>
       </p>

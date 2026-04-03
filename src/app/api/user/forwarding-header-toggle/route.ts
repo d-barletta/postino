@@ -12,13 +12,22 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     if (typeof body.isForwardingHeaderEnabled !== 'boolean') {
-      return NextResponse.json({ error: 'isForwardingHeaderEnabled must be a boolean' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'isForwardingHeaderEnabled must be a boolean' },
+        { status: 400 },
+      );
     }
 
     const db = adminDb();
-    await db.collection('users').doc(decoded.uid).update({ isForwardingHeaderEnabled: body.isForwardingHeaderEnabled });
+    await db
+      .collection('users')
+      .doc(decoded.uid)
+      .update({ isForwardingHeaderEnabled: body.isForwardingHeaderEnabled });
 
-    return NextResponse.json({ success: true, isForwardingHeaderEnabled: body.isForwardingHeaderEnabled });
+    return NextResponse.json({
+      success: true,
+      isForwardingHeaderEnabled: body.isForwardingHeaderEnabled,
+    });
   } catch (error) {
     console.error('Forwarding header toggle error:', error);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

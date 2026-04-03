@@ -27,8 +27,11 @@ function getDeviceOS(): DeviceOS {
   // Detect iPadOS devices (iPadOS 13+ reports Macintosh with multiple touch points)
   if (
     /iphone|ipad|ipod/i.test(ua) ||
-    (/macintosh/i.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1)
-  ) return 'ios';
+    (/macintosh/i.test(ua) &&
+      typeof navigator.maxTouchPoints === 'number' &&
+      navigator.maxTouchPoints > 1)
+  )
+    return 'ios';
   if (/android/i.test(ua)) return 'android';
   return 'desktop';
 }
@@ -56,7 +59,8 @@ function detectIOS26Safari(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
   // Must be Safari — exclude other iOS browsers by their unique tokens
-  if (!/safari/i.test(ua) || /crios|fxios|edgios|edga\/|opr\/|opt\/|samsungbrowser/i.test(ua)) return false;
+  if (!/safari/i.test(ua) || /crios|fxios|edgios|edga\/|opr\/|opt\/|samsungbrowser/i.test(ua))
+    return false;
   const match = ua.match(/Version\/(\d+)/);
   return match ? parseInt(match[1]) >= 26 : false;
 }
@@ -169,12 +173,7 @@ function AddToHomeScreenIcon() {
 function ThreeDotsMenuIcon() {
   return (
     <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
-      <svg
-        viewBox="0 0 24 24"
-        className="w-3 h-3"
-        fill="currentColor"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor" aria-hidden="true">
         <circle cx="12" cy="5" r="2" />
         <circle cx="12" cy="12" r="2" />
         <circle cx="12" cy="19" r="2" />
@@ -190,12 +189,7 @@ function ThreeDotsMenuIcon() {
 function IosHorizontalDotsIcon() {
   return (
     <span className="inline-flex items-center justify-center w-5 h-5 mx-1 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 align-middle shrink-0">
-      <svg
-        viewBox="0 0 24 24"
-        className="w-3 h-3"
-        fill="currentColor"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor" aria-hidden="true">
         <circle cx="5" cy="12" r="2" />
         <circle cx="12" cy="12" r="2" />
         <circle cx="19" cy="12" r="2" />
@@ -211,7 +205,10 @@ interface InstallPwaDrawerProps {
   forceOpenTrigger?: number;
 }
 
-export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: InstallPwaDrawerProps) {
+export function InstallPwaDrawer({
+  triggerOpen = false,
+  forceOpenTrigger = 0,
+}: InstallPwaDrawerProps) {
   const { isAvailable, install } = usePWAInstall();
   const [open, setOpen] = useState(false);
   // Device/browser detection helpers all guard against `typeof navigator === 'undefined'`,
@@ -248,7 +245,7 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
     if (deviceOS === 'ios' && browserType === 'firefox') return;
     const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
-     
+
     setOpen(true);
   }, [triggerOpen, isAvailable, deviceOS, browserType]);
 
@@ -259,7 +256,7 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
     if (deviceOS === 'ios' && browserType === 'firefox') return;
     const needsManual = deviceOS === 'ios' || (deviceOS === 'android' && !isAvailable);
     if (!isAvailable && !needsManual) return;
-     
+
     setOpen(true);
   }, [forceOpenTrigger, isAvailable, deviceOS, browserType]);
 
@@ -288,19 +285,25 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
   const iosChromeVariant = isManualIos && browserType === 'chrome';
 
   return (
-    <Drawer open={open} onOpenChange={(value) => { if (!value) handleDismiss(); }}>
+    <Drawer
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) handleDismiss();
+      }}
+    >
       <DrawerContent className="bg-stone-50 dark:bg-gray-900">
         <DrawerHeader>
           <div className="flex justify-center mb-4">
             {/* White rounded container matches iOS app icon style; keeps logo visible on any bg */}
-            <div className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5" style={{ backgroundColor: '#ffffff' }}>
+            <div
+              className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5"
+              style={{ backgroundColor: '#ffffff' }}
+            >
               <PostinoLogo className="h-11 w-11" />
             </div>
           </div>
           <DrawerTitle>{tr.title}</DrawerTitle>
-          <DrawerDescription>
-            {tr.description}
-          </DrawerDescription>
+          <DrawerDescription>{tr.description}</DrawerDescription>
         </DrawerHeader>
 
         {/* iOS manual instructions */}
@@ -318,15 +321,17 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
                       {tr.iosSafari26iPadStep1Post}
                     </li>
                     <li>
-                      {tr.iosSafari26Step3Pre}{' '}
-                      <IosHorizontalDotsIcon />
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step3Bold}</span>
+                      {tr.iosSafari26Step3Pre} <IosHorizontalDotsIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {tr.iosSafari26Step3Bold}
+                      </span>
                     </li>
                     <li>
-                      {tr.iosSafari26Step4Pre}{' '}
-                      <AddToHomeScreenIcon />
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step4Bold}</span>
-                      {' '}{tr.iosSafari26Step4Post}
+                      {tr.iosSafari26Step4Pre} <AddToHomeScreenIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {tr.iosSafari26Step4Bold}
+                      </span>{' '}
+                      {tr.iosSafari26Step4Post}
                     </li>
                   </>
                 ) : (
@@ -338,21 +343,24 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
                       {tr.iosSafari26Step1Post}
                     </li>
                     <li>
-                      {tr.iosSafari26Step2Pre}{' '}
-                      <IosSafariShareIcon />
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step2Bold}</span>
-                      {' '}{tr.iosSafari26Step2Post}
+                      {tr.iosSafari26Step2Pre} <IosSafariShareIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {tr.iosSafari26Step2Bold}
+                      </span>{' '}
+                      {tr.iosSafari26Step2Post}
                     </li>
                     <li>
-                      {tr.iosSafari26Step3Pre}{' '}
-                      <IosHorizontalDotsIcon />
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step3Bold}</span>
+                      {tr.iosSafari26Step3Pre} <IosHorizontalDotsIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {tr.iosSafari26Step3Bold}
+                      </span>
                     </li>
                     <li>
-                      {tr.iosSafari26Step4Pre}{' '}
-                      <AddToHomeScreenIcon />
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafari26Step4Bold}</span>
-                      {' '}{tr.iosSafari26Step4Post}
+                      {tr.iosSafari26Step4Pre} <AddToHomeScreenIcon />
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {tr.iosSafari26Step4Bold}
+                      </span>{' '}
+                      {tr.iosSafari26Step4Post}
                     </li>
                   </>
                 )
@@ -365,9 +373,10 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
                     {tr.iosChromeStep1Post}
                   </li>
                   <li>
-                    {tr.iosChromeStep2Pre}{' '}
-                    <AddToHomeScreenIcon />
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosChromeStep2Bold}</span>
+                    {tr.iosChromeStep2Pre} <AddToHomeScreenIcon />
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                      {tr.iosChromeStep2Bold}
+                    </span>
                     {tr.iosChromeStep2Post}
                   </li>
                   <li>{tr.iosChromeStep3}</li>
@@ -381,9 +390,10 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
                     {tr.iosSafariStep1Post}
                   </li>
                   <li>
-                    {tr.iosSafariStep2Pre}{' '}
-                    <AddToHomeScreenIcon />
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{tr.iosSafariStep2Bold}</span>
+                    {tr.iosSafariStep2Pre} <AddToHomeScreenIcon />
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                      {tr.iosSafariStep2Bold}
+                    </span>
                   </li>
                   <li>{tr.iosSafariStep3}</li>
                 </>
@@ -405,7 +415,9 @@ export function InstallPwaDrawer({ triggerOpen = false, forceOpenTrigger = 0 }: 
               </li>
               <li>
                 {tr.androidStep2Pre}{' '}
-                <span className="font-medium text-gray-900 dark:text-gray-100">{tr.androidStep2Bold}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {tr.androidStep2Bold}
+                </span>
               </li>
               <li>{tr.androidStep3}</li>
             </ol>

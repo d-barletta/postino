@@ -4,7 +4,10 @@ import * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
 import { cn } from '@/lib/utils';
 
-function Drawer({ shouldScaleBackground = true, ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
+function Drawer({
+  shouldScaleBackground = true,
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   return <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />;
 }
 Drawer.displayName = 'Drawer';
@@ -39,11 +42,14 @@ const DrawerContent = React.forwardRef<
         'bg-white shadow-xl dark:bg-gray-900',
         'max-h-[85vh] overflow-y-auto',
         'px-4',
-        className
+        className,
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 mb-2 h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700" aria-hidden />
+      <div
+        className="mx-auto mt-4 mb-2 h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700"
+        aria-hidden
+      />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>
@@ -66,7 +72,10 @@ const DrawerTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DrawerPrimitive.Title
     ref={ref}
-    className={cn('text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100', className)}
+    className={cn(
+      'text-lg font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100',
+      className,
+    )}
     {...props}
   />
 ));

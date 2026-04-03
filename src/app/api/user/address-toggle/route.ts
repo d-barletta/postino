@@ -16,7 +16,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     const db = adminDb();
-    await db.collection('users').doc(decoded.uid).update({ isAddressEnabled: body.isAddressEnabled });
+    await db
+      .collection('users')
+      .doc(decoded.uid)
+      .update({ isAddressEnabled: body.isAddressEnabled });
 
     return NextResponse.json({ success: true, isAddressEnabled: body.isAddressEnabled });
   } catch (error) {

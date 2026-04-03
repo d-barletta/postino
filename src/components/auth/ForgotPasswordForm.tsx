@@ -73,7 +73,10 @@ export function ForgotPasswordForm() {
 
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         {tr.rememberedPassword}{' '}
-        <Link href="/login" className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium">
+        <Link
+          href="/login"
+          className="text-yellow-700 dark:text-yellow-300 hover:underline font-medium"
+        >
           {tr.backToSignIn}
         </Link>
       </p>

@@ -5,7 +5,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/Accordion';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
@@ -42,13 +47,19 @@ type NumberBounds = {
   max?: number;
 };
 
-function parseOptionalIntegerInput(rawValue: string, previousValue: number | undefined): number | undefined {
+function parseOptionalIntegerInput(
+  rawValue: string,
+  previousValue: number | undefined,
+): number | undefined {
   if (rawValue === '') return undefined;
   const parsed = Number.parseInt(rawValue, 10);
   return Number.isNaN(parsed) ? previousValue : parsed;
 }
 
-function normalizeOptionalInteger(value: number | undefined, bounds?: NumberBounds): number | undefined {
+function normalizeOptionalInteger(
+  value: number | undefined,
+  bounds?: NumberBounds,
+): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
   let normalized = Math.floor(value);
   if (typeof bounds?.min === 'number') normalized = Math.max(bounds.min, normalized);
@@ -101,22 +112,36 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState('');
   const [llmTesting, setLlmTesting] = useState(false);
-  const [llmTestResult, setLlmTestResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
+  const [llmTestResult, setLlmTestResult] = useState<{
+    ok: boolean;
+    message: string;
+    detail?: string;
+  } | null>(null);
   const [mailgunTestTo, setMailgunTestTo] = useState('');
   const [mailgunTesting, setMailgunTesting] = useState(false);
-  const [mailgunTestResult, setMailgunTestResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
+  const [mailgunTestResult, setMailgunTestResult] = useState<{
+    ok: boolean;
+    message: string;
+    detail?: string;
+  } | null>(null);
   const normalizedMailgunBaseUrl = (settings.mailgunBaseUrl || '').trim().toLowerCase();
-  const normalizedMailgunDomain = (settings.mailgunDomain || settings.mailgunSandboxEmail || '').trim().toLowerCase();
-  const expectsEuRegion = normalizedMailgunDomain.includes('.eu.') || normalizedMailgunDomain.endsWith('.eu');
+  const normalizedMailgunDomain = (settings.mailgunDomain || settings.mailgunSandboxEmail || '')
+    .trim()
+    .toLowerCase();
+  const expectsEuRegion =
+    normalizedMailgunDomain.includes('.eu.') || normalizedMailgunDomain.endsWith('.eu');
   const usesEuBaseUrl = normalizedMailgunBaseUrl.includes('api.eu.mailgun.net');
-  const showMailgunRegionWarning = expectsEuRegion && normalizedMailgunBaseUrl.length > 0 && !usesEuBaseUrl;
+  const showMailgunRegionWarning =
+    expectsEuRegion && normalizedMailgunBaseUrl.length > 0 && !usesEuBaseUrl;
 
   useEffect(() => {
     const fetchSettings = async () => {
       if (!firebaseUser) return;
       try {
         const token = await firebaseUser.getIdToken();
-        const res = await fetch('/api/admin/settings', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch('/api/admin/settings', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           setSettings((prev) => ({ ...prev, ...data.settings }));
@@ -135,12 +160,19 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
       setModelsError('');
       try {
         const token = await firebaseUser.getIdToken();
-        const res = await fetch('/api/admin/openrouter-models', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch('/api/admin/openrouter-models', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
-        if (!res.ok) { setModels([]); setModelsError(data.error || 'Failed to load models'); return; }
+        if (!res.ok) {
+          setModels([]);
+          setModelsError(data.error || 'Failed to load models');
+          return;
+        }
         setModels((data.models || []) as OpenRouterModel[]);
       } catch {
-        setModels([]); setModelsError('Failed to load models');
+        setModels([]);
+        setModelsError('Failed to load models');
       } finally {
         setModelsLoading(false);
       }
@@ -154,15 +186,29 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     setLlmTestResult(null);
     try {
       const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/admin/test-llm', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('/api/admin/test-llm', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (data.chatCompletion === 'ok') {
-        setLlmTestResult({ ok: true, message: `Connection successful — model: ${data.model}`, detail: data.chatResponse });
+        setLlmTestResult({
+          ok: true,
+          message: `Connection successful — model: ${data.model}`,
+          detail: data.chatResponse,
+        });
       } else {
-        setLlmTestResult({ ok: false, message: 'Connection failed', detail: data.chatError || JSON.stringify(data) });
+        setLlmTestResult({
+          ok: false,
+          message: 'Connection failed',
+          detail: data.chatError || JSON.stringify(data),
+        });
       }
     } catch (err) {
-      setLlmTestResult({ ok: false, message: 'Request failed', detail: err instanceof Error ? err.message : String(err) });
+      setLlmTestResult({
+        ok: false,
+        message: 'Request failed',
+        detail: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setLlmTesting(false);
     }
@@ -196,11 +242,12 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
           detail: typeof data.detail === 'string' ? data.detail : undefined,
         });
       } else {
-        const detail = typeof data.detail === 'string'
-          ? data.detail
-          : typeof data.error === 'string'
-            ? data.error
-            : 'Request failed';
+        const detail =
+          typeof data.detail === 'string'
+            ? data.detail
+            : typeof data.error === 'string'
+              ? data.error
+              : 'Request failed';
         setMailgunTestResult({
           ok: false,
           message: typeof data.error === 'string' ? data.error : 'Mailgun test failed',
@@ -259,11 +306,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
 
     const threshold = normalizedForSave.agentChunkThresholdChars;
     const chunkSize = normalizedForSave.agentChunkSizeChars;
-    if (
-      typeof threshold === 'number' &&
-      typeof chunkSize === 'number' &&
-      chunkSize >= threshold
-    ) {
+    if (typeof threshold === 'number' && typeof chunkSize === 'number' && chunkSize >= threshold) {
       setSaveError('Agent Settings invalid: Chunk Size must be smaller than Chunk Threshold.');
       return;
     }
@@ -296,7 +339,11 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     modelOptions.push({
       value: settings.llmModel,
       label: `${settings.llmModel} (currently saved)`,
-      icon: <span title="Currently saved model" className="text-amber-500">★</span>,
+      icon: (
+        <span title="Currently saved model" className="text-amber-500">
+          ★
+        </span>
+      ),
     });
   }
   models.forEach((m) => modelOptions.push({ value: m.id, label: `${m.name} (${m.id})` }));
@@ -314,7 +361,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
       {showPageHeader && (
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Platform Settings</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Configure Postino&apos;s core settings</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Configure Postino&apos;s core settings
+          </p>
         </div>
       )}
 
@@ -331,7 +380,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
               <Switch
                 id="maintenance-mode"
                 checked={!!settings.maintenanceMode}
-                onCheckedChange={(checked) => setSettings((p) => ({ ...p, maintenanceMode: checked }))}
+                onCheckedChange={(checked) =>
+                  setSettings((p) => ({ ...p, maintenanceMode: checked }))
+                }
               />
             </div>
             {settings.maintenanceMode && (
@@ -346,22 +397,28 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
             <Separator className="mt-3" />
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="font-semibold text-gray-900 dark:text-gray-100">Signup Maintenance Mode</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                  Signup Maintenance Mode
+                </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  When enabled, new user registrations are suspended and a warning is shown on the signup page.
+                  When enabled, new user registrations are suspended and a warning is shown on the
+                  signup page.
                 </p>
               </div>
               <Switch
                 id="signup-maintenance-mode"
                 checked={!!settings.signupMaintenanceMode}
-                onCheckedChange={(checked) => setSettings((p) => ({ ...p, signupMaintenanceMode: checked }))}
+                onCheckedChange={(checked) =>
+                  setSettings((p) => ({ ...p, signupMaintenanceMode: checked }))
+                }
               />
             </div>
             {settings.signupMaintenanceMode && (
               <Alert variant="warning">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Signup maintenance mode is <strong>ON</strong> — new user registrations are suspended.
+                  Signup maintenance mode is <strong>ON</strong> — new user registrations are
+                  suspended.
                 </AlertDescription>
               </Alert>
             )}
@@ -375,7 +432,10 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
               <AccordionContent>
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label htmlFor="llm-api-key" className="text-sm font-medium leading-none text-gray-700 dark:text-gray-300">
+                    <label
+                      htmlFor="llm-api-key"
+                      className="text-sm font-medium leading-none text-gray-700 dark:text-gray-300"
+                    >
                       OpenRouter API Key
                     </label>
                     <div className="flex gap-2 items-center">
@@ -384,7 +444,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                           id="llm-api-key"
                           type="password"
                           value={settings.llmApiKey || ''}
-                          onChange={(e) => setSettings((p) => ({ ...p, llmApiKey: e.target.value }))}
+                          onChange={(e) =>
+                            setSettings((p) => ({ ...p, llmApiKey: e.target.value }))
+                          }
                           placeholder="sk-or-..."
                         />
                       </div>
@@ -393,13 +455,26 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                       </Button>
                     </div>
                     {llmTestResult && (
-                      <div className={cn('text-sm flex flex-col gap-0.5', llmTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
+                      <div
+                        className={cn(
+                          'text-sm flex flex-col gap-0.5',
+                          llmTestResult.ok
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400',
+                        )}
+                      >
                         <span className="flex items-center gap-1">
-                          {llmTestResult.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                          {llmTestResult.ok ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
                           {llmTestResult.message}
                         </span>
                         {llmTestResult.detail && (
-                          <span className="text-xs opacity-75 font-mono">{llmTestResult.detail}</span>
+                          <span className="text-xs opacity-75 font-mono">
+                            {llmTestResult.detail}
+                          </span>
                         )}
                       </div>
                     )}
@@ -418,7 +493,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     {modelsError ? (
                       <p className="text-xs text-red-600 dark:text-red-400">{modelsError}</p>
                     ) : (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Fetched live from OpenRouter</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Fetched live from OpenRouter
+                      </p>
                     )}
                   </div>
                   <Input
@@ -477,24 +554,32 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   <Textarea
                     label="System Prompt (base)"
                     value={settings.llmSystemPrompt || ''}
-                    onChange={(e) => setSettings((p) => ({ ...p, llmSystemPrompt: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, llmSystemPrompt: e.target.value }))
+                    }
                     rows={8}
                     placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
                     hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
                   />
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Parallel Rule Execution</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Parallel Rule Execution
+                      </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        When enabled, all matching rules are applied in a single LLM call instead of one call per rule.
-                        Reduces token usage and latency, but the LLM must honour all rules simultaneously.
+                        When enabled, all matching rules are applied in a single LLM call instead of
+                        one call per rule. Reduces token usage and latency, but the LLM must honour
+                        all rules simultaneously.
                       </p>
                     </div>
                     <Switch
                       id="rules-execution-mode"
                       checked={settings.rulesExecutionMode === 'parallel'}
                       onCheckedChange={(checked) =>
-                        setSettings((p) => ({ ...p, rulesExecutionMode: checked ? 'parallel' : 'sequential' }))
+                        setSettings((p) => ({
+                          ...p,
+                          rulesExecutionMode: checked ? 'parallel' : 'sequential',
+                        }))
                       }
                     />
                   </div>
@@ -508,29 +593,39 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable Agent Tracing</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Enable Agent Tracing
+                      </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Stores a step-by-step execution trace for each processed email and shows it in Admin Email Logs.
+                        Stores a step-by-step execution trace for each processed email and shows it
+                        in Admin Email Logs.
                       </p>
                     </div>
                     <Switch
                       id="agent-tracing-enabled"
                       checked={settings.agentTracingEnabled !== false}
-                      onCheckedChange={(checked) => setSettings((p) => ({ ...p, agentTracingEnabled: checked }))}
+                      onCheckedChange={(checked) =>
+                        setSettings((p) => ({ ...p, agentTracingEnabled: checked }))
+                      }
                     />
                   </div>
 
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Include Prompt/Response Excerpts</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Include Prompt/Response Excerpts
+                      </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Adds short excerpts of prompts and model outputs to traces for deeper debugging. Disabled by default.
+                        Adds short excerpts of prompts and model outputs to traces for deeper
+                        debugging. Disabled by default.
                       </p>
                     </div>
                     <Switch
                       id="agent-trace-include-excerpts"
                       checked={settings.agentTraceIncludeExcerpts === true}
-                      onCheckedChange={(checked) => setSettings((p) => ({ ...p, agentTraceIncludeExcerpts: checked }))}
+                      onCheckedChange={(checked) =>
+                        setSettings((p) => ({ ...p, agentTraceIncludeExcerpts: checked }))
+                      }
                     />
                   </div>
 
@@ -543,16 +638,22 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => {
                       setSettings((p) => ({
                         ...p,
-                        agentChunkThresholdChars: parseOptionalIntegerInput(e.target.value, p.agentChunkThresholdChars),
+                        agentChunkThresholdChars: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.agentChunkThresholdChars,
+                        ),
                       }));
                     }}
                     onBlur={() => {
                       setSettings((p) => ({
                         ...p,
-                        agentChunkThresholdChars: normalizeOptionalInteger(p.agentChunkThresholdChars, {
-                          min: AGENT_LIMITS.chunkThresholdChars.min,
-                          max: AGENT_LIMITS.chunkThresholdChars.max,
-                        }),
+                        agentChunkThresholdChars: normalizeOptionalInteger(
+                          p.agentChunkThresholdChars,
+                          {
+                            min: AGENT_LIMITS.chunkThresholdChars.min,
+                            max: AGENT_LIMITS.chunkThresholdChars.max,
+                          },
+                        ),
                       }));
                     }}
                     hint={`If email body length exceeds this value, the agent switches to chunked map-reduce mode (${AGENT_LIMITS.chunkThresholdChars.min}-${AGENT_LIMITS.chunkThresholdChars.max}).`}
@@ -566,7 +667,10 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => {
                       setSettings((p) => ({
                         ...p,
-                        agentChunkSizeChars: parseOptionalIntegerInput(e.target.value, p.agentChunkSizeChars),
+                        agentChunkSizeChars: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.agentChunkSizeChars,
+                        ),
                       }));
                     }}
                     onBlur={() => {
@@ -589,16 +693,22 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => {
                       setSettings((p) => ({
                         ...p,
-                        agentChunkExtractMaxTokens: parseOptionalIntegerInput(e.target.value, p.agentChunkExtractMaxTokens),
+                        agentChunkExtractMaxTokens: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.agentChunkExtractMaxTokens,
+                        ),
                       }));
                     }}
                     onBlur={() => {
                       setSettings((p) => ({
                         ...p,
-                        agentChunkExtractMaxTokens: normalizeOptionalInteger(p.agentChunkExtractMaxTokens, {
-                          min: AGENT_LIMITS.chunkExtractMaxTokens.min,
-                          max: AGENT_LIMITS.chunkExtractMaxTokens.max,
-                        }),
+                        agentChunkExtractMaxTokens: normalizeOptionalInteger(
+                          p.agentChunkExtractMaxTokens,
+                          {
+                            min: AGENT_LIMITS.chunkExtractMaxTokens.min,
+                            max: AGENT_LIMITS.chunkExtractMaxTokens.max,
+                          },
+                        ),
                       }));
                     }}
                     hint={`Max tokens for each chunk extraction LLM call (${AGENT_LIMITS.chunkExtractMaxTokens.min}-${AGENT_LIMITS.chunkExtractMaxTokens.max}).`}
@@ -612,7 +722,10 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => {
                       setSettings((p) => ({
                         ...p,
-                        agentAnalysisMaxTokens: parseOptionalIntegerInput(e.target.value, p.agentAnalysisMaxTokens),
+                        agentAnalysisMaxTokens: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.agentAnalysisMaxTokens,
+                        ),
                       }));
                     }}
                     onBlur={() => {
@@ -635,16 +748,22 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => {
                       setSettings((p) => ({
                         ...p,
-                        agentBodyAnalysisMaxChars: parseOptionalIntegerInput(e.target.value, p.agentBodyAnalysisMaxChars),
+                        agentBodyAnalysisMaxChars: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.agentBodyAnalysisMaxChars,
+                        ),
                       }));
                     }}
                     onBlur={() => {
                       setSettings((p) => ({
                         ...p,
-                        agentBodyAnalysisMaxChars: normalizeOptionalInteger(p.agentBodyAnalysisMaxChars, {
-                          min: AGENT_LIMITS.bodyAnalysisMaxChars.min,
-                          max: AGENT_LIMITS.bodyAnalysisMaxChars.max,
-                        }),
+                        agentBodyAnalysisMaxChars: normalizeOptionalInteger(
+                          p.agentBodyAnalysisMaxChars,
+                          {
+                            min: AGENT_LIMITS.bodyAnalysisMaxChars.min,
+                            max: AGENT_LIMITS.bodyAnalysisMaxChars.max,
+                          },
+                        ),
                       }));
                     }}
                     hint={`Max body characters sent to pre-analysis (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}).`}
@@ -658,16 +777,22 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => {
                       setSettings((p) => ({
                         ...p,
-                        agentChunkFallbackMaxChars: parseOptionalIntegerInput(e.target.value, p.agentChunkFallbackMaxChars),
+                        agentChunkFallbackMaxChars: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.agentChunkFallbackMaxChars,
+                        ),
                       }));
                     }}
                     onBlur={() => {
                       setSettings((p) => ({
                         ...p,
-                        agentChunkFallbackMaxChars: normalizeOptionalInteger(p.agentChunkFallbackMaxChars, {
-                          min: AGENT_LIMITS.chunkFallbackMaxChars.min,
-                          max: AGENT_LIMITS.chunkFallbackMaxChars.max,
-                        }),
+                        agentChunkFallbackMaxChars: normalizeOptionalInteger(
+                          p.agentChunkFallbackMaxChars,
+                          {
+                            min: AGENT_LIMITS.chunkFallbackMaxChars.min,
+                            max: AGENT_LIMITS.chunkFallbackMaxChars.max,
+                          },
+                        ),
                       }));
                     }}
                     hint={`If chunk extraction fails, raw chunk is truncated to this length (${AGENT_LIMITS.chunkFallbackMaxChars.min}-${AGENT_LIMITS.chunkFallbackMaxChars.max}).`}
@@ -681,7 +806,10 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => {
                       setSettings((p) => ({
                         ...p,
-                        agentFallbackMaxTokens: parseOptionalIntegerInput(e.target.value, p.agentFallbackMaxTokens),
+                        agentFallbackMaxTokens: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.agentFallbackMaxTokens,
+                        ),
                       }));
                     }}
                     onBlur={() => {
@@ -713,7 +841,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   <Input
                     label="Default Subject Prefix"
                     value={settings.emailSubjectPrefix || ''}
-                    onChange={(e) => setSettings((p) => ({ ...p, emailSubjectPrefix: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, emailSubjectPrefix: e.target.value }))
+                    }
                     placeholder="[Postino]"
                     hint="Used when the LLM does not return a subject. Leave empty to disable prefixing."
                   />
@@ -788,7 +918,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     label="Mailgun Webhook Signing Key"
                     type="password"
                     value={settings.mailgunWebhookSigningKey || ''}
-                    onChange={(e) => setSettings((p) => ({ ...p, mailgunWebhookSigningKey: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, mailgunWebhookSigningKey: e.target.value }))
+                    }
                     placeholder="webhook signing key"
                     hint="Used to verify inbound Mailgun webhook signatures"
                   />
@@ -801,7 +933,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   <Input
                     label="Mailgun Sandbox Email"
                     value={settings.mailgunSandboxEmail || ''}
-                    onChange={(e) => setSettings((p) => ({ ...p, mailgunSandboxEmail: e.target.value }))}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, mailgunSandboxEmail: e.target.value }))
+                    }
                     placeholder="sandbox123.mailgun.org"
                     hint="Used when recipient arrives without @domain"
                   />
@@ -814,7 +948,8 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   />
                   {showMailgunRegionWarning && (
                     <p className="text-xs text-amber-700 dark:text-amber-300">
-                      Domain appears to be EU-based. Use https://api.eu.mailgun.net as Mailgun Base URL to avoid stored message fetch failures.
+                      Domain appears to be EU-based. Use https://api.eu.mailgun.net as Mailgun Base
+                      URL to avoid stored message fetch failures.
                     </p>
                   )}
                   <div className="space-y-1.5">
@@ -830,18 +965,35 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                       />
                     </div>
                     <div>
-                      <Button variant="secondary" onClick={handleTestMailgun} loading={mailgunTesting}>
+                      <Button
+                        variant="secondary"
+                        onClick={handleTestMailgun}
+                        loading={mailgunTesting}
+                      >
                         Send test email
                       </Button>
                     </div>
                     {mailgunTestResult && (
-                      <div className={cn('text-sm flex flex-col gap-0.5', mailgunTestResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
+                      <div
+                        className={cn(
+                          'text-sm flex flex-col gap-0.5',
+                          mailgunTestResult.ok
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400',
+                        )}
+                      >
                         <span className="flex items-center gap-1">
-                          {mailgunTestResult.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                          {mailgunTestResult.ok ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
                           {mailgunTestResult.message}
                         </span>
                         {mailgunTestResult.detail && (
-                          <span className="text-xs opacity-75 font-mono wrap-break-word">{mailgunTestResult.detail}</span>
+                          <span className="text-xs opacity-75 font-mono wrap-break-word">
+                            {mailgunTestResult.detail}
+                          </span>
                         )}
                       </div>
                     )}

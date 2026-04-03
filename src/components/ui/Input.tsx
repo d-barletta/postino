@@ -31,7 +31,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             'disabled:cursor-not-allowed disabled:opacity-50',
             'dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-100',
             error && 'border-red-400 focus-visible:ring-red-400 focus-visible:border-red-400',
-            className
+            className,
           )}
           ref={ref}
           {...props}
@@ -40,7 +40,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       </div>
     );
-  }
+  },
 );
 Input.displayName = 'Input';
 

@@ -150,7 +150,9 @@ export async function sendEmail(options: {
     resolvedFrom = expandedName ? `${expandedName} <${emailPart}>` : emailPart;
   } else {
     resolvedFrom =
-      settings?.smtpFrom || process.env.SMTP_FROM || `Postino <noreply@${mailgunDomain || 'postino.pro'}>`;
+      settings?.smtpFrom ||
+      process.env.SMTP_FROM ||
+      `Postino <noreply@${mailgunDomain || 'postino.pro'}>`;
   }
   const fromAddress = stripCrlf(resolvedFrom);
   const toAddress = stripCrlf(options.to);
@@ -214,7 +216,7 @@ export function verifyMailgunSignature(
   timestamp: string,
   token: string,
   signature: string,
-  apiKey: string
+  apiKey: string,
 ): boolean {
   if (!timestamp || !token || !signature || !apiKey) return false;
 

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { generateAssignedEmail, resolveAssignedEmailDomain, isEmailUsingDomain } from '@/lib/email-utils';
+import {
+  generateAssignedEmail,
+  resolveAssignedEmailDomain,
+  isEmailUsingDomain,
+} from '@/lib/email-utils';
 
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
 
@@ -33,7 +37,7 @@ export async function GET(request: NextRequest) {
     if (isEmailUsingDomain(loginEmail, assignedDomain)) {
       return NextResponse.json(
         { error: "Can't create an account using our email addresses" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -44,7 +48,7 @@ export async function GET(request: NextRequest) {
       if (settingsDoc.data()?.signupMaintenanceMode === true) {
         return NextResponse.json(
           { error: 'Signup is temporarily suspended during maintenance' },
-          { status: 403 }
+          { status: 403 },
         );
       }
 
@@ -70,7 +74,9 @@ export async function GET(request: NextRequest) {
 
       const SUPPORTED_LOCALES = ['en', 'it', 'es', 'fr', 'de'];
       const requestedLocale = (request.headers.get('X-Locale') ?? '').toLowerCase();
-      const analysisOutputLanguage = SUPPORTED_LOCALES.includes(requestedLocale) ? requestedLocale : 'en';
+      const analysisOutputLanguage = SUPPORTED_LOCALES.includes(requestedLocale)
+        ? requestedLocale
+        : 'en';
 
       await userRef.set({
         email: decoded.email ?? '',

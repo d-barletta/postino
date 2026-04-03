@@ -13,10 +13,26 @@ export function UserStatsCards({ stats }: UserStatsCardsProps) {
   const s = t.dashboard.stats;
 
   const cards = [
-    { label: s.emailsReceived, value: stats.totalEmailsReceived, color: 'text-blue-600 dark:text-blue-400' },
-    { label: s.emailsForwarded, value: stats.totalEmailsForwarded, color: 'text-purple-600 dark:text-purple-400' },
-    { label: s.emailsErrored, value: stats.totalEmailsError, color: 'text-red-600 dark:text-red-400' },
-    { label: s.emailsSkipped, value: stats.totalEmailsSkipped, color: 'text-gray-500 dark:text-gray-400' },
+    {
+      label: s.emailsReceived,
+      value: stats.totalEmailsReceived,
+      color: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      label: s.emailsForwarded,
+      value: stats.totalEmailsForwarded,
+      color: 'text-purple-600 dark:text-purple-400',
+    },
+    {
+      label: s.emailsErrored,
+      value: stats.totalEmailsError,
+      color: 'text-red-600 dark:text-red-400',
+    },
+    {
+      label: s.emailsSkipped,
+      value: stats.totalEmailsSkipped,
+      color: 'text-gray-500 dark:text-gray-400',
+    },
     {
       label: s.tokensUsed,
       value: stats.totalTokensUsed.toLocaleString(),

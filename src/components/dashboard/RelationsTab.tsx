@@ -29,14 +29,8 @@ export function RelationsTab() {
   const { firebaseUser, loading: authLoading } = useAuth();
   const k = t.dashboard.knowledge;
 
-  const {
-    graph,
-    hasFetched,
-    loading,
-    generating,
-    fetchGraph,
-    generateGraph,
-  } = useRelationGraph(firebaseUser);
+  const { graph, hasFetched, loading, generating, fetchGraph, generateGraph } =
+    useRelationGraph(firebaseUser);
 
   // Load any previously-generated (cached) graph on first render
   useEffect(() => {
@@ -134,7 +128,12 @@ export function RelationsTab() {
       </Card>
 
       {/* Full-page graph dialog */}
-      <Dialog open={fullPageGraphOpen} onOpenChange={(o) => { if (!o) setFullPageGraphOpen(false); }}>
+      <Dialog
+        open={fullPageGraphOpen}
+        onOpenChange={(o) => {
+          if (!o) setFullPageGraphOpen(false);
+        }}
+      >
         <DialogContent
           hideCloseButton
           animation="slide-from-bottom"
@@ -143,10 +142,7 @@ export function RelationsTab() {
         >
           <div className="flex-1 min-h-0">
             {graph && graph.nodes.length > 0 && (
-              <RelationGraphFullPageContent
-                graph={graph}
-                onNodeClick={handleNodeClick}
-              />
+              <RelationGraphFullPageContent graph={graph} onNodeClick={handleNodeClick} />
             )}
           </div>
           <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">

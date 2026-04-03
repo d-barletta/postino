@@ -38,7 +38,9 @@ export function PushNotificationButton() {
   useEffect(() => {
     if (!subscribed) return;
     const unsubscribe = setupForegroundMessageHandler();
-    return () => { unsubscribe?.(); };
+    return () => {
+      unsubscribe?.();
+    };
   }, [subscribed]);
 
   const handleEnable = useCallback(async () => {
@@ -74,7 +76,9 @@ export function PushNotificationButton() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t.dashboard.pushNotifications.title}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {t.dashboard.pushNotifications.title}
+          </h2>
           <div className="flex items-center gap-2">
             <Switch
               checked={subscribed}

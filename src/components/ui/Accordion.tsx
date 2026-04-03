@@ -29,7 +29,7 @@ const AccordionTrigger = React.forwardRef<
       className={cn(
         'group flex flex-1 items-center justify-between py-4 text-left text-sm font-medium transition-all',
         'text-gray-900 hover:text-gray-700 dark:text-gray-100 dark:hover:text-gray-200',
-        className
+        className,
       )}
       {...props}
     >
@@ -49,7 +49,7 @@ const AccordionContent = React.forwardRef<
     className={cn(
       'overflow-hidden text-sm',
       'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
-      className
+      className,
     )}
     {...props}
   >

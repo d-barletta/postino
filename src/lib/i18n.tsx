@@ -535,7 +535,7 @@ const translations: Record<Locale, Translations> = {
         words: ['summarize', 'organizes', 'translates', 'polishes'],
         emailsAndNewsletters: 'e-mails & newsletters',
         subtitle:
-          'Get a private email address.\nWrite simple rules in natural language.\nPostino\'s AI processes your incoming emails — summarizing newsletters, removing ads, extracting key info, translate and much more — then forwards the result to you.',
+          "Get a private email address.\nWrite simple rules in natural language.\nPostino's AI processes your incoming emails — summarizing newsletters, removing ads, extracting key info, translate and much more — then forwards the result to you.",
         startFree: 'Start for free',
         howItWorks: 'How it works',
       },
@@ -612,8 +612,7 @@ const translations: Record<Locale, Translations> = {
         sendResetLink: 'Send reset link',
         rememberedPassword: 'Remembered your password?',
         backToSignIn: 'Back to sign in',
-        successMessage:
-          'If an account exists for this email, we sent you a password reset link.',
+        successMessage: 'If an account exists for this email, we sent you a password reset link.',
         errors: {
           invalidEmail: 'Invalid email address',
           tooManyAttempts: 'Too many attempts. Please try again later.',
@@ -660,24 +659,30 @@ const translations: Record<Locale, Translations> = {
       },
       pushNotifications: {
         title: 'Push Notifications',
-        enabledDescription: 'You will receive a browser notification each time an email is processed.',
-        disabledDescription: 'Enable to receive a browser notification whenever a new email is processed.',
-        blockedDescription: "Notifications are blocked by your browser. Open your browser's site settings and allow notifications for this site to enable this feature.",
+        enabledDescription:
+          'You will receive a browser notification each time an email is processed.',
+        disabledDescription:
+          'Enable to receive a browser notification whenever a new email is processed.',
+        blockedDescription:
+          "Notifications are blocked by your browser. Open your browser's site settings and allow notifications for this site to enable this feature.",
       },
       forwardingHeader: {
         title: 'Postino Header in Forwarded Emails',
-        enabledDescription: 'A Postino summary box is appended to the bottom of every forwarded email.',
+        enabledDescription:
+          'A Postino summary box is appended to the bottom of every forwarded email.',
         disabledDescription: 'The Postino summary box is not appended to forwarded emails.',
       },
       analysisLanguage: {
         title: 'AI Analysis Language',
-        description: 'Choose the language for AI-generated analysis content (summary, intent, tags, topics). Select "Auto" to use English (default).',
+        description:
+          'Choose the language for AI-generated analysis content (summary, intent, tags, topics). Select "Auto" to use English (default).',
         selectPlaceholder: 'Select language',
         autoLabel: 'Auto (English)',
       },
       installApp: {
         title: 'Install Postino App',
-        description: 'Install Postino as an app on your device for a faster, native-like experience.',
+        description:
+          'Install Postino as an app on your device for a faster, native-like experience.',
         buttonLabel: 'Install App',
         alreadyInstalled: 'Already Installed',
       },
@@ -749,7 +754,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesDates: 'Dates:',
         analysisEntitiesPrices: 'Prices:',
         deleteEmail: 'Delete email',
-        deleteEmailConfirm: 'Are you sure you want to permanently delete this email? This action cannot be undone.',
+        deleteEmailConfirm:
+          'Are you sure you want to permanently delete this email? This action cannot be undone.',
         deleteEmailSuccess: 'Email deleted.',
         deleteEmailError: 'Failed to delete email.',
         failedToLoad: 'Failed to load emails',
@@ -809,7 +815,8 @@ const translations: Record<Locale, Translations> = {
         tags: 'Tags',
         emailsAnalyzed: '{count} emails analyzed',
         noData: 'No knowledge data yet',
-        noDataDesc: 'Send some emails to your Postino address to start building your knowledge graph.',
+        noDataDesc:
+          'Send some emails to your Postino address to start building your knowledge graph.',
         searchInInbox: 'Search in inbox',
         loading: 'Loading…',
         mentions: 'mentions',
@@ -863,7 +870,8 @@ const translations: Record<Locale, Translations> = {
           generating: 'Generating…',
           regenerate: 'Regenerate',
           noGraph: 'No relation map yet',
-          noGraphDesc: 'Click "Generate Relations" to discover connections between entities in your emails.',
+          noGraphDesc:
+            'Click "Generate Relations" to discover connections between entities in your emails.',
           generatedOn: 'Generated on {date}',
           totalEmails: 'Based on {count} emails',
           error: 'Failed to generate relations',
@@ -889,12 +897,14 @@ const translations: Record<Locale, Translations> = {
         hideFilters: 'Hide filters',
         addFilters: 'Add sender/subject/body filters (optional)',
         editFilters: 'Edit sender/subject/body filters (optional)',
-        filterHelp: 'Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.',
+        filterHelp:
+          'Apply this rule only when the incoming email matches all provided patterns (case-insensitive contains). Leave blank to apply to all emails.',
         senderContains: 'Sender contains',
         subjectContains: 'Subject contains',
         bodyContains: 'Body contains',
         ruleNamePlaceholder: 'e.g. Newsletter Summarizer',
-        ruleDescriptionPlaceholder: 'Example: Summarize newsletters and remove promotional content. Keep only the key articles and links.',
+        ruleDescriptionPlaceholder:
+          'Example: Summarize newsletters and remove promotional content. Keep only the key articles and links.',
         senderPlaceholder: 'e.g. newsletter@example.com',
         subjectPlaceholder: 'e.g. Weekly Digest',
         bodyPlaceholder: 'e.g. unsubscribe',
@@ -936,7 +946,8 @@ const translations: Record<Locale, Translations> = {
       },
       pwaInstall: {
         title: 'Add Postino to your home screen',
-        description: 'Get faster access and a better experience by installing the app on your device.',
+        description:
+          'Get faster access and a better experience by installing the app on your device.',
         howToTitle: 'How to install:',
         iosSafariStep1Pre: 'Tap the',
         iosSafariStep1Post: 'Share button in the browser toolbar.',
@@ -1073,11 +1084,11 @@ const translations: Record<Locale, Translations> = {
         title: 'Esempi di regole',
         rules: [
           'Riassumi le newsletter e rimuovi tutti gli annunci e i contenuti promozionali',
-          'Estrai ed elenca solo gli elementi d\'azione importanti dalle email',
+          "Estrai ed elenca solo gli elementi d'azione importanti dalle email",
           'Traduci le email in italiano e riassumi i punti principali',
-          'Per ricevute e conferme d\'ordine, estrai solo i dettagli dell\'ordine e il totale',
+          "Per ricevute e conferme d'ordine, estrai solo i dettagli dell'ordine e il totale",
           'Rimuovi i pixel di tracciamento e riscrivi i link in modo pulito',
-          'Se l\'email è un\'offerta promozionale, ignorala completamente',
+          "Se l'email è un'offerta promozionale, ignorala completamente",
         ],
       },
     },
@@ -1126,7 +1137,7 @@ const translations: Record<Locale, Translations> = {
         emailAddress: 'Indirizzo email',
         sendResetLink: 'Invia link di reimpostazione',
         rememberedPassword: 'Ricordi la password?',
-        backToSignIn: 'Torna all\'accesso',
+        backToSignIn: "Torna all'accesso",
         successMessage:
           'Se esiste un account per questa email, ti abbiamo inviato un link per reimpostare la password.',
         errors: {
@@ -1136,7 +1147,7 @@ const translations: Record<Locale, Translations> = {
         },
       },
       dashboardLink: {
-        alreadySignedIn: 'Hai già effettuato l\'accesso.',
+        alreadySignedIn: "Hai già effettuato l'accesso.",
         goToDashboard: 'Vai alla Dashboard',
         loadingDashboard: 'Caricamento dashboard…',
       },
@@ -1160,7 +1171,7 @@ const translations: Record<Locale, Translations> = {
         activeDescription:
           'Invia email a questo indirizzo e verranno elaborate secondo le tue regole, poi inoltrate alla tua email',
         disabledDescription:
-          "Il tuo indirizzo Postino è disabilitato. Le email in arrivo verranno registrate come saltate e non inoltrate.",
+          'Il tuo indirizzo Postino è disabilitato. Le email in arrivo verranno registrate come saltate e non inoltrate.',
         copy: 'Copia',
         copied: 'Copiato',
         toggleAriaLabel: 'Abilita o disabilita il tuo indirizzo Postino',
@@ -1175,24 +1186,31 @@ const translations: Record<Locale, Translations> = {
       },
       pushNotifications: {
         title: 'Notifiche push',
-        enabledDescription: "Riceverai una notifica del browser ogni volta che un'email viene elaborata.",
-        disabledDescription: "Attiva per ricevere una notifica del browser ogni volta che una nuova email viene elaborata.",
-        blockedDescription: "Le notifiche sono bloccate dal browser. Apri le impostazioni del sito nel browser e consenti le notifiche per abilitare questa funzione.",
+        enabledDescription:
+          "Riceverai una notifica del browser ogni volta che un'email viene elaborata.",
+        disabledDescription:
+          'Attiva per ricevere una notifica del browser ogni volta che una nuova email viene elaborata.',
+        blockedDescription:
+          'Le notifiche sono bloccate dal browser. Apri le impostazioni del sito nel browser e consenti le notifiche per abilitare questa funzione.',
       },
       forwardingHeader: {
         title: 'Intestazione Postino nelle email inoltrate',
-        enabledDescription: 'Un riquadro di riepilogo Postino viene aggiunto in fondo a ogni email inoltrata.',
-        disabledDescription: 'Il riquadro di riepilogo Postino non viene aggiunto alle email inoltrate.',
+        enabledDescription:
+          'Un riquadro di riepilogo Postino viene aggiunto in fondo a ogni email inoltrata.',
+        disabledDescription:
+          'Il riquadro di riepilogo Postino non viene aggiunto alle email inoltrate.',
       },
       analysisLanguage: {
         title: 'Lingua analisi AI',
-        description: "Scegli la lingua per i contenuti generati dall'AI (riepilogo, intento, tag, argomenti). Seleziona \"Auto\" per usare l'inglese (predefinito).",
+        description:
+          'Scegli la lingua per i contenuti generati dall\'AI (riepilogo, intento, tag, argomenti). Seleziona "Auto" per usare l\'inglese (predefinito).',
         selectPlaceholder: 'Seleziona lingua',
         autoLabel: 'Auto (Inglese)',
       },
       installApp: {
-        title: 'Installa l\'app Postino',
-        description: 'Installa Postino come app sul tuo dispositivo per un\'esperienza più rapida e nativa.',
+        title: "Installa l'app Postino",
+        description:
+          "Installa Postino come app sul tuo dispositivo per un'esperienza più rapida e nativa.",
         buttonLabel: 'Installa app',
         alreadyInstalled: 'Già installata',
       },
@@ -1222,7 +1240,7 @@ const translations: Record<Locale, Translations> = {
         clearFilter: 'Rimuovi filtri',
         noEmailsYet: 'Nessuna email elaborata.',
         noEmailsYetDesc: "Invia un'email al tuo indirizzo Postino per iniziare!",
-        selectEmailToRead: 'Seleziona un\'email da leggere',
+        selectEmailToRead: "Seleziona un'email da leggere",
         from: 'Da:',
         to: 'A:',
         cc: 'Cc:',
@@ -1264,7 +1282,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesDates: 'Date:',
         analysisEntitiesPrices: 'Prezzi:',
         deleteEmail: 'Elimina email',
-        deleteEmailConfirm: "Sei sicuro di voler eliminare definitivamente questa email? Questa azione non può essere annullata.",
+        deleteEmailConfirm:
+          'Sei sicuro di voler eliminare definitivamente questa email? Questa azione non può essere annullata.',
         deleteEmailSuccess: 'Email eliminata.',
         deleteEmailError: "Impossibile eliminare l'email.",
         failedToLoad: 'Caricamento email non riuscito',
@@ -1324,7 +1343,8 @@ const translations: Record<Locale, Translations> = {
         tags: 'Tag',
         emailsAnalyzed: '{count} email analizzate',
         noData: 'Nessun dato disponibile',
-        noDataDesc: 'Invia alcune email al tuo indirizzo Postino per iniziare a costruire il grafo della conoscenza.',
+        noDataDesc:
+          'Invia alcune email al tuo indirizzo Postino per iniziare a costruire il grafo della conoscenza.',
         searchInInbox: 'Cerca nella posta',
         loading: 'Caricamento…',
         mentions: 'menzioni',
@@ -1347,7 +1367,8 @@ const translations: Record<Locale, Translations> = {
         deleteMerge: 'Elimina unione',
         deleteConfirm: 'Sei sicuro di voler eliminare',
         mergesTitle: 'Unioni di entità',
-        mergesDesc: 'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
+        mergesDesc:
+          'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
         listTab: 'Lista',
         mergedTab: 'Uniti',
         suggestionsTab: 'Suggerimenti',
@@ -1378,7 +1399,8 @@ const translations: Record<Locale, Translations> = {
           generating: 'Generazione…',
           regenerate: 'Rigenera',
           noGraph: 'Nessuna mappa relazioni',
-          noGraphDesc: 'Clicca "Genera relazioni" per scoprire le connessioni tra le entità nelle tue email.',
+          noGraphDesc:
+            'Clicca "Genera relazioni" per scoprire le connessioni tra le entità nelle tue email.',
           generatedOn: 'Generata il {date}',
           totalEmails: 'Basato su {count} email',
           error: 'Generazione relazioni non riuscita',
@@ -1404,12 +1426,14 @@ const translations: Record<Locale, Translations> = {
         hideFilters: 'Nascondi filtri',
         addFilters: 'Aggiungi filtri mittente/oggetto/corpo (opzionale)',
         editFilters: 'Modifica filtri mittente/oggetto/corpo (opzionale)',
-        filterHelp: "Applica questa regola solo quando l'email corrisponde a tutti i pattern forniti (contiene, senza distinzione maiuscole/minuscole). Lascia vuoto per applicare a tutte le email.",
+        filterHelp:
+          "Applica questa regola solo quando l'email corrisponde a tutti i pattern forniti (contiene, senza distinzione maiuscole/minuscole). Lascia vuoto per applicare a tutte le email.",
         senderContains: 'Mittente contiene',
         subjectContains: 'Oggetto contiene',
         bodyContains: 'Corpo contiene',
         ruleNamePlaceholder: 'es. Riepilogo newsletter',
-        ruleDescriptionPlaceholder: 'Esempio: Riassumi le newsletter e rimuovi i contenuti promozionali. Mantieni solo gli articoli e i link principali.',
+        ruleDescriptionPlaceholder:
+          'Esempio: Riassumi le newsletter e rimuovi i contenuti promozionali. Mantieni solo gli articoli e i link principali.',
         senderPlaceholder: 'es. newsletter@esempio.com',
         subjectPlaceholder: 'es. Digest settimanale',
         bodyPlaceholder: 'es. annulla iscrizione',
@@ -1451,7 +1475,8 @@ const translations: Record<Locale, Translations> = {
       },
       pwaInstall: {
         title: 'Aggiungi Postino alla schermata home',
-        description: "Ottieni un accesso più rapido e un'esperienza migliore installando l'app sul tuo dispositivo.",
+        description:
+          "Ottieni un accesso più rapido e un'esperienza migliore installando l'app sul tuo dispositivo.",
         howToTitle: 'Come installare:',
         iosSafariStep1Pre: 'Tocca il',
         iosSafariStep1Post: 'pulsante Condividi nella barra del browser.',
@@ -1474,7 +1499,8 @@ const translations: Record<Locale, Translations> = {
         iosChromeStep1Post: "pulsante nell'angolo in alto a destra.",
         iosChromeStep2Pre: 'Seleziona',
         iosChromeStep2Bold: 'Aggiungi a schermata Home',
-        iosChromeStep2Post: ' dal menu. Potrebbe essere necessario scorrere verso il basso per trovarlo.',
+        iosChromeStep2Post:
+          ' dal menu. Potrebbe essere necessario scorrere verso il basso per trovarlo.',
         iosChromeStep3: 'Tocca Aggiungi per confermare.',
         androidStep1Pre: 'Tocca il',
         androidStep1Post: "pulsante menu nell'angolo in alto a destra.",
@@ -1686,24 +1712,31 @@ const translations: Record<Locale, Translations> = {
       },
       pushNotifications: {
         title: 'Notificaciones push',
-        enabledDescription: 'Recibirás una notificación del navegador cada vez que se procese un correo.',
-        disabledDescription: 'Activa para recibir una notificación del navegador cada vez que se procese un nuevo correo.',
-        blockedDescription: 'Las notificaciones están bloqueadas por tu navegador. Abre la configuración del sitio en tu navegador y permite las notificaciones para habilitar esta función.',
+        enabledDescription:
+          'Recibirás una notificación del navegador cada vez que se procese un correo.',
+        disabledDescription:
+          'Activa para recibir una notificación del navegador cada vez que se procese un nuevo correo.',
+        blockedDescription:
+          'Las notificaciones están bloqueadas por tu navegador. Abre la configuración del sitio en tu navegador y permite las notificaciones para habilitar esta función.',
       },
       forwardingHeader: {
         title: 'Encabezado Postino en correos reenviados',
-        enabledDescription: 'Un cuadro de resumen de Postino se añade al final de cada correo reenviado.',
-        disabledDescription: 'El cuadro de resumen de Postino no se añade a los correos reenviados.',
+        enabledDescription:
+          'Un cuadro de resumen de Postino se añade al final de cada correo reenviado.',
+        disabledDescription:
+          'El cuadro de resumen de Postino no se añade a los correos reenviados.',
       },
       analysisLanguage: {
         title: 'Idioma del análisis IA',
-        description: 'Elige el idioma para el contenido generado por IA (resumen, intención, etiquetas, temas). Selecciona "Auto" para usar inglés (predeterminado).',
+        description:
+          'Elige el idioma para el contenido generado por IA (resumen, intención, etiquetas, temas). Selecciona "Auto" para usar inglés (predeterminado).',
         selectPlaceholder: 'Seleccionar idioma',
         autoLabel: 'Auto (Inglés)',
       },
       installApp: {
         title: 'Instalar la app Postino',
-        description: 'Instala Postino como una app en tu dispositivo para una experiencia más rápida y nativa.',
+        description:
+          'Instala Postino como una app en tu dispositivo para una experiencia más rápida y nativa.',
         buttonLabel: 'Instalar app',
         alreadyInstalled: 'Ya instalada',
       },
@@ -1775,7 +1808,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesDates: 'Fechas:',
         analysisEntitiesPrices: 'Precios:',
         deleteEmail: 'Eliminar correo',
-        deleteEmailConfirm: '¿Seguro que quieres eliminar permanentemente este correo? Esta acción no se puede deshacer.',
+        deleteEmailConfirm:
+          '¿Seguro que quieres eliminar permanentemente este correo? Esta acción no se puede deshacer.',
         deleteEmailSuccess: 'Correo eliminado.',
         deleteEmailError: 'No se pudo eliminar el correo.',
         failedToLoad: 'Error al cargar los correos',
@@ -1835,7 +1869,8 @@ const translations: Record<Locale, Translations> = {
         tags: 'Etiquetas',
         emailsAnalyzed: '{count} correos analizados',
         noData: 'Sin datos de conocimiento',
-        noDataDesc: 'Envía algunos correos a tu dirección Postino para comenzar a construir tu gráfico de conocimiento.',
+        noDataDesc:
+          'Envía algunos correos a tu dirección Postino para comenzar a construir tu gráfico de conocimiento.',
         searchInInbox: 'Buscar en bandeja',
         loading: 'Cargando…',
         mentions: 'menciones',
@@ -1852,13 +1887,15 @@ const translations: Record<Locale, Translations> = {
         canonicalNamePlaceholder: 'Nombre a mostrar',
         mergeChipHint: 'Haz clic en un nombre para usarlo como nombre canónico',
         createMerge: 'Crear fusión',
-        mergeSameCategoryWarning: 'Selecciona 2 o más entidades de la misma categoría para fusionar.',
+        mergeSameCategoryWarning:
+          'Selecciona 2 o más entidades de la misma categoría para fusionar.',
         manageMerges: 'Gestionar fusiones',
         noMerges: 'No hay fusiones definidas.',
         deleteMerge: 'Eliminar fusión',
         deleteConfirm: '¿Estás seguro de que quieres eliminar',
         mergesTitle: 'Fusiones de entidades',
-        mergesDesc: 'Las entidades fusionadas se muestran como un único elemento en la vista de conocimiento.',
+        mergesDesc:
+          'Las entidades fusionadas se muestran como un único elemento en la vista de conocimiento.',
         listTab: 'Lista',
         mergedTab: 'Fusionados',
         suggestionsTab: 'Sugerencias',
@@ -1889,7 +1926,8 @@ const translations: Record<Locale, Translations> = {
           generating: 'Generando…',
           regenerate: 'Regenerar',
           noGraph: 'Sin mapa de relaciones',
-          noGraphDesc: 'Haz clic en "Generar relaciones" para descubrir conexiones entre entidades de tus correos.',
+          noGraphDesc:
+            'Haz clic en "Generar relaciones" para descubrir conexiones entre entidades de tus correos.',
           generatedOn: 'Generado el {date}',
           totalEmails: 'Basado en {count} correos',
           error: 'Error al generar relaciones',
@@ -1915,12 +1953,14 @@ const translations: Record<Locale, Translations> = {
         hideFilters: 'Ocultar filtros',
         addFilters: 'Añadir filtros de remitente/asunto/cuerpo (opcional)',
         editFilters: 'Editar filtros de remitente/asunto/cuerpo (opcional)',
-        filterHelp: 'Aplica esta regla solo cuando el correo coincida con todos los patrones proporcionados (contiene, sin distinción de mayúsculas). Deja en blanco para aplicar a todos los correos.',
+        filterHelp:
+          'Aplica esta regla solo cuando el correo coincida con todos los patrones proporcionados (contiene, sin distinción de mayúsculas). Deja en blanco para aplicar a todos los correos.',
         senderContains: 'Remitente contiene',
         subjectContains: 'Asunto contiene',
         bodyContains: 'Cuerpo contiene',
         ruleNamePlaceholder: 'ej. Resumen de newsletter',
-        ruleDescriptionPlaceholder: 'Ejemplo: Resume las newsletters y elimina el contenido promocional. Conserva solo los artículos y enlaces clave.',
+        ruleDescriptionPlaceholder:
+          'Ejemplo: Resume las newsletters y elimina el contenido promocional. Conserva solo los artículos y enlaces clave.',
         senderPlaceholder: 'ej. newsletter@ejemplo.com',
         subjectPlaceholder: 'ej. Resumen semanal',
         bodyPlaceholder: 'ej. cancelar suscripción',
@@ -1962,7 +2002,8 @@ const translations: Record<Locale, Translations> = {
       },
       pwaInstall: {
         title: 'Añadir Postino a tu pantalla de inicio',
-        description: 'Obtén un acceso más rápido y una mejor experiencia instalando la app en tu dispositivo.',
+        description:
+          'Obtén un acceso más rápido y una mejor experiencia instalando la app en tu dispositivo.',
         howToTitle: 'Cómo instalar:',
         iosSafariStep1Pre: 'Toca el',
         iosSafariStep1Post: 'botón Compartir en la barra del navegador.',
@@ -2097,7 +2138,7 @@ const translations: Record<Locale, Translations> = {
           'Résumer les newsletters et supprimer toutes les publicités et contenus promotionnels',
           "Extraire et lister uniquement les éléments d'action importants des e-mails",
           'Traduire les e-mails en français et résumer les points principaux',
-          "Pour les reçus et confirmations de commande, extraire uniquement les détails de la commande et le total",
+          'Pour les reçus et confirmations de commande, extraire uniquement les détails de la commande et le total',
           'Supprimer les pixels de suivi et réécrire les liens proprement',
           "Si l'e-mail est une offre promotionnelle, l'ignorer complètement",
         ],
@@ -2132,7 +2173,7 @@ const translations: Record<Locale, Translations> = {
         signIn: 'Se connecter',
         button: 'Créer un compte',
         maintenanceMessage:
-          "Nous améliorons le service. Les nouvelles inscriptions sont suspendues pendant la maintenance. Veuillez réessayer plus tard.",
+          'Nous améliorons le service. Les nouvelles inscriptions sont suspendues pendant la maintenance. Veuillez réessayer plus tard.',
         errors: {
           passwordsMismatch: 'Les mots de passe ne correspondent pas',
           passwordTooShort: 'Le mot de passe doit comporter au moins 8 caractères',
@@ -2150,7 +2191,7 @@ const translations: Record<Locale, Translations> = {
         rememberedPassword: 'Vous vous souvenez de votre mot de passe ?',
         backToSignIn: 'Retour à la connexion',
         successMessage:
-          "Si un compte existe pour cet e-mail, nous vous avons envoyé un lien de réinitialisation du mot de passe.",
+          'Si un compte existe pour cet e-mail, nous vous avons envoyé un lien de réinitialisation du mot de passe.',
         errors: {
           invalidEmail: 'Adresse e-mail invalide',
           tooManyAttempts: 'Trop de tentatives. Veuillez réessayer plus tard.',
@@ -2167,7 +2208,7 @@ const translations: Record<Locale, Translations> = {
       title: 'Tableau de bord',
       subtitle: 'Gérez votre adresse Postino et vos règles e-mail',
       tabs: {
-        overview: 'Vue d\'ensemble',
+        overview: "Vue d'ensemble",
         myRules: 'Mes règles',
         emailHistory: 'Historique des e-mails',
         inbox: 'Boîte de réception',
@@ -2180,9 +2221,9 @@ const translations: Record<Locale, Translations> = {
         active: 'Active',
         disabled: 'Désactivée',
         activeDescription:
-          "Envoyez des e-mails à cette adresse et ils seront traités selon vos règles, puis transmis à votre e-mail",
+          'Envoyez des e-mails à cette adresse et ils seront traités selon vos règles, puis transmis à votre e-mail',
         disabledDescription:
-          "Votre adresse Postino est désactivée. Les e-mails entrants seront enregistrés comme ignorés et ne seront pas transmis.",
+          'Votre adresse Postino est désactivée. Les e-mails entrants seront enregistrés comme ignorés et ne seront pas transmis.',
         copy: 'Copier',
         copied: 'Copié',
         toggleAriaLabel: 'Activer ou désactiver votre adresse Postino',
@@ -2197,25 +2238,32 @@ const translations: Record<Locale, Translations> = {
       },
       pushNotifications: {
         title: 'Notifications push',
-        enabledDescription: "Vous recevrez une notification du navigateur chaque fois qu'un e-mail est traité.",
-        disabledDescription: "Activez pour recevoir une notification du navigateur à chaque nouveau traitement d'e-mail.",
-        blockedDescription: "Les notifications sont bloquées par votre navigateur. Ouvrez les paramètres du site dans votre navigateur et autorisez les notifications pour activer cette fonctionnalité.",
+        enabledDescription:
+          "Vous recevrez une notification du navigateur chaque fois qu'un e-mail est traité.",
+        disabledDescription:
+          "Activez pour recevoir une notification du navigateur à chaque nouveau traitement d'e-mail.",
+        blockedDescription:
+          'Les notifications sont bloquées par votre navigateur. Ouvrez les paramètres du site dans votre navigateur et autorisez les notifications pour activer cette fonctionnalité.',
       },
       forwardingHeader: {
         title: 'En-tête Postino dans les e-mails transmis',
-        enabledDescription: 'Un encadré récapitulatif Postino est ajouté au bas de chaque e-mail transmis.',
-        disabledDescription: "L'encadré récapitulatif Postino n'est pas ajouté aux e-mails transmis.",
+        enabledDescription:
+          'Un encadré récapitulatif Postino est ajouté au bas de chaque e-mail transmis.',
+        disabledDescription:
+          "L'encadré récapitulatif Postino n'est pas ajouté aux e-mails transmis.",
       },
       analysisLanguage: {
         title: "Langue d'analyse IA",
-        description: "Choisissez la langue pour le contenu généré par l'IA (résumé, intention, étiquettes, sujets). Sélectionnez « Auto » pour utiliser l'anglais (par défaut).",
+        description:
+          "Choisissez la langue pour le contenu généré par l'IA (résumé, intention, étiquettes, sujets). Sélectionnez « Auto » pour utiliser l'anglais (par défaut).",
         selectPlaceholder: 'Sélectionner la langue',
         autoLabel: 'Auto (Anglais)',
       },
       installApp: {
-        title: 'Installer l\'application Postino',
-        description: 'Installez Postino comme application sur votre appareil pour une expérience plus rapide et native.',
-        buttonLabel: 'Installer l\'application',
+        title: "Installer l'application Postino",
+        description:
+          'Installez Postino comme application sur votre appareil pour une expérience plus rapide et native.',
+        buttonLabel: "Installer l'application",
         alreadyInstalled: 'Déjà installée',
       },
       charts: {
@@ -2269,7 +2317,7 @@ const translations: Record<Locale, Translations> = {
         tabSummary: 'Détails',
         tabContent: 'Contenu',
         tabAiAnalysis: 'IA',
-        noAiAnalysis: "Aucune analyse IA disponible.",
+        noAiAnalysis: 'Aucune analyse IA disponible.',
         analysisType: 'Type :',
         analysisSentiment: 'Sentiment :',
         analysisPriority: 'Priorité :',
@@ -2286,11 +2334,12 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesDates: 'Dates :',
         analysisEntitiesPrices: 'Prix :',
         deleteEmail: "Supprimer l'e-mail",
-        deleteEmailConfirm: "Voulez-vous vraiment supprimer définitivement cet e-mail ? Cette action est irréversible.",
+        deleteEmailConfirm:
+          'Voulez-vous vraiment supprimer définitivement cet e-mail ? Cette action est irréversible.',
         deleteEmailSuccess: 'E-mail supprimé.',
         deleteEmailError: "Impossible de supprimer l'e-mail.",
         failedToLoad: 'Échec du chargement des e-mails',
-        failedToLoadCount: 'Échec du chargement du nombre d\'e-mails',
+        failedToLoadCount: "Échec du chargement du nombre d'e-mails",
       },
       search: {
         title: 'Rechercher des e-mails',
@@ -2309,7 +2358,7 @@ const translations: Record<Locale, Translations> = {
         tagsPlaceholder: 'ex. facture',
         withAttachments: 'Avec pièces jointes',
         requiresResponse: 'Nécessite une réponse',
-        hasActionItems: "A des actions à faire",
+        hasActionItems: 'A des actions à faire',
         isUrgent: 'Urgent',
         allSentiments: 'Tous les sentiments',
         sentimentPositive: 'Positif',
@@ -2346,7 +2395,8 @@ const translations: Record<Locale, Translations> = {
         tags: 'Étiquettes',
         emailsAnalyzed: '{count} emails analysés',
         noData: 'Aucune donnée disponible',
-        noDataDesc: 'Envoyez des emails à votre adresse Postino pour commencer à construire votre graphe de connaissance.',
+        noDataDesc:
+          'Envoyez des emails à votre adresse Postino pour commencer à construire votre graphe de connaissance.',
         searchInInbox: 'Rechercher dans la boîte',
         loading: 'Chargement…',
         mentions: 'mentions',
@@ -2361,15 +2411,17 @@ const translations: Record<Locale, Translations> = {
         mergeDialogDesc: 'Ces entités seront combinées en une seule.',
         canonicalName: 'Nom canonique',
         canonicalNamePlaceholder: 'Nom à afficher',
-        mergeChipHint: 'Cliquez sur un nom pour l\'utiliser comme nom canonique',
+        mergeChipHint: "Cliquez sur un nom pour l'utiliser comme nom canonique",
         createMerge: 'Créer la fusion',
-        mergeSameCategoryWarning: 'Sélectionnez 2 entités ou plus de la même catégorie pour les fusionner.',
+        mergeSameCategoryWarning:
+          'Sélectionnez 2 entités ou plus de la même catégorie pour les fusionner.',
         manageMerges: 'Gérer les fusions',
         noMerges: 'Aucune fusion définie.',
         deleteMerge: 'Supprimer la fusion',
         deleteConfirm: 'Êtes-vous sûr de vouloir supprimer',
-        mergesTitle: 'Fusions d\'entités',
-        mergesDesc: 'Les entités fusionnées apparaissent comme un seul élément dans la vue de connaissance.',
+        mergesTitle: "Fusions d'entités",
+        mergesDesc:
+          'Les entités fusionnées apparaissent comme un seul élément dans la vue de connaissance.',
         listTab: 'Liste',
         mergedTab: 'Fusionnés',
         suggestionsTab: 'Suggestions',
@@ -2385,7 +2437,8 @@ const translations: Record<Locale, Translations> = {
         suggestionsEmptyDesc: "Cliquez sur le bouton pour demander à l'IA de suggérer des fusions.",
         suggestionsAccept: 'Accepter',
         suggestionsReject: 'Rejeter',
-        suggestionsCompleteFirst: "Terminez toutes les suggestions avant d'en générer de nouvelles.",
+        suggestionsCompleteFirst:
+          "Terminez toutes les suggestions avant d'en générer de nouvelles.",
         suggestionsError: 'Échec de la génération des suggestions. Veuillez réessayer.',
         failedToLoad: 'Échec du chargement des données',
         failedToLoadMerges: 'Échec du chargement des fusions',
@@ -2400,7 +2453,8 @@ const translations: Record<Locale, Translations> = {
           generating: 'Génération…',
           regenerate: 'Régénérer',
           noGraph: 'Aucune carte des relations',
-          noGraphDesc: 'Cliquez sur "Générer les relations" pour découvrir les connexions entre entités dans vos e-mails.',
+          noGraphDesc:
+            'Cliquez sur "Générer les relations" pour découvrir les connexions entre entités dans vos e-mails.',
           generatedOn: 'Générée le {date}',
           totalEmails: 'Basé sur {count} e-mails',
           error: 'Échec de la génération des relations',
@@ -2426,12 +2480,14 @@ const translations: Record<Locale, Translations> = {
         hideFilters: 'Masquer les filtres',
         addFilters: 'Ajouter des filtres expéditeur/objet/corps (optionnel)',
         editFilters: 'Modifier les filtres expéditeur/objet/corps (optionnel)',
-        filterHelp: "Appliquer cette règle uniquement lorsque l'e-mail correspond à tous les modèles fournis (contient, insensible à la casse). Laissez vide pour appliquer à tous les e-mails.",
+        filterHelp:
+          "Appliquer cette règle uniquement lorsque l'e-mail correspond à tous les modèles fournis (contient, insensible à la casse). Laissez vide pour appliquer à tous les e-mails.",
         senderContains: 'Expéditeur contient',
         subjectContains: 'Objet contient',
         bodyContains: 'Corps contient',
         ruleNamePlaceholder: 'ex. Résumé de newsletter',
-        ruleDescriptionPlaceholder: "Exemple : Résume les newsletters et supprime le contenu promotionnel. Conserve uniquement les articles et liens essentiels.",
+        ruleDescriptionPlaceholder:
+          'Exemple : Résume les newsletters et supprime le contenu promotionnel. Conserve uniquement les articles et liens essentiels.',
         senderPlaceholder: 'ex. newsletter@exemple.com',
         subjectPlaceholder: 'ex. Digest hebdomadaire',
         bodyPlaceholder: 'ex. se désabonner',
@@ -2473,13 +2529,14 @@ const translations: Record<Locale, Translations> = {
       },
       pwaInstall: {
         title: "Ajouter Postino à votre écran d'accueil",
-        description: "Bénéficiez d'un accès plus rapide et d'une meilleure expérience en installant l'application sur votre appareil.",
+        description:
+          "Bénéficiez d'un accès plus rapide et d'une meilleure expérience en installant l'application sur votre appareil.",
         howToTitle: 'Comment installer :',
         iosSafariStep1Pre: 'Appuyez sur le',
-        iosSafariStep1Post: "bouton Partager dans la barre du navigateur.",
+        iosSafariStep1Post: 'bouton Partager dans la barre du navigateur.',
         iosSafariStep2Pre: 'Appuyez sur',
         iosSafariStep2Bold: "Sur l'écran d'accueil",
-        iosSafariStep3: "Appuyez sur Ajouter dans le coin supérieur droit pour confirmer.",
+        iosSafariStep3: 'Appuyez sur Ajouter dans le coin supérieur droit pour confirmer.',
         iosSafari26Step1Pre: 'Appuyez sur le',
         iosSafari26Step1Post: 'bouton dans la barre du navigateur.',
         iosSafari26Step2Pre: 'Appuyez sur',
@@ -2626,7 +2683,8 @@ const translations: Record<Locale, Translations> = {
         signUp: 'Registrieren',
         errors: {
           invalidCredential: 'Ungültige E-Mail oder ungültiges Passwort',
-          tooManyRequests: 'Zu viele fehlgeschlagene Versuche. Bitte versuchen Sie es später erneut.',
+          tooManyRequests:
+            'Zu viele fehlgeschlagene Versuche. Bitte versuchen Sie es später erneut.',
           failed: 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
           suspended: 'Ihr Konto wurde gesperrt. Bitte kontaktieren Sie den Support.',
         },
@@ -2708,24 +2766,31 @@ const translations: Record<Locale, Translations> = {
       },
       pushNotifications: {
         title: 'Push-Benachrichtigungen',
-        enabledDescription: 'Sie erhalten eine Browserbenachrichtigung, sobald eine E-Mail verarbeitet wird.',
-        disabledDescription: 'Aktivieren Sie, um eine Browserbenachrichtigung bei jeder neuen E-Mail-Verarbeitung zu erhalten.',
-        blockedDescription: 'Benachrichtigungen sind von Ihrem Browser blockiert. Öffnen Sie die Website-Einstellungen in Ihrem Browser und erlauben Sie Benachrichtigungen, um diese Funktion zu aktivieren.',
+        enabledDescription:
+          'Sie erhalten eine Browserbenachrichtigung, sobald eine E-Mail verarbeitet wird.',
+        disabledDescription:
+          'Aktivieren Sie, um eine Browserbenachrichtigung bei jeder neuen E-Mail-Verarbeitung zu erhalten.',
+        blockedDescription:
+          'Benachrichtigungen sind von Ihrem Browser blockiert. Öffnen Sie die Website-Einstellungen in Ihrem Browser und erlauben Sie Benachrichtigungen, um diese Funktion zu aktivieren.',
       },
       forwardingHeader: {
         title: 'Postino-Kopfzeile in weitergeleiteten E-Mails',
-        enabledDescription: 'Eine Postino-Zusammenfassungsbox wird am Ende jeder weitergeleiteten E-Mail eingefügt.',
-        disabledDescription: 'Die Postino-Zusammenfassungsbox wird nicht zu weitergeleiteten E-Mails hinzugefügt.',
+        enabledDescription:
+          'Eine Postino-Zusammenfassungsbox wird am Ende jeder weitergeleiteten E-Mail eingefügt.',
+        disabledDescription:
+          'Die Postino-Zusammenfassungsbox wird nicht zu weitergeleiteten E-Mails hinzugefügt.',
       },
       analysisLanguage: {
         title: 'Sprache der KI-Analyse',
-        description: 'Wählen Sie die Sprache für KI-generierte Analyseinhalte (Zusammenfassung, Absicht, Tags, Themen). Wählen Sie „Auto" für Englisch (Standard).',
+        description:
+          'Wählen Sie die Sprache für KI-generierte Analyseinhalte (Zusammenfassung, Absicht, Tags, Themen). Wählen Sie „Auto" für Englisch (Standard).',
         selectPlaceholder: 'Sprache auswählen',
         autoLabel: 'Auto (Englisch)',
       },
       installApp: {
         title: 'Postino-App installieren',
-        description: 'Installieren Sie Postino als App auf Ihrem Gerät für ein schnelleres, natives Erlebnis.',
+        description:
+          'Installieren Sie Postino als App auf Ihrem Gerät für ein schnelleres, natives Erlebnis.',
         buttonLabel: 'App installieren',
         alreadyInstalled: 'Bereits installiert',
       },
@@ -2797,7 +2862,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesDates: 'Daten:',
         analysisEntitiesPrices: 'Preise:',
         deleteEmail: 'E-Mail löschen',
-        deleteEmailConfirm: 'Möchten Sie diese E-Mail wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+        deleteEmailConfirm:
+          'Möchten Sie diese E-Mail wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
         deleteEmailSuccess: 'E-Mail gelöscht.',
         deleteEmailError: 'E-Mail konnte nicht gelöscht werden.',
         failedToLoad: 'E-Mails konnten nicht geladen werden',
@@ -2857,7 +2923,8 @@ const translations: Record<Locale, Translations> = {
         tags: 'Tags',
         emailsAnalyzed: '{count} E-Mails analysiert',
         noData: 'Keine Wissensdaten vorhanden',
-        noDataDesc: 'Senden Sie E-Mails an Ihre Postino-Adresse, um Ihren Wissensgraphen aufzubauen.',
+        noDataDesc:
+          'Senden Sie E-Mails an Ihre Postino-Adresse, um Ihren Wissensgraphen aufzubauen.',
         searchInInbox: 'In Posteingang suchen',
         loading: 'Laden…',
         mentions: 'Erwähnungen',
@@ -2880,7 +2947,8 @@ const translations: Record<Locale, Translations> = {
         deleteMerge: 'Zusammenführung löschen',
         deleteConfirm: 'Sind Sie sicher, dass Sie löschen möchten',
         mergesTitle: 'Entitätszusammenführungen',
-        mergesDesc: 'Zusammengeführte Entitäten werden in der Wissensansicht als ein Element angezeigt.',
+        mergesDesc:
+          'Zusammengeführte Entitäten werden in der Wissensansicht als ein Element angezeigt.',
         listTab: 'Liste',
         mergedTab: 'Zusammengeführt',
         suggestionsTab: 'Vorschläge',
@@ -2890,10 +2958,12 @@ const translations: Record<Locale, Translations> = {
         mergeDeleted: 'Zusammenführung gelöscht',
         cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
         suggestionsAskAI: 'KI nach Vorschlägen fragen',
-        suggestionsAskAIDesc: 'Die KI analysiert Ihre Entitäten und schlägt mögliche Zusammenführungen vor.',
+        suggestionsAskAIDesc:
+          'Die KI analysiert Ihre Entitäten und schlägt mögliche Zusammenführungen vor.',
         suggestionsGenerating: 'Vorschläge werden generiert…',
         suggestionsEmpty: 'Keine Vorschläge',
-        suggestionsEmptyDesc: 'Klicken Sie auf die Schaltfläche, um die KI nach Zusammenführungsvorschlägen zu fragen.',
+        suggestionsEmptyDesc:
+          'Klicken Sie auf die Schaltfläche, um die KI nach Zusammenführungsvorschlägen zu fragen.',
         suggestionsAccept: 'Akzeptieren',
         suggestionsReject: 'Ablehnen',
         suggestionsCompleteFirst: 'Beenden Sie alle Vorschläge, bevor Sie neue generieren.',
@@ -2911,7 +2981,8 @@ const translations: Record<Locale, Translations> = {
           generating: 'Generierung…',
           regenerate: 'Neu generieren',
           noGraph: 'Keine Beziehungskarte',
-          noGraphDesc: 'Klicken Sie auf "Beziehungen generieren", um Verbindungen zwischen Entitäten in Ihren E-Mails zu entdecken.',
+          noGraphDesc:
+            'Klicken Sie auf "Beziehungen generieren", um Verbindungen zwischen Entitäten in Ihren E-Mails zu entdecken.',
           generatedOn: 'Erstellt am {date}',
           totalEmails: 'Basierend auf {count} E-Mails',
           error: 'Beziehungen konnten nicht generiert werden',
@@ -2937,12 +3008,14 @@ const translations: Record<Locale, Translations> = {
         hideFilters: 'Filter ausblenden',
         addFilters: 'Absender-/Betreff-/Text-Filter hinzufügen (optional)',
         editFilters: 'Absender-/Betreff-/Text-Filter bearbeiten (optional)',
-        filterHelp: 'Diese Regel nur anwenden, wenn die eingehende E-Mail allen angegebenen Mustern entspricht (enthält, Groß-/Kleinschreibung ignoriert). Leer lassen, um auf alle E-Mails anzuwenden.',
+        filterHelp:
+          'Diese Regel nur anwenden, wenn die eingehende E-Mail allen angegebenen Mustern entspricht (enthält, Groß-/Kleinschreibung ignoriert). Leer lassen, um auf alle E-Mails anzuwenden.',
         senderContains: 'Absender enthält',
         subjectContains: 'Betreff enthält',
         bodyContains: 'Text enthält',
         ruleNamePlaceholder: 'z. B. Newsletter-Zusammenfassung',
-        ruleDescriptionPlaceholder: 'Beispiel: Fasse Newsletter zusammen und entferne Werbeinhalte. Behalte nur die wichtigsten Artikel und Links.',
+        ruleDescriptionPlaceholder:
+          'Beispiel: Fasse Newsletter zusammen und entferne Werbeinhalte. Behalte nur die wichtigsten Artikel und Links.',
         senderPlaceholder: 'z. B. newsletter@beispiel.com',
         subjectPlaceholder: 'z. B. Wöchentlicher Digest',
         bodyPlaceholder: 'z. B. abbestellen',
@@ -2984,7 +3057,8 @@ const translations: Record<Locale, Translations> = {
       },
       pwaInstall: {
         title: 'Postino zum Startbildschirm hinzufügen',
-        description: 'Erhalten Sie schnelleren Zugriff und eine bessere Erfahrung, indem Sie die App auf Ihrem Gerät installieren.',
+        description:
+          'Erhalten Sie schnelleren Zugriff und eine bessere Erfahrung, indem Sie die App auf Ihrem Gerät installieren.',
         howToTitle: 'So installieren Sie:',
         iosSafariStep1Pre: 'Tippen Sie auf die',
         iosSafariStep1Post: 'Teilen-Schaltfläche in der Browser-Symbolleiste.',
@@ -3021,7 +3095,8 @@ const translations: Record<Locale, Translations> = {
         settingSaved: 'Einstellung gespeichert',
         failedToLoadStats: 'Statistiken konnten nicht geladen werden',
         failedToUpdateEmailSetting: 'E-Mail-Adresseinstellung konnte nicht aktualisiert werden',
-        failedToUpdateForwardingHeaderSetting: 'Weiterleitungsheader-Einstellung konnte nicht aktualisiert werden',
+        failedToUpdateForwardingHeaderSetting:
+          'Weiterleitungsheader-Einstellung konnte nicht aktualisiert werden',
         failedToUpdateAnalysisLanguageSetting: 'Analysesprache konnte nicht aktualisiert werden',
       },
     },
@@ -3123,7 +3198,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = getStoredLocale();
-     
+
     setLocaleState(stored ?? detectLocale());
   }, []);
 

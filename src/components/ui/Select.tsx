@@ -22,7 +22,7 @@ const SelectTrigger = React.forwardRef<
       'focus:outline-none focus:ring-1 focus:ring-[#efd957] focus:border-[#efd957]',
       'disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
       'dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-100',
-      className
+      className,
     )}
     {...props}
   >
@@ -80,7 +80,7 @@ const SelectContent = React.forwardRef<
         'data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
         position === 'popper' &&
           'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
-        className
+        className,
       )}
       position={position}
       {...props}
@@ -90,7 +90,7 @@ const SelectContent = React.forwardRef<
         className={cn(
           'p-1',
           position === 'popper' &&
-            'h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)'
+            'h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)',
         )}
       >
         {children}
@@ -123,7 +123,7 @@ const SelectItem = React.forwardRef<
       'relative flex w-full cursor-default select-none items-center rounded-lg py-1.5 pl-2 pr-8 text-sm outline-none',
       'focus:bg-yellow-50 dark:focus:bg-yellow-900/20 focus:text-gray-900 dark:focus:text-gray-100',
       'data-disabled:pointer-events-none data-disabled:opacity-50',
-      className
+      className,
     )}
     {...props}
   >
