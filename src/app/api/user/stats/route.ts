@@ -3,16 +3,22 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { AggregateField } from 'firebase-admin/firestore';
 
 export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const token = authHeader.split('Bearer ')[1];
+  let uid: string;
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split('Bearer ')[1];
     const decoded = await adminAuth().verifyIdToken(token);
+    uid = decoded.uid;
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
+  try {
     const db = adminDb();
-    const base = db.collection('emailLogs').where('userId', '==', decoded.uid);
+    const base = db.collection('emailLogs').where('userId', '==', uid);
 
     // Use server-side aggregation queries to avoid reading every document.
     const [
@@ -44,6 +50,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ stats });
   } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }
 }

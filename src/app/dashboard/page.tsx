@@ -22,6 +22,15 @@ import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
 import { Home, ListFilter, Inbox, Settings, Download, CheckCircle, Compass, Share2 } from 'lucide-react';
 
+const EMPTY_STATS: UserStats = {
+  totalEmailsReceived: 0,
+  totalEmailsForwarded: 0,
+  totalEmailsError: 0,
+  totalEmailsSkipped: 0,
+  totalTokensUsed: 0,
+  totalEstimatedCost: 0,
+};
+
 const DASHBOARD_TABS = ['overview', 'rules', 'inbox', 'explore', 'relations', 'settings'] as const;
 type DashboardTab = typeof DASHBOARD_TABS[number];
 
@@ -276,8 +285,8 @@ export default function DashboardPage() {
                 onToggle={handleAddressToggle}
               />
             )}
-            {userStats && <UserStatsCards stats={userStats} />}
-            {userStats && <UserOverviewCharts stats={userStats} logs={logs} />}
+            <UserStatsCards stats={userStats ?? EMPTY_STATS} />
+            <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
           </div>
         </TabsContent>
         <TabsContent value="rules">
