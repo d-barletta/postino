@@ -1,3 +1,15 @@
+export interface BlogArticle {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  tags: string[];
+  thumbnailUrl?: string;
+  published: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface User {
   uid: string;
   email: string;

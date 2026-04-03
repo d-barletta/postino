@@ -12,8 +12,9 @@ import AdminUsersPage from './users/page';
 import AdminEmailsPage from './emails/page';
 import AdminSettingsPage from './settings/page';
 import EmailJobsLiveTab from '@/components/admin/EmailJobsLiveTab';
+import AdminBlogTab from '@/components/admin/AdminBlogTab';
 import type { Stats } from '@/types';
-import { Home, Users, Mail, Activity, Settings } from 'lucide-react';
+import { Home, Users, Mail, Activity, Settings, BookOpen } from 'lucide-react';
 
 export default function AdminPage() {
   const { firebaseUser } = useAuth();
@@ -111,6 +112,10 @@ export default function AdminPage() {
             <Settings className="h-4 w-4 shrink-0" />
             <span>Settings</span>
           </TabsTrigger>
+          <TabsTrigger value="blog">
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span>Blog</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -131,6 +136,10 @@ export default function AdminPage() {
 
         <TabsContent value="settings">
           <AdminSettingsPage showPageHeader={false} />
+        </TabsContent>
+
+        <TabsContent value="blog">
+          <AdminBlogTab />
         </TabsContent>
       </Tabs>
     </div>
