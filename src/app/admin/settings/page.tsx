@@ -37,7 +37,7 @@ const AGENT_LIMITS = {
   chunkSizeChars: { min: 1000, max: 100000 },
   chunkExtractMaxTokens: { min: 100, max: 4000 },
   analysisMaxTokens: { min: 100, max: 2000 },
-  bodyAnalysisMaxChars: { min: 500, max: 50000 },
+  bodyAnalysisMaxChars: { min: 500, max: 100000 },
   chunkFallbackMaxChars: { min: 200, max: 10000 },
   fallbackPassMaxTokens: { min: 500, max: 6000 },
 } as const;
@@ -82,7 +82,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     agentChunkSizeChars: 15000,
     agentChunkExtractMaxTokens: 600,
     agentAnalysisMaxTokens: 300,
-    agentBodyAnalysisMaxChars: 8000,
+    agentBodyAnalysisMaxChars: 20000,
     agentChunkFallbackMaxChars: 2000,
     agentFallbackMaxTokens: 3000,
     agentTracingEnabled: true,
@@ -766,7 +766,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                         ),
                       }));
                     }}
-                    hint={`Max body characters sent to pre-analysis (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}).`}
+                    hint={`Max Markdown characters sent to pre-analysis via defuddle (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}). HTML emails are converted to clean Markdown before this limit is applied.`}
                   />
                   <Input
                     label="Chunk Fallback Max Chars"

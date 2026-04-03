@@ -18,6 +18,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject, generateText } from 'ai';
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
+import { JSDOM } from 'jsdom';
+import { Defuddle } from 'defuddle/node';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
@@ -64,8 +66,11 @@ const CHUNK_EXTRACT_MAX_TOKENS = 600;
  */
 const ANALYSIS_MAX_TOKENS = 500;
 
-/** Default max body characters included in pre-analysis. */
-const BODY_ANALYSIS_MAX_CHARS = 8_000;
+/** Default max body characters included in pre-analysis.
+ * When defuddle converts HTML to clean Markdown, this larger default allows
+ * the AI to analyze more of the email content without hitting token limits.
+ */
+const BODY_ANALYSIS_MAX_CHARS = 20_000;
 
 /** Default max raw characters used when a chunk extraction call fails. */
 const CHUNK_FALLBACK_MAX_CHARS = 2_000;
@@ -673,6 +678,30 @@ const LANGUAGE_NAMES: Record<string, string> = {
   de: 'German',
 };
 
+/**
+ * Converts an HTML email body to clean Markdown using defuddle and jsdom.
+ *
+ * Defuddle removes clutter (navigation menus, footers, ads, unsubscribe links,
+ * sidebars) and returns only the primary content as structured Markdown.  This
+ * produces a compact, token-efficient representation that gives the AI richer
+ * signal than raw HTML stripped of tags.
+ *
+ * Falls back to `stripHtmlForChunking()` on any parsing error so the pre-analysis
+ * step always has a usable body excerpt.
+ */
+async function htmlToMarkdown(html: string): Promise<string> {
+  try {
+    const dom = new JSDOM(html, { url: 'https://email.local' });
+    const result = await Defuddle(dom.window.document, 'https://email.local', { markdown: true });
+    const md = (result.content || '').trim();
+    // Fall back to plain-text stripping if defuddle returns nothing useful.
+    return md || stripHtmlForChunking(html);
+  } catch (err) {
+    console.warn('[email-agent] defuddle markdown conversion failed, using fallback:', err);
+    return stripHtmlForChunking(html);
+  }
+}
+
 async function preAnalyzeEmail(
   emailFrom: string,
   emailSubject: string,
@@ -683,9 +712,10 @@ async function preAnalyzeEmail(
   agentRuntimeSettings: AgentRuntimeSettings,
   outputLanguage?: string,
 ): Promise<PreAnalysisResult> {
-  // Use only an excerpt of the body — full content is not needed for classification.
+  // Convert HTML to clean Markdown with defuddle + jsdom so the AI receives
+  // structured, boilerplate-free content.  Plain-text emails are used as-is.
   const bodyExcerpt = isHtml
-    ? stripHtmlForChunking(emailBody).slice(0, agentRuntimeSettings.bodyAnalysisMaxChars)
+    ? (await htmlToMarkdown(emailBody)).slice(0, agentRuntimeSettings.bodyAnalysisMaxChars)
     : emailBody.slice(0, agentRuntimeSettings.bodyAnalysisMaxChars);
 
   // Build an optional language instruction for the system prompt.
@@ -705,7 +735,7 @@ async function preAnalyzeEmail(
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
 
-BODY (excerpt):
+BODY${isHtml ? ' (Markdown, converted from HTML)' : ' (excerpt)'}:
 ${bodyExcerpt}`,
       maxOutputTokens: agentRuntimeSettings.analysisMaxTokens,
     });
