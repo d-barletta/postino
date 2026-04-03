@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,11 +38,20 @@ export function EntityMergeDialog({
 }: EntityMergeDialogProps) {
   const { t } = useI18n();
   const k = t.dashboard.knowledge;
+  const [included, setIncluded] = useState<SelectedEntity[]>(selected);
   const [canonical, setCanonical] = useState(defaultCanonical ?? selected[0]?.value ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const category = selected[0]?.category;
+
+  const removeEntity = (value: string) => {
+    const next = included.filter((s) => s.value !== value);
+    setIncluded(next);
+    if (canonical === value) {
+      setCanonical(next[0]?.value ?? '');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +61,7 @@ export function EntityMergeDialog({
     try {
       await onMerge(
         canonical.trim(),
-        selected.map((s) => s.value),
+        included.map((s) => s.value),
         category,
       );
       onClose();
@@ -85,21 +94,41 @@ export function EntityMergeDialog({
           <div className="space-y-1.5">
             <p className="text-xs text-gray-500 dark:text-gray-400">{k.mergeChipHint}</p>
             <div className="flex flex-wrap gap-1.5">
-              {selected.map((s) => (
-                <button
+              {included.map((s) => (
+                <span
                   key={s.value}
-                  type="button"
-                  onClick={() => setCanonical(s.value)}
                   className={cn(
-                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                    'border transition-colors cursor-pointer',
+                    'inline-flex items-center gap-1 rounded-full pl-2.5 py-0.5 text-xs font-medium',
+                    included.length > 2 ? 'pr-1' : 'pr-2.5',
+                    'border transition-colors',
                     canonical === s.value
                       ? 'bg-[#efd957] border-[#e8cf3c] text-black'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600',
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600',
                   )}
                 >
-                  {s.value}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setCanonical(s.value)}
+                    className="cursor-pointer"
+                  >
+                    {s.value}
+                  </button>
+                  {included.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEntity(s.value)}
+                      className={cn(
+                        'ml-0.5 mr-1 rounded-full p-0.5 transition-colors cursor-pointer',
+                        canonical === s.value
+                          ? 'hover:bg-[#e8cf3c]/60 text-black'
+                          : 'hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-500 dark:text-gray-400',
+                      )}
+                      aria-label={`Remove ${s.value}`}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                </span>
               ))}
             </div>
           </div>
