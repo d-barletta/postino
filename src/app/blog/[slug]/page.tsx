@@ -29,6 +29,7 @@ const getArticle = unstable_cache(
         thumbnailUrl: data.thumbnailUrl ?? '',
         published: true,
         language: data.language ?? 'en',
+        translationGroupId: data.translationGroupId ?? undefined,
         createdAt: data.createdAt?.toDate?.() ?? new Date(),
         updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
       };
@@ -37,6 +38,30 @@ const getArticle = unstable_cache(
     }
   },
   ['blog-article'],
+  { tags: ['blog-articles'] },
+);
+
+const getArticleSiblings = unstable_cache(
+  async (groupId: string): Promise<Record<string, string>> => {
+    try {
+      const db = adminDb();
+      const snap = await db
+        .collection('blogArticles')
+        .where('translationGroupId', '==', groupId)
+        .where('published', '==', true)
+        .select('slug', 'language')
+        .get();
+      const result: Record<string, string> = {};
+      for (const d of snap.docs) {
+        const data = d.data();
+        if (data.language && data.slug) result[data.language] = data.slug;
+      }
+      return result;
+    } catch {
+      return {};
+    }
+  },
+  ['blog-article-siblings'],
   { tags: ['blog-articles'] },
 );
 
@@ -100,5 +125,8 @@ export default async function BlogArticlePage({
   const { slug } = await params;
   const article = await getArticle(slug);
   if (!article) notFound();
-  return <BlogArticleContent article={article} />;
+  const translations = article.translationGroupId
+    ? await getArticleSiblings(article.translationGroupId)
+    : {};
+  return <BlogArticleContent article={article} translations={translations} />;
 }

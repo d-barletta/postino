@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
@@ -12,11 +14,21 @@ import { ArrowLeft, Calendar } from 'lucide-react';
 
 interface BlogArticleContentProps {
   article: BlogArticle;
+  translations?: Record<string, string>;
 }
 
-export function BlogArticleContent({ article }: BlogArticleContentProps) {
-  const { t } = useI18n();
+export function BlogArticleContent({ article, translations }: BlogArticleContentProps) {
+  const { t, locale } = useI18n();
+  const router = useRouter();
   const { blog } = t.home;
+
+  useEffect(() => {
+    if (!translations || locale === article.language) return;
+    const targetSlug = translations[locale];
+    if (targetSlug && targetSlug !== article.slug) {
+      router.push(`/blog/${targetSlug}`);
+    }
+  }, [locale, translations, article.language, article.slug, router]);
 
   return (
     <div className="min-h-full">
