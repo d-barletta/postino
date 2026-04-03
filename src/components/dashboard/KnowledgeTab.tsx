@@ -46,12 +46,12 @@ interface KnowledgeItem {
 }
 
 interface KnowledgeData {
-  topics: KnowledgeItem[];
-  tags: KnowledgeItem[];
   people: KnowledgeItem[];
   organizations: KnowledgeItem[];
   places: KnowledgeItem[];
   events: KnowledgeItem[];
+  topics: KnowledgeItem[];
+  tags: KnowledgeItem[];
   totalEmails: number;
 }
 
@@ -65,20 +65,20 @@ interface CategoryConfig {
 
 const CATEGORIES: CategoryConfig[] = [
   { key: 'all', icon: <Sparkles className="h-3.5 w-3.5" /> },
-  { key: 'topics', icon: <Hash className="h-3.5 w-3.5" />, dataKey: 'topics' },
   { key: 'people', icon: <Users className="h-3.5 w-3.5" />, dataKey: 'people' },
   { key: 'organizations', icon: <Building2 className="h-3.5 w-3.5" />, dataKey: 'organizations' },
   { key: 'places', icon: <MapPin className="h-3.5 w-3.5" />, dataKey: 'places' },
   { key: 'events', icon: <Calendar className="h-3.5 w-3.5" />, dataKey: 'events' },
+  { key: 'topics', icon: <Hash className="h-3.5 w-3.5" />, dataKey: 'topics' },
   { key: 'tags', icon: <Tag className="h-3.5 w-3.5" />, dataKey: 'tags' },
 ];
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  topics: <Hash className="h-4 w-4" />,
   people: <Users className="h-4 w-4" />,
   organizations: <Building2 className="h-4 w-4" />,
   places: <MapPin className="h-4 w-4" />,
   events: <Calendar className="h-4 w-4" />,
+  topics: <Hash className="h-4 w-4" />,
   tags: <Tag className="h-4 w-4" />,
 };
 
@@ -765,7 +765,7 @@ export function KnowledgeTab() {
 
             {!loading && !error && hasAnyData && activeCategory === 'all' && (
               <div className="space-y-5">
-                {(['topics', 'people', 'organizations', 'places', 'events', 'tags'] as const).map(
+                {(['people', 'organizations', 'places', 'events', 'topics', 'tags'] as const).map(
                   (key) => (
                     <Section
                       key={key}
