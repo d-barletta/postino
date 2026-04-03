@@ -211,6 +211,8 @@ export default function AdminBlogTab() {
 
   const handleTogglePublish = async (article: BlogArticle) => {
     if (!firebaseUser) return;
+    const action = article.published ? 'unpublish' : 'publish';
+    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} article "${article.title}"?`)) return;
     try {
       const token = await firebaseUser.getIdToken();
       const res = await fetch(`/api/admin/blog/${article.id}`, {
@@ -507,10 +509,10 @@ export default function AdminBlogTab() {
               className="glass-panel rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
             >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                    {article.title}
-                  </h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  {article.title}
+                </h3>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <Badge variant={article.published ? 'success' : 'secondary'}>
                     {article.published ? (
                       <>
@@ -530,8 +532,6 @@ export default function AdminBlogTab() {
                       {getLanguageLabel(article.language)}
                     </Badge>
                   )}
-                </div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {article.tags.map((tag) => (
                     <Badge key={tag} variant="outline" className="text-xs">
                       {tag}

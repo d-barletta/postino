@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyAdminRequest } from '@/lib/api-auth';
 import { getOpenRouterClient } from '@/lib/openrouter';
-import { SUPPORTED_LOCALES } from '@/lib/i18n';
+
+const VALID_LOCALES = ['en', 'it', 'es', 'fr', 'de'] as const;
 
 const LOCALE_NAMES: Record<string, string> = {
   en: 'English',
@@ -32,7 +33,7 @@ export async function POST(
     const body = await request.json();
     const { targetLanguage } = body;
 
-    const validLocales = SUPPORTED_LOCALES.map((l) => l.code);
+    const validLocales = VALID_LOCALES as readonly string[];
     if (!targetLanguage || !validLocales.includes(targetLanguage)) {
       return NextResponse.json({ error: 'Invalid target language' }, { status: 400 });
     }
