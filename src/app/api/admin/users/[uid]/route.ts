@@ -29,7 +29,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ success: true });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
-    return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
+    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
+    if (status === 500) console.error('[admin/users/[uid]] PATCH error:', error);
+    return NextResponse.json({ error: msg }, { status });
   }
 }
 
@@ -88,6 +90,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
+    if (status === 500) console.error('[admin/users/[uid]] DELETE error:', error);
     return NextResponse.json({ error: msg }, { status });
   }
 }

@@ -63,6 +63,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const status = msg === 'Unauthorized' ? 401 : 500;
+    if (status === 500) console.error('[rules/reorder] error:', error);
     return NextResponse.json({ error: msg }, { status });
   }
 }

@@ -173,6 +173,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    if (statusCode === 500) console.error('[admin/email-jobs] GET error:', error);
     return NextResponse.json({ error: msg }, { status: statusCode });
   }
 }
@@ -204,6 +205,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    if (statusCode === 500) console.error('[admin/email-jobs] PUT error:', error);
     return NextResponse.json({ error: msg }, { status: statusCode });
   }
 }
@@ -221,6 +223,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    if (statusCode === 500) console.error('[admin/email-jobs] POST error:', error);
     return NextResponse.json({ error: msg }, { status: statusCode });
   }
 }
@@ -250,6 +253,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    if (statusCode === 500) console.error('[admin/email-jobs] DELETE error:', error);
     return NextResponse.json({ error: msg }, { status: statusCode });
   }
 }

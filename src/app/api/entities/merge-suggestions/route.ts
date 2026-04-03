@@ -76,7 +76,8 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ suggestions });
-  } catch {
+  } catch (err) {
+    console.error('[entities/merge-suggestions] GET error:', err);
     return NextResponse.json({ error: 'Failed to fetch suggestions' }, { status: 500 });
   }
 }
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
       .map((cat) => `${cat}: ${categoryEntities[cat].join(', ')}`)
       .join('\n');
 
-    const systemPrompt = `You are an expert at identifying duplicate or equivalent named entities extracted from emails. 
+    const systemPrompt = `You are an expert at identifying duplicate or equivalent named entities extracted from emails.
 Your task is to analyze lists of entities and identify groups of values that likely refer to the same real-world entity and should be merged.
 
 Rules:
@@ -204,7 +205,7 @@ Rules:
 
 ${entityListText}
 
-Identify groups of entities that likely refer to the same thing and should be merged. 
+Identify groups of entities that likely refer to the same thing and should be merged.
 Return a JSON object with this structure:
 {
   "suggestions": [
@@ -325,6 +326,7 @@ Return an empty array if no confident merges are found. Only include suggestions
     if (isAuthError) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    console.error('[entities/merge-suggestions] POST error:', err);
     return NextResponse.json({ error: 'Failed to generate suggestions' }, { status: 500 });
   }
 }

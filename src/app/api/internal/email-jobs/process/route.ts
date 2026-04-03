@@ -40,6 +40,7 @@ async function handleProcess(request: NextRequest, bodyBatchSize?: number) {
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Worker failed';
+    console.error('[internal/email-jobs/process] error:', error);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

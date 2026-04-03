@@ -13,7 +13,8 @@ export async function GET() {
       assignedEmailDomain: resolveAssignedEmailDomain(data),
       signupMaintenanceMode: data?.signupMaintenanceMode === true,
     });
-  } catch {
+  } catch (err) {
+    console.warn('[settings/public] Firestore read failed, using defaults:', err);
     return NextResponse.json({
       maxRuleLength: 1000,
       assignedEmailDomain: resolveAssignedEmailDomain(),

@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
     if (msg === 'Forbidden' || msg === 'Unauthorized') {
       return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
     }
+    console.error('[admin/test-mailgun] error:', error);
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

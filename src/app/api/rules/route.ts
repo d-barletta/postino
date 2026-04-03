@@ -35,8 +35,12 @@ export async function GET(request: NextRequest) {
       }));
 
     return NextResponse.json({ rules });
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.error('[rules] GET error:', err);
+    return NextResponse.json({ error: 'Failed to fetch rules' }, { status: 500 });
   }
 }
 

@@ -115,6 +115,7 @@ export async function GET(request: NextRequest) {
     if (isAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    console.error('[entities/relations] GET error:', err);
     return NextResponse.json({ error: 'Failed to fetch relation graph' }, { status: 500 });
   }
 }

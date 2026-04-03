@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users, hasNextPage, nextCursor });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
-    return NextResponse.json({ error: msg }, { status: msg === 'Forbidden' ? 403 : 401 });
+    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
+    if (status === 500) console.error('[admin/users] GET error:', error);
+    return NextResponse.json({ error: msg }, { status });
   }
 }

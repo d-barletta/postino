@@ -282,6 +282,7 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
         }
       } catch {
         // Best-effort; lease expiry will allow reclaiming on the next run.
+        console.error('Failed to rescue job', job.id, 'after processing error:', err);
       }
     }
   }

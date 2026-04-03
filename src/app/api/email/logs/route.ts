@@ -177,7 +177,12 @@ export async function GET(request: NextRequest) {
       const nextCursor = hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
       return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage, nextCursor });
     }
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (code?.startsWith('auth/') || (err instanceof Error && err.message === 'Unauthorized')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.error('[email/logs] error:', err);
+    return NextResponse.json({ error: 'Failed to fetch email logs' }, { status: 500 });
   }
 }

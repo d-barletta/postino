@@ -53,6 +53,15 @@
       "collectionGroup": "emailLogs",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "estimatedCost", "order": "ASCENDING" },
+        { "fieldPath": "tokensUsed", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "emailLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "estimatedCost", "order": "ASCENDING" },
         { "fieldPath": "tokensUsed", "order": "ASCENDING" }
       ]

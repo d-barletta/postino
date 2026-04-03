@@ -62,6 +62,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ models });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
-    return NextResponse.json({ error: msg, models: [] }, { status: msg === 'Forbidden' ? 403 : 401 });
+    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
+    if (status === 500) console.error('[admin/openrouter-models] error:', error);
+    return NextResponse.json({ error: msg, models: [] }, { status });
   }
 }

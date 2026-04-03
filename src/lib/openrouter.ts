@@ -146,7 +146,8 @@ export async function getModelPricing(model: string, apiKey: string): Promise<Mo
 
     modelPricingCache.set(model, { pricing, fetchedAt: Date.now() });
     return pricing;
-  } catch {
+  } catch (err) {
+    console.warn('[openrouter] Failed to fetch model pricing for', model, ':', err);
     return null;
   }
 }

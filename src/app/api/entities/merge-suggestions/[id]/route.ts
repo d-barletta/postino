@@ -58,6 +58,7 @@ export async function PATCH(
     if (isAuthError) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    console.error('[entities/merge-suggestions/[id]] PATCH error:', err);
     return NextResponse.json({ error: 'Failed to update suggestion' }, { status: 500 });
   }
 }

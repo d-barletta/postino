@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
+    if (statusCode === 500) console.error('[admin/emails] error:', error);
     return NextResponse.json({ error: msg }, { status: statusCode });
   }
 }

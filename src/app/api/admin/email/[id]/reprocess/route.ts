@@ -107,6 +107,7 @@ export async function POST(
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
+    if (status === 500) console.error('[admin/email/[id]/reprocess] error:', error);
     return NextResponse.json({ error: msg }, { status });
   }
 }

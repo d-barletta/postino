@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ merges });
-  } catch {
+  } catch (err) {
+    console.error('[entities/merges] GET error:', err);
     return NextResponse.json({ error: 'Failed to fetch merges' }, { status: 500 });
   }
 }
@@ -118,6 +119,7 @@ export async function POST(request: NextRequest) {
     if (isAuthError) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    console.error('[entities/merges] POST error:', err);
     return NextResponse.json({ error: 'Failed to create merge' }, { status: 500 });
   }
 }

@@ -108,7 +108,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     await ruleRef.update(updateData);
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[rules/[id]] PATCH error:', err);
     return NextResponse.json({ error: 'Failed to update rule' }, { status: 500 });
   }
 }
@@ -127,7 +128,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     await ruleRef.delete();
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[rules/[id]] DELETE error:', err);
     return NextResponse.json({ error: 'Failed to delete rule' }, { status: 500 });
   }
 }
