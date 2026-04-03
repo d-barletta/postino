@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import type cytoscape from 'cytoscape';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { RefreshCw, Share2, AlertCircle, Maximize2 } from 'lucide-react';
+import { RefreshCw, Share2, AlertCircle } from 'lucide-react';
 import type { EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -424,7 +424,7 @@ export function RelationGraph({
         <div className="hidden sm:flex items-center gap-2">
           {graph && !isEmpty && onExpandFullPage && (
             <Button size="sm" variant="ghost" onClick={onExpandFullPage}>
-              <Maximize2 className="h-4 w-4" />
+              <i className="bi bi-fullscreen" aria-hidden="true" />
               {tr.expandFullPage}
             </Button>
           )}

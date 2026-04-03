@@ -2255,7 +2255,7 @@ const translations: Record<Locale, Translations> = {
         tokens: 'Tokens :',
         viewOriginal: "Voir l'e-mail original",
         viewFullPage: 'Pleine page',
-        loadingEmail: "Chargement de l'e-mail\u2026",
+        loadingEmail: "Chargement de l'e-mail",
         searchPlaceholder: 'Rechercher des e-mails…',
         withAttachments: 'Avec pièces jointes',
         applyFilters: 'Rechercher',
