@@ -3,6 +3,7 @@
 import { toast } from 'sonner';
 import { useState, useEffect, useTransition } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';
 import { StatsCards } from '@/components/admin/StatsCards';
 import { AdminOverviewCharts } from '@/components/admin/AdminOverviewCharts';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -16,6 +17,7 @@ import { Home, Users, Mail, Activity, Settings } from 'lucide-react';
 
 export default function AdminPage() {
   const { firebaseUser } = useAuth();
+  const { t } = useI18n();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -33,7 +35,7 @@ export default function AdminPage() {
           const data = await res.json();
           setStats(data.stats);
         } else {
-          toast.error('Failed to load stats');
+          toast.error(t.admin.toasts.failedToLoadStats);
         }
       } finally {
         setLoading(false);

@@ -231,6 +231,8 @@ export interface Translations {
       deleteEmailConfirm: string;
       deleteEmailSuccess: string;
       deleteEmailError: string;
+      failedToLoad: string;
+      failedToLoadCount: string;
     };
     search: {
       title: string;
@@ -327,6 +329,10 @@ export interface Translations {
       suggestionsReject: string;
       suggestionsCompleteFirst: string;
       suggestionsError: string;
+      failedToLoad: string;
+      failedToLoadMerges: string;
+      failedToLoadSuggestions: string;
+      suggestionsGenerated: string;
       relations: {
         viewToggle: string;
         exploreToggle: string;
@@ -345,6 +351,8 @@ export interface Translations {
         expandFullPage: string;
         closeFullPage: string;
         legend: string;
+        loadError: string;
+        generated: string;
       };
     };
     rules: {
@@ -389,6 +397,11 @@ export interface Translations {
       close: string;
       searchPlaceholder: string;
       noMatchingRules: string;
+      ruleCreated: string;
+      ruleSaved: string;
+      ruleEnabled: string;
+      ruleDisabled: string;
+      ruleDeleted: string;
       errors: {
         nameRequired: string;
         textRequired: string;
@@ -396,6 +409,8 @@ export interface Translations {
         textTooLong: string;
         failedToCreate: string;
         failedToUpdate: string;
+        failedToDelete: string;
+        failedToReorder: string;
       };
     };
     pwaInstall: {
@@ -438,6 +453,13 @@ export interface Translations {
       installButton: string;
       notNow: string;
     };
+    toasts: {
+      settingSaved: string;
+      failedToLoadStats: string;
+      failedToUpdateEmailSetting: string;
+      failedToUpdateForwardingHeaderSetting: string;
+      failedToUpdateAnalysisLanguageSetting: string;
+    };
   };
   emailOriginal: {
     back: string;
@@ -473,6 +495,21 @@ export interface Translations {
       tokensUsed: string;
       estCost: string;
       processedBody: string;
+    };
+  };
+  admin: {
+    toasts: {
+      settingsSaved: string;
+      failedToLoadStats: string;
+      failedToLoadChartData: string;
+      userDeleted: string;
+      adminGranted: string;
+      adminRemoved: string;
+      userSuspended: string;
+      userActivated: string;
+      failedToProcessQueue: string;
+      failedToUpdateMailgunSetting: string;
+      failedToClearLogs: string;
     };
   };
 }
@@ -715,6 +752,8 @@ const translations: Record<Locale, Translations> = {
         deleteEmailConfirm: 'Are you sure you want to permanently delete this email? This action cannot be undone.',
         deleteEmailSuccess: 'Email deleted.',
         deleteEmailError: 'Failed to delete email.',
+        failedToLoad: 'Failed to load emails',
+        failedToLoadCount: 'Failed to load email count',
       },
       search: {
         title: 'Search Emails',
@@ -811,6 +850,10 @@ const translations: Record<Locale, Translations> = {
         suggestionsReject: 'Reject',
         suggestionsCompleteFirst: 'Complete all suggestions before generating new ones.',
         suggestionsError: 'Failed to generate suggestions. Please try again.',
+        failedToLoad: 'Failed to load knowledge data',
+        failedToLoadMerges: 'Failed to load merges',
+        failedToLoadSuggestions: 'Failed to load suggestions',
+        suggestionsGenerated: 'Suggestions generated',
         relations: {
           viewToggle: 'Relation Map',
           exploreToggle: 'Explore',
@@ -829,6 +872,8 @@ const translations: Record<Locale, Translations> = {
           expandFullPage: 'Full page',
           closeFullPage: 'Close',
           legend: 'Legend',
+          loadError: 'Failed to load relation map',
+          generated: 'Relation graph updated',
         },
       },
       rules: {
@@ -873,6 +918,11 @@ const translations: Record<Locale, Translations> = {
         close: 'Close',
         searchPlaceholder: 'Search rules…',
         noMatchingRules: 'No rules match your search.',
+        ruleCreated: 'Rule created',
+        ruleSaved: 'Rule saved',
+        ruleEnabled: 'Rule enabled',
+        ruleDisabled: 'Rule disabled',
+        ruleDeleted: 'Rule deleted',
         errors: {
           nameRequired: 'Rule name is required',
           textRequired: 'Rule text is required',
@@ -880,6 +930,8 @@ const translations: Record<Locale, Translations> = {
           textTooLong: 'Rule exceeds maximum length of {max} characters',
           failedToCreate: 'Failed to create rule',
           failedToUpdate: 'Failed to update rule',
+          failedToDelete: 'Failed to delete rule',
+          failedToReorder: 'Failed to reorder rules',
         },
       },
       pwaInstall: {
@@ -917,6 +969,13 @@ const translations: Record<Locale, Translations> = {
         installButton: 'Install app',
         notNow: 'Not now',
       },
+      toasts: {
+        settingSaved: 'Setting saved',
+        failedToLoadStats: 'Failed to load stats',
+        failedToUpdateEmailSetting: 'Failed to update email address setting',
+        failedToUpdateForwardingHeaderSetting: 'Failed to update forwarding header setting',
+        failedToUpdateAnalysisLanguageSetting: 'Failed to update analysis language setting',
+      },
     },
     emailOriginal: {
       back: 'Back',
@@ -952,6 +1011,21 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Tokens used:',
         estCost: 'Est. cost:',
         processedBody: 'Processed body:',
+      },
+    },
+    admin: {
+      toasts: {
+        settingsSaved: 'Settings saved',
+        failedToLoadStats: 'Failed to load stats',
+        failedToLoadChartData: 'Failed to load chart data',
+        userDeleted: 'User deleted',
+        adminGranted: 'Admin privileges granted',
+        adminRemoved: 'Admin privileges removed',
+        userSuspended: 'User suspended',
+        userActivated: 'User activated',
+        failedToProcessQueue: 'Failed to process queue batch',
+        failedToUpdateMailgunSetting: 'Failed to update Mailgun webhook logging setting',
+        failedToClearLogs: 'Failed to clear Mailgun webhook request logs',
       },
     },
   },
@@ -1193,6 +1267,8 @@ const translations: Record<Locale, Translations> = {
         deleteEmailConfirm: "Sei sicuro di voler eliminare definitivamente questa email? Questa azione non può essere annullata.",
         deleteEmailSuccess: 'Email eliminata.',
         deleteEmailError: "Impossibile eliminare l'email.",
+        failedToLoad: 'Caricamento email non riuscito',
+        failedToLoadCount: 'Caricamento conteggio email non riuscito',
       },
       search: {
         title: 'Cerca email',
@@ -1289,6 +1365,10 @@ const translations: Record<Locale, Translations> = {
         suggestionsReject: 'Rifiuta',
         suggestionsCompleteFirst: 'Completa tutti i suggerimenti prima di generarne di nuovi.',
         suggestionsError: 'Generazione suggerimenti non riuscita. Riprova.',
+        failedToLoad: 'Caricamento dati non riuscito',
+        failedToLoadMerges: 'Caricamento unioni non riuscito',
+        failedToLoadSuggestions: 'Caricamento suggerimenti non riuscito',
+        suggestionsGenerated: 'Suggerimenti generati',
         relations: {
           viewToggle: 'Mappa relazioni',
           exploreToggle: 'Esplora',
@@ -1307,6 +1387,8 @@ const translations: Record<Locale, Translations> = {
           expandFullPage: 'Pagina intera',
           closeFullPage: 'Chiudi',
           legend: 'Legenda',
+          loadError: 'Caricamento mappa relazioni non riuscito',
+          generated: 'Grafico relazioni aggiornato',
         },
       },
       rules: {
@@ -1351,6 +1433,11 @@ const translations: Record<Locale, Translations> = {
         close: 'Chiudi',
         searchPlaceholder: 'Cerca regole…',
         noMatchingRules: 'Nessuna regola corrisponde alla ricerca.',
+        ruleCreated: 'Regola creata',
+        ruleSaved: 'Regola salvata',
+        ruleEnabled: 'Regola attivata',
+        ruleDisabled: 'Regola disattivata',
+        ruleDeleted: 'Regola eliminata',
         errors: {
           nameRequired: 'Il nome della regola è obbligatorio',
           textRequired: 'Il testo della regola è obbligatorio',
@@ -1358,6 +1445,8 @@ const translations: Record<Locale, Translations> = {
           textTooLong: 'La regola supera la lunghezza massima di {max} caratteri',
           failedToCreate: 'Creazione regola non riuscita',
           failedToUpdate: 'Aggiornamento regola non riuscito',
+          failedToDelete: 'Eliminazione regola non riuscita',
+          failedToReorder: 'Riordinamento regole non riuscito',
         },
       },
       pwaInstall: {
@@ -1395,6 +1484,13 @@ const translations: Record<Locale, Translations> = {
         installButton: 'Installa app',
         notNow: 'Non ora',
       },
+      toasts: {
+        settingSaved: 'Impostazione salvata',
+        failedToLoadStats: 'Caricamento statistiche non riuscito',
+        failedToUpdateEmailSetting: 'Aggiornamento indirizzo email non riuscito',
+        failedToUpdateForwardingHeaderSetting: 'Aggiornamento intestazione inoltro non riuscito',
+        failedToUpdateAnalysisLanguageSetting: 'Aggiornamento lingua di analisi non riuscito',
+      },
     },
     emailOriginal: {
       back: 'Indietro',
@@ -1430,6 +1526,21 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Token usati:',
         estCost: 'Costo est.:',
         processedBody: 'Corpo elaborato:',
+      },
+    },
+    admin: {
+      toasts: {
+        settingsSaved: 'Impostazioni salvate',
+        failedToLoadStats: 'Caricamento statistiche non riuscito',
+        failedToLoadChartData: 'Caricamento dati grafico non riuscito',
+        userDeleted: 'Utente eliminato',
+        adminGranted: 'Privilegi admin concessi',
+        adminRemoved: 'Privilegi admin rimossi',
+        userSuspended: 'Utente sospeso',
+        userActivated: 'Utente attivato',
+        failedToProcessQueue: 'Elaborazione batch non riuscita',
+        failedToUpdateMailgunSetting: 'Aggiornamento impostazione Mailgun non riuscito',
+        failedToClearLogs: 'Cancellazione log non riuscita',
       },
     },
   },
@@ -1667,6 +1778,8 @@ const translations: Record<Locale, Translations> = {
         deleteEmailConfirm: '¿Seguro que quieres eliminar permanentemente este correo? Esta acción no se puede deshacer.',
         deleteEmailSuccess: 'Correo eliminado.',
         deleteEmailError: 'No se pudo eliminar el correo.',
+        failedToLoad: 'Error al cargar los correos',
+        failedToLoadCount: 'Error al cargar el recuento de correos',
       },
       search: {
         title: 'Buscar correos',
@@ -1763,6 +1876,10 @@ const translations: Record<Locale, Translations> = {
         suggestionsReject: 'Rechazar',
         suggestionsCompleteFirst: 'Completa todas las sugerencias antes de generar nuevas.',
         suggestionsError: 'Error al generar sugerencias. Inténtalo de nuevo.',
+        failedToLoad: 'Error al cargar los datos',
+        failedToLoadMerges: 'Error al cargar las fusiones',
+        failedToLoadSuggestions: 'Error al cargar las sugerencias',
+        suggestionsGenerated: 'Sugerencias generadas',
         relations: {
           viewToggle: 'Mapa de relaciones',
           exploreToggle: 'Explorar',
@@ -1781,6 +1898,8 @@ const translations: Record<Locale, Translations> = {
           expandFullPage: 'Página completa',
           closeFullPage: 'Cerrar',
           legend: 'Leyenda',
+          loadError: 'Error al cargar el mapa de relaciones',
+          generated: 'Gráfico de relaciones actualizado',
         },
       },
       rules: {
@@ -1825,6 +1944,11 @@ const translations: Record<Locale, Translations> = {
         close: 'Cerrar',
         searchPlaceholder: 'Buscar reglas…',
         noMatchingRules: 'Ninguna regla coincide con tu búsqueda.',
+        ruleCreated: 'Regla creada',
+        ruleSaved: 'Regla guardada',
+        ruleEnabled: 'Regla activada',
+        ruleDisabled: 'Regla desactivada',
+        ruleDeleted: 'Regla eliminada',
         errors: {
           nameRequired: 'El nombre de la regla es obligatorio',
           textRequired: 'El texto de la regla es obligatorio',
@@ -1832,6 +1956,8 @@ const translations: Record<Locale, Translations> = {
           textTooLong: 'La regla supera la longitud máxima de {max} caracteres',
           failedToCreate: 'Error al crear la regla',
           failedToUpdate: 'Error al actualizar la regla',
+          failedToDelete: 'Error al eliminar la regla',
+          failedToReorder: 'Error al reordenar las reglas',
         },
       },
       pwaInstall: {
@@ -1869,6 +1995,13 @@ const translations: Record<Locale, Translations> = {
         installButton: 'Instalar app',
         notNow: 'Ahora no',
       },
+      toasts: {
+        settingSaved: 'Ajuste guardado',
+        failedToLoadStats: 'Error al cargar las estadísticas',
+        failedToUpdateEmailSetting: 'Error al actualizar la dirección de correo',
+        failedToUpdateForwardingHeaderSetting: 'Error al actualizar el encabezado de reenvío',
+        failedToUpdateAnalysisLanguageSetting: 'Error al actualizar el idioma de análisis',
+      },
     },
     emailOriginal: {
       back: 'Volver',
@@ -1904,6 +2037,21 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Tokens usados:',
         estCost: 'Coste est.:',
         processedBody: 'Cuerpo procesado:',
+      },
+    },
+    admin: {
+      toasts: {
+        settingsSaved: 'Ajustes guardados',
+        failedToLoadStats: 'Error al cargar las estadísticas',
+        failedToLoadChartData: 'Error al cargar los datos del gráfico',
+        userDeleted: 'Usuario eliminado',
+        adminGranted: 'Privilegios de administrador concedidos',
+        adminRemoved: 'Privilegios de administrador eliminados',
+        userSuspended: 'Usuario suspendido',
+        userActivated: 'Usuario activado',
+        failedToProcessQueue: 'Error al procesar el lote de la cola',
+        failedToUpdateMailgunSetting: 'Error al actualizar la configuración de Mailgun',
+        failedToClearLogs: 'Error al limpiar los registros',
       },
     },
   },
@@ -2141,6 +2289,8 @@ const translations: Record<Locale, Translations> = {
         deleteEmailConfirm: "Voulez-vous vraiment supprimer définitivement cet e-mail ? Cette action est irréversible.",
         deleteEmailSuccess: 'E-mail supprimé.',
         deleteEmailError: "Impossible de supprimer l'e-mail.",
+        failedToLoad: 'Échec du chargement des e-mails',
+        failedToLoadCount: 'Échec du chargement du nombre d\'e-mails',
       },
       search: {
         title: 'Rechercher des e-mails',
@@ -2237,6 +2387,10 @@ const translations: Record<Locale, Translations> = {
         suggestionsReject: 'Rejeter',
         suggestionsCompleteFirst: "Terminez toutes les suggestions avant d'en générer de nouvelles.",
         suggestionsError: 'Échec de la génération des suggestions. Veuillez réessayer.',
+        failedToLoad: 'Échec du chargement des données',
+        failedToLoadMerges: 'Échec du chargement des fusions',
+        failedToLoadSuggestions: 'Échec du chargement des suggestions',
+        suggestionsGenerated: 'Suggestions générées',
         relations: {
           viewToggle: 'Carte des relations',
           exploreToggle: 'Explorer',
@@ -2255,6 +2409,8 @@ const translations: Record<Locale, Translations> = {
           expandFullPage: 'Pleine page',
           closeFullPage: 'Fermer',
           legend: 'Légende',
+          loadError: 'Échec du chargement de la carte des relations',
+          generated: 'Graphe de relations mis à jour',
         },
       },
       rules: {
@@ -2299,6 +2455,11 @@ const translations: Record<Locale, Translations> = {
         close: 'Fermer',
         searchPlaceholder: 'Rechercher des règles…',
         noMatchingRules: 'Aucune règle ne correspond à votre recherche.',
+        ruleCreated: 'Règle créée',
+        ruleSaved: 'Règle sauvegardée',
+        ruleEnabled: 'Règle activée',
+        ruleDisabled: 'Règle désactivée',
+        ruleDeleted: 'Règle supprimée',
         errors: {
           nameRequired: 'Le nom de la règle est obligatoire',
           textRequired: 'Le texte de la règle est obligatoire',
@@ -2306,6 +2467,8 @@ const translations: Record<Locale, Translations> = {
           textTooLong: 'La règle dépasse la longueur maximale de {max} caractères',
           failedToCreate: 'Échec de la création de la règle',
           failedToUpdate: 'Échec de la mise à jour de la règle',
+          failedToDelete: 'Échec de la suppression de la règle',
+          failedToReorder: 'Échec du réordonnancement des règles',
         },
       },
       pwaInstall: {
@@ -2343,6 +2506,13 @@ const translations: Record<Locale, Translations> = {
         installButton: "Installer l'app",
         notNow: 'Pas maintenant',
       },
+      toasts: {
+        settingSaved: 'Paramètre sauvegardé',
+        failedToLoadStats: 'Échec du chargement des statistiques',
+        failedToUpdateEmailSetting: "Échec de la mise à jour de l'adresse e-mail",
+        failedToUpdateForwardingHeaderSetting: "Échec de la mise à jour de l'en-tête de transfert",
+        failedToUpdateAnalysisLanguageSetting: "Échec de la mise à jour de la langue d'analyse",
+      },
     },
     emailOriginal: {
       back: 'Retour',
@@ -2378,6 +2548,21 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Tokens utilisés :',
         estCost: 'Coût est. :',
         processedBody: 'Corps traité :',
+      },
+    },
+    admin: {
+      toasts: {
+        settingsSaved: 'Paramètres sauvegardés',
+        failedToLoadStats: 'Échec du chargement des statistiques',
+        failedToLoadChartData: 'Échec du chargement des données du graphique',
+        userDeleted: 'Utilisateur supprimé',
+        adminGranted: 'Droits administrateur accordés',
+        adminRemoved: 'Droits administrateur retirés',
+        userSuspended: 'Utilisateur suspendu',
+        userActivated: 'Utilisateur activé',
+        failedToProcessQueue: 'Échec du traitement du lot',
+        failedToUpdateMailgunSetting: 'Échec de la mise à jour du paramètre Mailgun',
+        failedToClearLogs: 'Échec de la suppression des journaux',
       },
     },
   },
@@ -2615,6 +2800,8 @@ const translations: Record<Locale, Translations> = {
         deleteEmailConfirm: 'Möchten Sie diese E-Mail wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
         deleteEmailSuccess: 'E-Mail gelöscht.',
         deleteEmailError: 'E-Mail konnte nicht gelöscht werden.',
+        failedToLoad: 'E-Mails konnten nicht geladen werden',
+        failedToLoadCount: 'Anzahl der E-Mails konnte nicht geladen werden',
       },
       search: {
         title: 'E-Mails suchen',
@@ -2711,6 +2898,10 @@ const translations: Record<Locale, Translations> = {
         suggestionsReject: 'Ablehnen',
         suggestionsCompleteFirst: 'Beenden Sie alle Vorschläge, bevor Sie neue generieren.',
         suggestionsError: 'Vorschläge konnten nicht generiert werden. Bitte erneut versuchen.',
+        failedToLoad: 'Daten konnten nicht geladen werden',
+        failedToLoadMerges: 'Zusammenführungen konnten nicht geladen werden',
+        failedToLoadSuggestions: 'Vorschläge konnten nicht geladen werden',
+        suggestionsGenerated: 'Vorschläge generiert',
         relations: {
           viewToggle: 'Beziehungskarte',
           exploreToggle: 'Erkunden',
@@ -2729,6 +2920,8 @@ const translations: Record<Locale, Translations> = {
           expandFullPage: 'Vollbild',
           closeFullPage: 'Schließen',
           legend: 'Legende',
+          loadError: 'Beziehungskarte konnte nicht geladen werden',
+          generated: 'Beziehungsgraph aktualisiert',
         },
       },
       rules: {
@@ -2773,6 +2966,11 @@ const translations: Record<Locale, Translations> = {
         close: 'Schließen',
         searchPlaceholder: 'Regeln suchen…',
         noMatchingRules: 'Keine Regeln entsprechen Ihrer Suche.',
+        ruleCreated: 'Regel erstellt',
+        ruleSaved: 'Regel gespeichert',
+        ruleEnabled: 'Regel aktiviert',
+        ruleDisabled: 'Regel deaktiviert',
+        ruleDeleted: 'Regel gelöscht',
         errors: {
           nameRequired: 'Regelname ist erforderlich',
           textRequired: 'Regeltext ist erforderlich',
@@ -2780,6 +2978,8 @@ const translations: Record<Locale, Translations> = {
           textTooLong: 'Regel überschreitet die maximale Länge von {max} Zeichen',
           failedToCreate: 'Regel konnte nicht erstellt werden',
           failedToUpdate: 'Regel konnte nicht aktualisiert werden',
+          failedToDelete: 'Regel konnte nicht gelöscht werden',
+          failedToReorder: 'Regeln konnten nicht neu geordnet werden',
         },
       },
       pwaInstall: {
@@ -2817,6 +3017,13 @@ const translations: Record<Locale, Translations> = {
         installButton: 'App installieren',
         notNow: 'Nicht jetzt',
       },
+      toasts: {
+        settingSaved: 'Einstellung gespeichert',
+        failedToLoadStats: 'Statistiken konnten nicht geladen werden',
+        failedToUpdateEmailSetting: 'E-Mail-Adresseinstellung konnte nicht aktualisiert werden',
+        failedToUpdateForwardingHeaderSetting: 'Weiterleitungsheader-Einstellung konnte nicht aktualisiert werden',
+        failedToUpdateAnalysisLanguageSetting: 'Analysesprache konnte nicht aktualisiert werden',
+      },
     },
     emailOriginal: {
       back: 'Zurück',
@@ -2852,6 +3059,21 @@ const translations: Record<Locale, Translations> = {
         tokensUsed: 'Verwendete Tokens:',
         estCost: 'Gesch. Kosten:',
         processedBody: 'Verarbeiteter Inhalt:',
+      },
+    },
+    admin: {
+      toasts: {
+        settingsSaved: 'Einstellungen gespeichert',
+        failedToLoadStats: 'Statistiken konnten nicht geladen werden',
+        failedToLoadChartData: 'Diagrammdaten konnten nicht geladen werden',
+        userDeleted: 'Benutzer gelöscht',
+        adminGranted: 'Administratorrechte gewährt',
+        adminRemoved: 'Administratorrechte entfernt',
+        userSuspended: 'Benutzer gesperrt',
+        userActivated: 'Benutzer aktiviert',
+        failedToProcessQueue: 'Warteschlangen-Batch konnte nicht verarbeitet werden',
+        failedToUpdateMailgunSetting: 'Mailgun-Einstellung konnte nicht aktualisiert werden',
+        failedToClearLogs: 'Protokolle konnten nicht gelöscht werden',
       },
     },
   },

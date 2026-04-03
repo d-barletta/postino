@@ -262,7 +262,7 @@ export function KnowledgeTab() {
       const json = (await res.json()) as KnowledgeData;
       setData(json);
     } catch {
-      toast.error('Failed to load knowledge data');
+      toast.error(k.failedToLoad);
       setError('Failed to load knowledge data');
     } finally {
       setLoading(false);
@@ -281,7 +281,7 @@ export function KnowledgeTab() {
         const json = await res.json() as { merges: EntityMerge[] };
         setMerges(json.merges ?? []);
       } else {
-        toast.error('Failed to load merges');
+        toast.error(k.failedToLoadMerges);
       }
     } finally {
       setMergesLoading(false);
@@ -300,7 +300,7 @@ export function KnowledgeTab() {
         const json = await res.json() as { suggestions: EntityMergeSuggestion[] };
         setSuggestions(json.suggestions ?? []);
       } else {
-        toast.error('Failed to load merge suggestions');
+        toast.error(k.failedToLoadSuggestions);
       }
     } finally {
       setSuggestionsLoading(false);
@@ -326,7 +326,7 @@ export function KnowledgeTab() {
       }
       const json = await res.json() as { suggestions: EntityMergeSuggestion[] };
       setSuggestions(json.suggestions ?? []);
-      toast.success('Suggestions generated');
+      toast.success(k.suggestionsGenerated);
     } catch {
       toast.error(k.suggestionsError);
     } finally {

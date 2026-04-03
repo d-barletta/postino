@@ -493,7 +493,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         setTotalPages(data.totalPages);
         setTotalCount(data.totalCount);
       } else {
-        toast.error('Failed to load emails');
+        toast.error(t.dashboard.emailHistory.failedToLoad);
       }
     } finally {
       setLogsLoading(false);
@@ -513,7 +513,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         const data: { count: number } = await res.json();
         setTotalEmailCount(data.count);
       } else {
-        toast.error('Failed to load email count');
+        toast.error(t.dashboard.emailHistory.failedToLoadCount);
       }
     } finally {
       setTotalEmailCountLoading(false);
@@ -523,7 +523,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   useEffect(() => {
     setPage(1);
     fetchLogs(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, applied]);
 
   // Fetch total email count asynchronously when no filters are active.
@@ -534,7 +533,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     if (!hasActiveFilters) {
       fetchTotalCount();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, applied]);
 
   const handleApplyFilters = () => {
@@ -656,7 +654,6 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     fetchLogs(1, true);
     if (!hasActive) fetchTotalCount();
     setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { toast } from 'sonner';
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type cytoscape from 'cytoscape';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -518,6 +519,7 @@ export function RelationGraphFullPageContent({
 // useRelationGraph hook
 // ---------------------------------------------------------------------------
 export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
+  const { t } = useI18n();
   const [graph, setGraph] = useState<EntityRelationGraph | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -543,8 +545,8 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
       const json = (await res.json()) as { graph: EntityRelationGraph | null };
       setGraph(json.graph);
     } catch {
-      toast.error('Failed to load relation graph');
-      setError('Failed to load relation graph');
+      toast.error(t.dashboard.knowledge.relations.loadError);
+      setError(t.dashboard.knowledge.relations.loadError);
     } finally {
       setLoading(false);
       setHasFetched(true);
@@ -564,10 +566,10 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
       if (!res.ok) throw new Error('Failed to generate');
       const json = (await res.json()) as { graph: EntityRelationGraph };
       setGraph(json.graph);
-      toast.success('Relation graph updated');
+      toast.success(t.dashboard.knowledge.relations.generated);
     } catch {
-      toast.error('Failed to generate relation graph');
-      setError('Failed to generate relation graph');
+      toast.error(t.dashboard.knowledge.relations.error);
+      setError(t.dashboard.knowledge.relations.error);
     } finally {
       setGenerating(false);
     }

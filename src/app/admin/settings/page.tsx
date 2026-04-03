@@ -3,6 +3,7 @@
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/Accordion';
 import { Input } from '@/components/ui/Input';
@@ -57,6 +58,7 @@ function normalizeOptionalInteger(value: number | undefined, bounds?: NumberBoun
 
 export default function AdminSettingsPage({ showPageHeader = true }: AdminSettingsPageProps) {
   const { firebaseUser } = useAuth();
+  const { t } = useI18n();
   const [settings, setSettings] = useState<Partial<Settings>>({
     maxRuleLength: 1000,
     maxActiveRules: 3,
@@ -276,7 +278,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
         body: JSON.stringify(normalizedForSave),
       });
       if (res.ok) {
-        toast.success('Settings saved');
+        toast.success(t.admin.toasts.settingsSaved);
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       } else {

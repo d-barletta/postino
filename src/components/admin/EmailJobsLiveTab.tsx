@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/lib/i18n';
 import { RefreshCw, Play, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -77,6 +78,7 @@ function toPrettyJson(value: unknown): string {
 
 export default function EmailJobsLiveTab() {
   const { firebaseUser } = useAuth();
+  const { t } = useI18n();
   const [data, setData] = useState<JobsOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -137,13 +139,13 @@ export default function EmailJobsLiveTab() {
       });
 
       if (!res.ok) {
-        toast.error('Failed to process queue batch');
+        toast.error(t.admin.toasts.failedToProcessQueue);
         return;
       }
 
       await fetchOverview(true);
     } catch {
-      toast.error('Failed to process queue batch');
+      toast.error(t.admin.toasts.failedToProcessQueue);
     } finally {
       setProcessingNow(false);
     }
@@ -164,14 +166,14 @@ export default function EmailJobsLiveTab() {
       });
 
       if (!res.ok) {
-        toast.error('Failed to update Mailgun webhook logging setting');
+        toast.error(t.admin.toasts.failedToUpdateMailgunSetting);
         return;
       }
 
       setData((prev) => (prev ? { ...prev, webhookLoggingEnabled: enabled } : prev));
       await fetchOverview(true);
     } catch {
-      toast.error('Failed to update Mailgun webhook logging setting');
+      toast.error(t.admin.toasts.failedToUpdateMailgunSetting);
     } finally {
       setLoggingSaving(false);
     }
@@ -196,13 +198,13 @@ export default function EmailJobsLiveTab() {
       });
 
       if (!res.ok) {
-        toast.error('Failed to clear Mailgun webhook request logs');
+        toast.error(t.admin.toasts.failedToClearLogs);
         return;
       }
 
       await fetchOverview(true);
     } catch {
-      toast.error('Failed to clear Mailgun webhook request logs');
+      toast.error(t.admin.toasts.failedToClearLogs);
     } finally {
       setClearingLogs(false);
     }

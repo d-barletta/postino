@@ -108,7 +108,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         newMatchSubject.trim() || undefined,
         newMatchBody.trim() || undefined
       );
-      toast.success('Rule created');
+      toast.success(t.dashboard.rules.ruleCreated);
       setNewRuleName(''); setNewRuleText('');
       setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
       setShowNewFilters(false); setShowAddForm(false);
@@ -135,7 +135,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         editMatchSubject.trim(),
         editMatchBody.trim()
       );
-      toast.success('Rule saved');
+      toast.success(t.dashboard.rules.ruleSaved);
       setEditingId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.dashboard.rules.errors.failedToUpdate);
@@ -149,17 +149,17 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
     if (!rule) return;
     try {
       await updateRule(id, rule.name, rule.text, !current, rule.matchSender, rule.matchSubject, rule.matchBody);
-      toast.success(current ? 'Rule disabled' : 'Rule enabled');
+      toast.success(current ? t.dashboard.rules.ruleDisabled : t.dashboard.rules.ruleEnabled);
     } catch {
-      toast.error('Failed to update rule');
+      toast.error(t.dashboard.rules.errors.failedToUpdate);
     }
   };
 
   const handleDeleteConfirm = async () => {
     if (!deleteId) return;
     setDeleting(true);
-    try { await deleteRule(deleteId); toast.success('Rule deleted'); }
-    catch { toast.error('Failed to delete rule'); }
+    try { await deleteRule(deleteId); toast.success(t.dashboard.rules.ruleDeleted); }
+    catch { toast.error(t.dashboard.rules.errors.failedToDelete); }
     finally { setDeleting(false); setDeleteId(null); }
   };
 
@@ -172,7 +172,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
     try {
       await reorderRules(newOrder.map((r) => r.id));
     } catch {
-      toast.error('Failed to reorder rules');
+      toast.error(t.dashboard.rules.errors.failedToReorder);
     } finally {
       setReordering(false);
     }

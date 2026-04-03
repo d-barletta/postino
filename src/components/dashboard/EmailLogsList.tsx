@@ -312,7 +312,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
           setTotalPages(data.totalPages);
           setTotalCount(data.totalCount);
         } else {
-          toast.error('Failed to load emails');
+          toast.error(t.dashboard.emailHistory.failedToLoad);
         }
       } finally {
         setLogsLoading(false);
@@ -326,7 +326,6 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   useEffect(() => {
     setPage(1);
     fetchLogs(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, searchQuery, hasAttachmentsFilter, refreshTrigger]);
 
   const handleApplyFilters = () => {

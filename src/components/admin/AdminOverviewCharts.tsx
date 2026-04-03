@@ -2,6 +2,7 @@
 
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import {
   Bar,
   CartesianGrid,
@@ -97,6 +98,7 @@ const COST_COLOR_DARK = '#efd957';
 
 export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
   const { firebaseUser } = useAuth();
+  const { t } = useI18n();
   const [range, setRange] = useState<TimeRange>('7d');
   const [granularity, setGranularity] = useState<TimeGranularity>(DEFAULT_GRANULARITY['7d']);
   const [buckets, setBuckets] = useState<TimeseriesBucket[]>([]);
@@ -125,7 +127,7 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
         const data = await res.json();
         setBuckets(data.buckets || []);
       } else {
-        toast.error('Failed to load chart data');
+        toast.error(t.admin.toasts.failedToLoadChartData);
       }
     } finally {
       setTimeseriesLoading(false);

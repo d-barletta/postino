@@ -140,7 +140,6 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
     fetchEmail();
     // t is intentionally excluded to avoid re-fetching when locale changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser, authLoading, id, router]);
 
   if (authLoading || loading) {

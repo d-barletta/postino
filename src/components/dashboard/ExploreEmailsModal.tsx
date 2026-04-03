@@ -216,7 +216,7 @@ export function ExploreEmailsModal({
           setTotalPages(data.totalPages);
           setTotalCount(data.totalCount);
         } else {
-          toast.error('Failed to load emails');
+          toast.error(t.dashboard.emailHistory.failedToLoad);
         }
       } finally {
         setLoading(false);

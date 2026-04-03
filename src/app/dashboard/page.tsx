@@ -156,7 +156,7 @@ export default function DashboardPage() {
       const data = await res.json();
       setLogs(data.logs || []);
     } else {
-      toast.error('Failed to load emails');
+      toast.error(t.dashboard.emailHistory.failedToLoad);
     }
   }, [firebaseUser]);
 
@@ -168,7 +168,7 @@ export default function DashboardPage() {
       const data = await res.json();
       if (data.stats) setUserStats(data.stats);
     } else {
-      toast.error('Failed to load stats');
+      toast.error(t.dashboard.toasts.failedToLoadStats);
     }
   }, [firebaseUser]);
 
@@ -179,7 +179,6 @@ export default function DashboardPage() {
     }
     setLogsLoading(true);
     Promise.all([fetchLogs(), fetchStats()]).finally(() => setLogsLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser]); // fetchLogs and fetchStats are derived from firebaseUser — no separate dep needed
 
   const handleLogsRefresh = useCallback(async () => {
@@ -216,9 +215,9 @@ export default function DashboardPage() {
       });
       if (!res.ok) throw new Error();
       await refreshUser();
-      toast.success('Setting saved');
+      toast.success(t.dashboard.toasts.settingSaved);
     } catch {
-      toast.error('Failed to update email address setting');
+      toast.error(t.dashboard.toasts.failedToUpdateEmailSetting);
     }
   }, [firebaseUser, refreshUser]);
 
@@ -233,9 +232,9 @@ export default function DashboardPage() {
       });
       if (!res.ok) throw new Error();
       await refreshUser();
-      toast.success('Setting saved');
+      toast.success(t.dashboard.toasts.settingSaved);
     } catch {
-      toast.error('Failed to update forwarding header setting');
+      toast.error(t.dashboard.toasts.failedToUpdateForwardingHeaderSetting);
     }
   }, [firebaseUser, refreshUser]);
 
@@ -250,9 +249,9 @@ export default function DashboardPage() {
       });
       if (!res.ok) throw new Error();
       await refreshUser();
-      toast.success('Setting saved');
+      toast.success(t.dashboard.toasts.settingSaved);
     } catch {
-      toast.error('Failed to update analysis language setting');
+      toast.error(t.dashboard.toasts.failedToUpdateAnalysisLanguageSetting);
     }
   }, [firebaseUser, refreshUser]);
 

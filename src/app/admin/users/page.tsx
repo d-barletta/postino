@@ -3,6 +3,7 @@
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +28,7 @@ interface AdminUsersPageProps {
 
 export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPageProps) {
   const { firebaseUser } = useAuth();
+  const { t } = useI18n();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -94,10 +96,10 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       }
       await fetchUsers();
       const label =
-        confirmAction.action === 'delete' ? 'User deleted' :
+        confirmAction.action === 'delete' ? t.admin.toasts.userDeleted :
         confirmAction.action === 'admin'
-          ? (confirmAction.current ? 'Admin privileges removed' : 'Admin privileges granted')
-          : (confirmAction.current ? 'User suspended' : 'User activated');
+          ? (confirmAction.current ? t.admin.toasts.adminRemoved : t.admin.toasts.adminGranted)
+          : (confirmAction.current ? t.admin.toasts.userSuspended : t.admin.toasts.userActivated);
       toast.success(label);
     } finally {
       setConfirming(false);
