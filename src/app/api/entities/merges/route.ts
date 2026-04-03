@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     const db = adminDb();
 
-    // Check for overlapping aliases in existing merges for this category
+    // Find all existing merges in this category that overlap with the incoming aliases
     const existingSnap = await db
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
@@ -86,18 +86,31 @@ export async function POST(request: NextRequest) {
       .limit(500)
       .get();
 
-    for (const doc of existingSnap.docs) {
+    const overlappingDocs = existingSnap.docs.filter((doc) => {
       const existingAliases = doc.data().aliases as string[];
-      const overlap = trimmedAliases.some((a) => existingAliases.includes(a));
-      if (overlap) {
-        return NextResponse.json(
-          {
-            error: 'One or more aliases already belong to another merge in this category',
-            existingId: doc.id,
-          },
-          { status: 409 },
-        );
+      return trimmedAliases.some((a) => existingAliases.includes(a));
+    });
+
+    if (overlappingDocs.length > 0) {
+      // Combine aliases from all overlapping merges + the new aliases into one unified set
+      const unifiedAliases = new Set([
+        ...trimmedAliases,
+        ...overlappingDocs.flatMap((doc) => doc.data().aliases as string[]),
+      ]);
+
+      // Keep the first overlapping merge as the base; delete the rest
+      const [baseDoc, ...docsToDelete] = overlappingDocs;
+      const batch = db.batch();
+      batch.update(baseDoc.ref, {
+        canonical: trimmedCanonical,
+        aliases: Array.from(unifiedAliases),
+      });
+      for (const doc of docsToDelete) {
+        batch.delete(doc.ref);
       }
+      await batch.commit();
+
+      return NextResponse.json({ id: baseDoc.id }, { status: 200 });
     }
 
     const ref = await db.collection('entityMerges').add({
