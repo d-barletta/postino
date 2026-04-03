@@ -15,13 +15,13 @@ function isAuthorized(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET || '';
 
   const workerHeader = request.headers.get('x-worker-secret') || '';
-  if (workerSecret && workerHeader.length > 0 && timingSafeStringEqual(workerHeader, workerSecret)) {
+  if (workerSecret && timingSafeStringEqual(workerHeader, workerSecret)) {
     return true;
   }
 
   const authHeader = request.headers.get('authorization') || '';
   const expectedCronHeader = cronSecret ? `Bearer ${cronSecret}` : '';
-  if (cronSecret && authHeader.length > 0 && timingSafeStringEqual(authHeader, expectedCronHeader)) {
+  if (cronSecret && timingSafeStringEqual(authHeader, expectedCronHeader)) {
     return true;
   }
 

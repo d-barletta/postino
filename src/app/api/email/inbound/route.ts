@@ -299,7 +299,7 @@ function resolveStoreAttachmentUrl(
     // Using an anchored regex prevents overly broad suffix matching that could admit
     // attacker-controlled subdomains (e.g. evil.api.mailgun.net).
     const isTrustedStorageHost =
-      /^storage-[a-z0-9-]+\.api(?:\.eu)?\.mailgun\.net$/.test(resolved.host);
+      /^storage-[a-z0-9]+(?:-[a-z0-9]+)*\.api(?:\.eu)?\.mailgun\.net$/.test(resolved.host);
 
     if (!trustedHosts.has(resolved.host) && !isTrustedStorageHost) return null;
 
