@@ -33,6 +33,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
+::selection {
+  background-color: var(--accent);
+  color: #171717;
+}
+
 html {
   background-color: #ffffff;
 }
