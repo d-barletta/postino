@@ -39,6 +39,7 @@ import {
 import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
+import { Spinner } from '@/components/ui/Spinner';
 
 const PAGE_SIZE = 20;
 const ALL_STATUS_VALUE = '__all__';
@@ -684,6 +685,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                           </div>
                           <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
                             <Badge variant={statusVariant[log.status] || 'default'}>
+                              {log.status === 'processing' && (
+                                <Spinner className="h-3 w-3 mr-1 shrink-0" />
+                              )}
                               {statusLabel[log.status] ?? log.status}
                             </Badge>
                             <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -773,6 +777,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                                 variant={statusVariant[log.status] || 'default'}
                                 className="text-[10px] px-1.5 py-0 h-4"
                               >
+                                {log.status === 'processing' && (
+                                  <Spinner className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                                )}
                                 {statusLabel[log.status] ?? log.status}
                               </Badge>
                               <span className="text-[10px] text-gray-400 dark:text-gray-500">
