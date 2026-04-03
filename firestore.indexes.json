@@ -62,7 +62,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "canonical", "order": "ASCENDING" }
+        { "fieldPath": "suggestedCanonical", "order": "ASCENDING" }
       ]
     },
     {
