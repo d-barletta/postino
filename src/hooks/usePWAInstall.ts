@@ -17,7 +17,6 @@ export function usePWAInstall(): UsePWAInstallReturn {
 
   useEffect(() => {
     const handler = (e: Event) => {
-      e.preventDefault();
       setPromptEvent(e as BeforeInstallPromptEvent);
     };
 

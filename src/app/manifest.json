@@ -1,6 +1,8 @@
 {
   "name": "Postino.pro",
   "short_name": "Postino",
+  "start_url": "/dashboard",
+  "scope": "/",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
