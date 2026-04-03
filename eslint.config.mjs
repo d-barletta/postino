@@ -9,6 +9,7 @@ const eslintConfig = defineConfig([
     rules: {
       'react-hooks/exhaustive-deps': 'off',
       'react-hooks/react-compiler': 'off',
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   // Override default ignores of eslint-config-next.
