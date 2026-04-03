@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyAdminRequest } from '@/lib/api-auth';
 import { getOpenRouterClient } from '@/lib/openrouter';
+import { jsonrepair } from 'jsonrepair';
 
 const VALID_LOCALES = ['en', 'it', 'es', 'fr', 'de'] as const;
 
@@ -97,10 +98,18 @@ ${sourceData.content}`;
     });
 
     const raw = response.choices[0]?.message?.content ?? '{}';
+    // Strip markdown code fences that some models add despite response_format
+    const cleaned = raw
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
     let parsed: { title?: string; content?: string };
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(jsonrepair(cleaned));
     } catch {
+      console.error('[admin/blog/translate] LLM response could not be parsed:', raw);
       return NextResponse.json({ error: 'LLM returned invalid JSON' }, { status: 500 });
     }
 
