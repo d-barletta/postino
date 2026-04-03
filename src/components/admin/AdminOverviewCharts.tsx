@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import {
   Bar,
@@ -123,6 +124,8 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
       if (res.ok) {
         const data = await res.json();
         setBuckets(data.buckets || []);
+      } else {
+        toast.error('Failed to load chart data');
       }
     } finally {
       setTimeseriesLoading(false);

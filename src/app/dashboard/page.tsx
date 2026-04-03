@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
@@ -154,6 +155,8 @@ export default function DashboardPage() {
     if (res.ok) {
       const data = await res.json();
       setLogs(data.logs || []);
+    } else {
+      toast.error('Failed to load emails');
     }
   }, [firebaseUser]);
 
@@ -164,6 +167,8 @@ export default function DashboardPage() {
     if (res.ok) {
       const data = await res.json();
       if (data.stats) setUserStats(data.stats);
+    } else {
+      toast.error('Failed to load stats');
     }
   }, [firebaseUser]);
 
@@ -202,35 +207,53 @@ export default function DashboardPage() {
 
   const handleAddressToggle = useCallback(async (enabled: boolean) => {
     if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
-    await fetch('/api/user/address-toggle', {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isAddressEnabled: enabled }),
-    });
-    await refreshUser();
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/user/address-toggle', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAddressEnabled: enabled }),
+      });
+      if (!res.ok) throw new Error();
+      await refreshUser();
+      toast.success('Setting saved');
+    } catch {
+      toast.error('Failed to update email address setting');
+    }
   }, [firebaseUser, refreshUser]);
 
   const handleForwardingHeaderToggle = useCallback(async (enabled: boolean) => {
     if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
-    await fetch('/api/user/forwarding-header-toggle', {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isForwardingHeaderEnabled: enabled }),
-    });
-    await refreshUser();
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/user/forwarding-header-toggle', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isForwardingHeaderEnabled: enabled }),
+      });
+      if (!res.ok) throw new Error();
+      await refreshUser();
+      toast.success('Setting saved');
+    } catch {
+      toast.error('Failed to update forwarding header setting');
+    }
   }, [firebaseUser, refreshUser]);
 
   const handleAnalysisLanguageChange = useCallback(async (language: string | null) => {
     if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
-    await fetch('/api/user/analysis-language', {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ analysisOutputLanguage: language }),
-    });
-    await refreshUser();
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/user/analysis-language', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysisOutputLanguage: language }),
+      });
+      if (!res.ok) throw new Error();
+      await refreshUser();
+      toast.success('Setting saved');
+    } catch {
+      toast.error('Failed to update analysis language setting');
+    }
   }, [firebaseUser, refreshUser]);
 
   if (loading || logsLoading) {

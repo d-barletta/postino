@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useTransition } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { StatsCards } from '@/components/admin/StatsCards';
@@ -31,6 +32,8 @@ export default function AdminPage() {
         if (res.ok) {
           const data = await res.json();
           setStats(data.stats);
+        } else {
+          toast.error('Failed to load stats');
         }
       } finally {
         setLoading(false);

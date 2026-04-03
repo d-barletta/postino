@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -310,6 +311,8 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
           setHasNextPage(data.hasNextPage);
           setTotalPages(data.totalPages);
           setTotalCount(data.totalCount);
+        } else {
+          toast.error('Failed to load emails');
         }
       } finally {
         setLogsLoading(false);

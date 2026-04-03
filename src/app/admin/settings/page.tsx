@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -275,6 +276,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
         body: JSON.stringify(normalizedForSave),
       });
       if (res.ok) {
+        toast.success('Settings saved');
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       } else {

@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Dialog,
@@ -214,6 +215,8 @@ export function ExploreEmailsModal({
           setHasNextPage(data.hasNextPage);
           setTotalPages(data.totalPages);
           setTotalCount(data.totalCount);
+        } else {
+          toast.error('Failed to load emails');
         }
       } finally {
         setLoading(false);

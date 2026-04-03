@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { useRules } from '@/hooks/useRules';
 import { Button } from '@/components/ui/Button';
@@ -107,6 +108,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         newMatchSubject.trim() || undefined,
         newMatchBody.trim() || undefined
       );
+      toast.success('Rule created');
       setNewRuleName(''); setNewRuleText('');
       setNewMatchSender(''); setNewMatchSubject(''); setNewMatchBody('');
       setShowNewFilters(false); setShowAddForm(false);
@@ -133,6 +135,7 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
         editMatchSubject.trim(),
         editMatchBody.trim()
       );
+      toast.success('Rule saved');
       setEditingId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.dashboard.rules.errors.failedToUpdate);
@@ -144,13 +147,19 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
   const handleToggle = async (id: string, current: boolean) => {
     const rule = rules.find((r) => r.id === id);
     if (!rule) return;
-    await updateRule(id, rule.name, rule.text, !current, rule.matchSender, rule.matchSubject, rule.matchBody);
+    try {
+      await updateRule(id, rule.name, rule.text, !current, rule.matchSender, rule.matchSubject, rule.matchBody);
+      toast.success(current ? 'Rule disabled' : 'Rule enabled');
+    } catch {
+      toast.error('Failed to update rule');
+    }
   };
 
   const handleDeleteConfirm = async () => {
     if (!deleteId) return;
     setDeleting(true);
-    try { await deleteRule(deleteId); }
+    try { await deleteRule(deleteId); toast.success('Rule deleted'); }
+    catch { toast.error('Failed to delete rule'); }
     finally { setDeleting(false); setDeleteId(null); }
   };
 
@@ -162,6 +171,8 @@ export function RulesManager({ maxRuleLength = DEFAULT_MAX_LENGTH, editRuleId }:
     setReordering(true);
     try {
       await reorderRules(newOrder.map((r) => r.id));
+    } catch {
+      toast.error('Failed to reorder rules');
     } finally {
       setReordering(false);
     }

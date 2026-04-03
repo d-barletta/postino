@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type cytoscape from 'cytoscape';
 import { Button } from '@/components/ui/Button';
@@ -542,6 +543,7 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
       const json = (await res.json()) as { graph: EntityRelationGraph | null };
       setGraph(json.graph);
     } catch {
+      toast.error('Failed to load relation graph');
       setError('Failed to load relation graph');
     } finally {
       setLoading(false);
@@ -562,7 +564,9 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
       if (!res.ok) throw new Error('Failed to generate');
       const json = (await res.json()) as { graph: EntityRelationGraph };
       setGraph(json.graph);
+      toast.success('Relation graph updated');
     } catch {
+      toast.error('Failed to generate relation graph');
       setError('Failed to generate relation graph');
     } finally {
       setGenerating(false);

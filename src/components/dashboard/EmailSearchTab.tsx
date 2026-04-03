@@ -492,6 +492,8 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         setHasNextPage(data.hasNextPage);
         setTotalPages(data.totalPages);
         setTotalCount(data.totalCount);
+      } else {
+        toast.error('Failed to load emails');
       }
     } finally {
       setLogsLoading(false);
@@ -511,7 +513,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         const data: { count: number } = await res.json();
         setTotalEmailCount(data.count);
       } else {
-        console.error('Failed to fetch total email count:', res.status);
+        toast.error('Failed to load email count');
       }
     } finally {
       setTotalEmailCountLoading(false);

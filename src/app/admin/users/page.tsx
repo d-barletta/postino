@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -92,6 +93,12 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         });
       }
       await fetchUsers();
+      const label =
+        confirmAction.action === 'delete' ? 'User deleted' :
+        confirmAction.action === 'admin'
+          ? (confirmAction.current ? 'Admin privileges removed' : 'Admin privileges granted')
+          : (confirmAction.current ? 'User suspended' : 'User activated');
+      toast.success(label);
     } finally {
       setConfirming(false);
       setConfirmAction(null);
