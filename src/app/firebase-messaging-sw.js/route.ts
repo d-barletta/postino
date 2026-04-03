@@ -81,6 +81,12 @@ self.addEventListener('notificationclick', function(event) {
     })
   );
 });
+
+// Required for PWA installability — Chrome will not show the install button
+// unless the service worker has a fetch handler.
+self.addEventListener('fetch', function(event) {
+  event.respondWith(fetch(event.request));
+});
 `;
 
   return new NextResponse(swContent, {
