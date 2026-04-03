@@ -4,8 +4,14 @@ import type { Query, DocumentSnapshot } from 'firebase-admin/firestore';
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
-/** Max docs fetched before search filtering for text-search queries. */
-const SEARCH_FETCH_LIMIT = 500;
+/**
+ * Max docs fetched for full-text search queries.
+ * Full-text search cannot be done in Firestore; we fetch a bounded set and filter in-memory.
+ * Structured filters are still pushed to Firestore first to reduce this set.
+ */
+const TEXT_SEARCH_FETCH_LIMIT = 500;
+/** Firestore array-contains-any supports at most 30 values. */
+const ARRAY_CONTAINS_ANY_LIMIT = 30;
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,8 +40,14 @@ export async function GET(request: NextRequest) {
     const hasActionItems = searchParams.get('hasActionItems') === 'true';
     const isUrgent = searchParams.get('isUrgent') === 'true';
     const languageFilter = (searchParams.get('language') || '').trim().toLowerCase();
-    const tagsFilter = (searchParams.get('tags') || '').trim().toLowerCase();
+    // tags – multi-value; preserve original case so Firestore array-contains-any can match stored values exactly.
+    const tagsFilter = searchParams.getAll('tags').map((t) => t.trim()).filter(Boolean);
     const statusFilter = (searchParams.get('status') || '').trim().toLowerCase();
+    // entity filters – multi-value; preserve original case for Firestore array-contains-any matching.
+    const peopleFilter = searchParams.getAll('people').map((v) => v.trim()).filter(Boolean);
+    const orgsFilter = searchParams.getAll('orgs').map((v) => v.trim()).filter(Boolean);
+    const placesFilter = searchParams.getAll('places').map((v) => v.trim()).filter(Boolean);
+    const eventsFilter = searchParams.getAll('events').map((v) => v.trim()).filter(Boolean);
     // cursor-based pagination: pass the last document ID from the previous page
     const cursor = searchParams.get('cursor');
 
@@ -46,46 +58,136 @@ export async function GET(request: NextRequest) {
     );
 
     const db = adminDb();
-    const query: Query = db
+
+    const hasTextSearch = !!(search || termsRaw.length > 0);
+
+    // Track which array filter was pushed to Firestore.
+    // Firestore allows only ONE array-contains / array-contains-any per query.
+    let pushedArrayField: 'tags' | 'people' | 'orgs' | 'places' | 'events' | null = null;
+
+    // ---------------------------------------------------------------------------
+    // Build Firestore query – push all structured filters to the database.
+    // Structured filters include equality fields, boolean flags, and array filters.
+    // The only filters that cannot be pushed are:
+    //   • Full-text search (subject/body/summary) – no native Firestore support.
+    //   • hasAttachments (inequality on attachmentCount) – would require a changed sort order.
+    //   • Secondary array filters when multiple array filters are active (Firestore limit: 1).
+    // ---------------------------------------------------------------------------
+    let firestoreQuery: Query = db
       .collection('emailLogs')
       .where('userId', '==', decoded.uid)
       .orderBy('receivedAt', 'desc');
 
-    // Push status filter to Firestore when it is the only active filter (avoids
-    // fetching a large batch just to discard most results in JavaScript).
-    const analysisFiltersActive =
+    const structuredFiltersActive = !!(
+      statusFilter ||
       sentimentFilter ||
       emailTypeFilter ||
       priorityFilter ||
       senderTypeFilter ||
+      languageFilter ||
       requiresResponse ||
       hasActionItems ||
       isUrgent ||
-      languageFilter ||
-      tagsFilter;
-    const hasAnyFilter =
-      search || termsRaw.length > 0 || hasAttachments || statusFilter || analysisFiltersActive;
+      tagsFilter.length > 0 ||
+      peopleFilter.length > 0 ||
+      orgsFilter.length > 0 ||
+      placesFilter.length > 0 ||
+      eventsFilter.length > 0
+    );
 
+    if (structuredFiltersActive) {
+      // Equality / boolean filters — pushed directly to Firestore.
+      if (statusFilter) firestoreQuery = firestoreQuery.where('status', '==', statusFilter);
+      if (sentimentFilter)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.sentiment', '==', sentimentFilter);
+      if (emailTypeFilter)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.emailType', '==', emailTypeFilter);
+      if (priorityFilter)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.priority', '==', priorityFilter);
+      if (senderTypeFilter)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.senderType', '==', senderTypeFilter);
+      if (languageFilter)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.language', '==', languageFilter);
+      if (requiresResponse)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.requiresResponse', '==', true);
+      if (hasActionItems)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.hasActionItems', '==', true);
+      if (isUrgent)
+        firestoreQuery = firestoreQuery.where('emailAnalysis.isUrgent', '==', true);
+
+      // Array filters — push the first active one via array-contains-any; apply remaining in-memory.
+      if (tagsFilter.length > 0) {
+        firestoreQuery = firestoreQuery.where(
+          'emailAnalysis.tags',
+          'array-contains-any',
+          tagsFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
+        );
+        pushedArrayField = 'tags';
+      } else if (peopleFilter.length > 0) {
+        firestoreQuery = firestoreQuery.where(
+          'emailAnalysis.entities.people',
+          'array-contains-any',
+          peopleFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
+        );
+        pushedArrayField = 'people';
+      } else if (orgsFilter.length > 0) {
+        firestoreQuery = firestoreQuery.where(
+          'emailAnalysis.entities.organizations',
+          'array-contains-any',
+          orgsFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
+        );
+        pushedArrayField = 'orgs';
+      } else if (placesFilter.length > 0) {
+        firestoreQuery = firestoreQuery.where(
+          'emailAnalysis.entities.places',
+          'array-contains-any',
+          placesFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
+        );
+        pushedArrayField = 'places';
+      } else if (eventsFilter.length > 0) {
+        firestoreQuery = firestoreQuery.where(
+          'emailAnalysis.entities.events',
+          'array-contains-any',
+          eventsFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
+        );
+        pushedArrayField = 'events';
+      }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Execute Firestore query
+    // ---------------------------------------------------------------------------
     let snap;
-    if (hasAnyFilter) {
-      snap = await query.limit(SEARCH_FETCH_LIMIT).get();
+    let totalCountFromFirestore: number | undefined;
+
+    if (hasTextSearch || hasAttachments) {
+      // Full-text search or attachment filter: Firestore structured filters already applied above
+      // to narrow the result set; fetch up to TEXT_SEARCH_FETCH_LIMIT docs for in-memory filtering.
+      snap = await firestoreQuery.limit(TEXT_SEARCH_FETCH_LIMIT).get();
+    } else if (structuredFiltersActive) {
+      // All filters pushed to Firestore — run count + paginated data query in parallel.
+      const offset = (page - 1) * pageSize;
+      const [dataSnap, countSnap] = await Promise.all([
+        firestoreQuery.offset(offset).limit(pageSize + 1).get(),
+        firestoreQuery
+          .count()
+          .get()
+          .catch(() => null),
+      ]);
+      snap = dataSnap;
+      totalCountFromFirestore = countSnap?.data().count ?? undefined;
     } else if (cursor) {
-      // Cursor-based pagination: start after the provided document snapshot.
+      // No filters, cursor provided for pagination.
       const cursorDoc: DocumentSnapshot = await db.collection('emailLogs').doc(cursor).get();
       if (cursorDoc.exists) {
-        snap = await query
-          .startAfter(cursorDoc)
-          .limit(pageSize + 1)
-          .get();
+        snap = await firestoreQuery.startAfter(cursorDoc).limit(pageSize + 1).get();
       } else {
-        snap = await query.limit(pageSize + 1).get();
+        snap = await firestoreQuery.limit(pageSize + 1).get();
       }
     } else {
+      // No filters, no cursor: offset pagination.
       const offset = (page - 1) * pageSize;
-      snap = await query
-        .offset(offset)
-        .limit(pageSize + 1)
-        .get();
+      snap = await firestoreQuery.offset(offset).limit(pageSize + 1).get();
     }
 
     let docs = snap.docs.map((d) => ({
@@ -107,6 +209,10 @@ export async function GET(request: NextRequest) {
       userId: d.data().userId,
       emailAnalysis: d.data().emailAnalysis ?? null,
     }));
+
+    // ---------------------------------------------------------------------------
+    // In-memory filters — only for capabilities Firestore cannot handle natively.
+    // ---------------------------------------------------------------------------
 
     /** Returns true if the given doc matches the provided single search term. */
     function matchesTerm(d: (typeof docs)[number], term: string): boolean {
@@ -144,68 +250,100 @@ export async function GET(request: NextRequest) {
       docs = docs.filter((d) => matchesTerm(d, search));
     }
 
-    // OR-match across multiple terms (used for merged entity search)
+    // OR-match across multiple terms (used for merged entity search).
     if (termsRaw.length > 0) {
       docs = docs.filter((d) => termsRaw.some((term) => matchesTerm(d, term)));
     }
 
+    // hasAttachments: inequality on attachmentCount would change the sort order in Firestore,
+    // so it is applied in-memory after the Firestore query.
     if (hasAttachments) {
       docs = docs.filter((d) => (d.attachmentCount ?? 0) > 0);
     }
 
-    if (statusFilter) {
-      docs = docs.filter((d) => d.status === statusFilter);
-    }
-
-    if (sentimentFilter) {
-      docs = docs.filter((d) => d.emailAnalysis?.sentiment === sentimentFilter);
-    }
-
-    if (emailTypeFilter) {
-      docs = docs.filter((d) => d.emailAnalysis?.emailType === emailTypeFilter);
-    }
-
-    if (priorityFilter) {
-      docs = docs.filter((d) => d.emailAnalysis?.priority === priorityFilter);
-    }
-
-    if (senderTypeFilter) {
-      docs = docs.filter((d) => d.emailAnalysis?.senderType === senderTypeFilter);
-    }
-
-    if (requiresResponse) {
-      docs = docs.filter((d) => d.emailAnalysis?.requiresResponse === true);
-    }
-
-    if (hasActionItems) {
-      docs = docs.filter((d) => d.emailAnalysis?.hasActionItems === true);
-    }
-
-    if (isUrgent) {
-      docs = docs.filter((d) => d.emailAnalysis?.isUrgent === true);
-    }
-
-    if (languageFilter) {
-      docs = docs.filter((d) => d.emailAnalysis?.language?.toLowerCase() === languageFilter);
-    }
-
-    if (tagsFilter) {
-      docs = docs.filter(
-        (d) =>
+    // Secondary array filters — applied in-memory when more than one array filter is active
+    // (Firestore only supports one array-contains-any per query).
+    if (tagsFilter.length > 0 && pushedArrayField !== 'tags') {
+      docs = docs.filter((d) =>
+        tagsFilter.some((tag) =>
           Array.isArray(d.emailAnalysis?.tags) &&
           d.emailAnalysis.tags.some(
-            (tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(tagsFilter),
+            (t: unknown) => typeof t === 'string' && t.toLowerCase() === tag.toLowerCase(),
           ),
+        ),
       );
     }
 
-    let hasNextPage = false;
-    let paginatedDocs;
-    if (hasAnyFilter) {
+    if (peopleFilter.length > 0 && pushedArrayField !== 'people') {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.people;
+        return (
+          Array.isArray(list) &&
+          peopleFilter.some((p) =>
+            list.some(
+              (v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase(),
+            ),
+          )
+        );
+      });
+    }
+
+    if (orgsFilter.length > 0 && pushedArrayField !== 'orgs') {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.organizations;
+        return (
+          Array.isArray(list) &&
+          orgsFilter.some((o) =>
+            list.some(
+              (v: unknown) => typeof v === 'string' && v.toLowerCase() === o.toLowerCase(),
+            ),
+          )
+        );
+      });
+    }
+
+    if (placesFilter.length > 0 && pushedArrayField !== 'places') {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.places;
+        return (
+          Array.isArray(list) &&
+          placesFilter.some((p) =>
+            list.some(
+              (v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase(),
+            ),
+          )
+        );
+      });
+    }
+
+    if (eventsFilter.length > 0 && pushedArrayField !== 'events') {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.events;
+        return (
+          Array.isArray(list) &&
+          eventsFilter.some((e) =>
+            list.some(
+              (v: unknown) => typeof v === 'string' && v.toLowerCase() === e.toLowerCase(),
+            ),
+          )
+        );
+      });
+    }
+
+    // ---------------------------------------------------------------------------
+    // Pagination & response
+    // ---------------------------------------------------------------------------
+
+    if (hasTextSearch || hasAttachments) {
+      // In-memory post-filter: compute pagination from the full filtered result set.
       const totalCount = docs.length;
       const start = (page - 1) * pageSize;
-      paginatedDocs = docs.slice(start, start + pageSize);
-      hasNextPage = start + pageSize < docs.length;
+      const paginatedDocs = docs.slice(start, start + pageSize);
+      const hasNextPage = start + pageSize < docs.length;
       const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
       return NextResponse.json({
         logs: paginatedDocs,
@@ -215,9 +353,28 @@ export async function GET(request: NextRequest) {
         totalCount,
         totalPages,
       });
+    } else if (structuredFiltersActive) {
+      // Firestore-filtered: use the count from the aggregation query for totalCount/totalPages.
+      const hasNextPage = docs.length > pageSize;
+      const paginatedDocs = docs.slice(0, pageSize);
+      const totalCount = totalCountFromFirestore;
+      const totalPages =
+        totalCount !== undefined ? Math.max(1, Math.ceil(totalCount / pageSize)) : undefined;
+      const nextCursor =
+        hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
+      return NextResponse.json({
+        logs: paginatedDocs,
+        page,
+        pageSize,
+        hasNextPage,
+        totalCount,
+        totalPages,
+        nextCursor,
+      });
     } else {
-      hasNextPage = docs.length > pageSize;
-      paginatedDocs = docs.slice(0, pageSize);
+      // No filters: cursor-based pagination.
+      const hasNextPage = docs.length > pageSize;
+      const paginatedDocs = docs.slice(0, pageSize);
       const nextCursor =
         hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
       return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage, nextCursor });
