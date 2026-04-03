@@ -883,7 +883,6 @@ export function KnowledgeTab() {
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <Wand2 className="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
                       <p className="text-base font-medium text-gray-600 dark:text-gray-400">{k.suggestionsEmpty}</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-sm mx-auto">{k.suggestionsEmptyDesc}</p>
                     </div>
                   ) : (
                     <ul className="divide-y divide-gray-100 dark:divide-gray-800">
