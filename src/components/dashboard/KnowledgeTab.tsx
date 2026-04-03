@@ -55,7 +55,7 @@ interface KnowledgeData {
   totalEmails: number;
 }
 
-type CategoryKey = 'all' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags';
+type CategoryKey = 'all' | 'people' | 'organizations' | 'places' | 'events' | 'topics' | 'tags';
 
 interface CategoryConfig {
   key: CategoryKey;
