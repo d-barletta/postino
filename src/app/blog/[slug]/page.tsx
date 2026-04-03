@@ -1,39 +1,44 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
 import { BlogArticleContent } from '@/components/blog/BlogArticleContent';
 import type { BlogArticle } from '@/types';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
-async function getArticle(slug: string): Promise<BlogArticle | null> {
-  try {
-    const db = adminDb();
-    const snap = await db
-      .collection('blogArticles')
-      .where('slug', '==', slug)
-      .where('published', '==', true)
-      .limit(1)
-      .get();
-    if (snap.empty) return null;
-    const d = snap.docs[0];
-    const data = d.data();
-    return {
-      id: d.id,
-      title: data.title,
-      slug: data.slug,
-      content: data.content,
-      tags: data.tags ?? [],
-      thumbnailUrl: data.thumbnailUrl ?? '',
-      published: true,
-      language: data.language ?? 'en',
-      createdAt: data.createdAt?.toDate?.() ?? new Date(),
-      updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
-    };
-  } catch {
-    return null;
-  }
-}
+const getArticle = unstable_cache(
+  async (slug: string): Promise<BlogArticle | null> => {
+    try {
+      const db = adminDb();
+      const snap = await db
+        .collection('blogArticles')
+        .where('slug', '==', slug)
+        .where('published', '==', true)
+        .limit(1)
+        .get();
+      if (snap.empty) return null;
+      const d = snap.docs[0];
+      const data = d.data();
+      return {
+        id: d.id,
+        title: data.title,
+        slug: data.slug,
+        content: data.content,
+        tags: data.tags ?? [],
+        thumbnailUrl: data.thumbnailUrl ?? '',
+        published: true,
+        language: data.language ?? 'en',
+        createdAt: data.createdAt?.toDate?.() ?? new Date(),
+        updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
+      };
+    } catch {
+      return null;
+    }
+  },
+  ['blog-article'],
+  { tags: ['blog-articles'] },
+);
 
 export async function generateMetadata({
   params,
@@ -61,8 +66,8 @@ export async function generateMetadata({
       description,
       url: canonicalUrl,
       siteName: 'Postino',
-      publishedTime: article.createdAt.toISOString(),
-      modifiedTime: article.updatedAt.toISOString(),
+      publishedTime: new Date(article.createdAt).toISOString(),
+      modifiedTime: new Date(article.updatedAt).toISOString(),
       tags: article.tags,
       ...(article.thumbnailUrl
         ? { images: [{ url: article.thumbnailUrl, alt: article.title }] }

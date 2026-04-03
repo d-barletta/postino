@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyAdminRequest } from '@/lib/api-auth';
 
@@ -61,6 +62,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updatedAt: new Date(),
     });
 
+    revalidateTag('blog-articles');
     return NextResponse.json({ success: true });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
@@ -83,6 +85,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
     await db.collection('blogArticles').doc(id).delete();
+    revalidateTag('blog-articles');
     return NextResponse.json({ success: true });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';

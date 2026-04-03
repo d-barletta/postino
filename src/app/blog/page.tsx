@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { unstable_cache } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
 import { BlogListContent } from '@/components/blog/BlogListContent';
 import type { BlogArticle } from '@/types';
@@ -33,34 +34,38 @@ export const metadata: Metadata = {
   },
 };
 
-async function getPublishedArticles(): Promise<BlogArticle[]> {
-  try {
-    const db = adminDb();
-    const snap = await db
-      .collection('blogArticles')
-      .where('published', '==', true)
-      .orderBy('createdAt', 'desc')
-      .select('title', 'slug', 'tags', 'thumbnailUrl', 'language', 'createdAt', 'updatedAt')
-      .get();
-    return snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        title: data.title,
-        slug: data.slug,
-        content: '',
-        tags: data.tags ?? [],
-        thumbnailUrl: data.thumbnailUrl ?? '',
-        published: true,
-        language: data.language ?? 'en',
-        createdAt: data.createdAt?.toDate?.() ?? new Date(),
-        updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
-      };
-    });
-  } catch {
-    return [];
-  }
-}
+const getPublishedArticles = unstable_cache(
+  async (): Promise<BlogArticle[]> => {
+    try {
+      const db = adminDb();
+      const snap = await db
+        .collection('blogArticles')
+        .where('published', '==', true)
+        .orderBy('createdAt', 'desc')
+        .select('title', 'slug', 'tags', 'thumbnailUrl', 'language', 'createdAt', 'updatedAt')
+        .get();
+      return snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          title: data.title,
+          slug: data.slug,
+          content: '',
+          tags: data.tags ?? [],
+          thumbnailUrl: data.thumbnailUrl ?? '',
+          published: true,
+          language: data.language ?? 'en',
+          createdAt: data.createdAt?.toDate?.() ?? new Date(),
+          updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+  ['blog-articles'],
+  { tags: ['blog-articles'] },
+);
 
 export default async function BlogPage() {
   const articles = await getPublishedArticles();

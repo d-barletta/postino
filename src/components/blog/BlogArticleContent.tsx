@@ -37,7 +37,7 @@ export function BlogArticleContent({ article }: BlogArticleContentProps) {
         </div>
       </nav>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 ui-fade-up">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 ui-fade-up min-h-[calc(100svh-8rem)]">
         <Link
           href="/blog"
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mb-8"
@@ -70,7 +70,7 @@ export function BlogArticleContent({ article }: BlogArticleContentProps) {
 
             <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
               <Calendar className="h-4 w-4" />
-              <time dateTime={article.updatedAt.toISOString()}>
+              <time dateTime={new Date(article.updatedAt).toISOString()}>
                 {formatDate(article.updatedAt)}
               </time>
             </div>

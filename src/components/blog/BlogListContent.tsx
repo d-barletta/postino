@@ -40,7 +40,7 @@ export function BlogListContent({ articles }: BlogListContentProps) {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ui-fade-up">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ui-fade-up min-h-[calc(100svh-8rem)]">
         <div className="mb-10 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-yellow-100 dark:bg-violet-400/20 mb-4">
             <BookOpen className="h-7 w-7 text-[#8f7a18] dark:text-violet-300" />

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyAdminRequest } from '@/lib/api-auth';
 
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
+    revalidateTag('blog-articles');
     return NextResponse.json({ id: docRef.id, slug }, { status: 201 });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
