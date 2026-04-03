@@ -50,6 +50,14 @@
       ]
     },
     {
+      "collectionGroup": "entityMergeSuggestions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "emailLogs",
       "queryScope": "COLLECTION",
       "fields": [
