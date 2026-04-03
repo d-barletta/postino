@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { isFirebaseAuthError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -42,13 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       emailAnalysis: data.emailAnalysis ?? null,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    const code = (error as { code?: string }).code;
-    if (
-      code?.startsWith('auth/') ||
-      msg === 'Unauthorized' ||
-      msg.includes('Firebase ID token')
-    ) {
+    if (isFirebaseAuthError(error)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('Error fetching original email:', error);

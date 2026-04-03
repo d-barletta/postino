@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { isFirebaseAuthError } from '@/lib/api-auth';
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -29,9 +30,7 @@ export async function PATCH(request: NextRequest) {
       isForwardingHeaderEnabled: body.isForwardingHeaderEnabled,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    const code = (error as { code?: string }).code;
-    if (code?.startsWith('auth/') || msg === 'Unauthorized' || msg.includes('Firebase ID token')) {
+    if (isFirebaseAuthError(error)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('Forwarding header toggle error:', error);

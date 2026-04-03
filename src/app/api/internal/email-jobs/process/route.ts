@@ -10,18 +10,21 @@ function timingSafeStringEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(hashA, hashB);
 }
 
+/** Minimum acceptable length for shared secrets to prevent trivially guessable values. */
+const MIN_SECRET_LENGTH = 16;
+
 function isAuthorized(request: NextRequest): boolean {
   const workerSecret = process.env.EMAIL_JOBS_WORKER_SECRET || '';
   const cronSecret = process.env.CRON_SECRET || '';
 
   const workerHeader = request.headers.get('x-worker-secret') || '';
-  if (workerSecret && timingSafeStringEqual(workerHeader, workerSecret)) {
+  if (workerSecret.length >= MIN_SECRET_LENGTH && timingSafeStringEqual(workerHeader, workerSecret)) {
     return true;
   }
 
   const authHeader = request.headers.get('authorization') || '';
   const expectedCronHeader = cronSecret ? `Bearer ${cronSecret}` : '';
-  if (cronSecret && timingSafeStringEqual(authHeader, expectedCronHeader)) {
+  if (cronSecret.length >= MIN_SECRET_LENGTH && timingSafeStringEqual(authHeader, expectedCronHeader)) {
     return true;
   }
 
