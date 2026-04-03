@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { useI18n } from '@/lib/i18n';
-import { BookOpen, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export function HomePageContent() {
   const { t } = useI18n();
@@ -108,29 +108,20 @@ export function HomePageContent() {
           </div>
         </section>
 
-        <section className="py-16 ui-fade-up">
-          <div className="relative rounded-2xl overflow-hidden bg-linear-to-br from-[#efd957]/20 via-yellow-50/50 to-violet-50/30 dark:from-violet-900/30 dark:via-violet-900/10 dark:to-gray-900/50 border border-[#efd957]/40 dark:border-violet-500/20 p-8 md:p-12 text-center">
-            <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-              <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-[#efd957]/10 dark:bg-violet-500/10 blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-violet-300/10 dark:bg-violet-700/10 blur-3xl" />
-            </div>
-            <div className="relative">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#efd957]/30 dark:bg-violet-400/20 mb-5">
-                <BookOpen className="h-7 w-7 text-[#8f7a18] dark:text-violet-300" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-                {blog.cta.title}
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-7 max-w-xl mx-auto text-lg">
-                {blog.cta.subtitle}
-              </p>
-              <Link href="/blog">
-                <Button size="lg" className="gap-2">
-                  {blog.cta.button}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+        <section className="pt-4 pb-12 ui-fade-up">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+              {blog.cta.title}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-xl mx-auto">
+              {blog.cta.subtitle}
+            </p>
+            <Link href="/blog">
+              <Button size="lg" variant="secondary" className="gap-2">
+                {blog.cta.button}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </section>
       </main>

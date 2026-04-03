@@ -26,6 +26,7 @@ async function getArticle(slug: string): Promise<BlogArticle | null> {
       tags: data.tags ?? [],
       thumbnailUrl: data.thumbnailUrl ?? '',
       published: true,
+      language: data.language ?? 'en',
       createdAt: data.createdAt?.toDate?.() ?? new Date(),
       updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
     };

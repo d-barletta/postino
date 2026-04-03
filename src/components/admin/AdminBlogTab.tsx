@@ -10,16 +10,28 @@ import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
 import { Label } from '@/components/ui/Label';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/Dialog';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select';
 import { MinimalTiptapEditor } from '@/components/blog/MinimalTiptapEditor';
 import { formatDate } from '@/lib/utils';
+import { SUPPORTED_LOCALES } from '@/lib/i18n';
 import type { BlogArticle } from '@/types';
-import { Plus, Pencil, Trash2, Eye, EyeOff, BookOpen, X } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  EyeOff,
+  BookOpen,
+  X,
+  ArrowLeft,
+  Languages,
+  ChevronDown,
+} from 'lucide-react';
 
 interface ArticleFormState {
   title: string;
@@ -27,6 +39,7 @@ interface ArticleFormState {
   tags: string[];
   thumbnailUrl: string;
   published: boolean;
+  language: string;
 }
 
 const EMPTY_FORM: ArticleFormState = {
@@ -35,7 +48,10 @@ const EMPTY_FORM: ArticleFormState = {
   tags: [],
   thumbnailUrl: '',
   published: false,
+  language: 'en',
 };
+
+type View = 'list' | 'form';
 
 export default function AdminBlogTab() {
   const { firebaseUser } = useAuth();
@@ -43,10 +59,13 @@ export default function AdminBlogTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [view, setView] = useState<View>('list');
   const [editingArticle, setEditingArticle] = useState<BlogArticle | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [form, setForm] = useState<ArticleFormState>(EMPTY_FORM);
   const [tagInput, setTagInput] = useState('');
+  const [translateTarget, setTranslateTarget] = useState('');
+  const [showTranslateDropdown, setShowTranslateDropdown] = useState(false);
 
   const fetchArticles = useCallback(async () => {
     if (!firebaseUser) return;
@@ -80,7 +99,9 @@ export default function AdminBlogTab() {
     setEditingArticle(null);
     setForm(EMPTY_FORM);
     setTagInput('');
-    setIsDialogOpen(true);
+    setTranslateTarget('');
+    setShowTranslateDropdown(false);
+    setView('form');
   };
 
   const openEdit = (article: BlogArticle) => {
@@ -91,16 +112,21 @@ export default function AdminBlogTab() {
       tags: article.tags,
       thumbnailUrl: article.thumbnailUrl ?? '',
       published: article.published,
+      language: article.language || 'en',
     });
     setTagInput('');
-    setIsDialogOpen(true);
+    setTranslateTarget('');
+    setShowTranslateDropdown(false);
+    setView('form');
   };
 
-  const closeDialog = () => {
-    setIsDialogOpen(false);
+  const goBack = () => {
+    setView('list');
     setEditingArticle(null);
     setForm(EMPTY_FORM);
     setTagInput('');
+    setTranslateTarget('');
+    setShowTranslateDropdown(false);
   };
 
   const addTag = () => {
@@ -132,18 +158,25 @@ export default function AdminBlogTab() {
       const url = editingArticle ? `/api/admin/blog/${editingArticle.id}` : '/api/admin/blog';
       const method = editingArticle ? 'PUT' : 'POST';
 
+      const payload = {
+        ...form,
+        ...(editingArticle?.translationGroupId
+          ? { translationGroupId: editingArticle.translationGroupId }
+          : {}),
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
         toast.success(editingArticle ? 'Article updated' : 'Article created');
-        closeDialog();
+        goBack();
         await fetchArticles();
       } else {
         const data = await res.json();
@@ -199,6 +232,232 @@ export default function AdminBlogTab() {
     }
   };
 
+  const handleTranslate = async () => {
+    if (!firebaseUser || !editingArticle || !translateTarget) return;
+    setTranslating(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`/api/admin/blog/${editingArticle.id}/translate`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ targetLanguage: translateTarget }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const langLabel =
+          SUPPORTED_LOCALES.find((l) => l.code === translateTarget)?.label ?? translateTarget;
+        toast.success(`Article translated to ${langLabel}`);
+        setShowTranslateDropdown(false);
+        setTranslateTarget('');
+        await fetchArticles();
+      } else if (res.status === 409) {
+        toast.error('A translation in this language already exists');
+      } else {
+        toast.error(data.error ?? 'Failed to translate article');
+      }
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const availableTranslateTargets = SUPPORTED_LOCALES.filter(
+    (l) => l.code !== (editingArticle?.language || form.language),
+  );
+
+  const getLanguageLabel = (code: string) =>
+    SUPPORTED_LOCALES.find((l) => l.code === code)?.label ?? code;
+
+  if (view === 'form') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={goBack}>
+            <ArrowLeft className="h-4 w-4" />
+            Back to list
+          </Button>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            {editingArticle ? 'Edit Article' : 'New Article'}
+          </h2>
+        </div>
+
+        <Card>
+          <CardContent className="pt-6 space-y-5">
+            {/* Title */}
+            <div className="space-y-1.5">
+              <Label htmlFor="blog-title">Title</Label>
+              <Input
+                id="blog-title"
+                placeholder="Article title"
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              />
+            </div>
+
+            {/* Language + Published row */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="blog-language">Language</Label>
+                <Select
+                  value={form.language}
+                  onValueChange={(v) => setForm((f) => ({ ...f, language: v }))}
+                >
+                  <SelectTrigger id="blog-language">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_LOCALES.map((locale) => (
+                      <SelectItem key={locale.code} value={locale.code}>
+                        {locale.flag} {locale.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-3 sm:pt-6">
+                <Switch
+                  id="blog-published"
+                  checked={form.published}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
+                />
+                <Label htmlFor="blog-published">Published</Label>
+              </div>
+            </div>
+
+            {/* Thumbnail */}
+            <div className="space-y-1.5">
+              <Label htmlFor="blog-thumbnail">Thumbnail URL (optional)</Label>
+              <Input
+                id="blog-thumbnail"
+                placeholder="https://example.com/image.jpg"
+                value={form.thumbnailUrl}
+                onChange={(e) => setForm((f) => ({ ...f, thumbnailUrl: e.target.value }))}
+              />
+              {form.thumbnailUrl && (
+                <img
+                  src={form.thumbnailUrl}
+                  alt="Thumbnail preview"
+                  className="h-24 w-auto rounded-lg object-cover mt-1"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-1.5">
+              <Label>Tags</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a tag"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                />
+                <Button type="button" variant="secondary" size="sm" onClick={addTag}>
+                  Add
+                </Button>
+              </div>
+              {form.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {form.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="gap-1">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:text-red-500 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Content editor */}
+            <div className="space-y-1.5">
+              <Label>Content</Label>
+              <MinimalTiptapEditor
+                key={editingArticle?.id ?? 'new'}
+                value={form.content}
+                onChange={(html) => setForm((f) => ({ ...f, content: html }))}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex gap-2">
+                <Button onClick={handleSave} loading={saving}>
+                  {editingArticle ? 'Save Changes' : 'Create Article'}
+                </Button>
+                <Button variant="secondary" onClick={goBack}>
+                  Cancel
+                </Button>
+              </div>
+
+              {/* Translate button – only shown when editing an existing article */}
+              {editingArticle && (
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowTranslateDropdown((v) => !v)}
+                    className="gap-2"
+                  >
+                    <Languages className="h-4 w-4" />
+                    Translate to…
+                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                  </Button>
+                  {showTranslateDropdown && (
+                    <div className="absolute right-0 bottom-10 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-3 min-w-52">
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                        Select target language
+                      </p>
+                      <div className="space-y-1">
+                        {availableTranslateTargets.map((locale) => (
+                          <button
+                            key={locale.code}
+                            type="button"
+                            onClick={() => setTranslateTarget(locale.code)}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
+                              translateTarget === locale.code
+                                ? 'bg-yellow-50 dark:bg-yellow-900/20 font-medium text-gray-900 dark:text-gray-100'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {locale.flag} {locale.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          disabled={!translateTarget}
+                          loading={translating}
+                          onClick={handleTranslate}
+                        >
+                          Translate
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // LIST VIEW
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -254,11 +513,23 @@ export default function AdminBlogTab() {
                   </h3>
                   <Badge variant={article.published ? 'success' : 'secondary'}>
                     {article.published ? (
-                      <><Eye className="h-3 w-3 mr-1" />Published</>
+                      <>
+                        <Eye className="h-3 w-3 mr-1" />
+                        Published
+                      </>
                     ) : (
-                      <><EyeOff className="h-3 w-3 mr-1" />Draft</>
+                      <>
+                        <EyeOff className="h-3 w-3 mr-1" />
+                        Draft
+                      </>
                     )}
                   </Badge>
+                  {article.language && (
+                    <Badge variant="info" className="text-xs">
+                      {SUPPORTED_LOCALES.find((l) => l.code === article.language)?.flag ?? ''}{' '}
+                      {getLanguageLabel(article.language)}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {article.tags.map((tag) => (
@@ -301,107 +572,6 @@ export default function AdminBlogTab() {
           ))}
         </div>
       )}
-
-      <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent
-          className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto"
-          aria-describedby={undefined}
-        >
-          <DialogHeader>
-            <DialogTitle>{editingArticle ? 'Edit Article' : 'New Article'}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="blog-title">Title</Label>
-              <Input
-                id="blog-title"
-                placeholder="Article title"
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="blog-thumbnail">Thumbnail URL (optional)</Label>
-              <Input
-                id="blog-thumbnail"
-                placeholder="https://example.com/image.jpg"
-                value={form.thumbnailUrl}
-                onChange={(e) => setForm((f) => ({ ...f, thumbnailUrl: e.target.value }))}
-              />
-              {form.thumbnailUrl && (
-                <img
-                  src={form.thumbnailUrl}
-                  alt="Thumbnail preview"
-                  className="h-24 w-auto rounded-lg object-cover mt-1"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Tags</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a tag"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                />
-                <Button type="button" variant="secondary" size="sm" onClick={addTag}>
-                  Add
-                </Button>
-              </div>
-              {form.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {form.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="hover:text-red-500 transition-colors"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                id="blog-published"
-                checked={form.published}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
-              />
-              <Label htmlFor="blog-published">Published</Label>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Content</Label>
-              <MinimalTiptapEditor
-                key={editingArticle?.id ?? 'new'}
-                value={form.content}
-                onChange={(html) => setForm((f) => ({ ...f, content: html }))}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="secondary" onClick={closeDialog}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} loading={saving}>
-              {editingArticle ? 'Save Changes' : 'Create Article'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

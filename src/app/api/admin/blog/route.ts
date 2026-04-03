@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     await verifyAdminRequest(request);
     const db = adminDb();
     const body = await request.json();
-    const { title, content, tags, thumbnailUrl, published } = body;
+    const { title, content, tags, thumbnailUrl, published, language, translationGroupId } = body;
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -70,6 +70,10 @@ export async function POST(request: NextRequest) {
       tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string') : [],
       thumbnailUrl: typeof thumbnailUrl === 'string' ? thumbnailUrl.trim() : '',
       published: Boolean(published),
+      language: typeof language === 'string' && language.trim() ? language.trim() : 'en',
+      ...(typeof translationGroupId === 'string' && translationGroupId.trim()
+        ? { translationGroupId: translationGroupId.trim() }
+        : {}),
       createdAt: now,
       updatedAt: now,
     });

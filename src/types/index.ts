@@ -6,6 +6,10 @@ export interface BlogArticle {
   tags: string[];
   thumbnailUrl?: string;
   published: boolean;
+  /** ISO 639-1 locale code for this article version, e.g. "en", "it". */
+  language: string;
+  /** Groups all language versions of the same article together. */
+  translationGroupId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

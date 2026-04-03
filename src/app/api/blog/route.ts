@@ -17,6 +17,7 @@ export async function GET() {
         slug: data.slug,
         tags: data.tags ?? [],
         thumbnailUrl: data.thumbnailUrl ?? '',
+        language: data.language ?? 'en',
         createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
       };

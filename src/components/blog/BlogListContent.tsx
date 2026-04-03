@@ -14,8 +14,12 @@ interface BlogListContentProps {
 }
 
 export function BlogListContent({ articles }: BlogListContentProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { blog } = t.home;
+
+  // Show articles matching the user's locale; fall back to 'en' if none exist
+  const localeArticles = articles.filter((a) => a.language === locale);
+  const displayed = localeArticles.length > 0 ? localeArticles : articles.filter((a) => a.language === 'en' || !a.language);
 
   return (
     <div className="min-h-full">
@@ -49,13 +53,13 @@ export function BlogListContent({ articles }: BlogListContentProps) {
           </p>
         </div>
 
-        {articles.length === 0 ? (
+        {displayed.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-400 dark:text-gray-500">No articles published yet.</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 ui-stagger">
-            {articles.map((article) => (
+            {displayed.map((article) => (
               <Link
                 key={article.id}
                 href={`/blog/${article.slug}`}
