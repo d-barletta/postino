@@ -22,10 +22,12 @@ function isAuthorized(request: NextRequest): boolean {
     return true;
   }
 
-  const authHeader = request.headers.get('authorization') || '';
-  const expectedCronHeader = cronSecret ? `Bearer ${cronSecret}` : '';
-  if (cronSecret.length >= MIN_SECRET_LENGTH && timingSafeStringEqual(authHeader, expectedCronHeader)) {
-    return true;
+  if (cronSecret.length >= MIN_SECRET_LENGTH) {
+    const authHeader = request.headers.get('authorization') || '';
+    const expectedCronHeader = `Bearer ${cronSecret}`;
+    if (timingSafeStringEqual(authHeader, expectedCronHeader)) {
+      return true;
+    }
   }
 
   return false;

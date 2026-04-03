@@ -11,7 +11,7 @@ export function isFirebaseAuthError(error: unknown): boolean {
   const code = (error as { code?: string }).code;
   if (code?.startsWith('auth/')) return true;
   const msg = error instanceof Error ? error.message : '';
-  return msg === 'Unauthorized' || msg.includes('Firebase ID token');
+  return msg.includes('Firebase ID token');
 }
 
 /**
