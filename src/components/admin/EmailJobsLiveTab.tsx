@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface JobCounts {
   pending: number;
@@ -219,20 +220,22 @@ export default function EmailJobsLiveTab() {
   const cards = useMemo(() => {
     const counts = data?.counts;
     return [
-      { label: 'Backlog', value: data?.backlog ?? 0, tone: 'text-amber-600 dark:text-amber-300' },
-      { label: 'Pending', value: counts?.pending ?? 0, tone: 'text-blue-600 dark:text-blue-300' },
+      { label: 'Backlog', value: data?.backlog ?? 0, tone: 'text-amber-600 dark:text-amber-300', spinning: false },
+      { label: 'Pending', value: counts?.pending ?? 0, tone: 'text-blue-600 dark:text-blue-300', spinning: false },
       {
         label: 'Processing',
         value: counts?.processing ?? 0,
         tone: 'text-amber-600 dark:text-amber-300',
+        spinning: (counts?.processing ?? 0) > 0,
       },
       {
         label: 'Retrying',
         value: counts?.retrying ?? 0,
         tone: 'text-orange-600 dark:text-orange-300',
+        spinning: false,
       },
-      { label: 'Failed', value: counts?.failed ?? 0, tone: 'text-red-600 dark:text-red-300' },
-      { label: 'Done', value: counts?.done ?? 0, tone: 'text-green-600 dark:text-green-300' },
+      { label: 'Failed', value: counts?.failed ?? 0, tone: 'text-red-600 dark:text-red-300', spinning: false },
+      { label: 'Done', value: counts?.done ?? 0, tone: 'text-green-600 dark:text-green-300', spinning: false },
     ];
   }, [data]);
 
@@ -296,7 +299,12 @@ export default function EmailJobsLiveTab() {
                 key={card.label}
                 className="rounded-lg border border-gray-200 bg-white/70 px-3 py-2 dark:border-gray-700 dark:bg-gray-900/40"
               >
-                <p className="text-xs text-gray-500 dark:text-gray-400">{card.label}</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{card.label}</p>
+                  {card.spinning && (
+                    <Spinner className="h-3 w-3 text-amber-500 dark:text-amber-400 shrink-0" />
+                  )}
+                </div>
                 <p className={`text-xl font-bold ${card.tone}`}>{card.value.toLocaleString()}</p>
               </div>
             ))}
