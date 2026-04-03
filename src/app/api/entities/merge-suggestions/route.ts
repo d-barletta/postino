@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     const snap = await db
       .collection('entityMergeSuggestions')
       .where('userId', '==', decoded.uid)
-      .orderBy('createdAt', 'desc')
+      .orderBy('canonical', 'asc')
       .limit(200)
       .get();
 

@@ -46,6 +46,14 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "canonical", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "entityMerges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "category", "order": "ASCENDING" }
       ]
     },
@@ -54,7 +62,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "canonical", "order": "ASCENDING" }
       ]
     },
     {

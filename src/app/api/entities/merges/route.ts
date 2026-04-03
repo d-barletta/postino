@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const snap = await db
       .collection('entityMerges')
       .where('userId', '==', decoded.uid)
-      .orderBy('createdAt', 'desc')
+      .orderBy('canonical', 'asc')
       .limit(500)
       .get();
 
