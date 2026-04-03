@@ -506,67 +506,75 @@ export default function AdminBlogTab() {
           {articles.map((article) => (
             <div
               key={article.id}
-              className="glass-panel rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+              className="glass-panel rounded-xl p-4 flex flex-col gap-2"
             >
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                  {article.title}
-                </h3>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge variant={article.published ? 'success' : 'secondary'}>
-                    {article.published ? (
-                      <>
-                        <Eye className="h-3 w-3 mr-1" />
-                        Published
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="h-3 w-3 mr-1" />
-                        Draft
-                      </>
-                    )}
-                  </Badge>
-                  {article.language && (
-                    <Badge variant="info" className="text-xs">
-                      {SUPPORTED_LOCALES.find((l) => l.code === article.language)?.flag ?? ''}{' '}
-                      {getLanguageLabel(article.language)}
-                    </Badge>
+              {/* Title */}
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {article.title}
+              </h3>
+              {/* Badges row: visibility + language */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={article.published ? 'success' : 'secondary'}>
+                  {article.published ? (
+                    <>
+                      <Eye className="h-3 w-3 mr-1" />
+                      Published
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-3 w-3 mr-1" />
+                      Draft
+                    </>
                   )}
+                </Badge>
+                {article.language && (
+                  <Badge variant="info" className="text-xs">
+                    {SUPPORTED_LOCALES.find((l) => l.code === article.language)?.flag ?? ''}{' '}
+                    {getLanguageLabel(article.language)}
+                  </Badge>
+                )}
+              </div>
+              {/* Tags row */}
+              {article.tags.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {article.tags.map((tag) => (
                     <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {formatDate(article.updatedAt)}
-                  </span>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleTogglePublish(article)}
-                  title={article.published ? 'Unpublish' : 'Publish'}
-                >
-                  {article.published ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => openEdit(article)}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(article)}
-                  loading={deleting === article.id}
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              )}
+              {/* Bottom row: date left, actions right */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {formatDate(article.updatedAt)}
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(article)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleTogglePublish(article)}
+                    title={article.published ? 'Unpublish' : 'Publish'}
+                  >
+                    {article.published ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(article)}
+                    loading={deleting === article.id}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

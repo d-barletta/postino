@@ -117,7 +117,7 @@ export function HomePageContent() {
               {blog.cta.subtitle}
             </p>
             <Link href="/blog">
-              <Button size="lg" variant="secondary" className="gap-2">
+              <Button size="lg" className="gap-2">
                 {blog.cta.button}
                 <ArrowRight className="h-4 w-4" />
               </Button>
