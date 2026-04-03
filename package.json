@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint --fix",
+    "format": "prettier --write .",
     "deploy:indexes": "firebase deploy --only firestore:indexes",
     "deploy:preview": "vercel",
     "deploy:prod": "vercel --prod"
@@ -43,6 +44,7 @@
     "next": "^16.2.2",
     "nodemailer": "^8.0.4",
     "openai": "^6.33.0",
+    "prettier": "^3.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.8.1",
