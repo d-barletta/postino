@@ -48,6 +48,17 @@ export interface Translations {
       title: string;
       rules: string[];
     };
+    blog: {
+      title: string;
+      subtitle: string;
+      readMore: string;
+      backToBlog: string;
+      cta: {
+        title: string;
+        subtitle: string;
+        button: string;
+      };
+    };
   };
   auth: {
     login: {
@@ -564,6 +575,17 @@ const translations: Record<Locale, Translations> = {
           'Remove tracking pixels and rewrite links to be clean',
           'If the email is a promotional offer, ignore it entirely',
         ],
+      },
+      blog: {
+        title: 'Blog',
+        subtitle: 'Tips, updates and insights from the Postino team',
+        readMore: 'Read more',
+        backToBlog: 'Back to Blog',
+        cta: {
+          title: 'Read our Blog',
+          subtitle: 'Discover tips, guides and updates about AI-powered email management.',
+          button: 'Explore Articles',
+        },
       },
     },
     auth: {
@@ -1091,6 +1113,17 @@ const translations: Record<Locale, Translations> = {
           "Se l'email è un'offerta promozionale, ignorala completamente",
         ],
       },
+      blog: {
+        title: 'Blog',
+        subtitle: 'Consigli, aggiornamenti e approfondimenti dal team di Postino',
+        readMore: 'Leggi di più',
+        backToBlog: 'Torna al Blog',
+        cta: {
+          title: 'Leggi il nostro Blog',
+          subtitle: 'Scopri consigli, guide e aggiornamenti sulla gestione email con AI.',
+          button: 'Esplora gli articoli',
+        },
+      },
     },
     auth: {
       login: {
@@ -1616,6 +1649,17 @@ const translations: Record<Locale, Translations> = {
           'Eliminar píxeles de seguimiento y reescribir los enlaces de forma limpia',
           'Si el correo es una oferta promocional, ignorarlo completamente',
         ],
+      },
+      blog: {
+        title: 'Blog',
+        subtitle: 'Consejos, actualizaciones e información del equipo de Postino',
+        readMore: 'Leer más',
+        backToBlog: 'Volver al Blog',
+        cta: {
+          title: 'Lee nuestro Blog',
+          subtitle: 'Descubre consejos, guías y actualizaciones sobre la gestión de correos con IA.',
+          button: 'Explorar artículos',
+        },
       },
     },
     auth: {
@@ -2143,6 +2187,17 @@ const translations: Record<Locale, Translations> = {
           "Si l'e-mail est une offre promotionnelle, l'ignorer complètement",
         ],
       },
+      blog: {
+        title: 'Blog',
+        subtitle: "Conseils, mises à jour et informations de l'équipe Postino",
+        readMore: 'Lire la suite',
+        backToBlog: 'Retour au Blog',
+        cta: {
+          title: 'Lisez notre Blog',
+          subtitle: "Découvrez des conseils, des guides et des mises à jour sur la gestion des e-mails par IA.",
+          button: 'Explorer les articles',
+        },
+      },
     },
     auth: {
       login: {
@@ -2669,6 +2724,17 @@ const translations: Record<Locale, Translations> = {
           'Tracking-Pixel entfernen und Links bereinigen',
           'Wenn die E-Mail ein Werbeangebot ist, sie vollständig ignorieren',
         ],
+      },
+      blog: {
+        title: 'Blog',
+        subtitle: 'Tipps, Updates und Einblicke vom Postino-Team',
+        readMore: 'Mehr lesen',
+        backToBlog: 'Zurück zum Blog',
+        cta: {
+          title: 'Lesen Sie unseren Blog',
+          subtitle: 'Entdecken Sie Tipps, Anleitungen und Updates zur KI-gestützten E-Mail-Verwaltung.',
+          button: 'Artikel erkunden',
+        },
       },
     },
     auth: {

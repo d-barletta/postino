@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { useI18n } from '@/lib/i18n';
+import { ArrowRight } from 'lucide-react';
 
 export function HomePageContent() {
   const { t } = useI18n();
-  const { hero, howItWorks, exampleRules } = t.home;
+  const { hero, howItWorks, exampleRules, blog } = t.home;
 
   const steps = [
     { icon: 'bi bi-inbox-fill', step: '1', ...howItWorks.step1 },
@@ -104,6 +105,23 @@ export function HomePageContent() {
                 <p className="text-sm text-gray-700">{rule}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="pt-4 pb-12 ui-fade-up">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+              {blog.cta.title}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-xl mx-auto">
+              {blog.cta.subtitle}
+            </p>
+            <Link href="/blog">
+              <Button size="lg" className="gap-2">
+                {blog.cta.button}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </section>
       </main>

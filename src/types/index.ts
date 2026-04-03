@@ -1,3 +1,19 @@
+export interface BlogArticle {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  tags: string[];
+  thumbnailUrl?: string;
+  published: boolean;
+  /** ISO 639-1 locale code for this article version, e.g. "en", "it". */
+  language: string;
+  /** Groups all language versions of the same article together. */
+  translationGroupId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface User {
   uid: string;
   email: string;
