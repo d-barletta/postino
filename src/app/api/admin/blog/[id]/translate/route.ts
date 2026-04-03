@@ -145,7 +145,7 @@ ${sourceData.content}`;
       updatedAt: now,
     });
 
-    revalidateTag('blog-articles');
+    revalidateTag('blog-articles', {});
     return NextResponse.json({ id: newDoc.id, slug, title: translatedTitle }, { status: 201 });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
