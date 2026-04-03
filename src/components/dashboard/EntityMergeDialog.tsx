@@ -97,9 +97,9 @@ export function EntityMergeDialog({
           <div className="space-y-1.5">
             <p className="text-xs text-gray-500 dark:text-gray-400">{k.mergeChipHint}</p>
             <div className="flex flex-wrap gap-1.5">
-              {included.map((s) => (
+              {included.map((s, i) => (
                 <span
-                  key={s.value}
+                  key={`${s.value}_${i}`}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full pl-2.5 py-0.5 text-xs font-medium',
                     included.length > 2 ? 'pr-1' : 'pr-2.5',
