@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 
+const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'sms:', 'callto:']);
+
 interface SafeEmailIframeProps {
   html: string;
   className?: string;
@@ -18,8 +20,7 @@ function normalizeSafeExternalUrl(rawUrl: string): string | null {
     const parsed = new URL(rawUrl, window.location.href);
     const protocol = parsed.protocol.toLowerCase();
 
-    // Only allow explicit web links.
-    if (protocol !== 'http:' && protocol !== 'https:') {
+    if (!ALLOWED_PROTOCOLS.has(protocol)) {
       return null;
     }
 
@@ -52,9 +53,8 @@ export function SafeEmailIframe({
       return;
     }
 
-    doc.open();
-    doc.write(cleanHtml);
-    doc.close();
+    const parsed = new DOMParser().parseFromString(cleanHtml, 'text/html');
+    doc.documentElement.innerHTML = parsed.documentElement.innerHTML;
 
     const head = doc.head ?? doc.documentElement;
     if (!head) {
@@ -149,13 +149,13 @@ export function SafeEmailIframe({
 
       // Button-style links common in marketing/transactional emails:
       // preserve their inline-block shape but cap width so they stay readable.
-      'a[style*="display:inline-block"],a[style*="display: inline-block"],'
-      + 'td[style*="border-radius"],th[style*="border-radius"]{display:inline-block;overflow:hidden;}',
+      'a[style*="display:inline-block"],a[style*="display: inline-block"],' +
+        'td[style*="border-radius"],th[style*="border-radius"]{display:inline-block;overflow:hidden;}',
 
       // Outlook conditional comments leave empty divs with specific classes;
       // collapse them so they don't create unwanted whitespace.
-      '.ExternalClass,.ExternalClass p,.ExternalClass span,'
-      + '.ExternalClass font,.ExternalClass td,.ExternalClass div{line-height:100%;}',
+      '.ExternalClass,.ExternalClass p,.ExternalClass span,' +
+        '.ExternalClass font,.ExternalClass td,.ExternalClass div{line-height:100%;}',
 
       // Selection highlight: match macOS blue
       '::selection{background:#b3d4f5;color:#000;}',
