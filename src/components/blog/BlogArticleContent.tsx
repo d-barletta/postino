@@ -10,7 +10,9 @@ import { useI18n } from '@/lib/i18n';
 import { formatDate } from '@/lib/utils';
 import { BlogContentRenderer } from '@/components/blog/MinimalTiptapEditor';
 import type { BlogArticle } from '@/types';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { signOut } from '@/lib/auth';
 
 interface BlogArticleContentProps {
   article: BlogArticle;
@@ -21,6 +23,7 @@ export function BlogArticleContent({ article, translations }: BlogArticleContent
   const { t, locale } = useI18n();
   const router = useRouter();
   const { blog } = t.home;
+  const { firebaseUser, loading } = useAuth();
 
   useEffect(() => {
     if (!translations || locale === article.language) return;
@@ -39,12 +42,26 @@ export function BlogArticleContent({ article, translations }: BlogArticleContent
             <span className="font-bold text-xl text-gray-900 dark:text-gray-100">Postino</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost">{t.nav.signIn}</Button>
-            </Link>
-            <Link href="/register">
-              <Button>{t.nav.getStarted}</Button>
-            </Link>
+            {!loading && firebaseUser ? (
+              <>
+                <Button variant="ghost" onClick={() => signOut()}>{t.nav.signOut}</Button>
+                <Link href="/dashboard">
+                  <Button>
+                    <LayoutDashboard className="h-4 w-4" />
+                    {t.nav.dashboard}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost">{t.nav.signIn}</Button>
+                </Link>
+                <Link href="/register">
+                  <Button>{t.nav.getStarted}</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

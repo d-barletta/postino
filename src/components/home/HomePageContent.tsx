@@ -4,11 +4,14 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { useI18n } from '@/lib/i18n';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { signOut } from '@/lib/auth';
 
 export function HomePageContent() {
   const { t } = useI18n();
   const { hero, howItWorks, exampleRules, blog } = t.home;
+  const { firebaseUser, loading } = useAuth();
 
   const steps = [
     { icon: 'bi bi-inbox-fill', step: '1', ...howItWorks.step1 },
@@ -25,12 +28,26 @@ export function HomePageContent() {
             <span className="font-bold text-xl text-gray-900">Postino</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost">{t.nav.signIn}</Button>
-            </Link>
-            <Link href="/register">
-              <Button>{t.nav.getStarted}</Button>
-            </Link>
+            {!loading && firebaseUser ? (
+              <>
+                <Button variant="ghost" onClick={() => signOut()}>{t.nav.signOut}</Button>
+                <Link href="/dashboard">
+                  <Button>
+                    <LayoutDashboard className="h-4 w-4" />
+                    {t.nav.dashboard}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost">{t.nav.signIn}</Button>
+                </Link>
+                <Link href="/register">
+                  <Button>{t.nav.getStarted}</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
