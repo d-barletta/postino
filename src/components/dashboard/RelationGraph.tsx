@@ -62,7 +62,10 @@ interface RelationGraphProps {
 // ---------------------------------------------------------------------------
 function GraphSkeleton() {
   return (
-    <div className="flex items-center justify-center h-130 rounded-2xl bg-gray-100 dark:bg-[#0d1117] animate-pulse">
+    <div
+      className="flex items-center justify-center h-130 rounded-2xl animate-pulse"
+      style={{ backgroundColor: 'var(--surface-muted)' }}
+    >
       <Share2 className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
     </div>
   );
@@ -98,22 +101,26 @@ function CytoscapeCanvas({
   const getLabelThemeColors = useCallback(() => {
     const container = containerRef.current;
     if (!container) {
-      return { labelColor: '#1f2937', labelBackgroundColor: '#f3f4f6' };
+      return { labelColor: '#1f2937', labelBackgroundColor: '#f3f4f6', edgeColor: '#334155', edgeHighlightedColor: '#64748b' };
     }
 
     const styles = getComputedStyle(container);
     const labelColor = styles.getPropertyValue('--rg-label-color').trim() || '#1f2937';
     const labelBackgroundColor = styles.getPropertyValue('--rg-label-bg').trim() || '#f3f4f6';
+    const edgeColor = styles.getPropertyValue('--rg-edge-color').trim() || '#334155';
+    const edgeHighlightedColor = styles.getPropertyValue('--rg-edge-highlighted-color').trim() || '#64748b';
 
-    return { labelColor, labelBackgroundColor };
+    return { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor };
   }, []);
 
   const applyLabelThemeToCy = useCallback(() => {
     const cy = cyRef.current;
     if (!cy || cy.destroyed()) return;
-    const { labelColor, labelBackgroundColor } = getLabelThemeColors();
+    const { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor } = getLabelThemeColors();
     cy.nodes().style('color', labelColor);
     cy.nodes().style('text-background-color', labelBackgroundColor);
+    cy.edges().not('.edge-highlighted').style('line-color', edgeColor);
+    cy.edges('.edge-highlighted').style('line-color', edgeHighlightedColor);
     cy.style().update();
   }, [getLabelThemeColors]);
 
@@ -183,7 +190,7 @@ function CytoscapeCanvas({
         };
       });
 
-      const { labelColor, labelBackgroundColor } = getLabelThemeColors();
+      const { labelColor, labelBackgroundColor, edgeColor, edgeHighlightedColor } = getLabelThemeColors();
 
       const cy = cytoscape({
         container: containerRef.current,
@@ -240,7 +247,7 @@ function CytoscapeCanvas({
             style: {
               width: (ele: cytoscape.EdgeSingular) =>
                 0.8 + (ele.data('weight') / maxWeight) * 2.5,
-              'line-color': '#334155',
+              'line-color': edgeColor,
               opacity: 0.6,
               'curve-style': 'bezier',
               'overlay-padding': 4,
@@ -257,7 +264,7 @@ function CytoscapeCanvas({
           {
             selector: '.edge-highlighted',
             style: {
-              'line-color': '#64748b',
+              'line-color': edgeHighlightedColor,
               opacity: 0.7,
             },
           },
@@ -375,7 +382,8 @@ function CytoscapeCanvas({
   return (
     <div
       ref={containerRef}
-      className="w-full h-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#0d1117] [--rg-label-color:#1f2937] [--rg-label-bg:#f3f4f6] dark:[--rg-label-color:#e2e8f0] dark:[--rg-label-bg:#0d1117]"
+      className="w-full h-full rounded-2xl overflow-hidden [--rg-label-color:#1f2937] [--rg-label-bg:#f3f4f6] [--rg-edge-color:#94a3b8] [--rg-edge-highlighted-color:#cbd5e1] dark:[--rg-label-color:#e2e8f0] dark:[--rg-label-bg:#1f2937] dark:[--rg-edge-color:#64748b] dark:[--rg-edge-highlighted-color:#94a3b8]"
+      style={{ backgroundColor: 'transparent' }}
       aria-label="Entity relation graph"
     />
   );
