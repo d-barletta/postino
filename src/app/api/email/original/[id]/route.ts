@@ -47,7 +47,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (
       code?.startsWith('auth/') ||
       msg === 'Unauthorized' ||
-      msg.includes('token') ||
       msg.includes('Firebase ID token')
     ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

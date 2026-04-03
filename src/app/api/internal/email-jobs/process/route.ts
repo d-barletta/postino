@@ -3,8 +3,11 @@ import crypto from 'crypto';
 import { processEmailJobsBatch } from '@/lib/email-jobs';
 
 function timingSafeStringEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  // Hash both values to a fixed-length digest before comparing so that
+  // neither string length nor short-circuit evaluation leaks timing information.
+  const hashA = crypto.createHash('sha256').update(a).digest();
+  const hashB = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
 }
 
 function isAuthorized(request: NextRequest): boolean {
