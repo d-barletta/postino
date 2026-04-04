@@ -1,10 +1,15 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import {
+  containsDisallowedBlogQuotes,
+  stripDisallowedBlogQuotes,
+} from '@/lib/blog-text';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import {
@@ -31,6 +36,28 @@ interface MinimalTiptapEditorProps {
   className?: string;
 }
 
+function sanitizeBlogContentHtml(html: string): string {
+  if (
+    typeof window === 'undefined' ||
+    typeof DOMParser === 'undefined' ||
+    typeof NodeFilter === 'undefined'
+  ) {
+    return html;
+  }
+
+  const parser = new DOMParser();
+  const document = parser.parseFromString(html, 'text/html');
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+
+  let currentNode = walker.nextNode();
+  while (currentNode) {
+    currentNode.textContent = stripDisallowedBlogQuotes(currentNode.textContent ?? '');
+    currentNode = walker.nextNode();
+  }
+
+  return document.body.innerHTML;
+}
+
 export function MinimalTiptapEditor({
   value,
   onChange,
@@ -44,11 +71,55 @@ export function MinimalTiptapEditor({
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder }),
     ],
-    content: value,
+    content: sanitizeBlogContentHtml(value),
+    editorProps: {
+      transformPastedText(text) {
+        return stripDisallowedBlogQuotes(text);
+      },
+      transformPastedHTML(html) {
+        return sanitizeBlogContentHtml(html);
+      },
+      handleTextInput(view, from, to, text) {
+        const sanitizedText = stripDisallowedBlogQuotes(text);
+
+        if (sanitizedText === text) {
+          return false;
+        }
+
+        if (sanitizedText) {
+          view.dispatch(view.state.tr.insertText(sanitizedText, from, to));
+        }
+
+        return true;
+      },
+    },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const html = editor.getHTML();
+
+      if (!containsDisallowedBlogQuotes(editor.getText())) {
+        onChange(html);
+        return;
+      }
+
+      const sanitizedHtml = sanitizeBlogContentHtml(html);
+      editor.commands.setContent(sanitizedHtml, { emitUpdate: false });
+      onChange(sanitizedHtml);
     },
   });
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const sanitizedValue = sanitizeBlogContentHtml(value);
+
+    if (editor.getHTML() !== sanitizedValue) {
+      editor.commands.setContent(sanitizedValue, { emitUpdate: false });
+    }
+
+    if (sanitizedValue !== value) {
+      onChange(sanitizedValue);
+    }
+  }, [editor, onChange, value]);
 
   if (!editor) return null;
 
@@ -171,8 +242,13 @@ export function MinimalTiptapEditor({
   ];
 
   return (
-    <div className={cn('border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden', className)}>
-      <div className="flex flex-wrap gap-1 p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+    <div
+      className={cn(
+        'rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900',
+        className,
+      )}
+    >
+      <div className="sticky top-20 z-20 rounded-t-lg border-b border-gray-200 bg-gray-50/95 p-2 backdrop-blur dark:border-gray-700 dark:bg-gray-800/90 md:static md:top-auto">
         {toolbarGroups.map((group, gi) => (
           <div key={gi} className="flex items-center gap-0.5">
             {gi > 0 && (
@@ -198,7 +274,7 @@ export function MinimalTiptapEditor({
       </div>
       <EditorContent
         editor={editor}
-        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-[300px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[280px] [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-gray-400 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none"
+        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-75 focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-70 [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-gray-400 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none"
       />
     </div>
   );

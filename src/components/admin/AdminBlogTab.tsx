@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { MinimalTiptapEditor } from '@/components/blog/MinimalTiptapEditor';
+import { stripDisallowedBlogQuotes } from '@/lib/blog-text';
 import { formatDate } from '@/lib/utils';
 import { SUPPORTED_LOCALES } from '@/lib/i18n';
 import type { BlogArticle } from '@/types';
@@ -107,7 +108,7 @@ export default function AdminBlogTab() {
   const openEdit = (article: BlogArticle) => {
     setEditingArticle(article);
     setForm({
-      title: article.title,
+      title: stripDisallowedBlogQuotes(article.title),
       content: article.content,
       tags: article.tags,
       thumbnailUrl: article.thumbnailUrl ?? '',
@@ -143,7 +144,9 @@ export default function AdminBlogTab() {
 
   const handleSave = async () => {
     if (!firebaseUser) return;
-    if (!form.title.trim()) {
+    const sanitizedTitle = stripDisallowedBlogQuotes(form.title).trim();
+
+    if (!sanitizedTitle) {
       toast.error('Title is required');
       return;
     }
@@ -160,6 +163,7 @@ export default function AdminBlogTab() {
 
       const payload = {
         ...form,
+        title: sanitizedTitle,
         ...(editingArticle?.translationGroupId
           ? { translationGroupId: editingArticle.translationGroupId }
           : {}),
@@ -294,7 +298,12 @@ export default function AdminBlogTab() {
                 id="blog-title"
                 placeholder="Article title"
                 value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    title: stripDisallowedBlogQuotes(e.target.value),
+                  }))
+                }
               />
             </div>
 
