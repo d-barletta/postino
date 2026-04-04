@@ -95,15 +95,18 @@ ${sourceData.content}`;
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 4096,
+      max_tokens: 8192,
     });
 
     const raw = response.choices[0]?.message?.content ?? '{}';
-    // Strip markdown code fences that some models add despite response_format
+    // Strip markdown code fences that some models add despite response_format.
+    // Trim first so that a leading/trailing newline around the fence doesn't
+    // prevent the anchored regexes from matching.
     const cleaned = raw
+      .trim()
       .replace(/^```json\s*/i, '')
       .replace(/^```\s*/i, '')
-      .replace(/\s*```$/i, '')
+      .replace(/\s*```\s*$/i, '')
       .trim();
 
     let parsed: { title?: string; content?: string };
