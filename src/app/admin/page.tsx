@@ -91,8 +91,9 @@ export default function AdminPage() {
   // Listen for browser Back/Forward and restore the tab stored in the state.
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
-      if ((e.state as Record<string, unknown> | null)?.postinoAdminTab !== undefined) {
-        setActiveTab((e.state as { postinoAdminTab: AdminTab }).postinoAdminTab);
+      const tab = (e.state as Record<string, unknown> | null)?.postinoAdminTab;
+      if (typeof tab === 'string' && (ADMIN_TABS as ReadonlyArray<string>).includes(tab)) {
+        setActiveTab(tab as AdminTab);
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -100,14 +101,18 @@ export default function AdminPage() {
   }, []);
 
   // Navigate to a tab and record the change in browser history and localStorage.
-  const handleTabChange = useCallback((value: string) => {
-    const newTab = value as AdminTab;
-    localStorage.setItem('postinoAdminActiveTab', newTab);
-    window.history.pushState({ postinoAdminTab: newTab }, '');
-    startTransition(() => {
-      setActiveTab(newTab);
-    });
-  }, [startTransition]);
+  const handleTabChange = useCallback(
+    (value: string) => {
+      if (!(ADMIN_TABS as ReadonlyArray<string>).includes(value)) return;
+      const newTab = value as AdminTab;
+      localStorage.setItem('postinoAdminActiveTab', newTab);
+      window.history.pushState({ postinoAdminTab: newTab }, '');
+      startTransition(() => {
+        setActiveTab(newTab);
+      });
+    },
+    [startTransition],
+  );
 
   const renderOverviewContent = () => {
     if (loading) {
