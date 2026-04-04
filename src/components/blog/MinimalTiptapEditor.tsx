@@ -248,7 +248,7 @@ export function MinimalTiptapEditor({
         className,
       )}
     >
-      <div className="sticky top-20 z-20 flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-gray-50/95 p-2 backdrop-blur dark:border-gray-700 dark:bg-gray-800/90 md:static md:top-auto">
+      <div className="flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-gray-50/95 p-2 backdrop-blur dark:border-gray-700 dark:bg-gray-800/90">
         {toolbarGroups.map((group, gi) => (
           <div key={gi} className="flex items-center gap-0.5">
             {gi > 0 && (
@@ -275,7 +275,7 @@ export function MinimalTiptapEditor({
       <EditorContent
         editor={editor}
         className={cn(
-          'prose prose-sm dark:prose-invert max-w-none p-4 min-h-75 focus:outline-none',
+          'prose prose-sm dark:prose-invert max-w-none p-4 min-h-75 focus:outline-none overflow-y-auto max-h-[calc(100vh-200px)]',
           'prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-gray-100',
           'prose-p:text-gray-700 dark:prose-p:text-gray-300',
           'prose-a:text-[#a3891f] dark:prose-a:text-[#f3df79] prose-a:underline',
