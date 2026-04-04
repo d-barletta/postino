@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { StatsCards } from '@/components/admin/StatsCards';
@@ -16,12 +16,22 @@ import AdminBlogTab from '@/components/admin/AdminBlogTab';
 import type { Stats } from '@/types';
 import { Home, Users, Mail, Activity, Settings, BookOpen } from 'lucide-react';
 
+type AdminTab = 'overview' | 'users' | 'emails' | 'jobs' | 'blog' | 'settings';
+const ADMIN_TABS: ReadonlyArray<AdminTab> = [
+  'overview',
+  'users',
+  'emails',
+  'jobs',
+  'blog',
+  'settings',
+];
+
 export default function AdminPage() {
   const { firebaseUser } = useAuth();
   const { t } = useI18n();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -45,11 +55,64 @@ export default function AdminPage() {
     fetchStats();
   }, [firebaseUser]);
 
-  const handleTabChange = (value: string) => {
-    startTransition(() => {
-      setActiveTab(value);
-    });
-  };
+  // ---------------------------------------------------------------------------
+  // Tab history: push a history entry when the user clicks a tab so the
+  // browser Back button can navigate between previously-visited tabs.
+  // ---------------------------------------------------------------------------
+
+  // On mount, restore the tab stored in the current history entry (survives
+  // page refreshes).  Falls back to the tab saved in localStorage (survives
+  // browser restarts).  If no valid tab is found anywhere, stamp the entry
+  // with the default 'overview' so that popstate always has a value to read.
+  useEffect(() => {
+    const historyTab = (window.history.state as Record<string, unknown> | null)
+      ?.postinoAdminTab as AdminTab | undefined;
+    const localTab = localStorage.getItem('postinoAdminActiveTab') as AdminTab | null;
+    const savedTab =
+      historyTab && (ADMIN_TABS as ReadonlyArray<string>).includes(historyTab)
+        ? historyTab
+        : localTab && (ADMIN_TABS as ReadonlyArray<string>).includes(localTab)
+          ? localTab
+          : null;
+    if (savedTab) {
+      setActiveTab(savedTab);
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoAdminTab: savedTab },
+        '',
+      );
+    } else {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoAdminTab: 'overview' },
+        '',
+      );
+    }
+  }, []);
+
+  // Listen for browser Back/Forward and restore the tab stored in the state.
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const tab = (e.state as Record<string, unknown> | null)?.postinoAdminTab;
+      if (typeof tab === 'string' && (ADMIN_TABS as ReadonlyArray<string>).includes(tab)) {
+        setActiveTab(tab as AdminTab);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Navigate to a tab and record the change in browser history and localStorage.
+  const handleTabChange = useCallback(
+    (value: string) => {
+      if (!(ADMIN_TABS as ReadonlyArray<string>).includes(value)) return;
+      const newTab = value as AdminTab;
+      localStorage.setItem('postinoAdminActiveTab', newTab);
+      window.history.pushState({ postinoAdminTab: newTab }, '');
+      startTransition(() => {
+        setActiveTab(newTab);
+      });
+    },
+    [startTransition],
+  );
 
   const renderOverviewContent = () => {
     if (loading) {
