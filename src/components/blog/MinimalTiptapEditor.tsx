@@ -248,7 +248,7 @@ export function MinimalTiptapEditor({
         className,
       )}
     >
-      <div className="sticky top-20 z-20 rounded-t-lg border-b border-gray-200 bg-gray-50/95 p-2 backdrop-blur dark:border-gray-700 dark:bg-gray-800/90 md:static md:top-auto">
+      <div className="sticky top-20 z-20 flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-gray-50/95 p-2 backdrop-blur dark:border-gray-700 dark:bg-gray-800/90 md:static md:top-auto">
         {toolbarGroups.map((group, gi) => (
           <div key={gi} className="flex items-center gap-0.5">
             {gi > 0 && (
