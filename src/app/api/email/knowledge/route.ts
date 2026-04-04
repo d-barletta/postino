@@ -19,7 +19,7 @@ function toSortedArray(map: CountMap): { value: string; count: number }[] {
 
 function increment(map: CountMap, value: unknown): void {
   if (typeof value === 'string' && value.trim()) {
-    const key = value.trim();
+    const key = value.trim().toLowerCase();
     map[key] = (map[key] ?? 0) + 1;
   }
 }
@@ -36,9 +36,10 @@ function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: 
   for (const merge of merges) {
     let total = 0;
     for (const alias of merge.aliases) {
-      if (alias in map) {
-        total += map[alias];
-        delete map[alias];
+      const key = alias.toLowerCase();
+      if (key in map) {
+        total += map[key];
+        delete map[key];
       }
     }
     if (total > 0) {

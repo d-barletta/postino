@@ -33,7 +33,7 @@ interface CountMap {
 
 function increment(map: CountMap, value: unknown): void {
   if (typeof value === 'string' && value.trim()) {
-    const key = value.trim();
+    const key = value.trim().toLowerCase();
     map[key] = (map[key] ?? 0) + 1;
   }
 }
@@ -283,9 +283,22 @@ Return an empty array if no confident merges are found. Only include suggestions
         continue;
       }
 
+      // Deduplicate aliases case-insensitively
+      const seen = new Set<string>();
+      const dedupedAliases: string[] = [];
+      for (const a of (aliases as string[]).map((x) => x.trim())) {
+        const lc = a.toLowerCase();
+        if (!seen.has(lc)) {
+          seen.add(lc);
+          dedupedAliases.push(a);
+        }
+      }
+      // Skip if fewer than 2 distinct aliases after deduplication
+      if (dedupedAliases.length < 2) continue;
+
       validSuggestions.push({
         category: category as EntityCategory,
-        aliases: (aliases as string[]).map((a) => a.trim()),
+        aliases: dedupedAliases,
         suggestedCanonical: (suggestedCanonical as string).trim(),
         reason: (reason as string).trim(),
       });
