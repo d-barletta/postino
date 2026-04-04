@@ -95,7 +95,7 @@ ${sourceData.content}`;
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 8192,
+      max_tokens: 100000,
     });
 
     const raw = response.choices[0]?.message?.content ?? '{}';
