@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
-
-async function verifyUser(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  return adminAuth().verifyIdToken(token);
-}
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const db = adminDb();
     const snap = await db.collection('rules').where('userId', '==', decoded.uid).get();
 
@@ -39,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ rules });
   } catch (err) {
-    if (err instanceof Error && err.message === 'Unauthorized') {
+    if (err instanceof Error && (err.message === 'Unauthorized' || isFirebaseAuthError(err))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[rules] GET error:', err);
@@ -52,7 +46,7 @@ const MAX_PATTERN_LENGTH = 200;
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const { name, text, matchSender, matchSubject, matchBody } = await request.json();
 
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -158,6 +152,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id: ref.id }, { status: 201 });
   } catch (error) {
+    if (isFirebaseAuthError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Create rule error:', error);
     return NextResponse.json({ error: 'Failed to create rule' }, { status: 500 });
   }

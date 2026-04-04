@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
-
-async function verifyUser(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  return adminAuth().verifyIdToken(token);
-}
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 // ---------------------------------------------------------------------------
 // PATCH – accept or reject a suggestion
 // ---------------------------------------------------------------------------
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  let decoded: Awaited<ReturnType<typeof verifyUser>>;
+  let uid: string;
   try {
-    decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
+    uid = decoded.uid;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -39,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Suggestion not found' }, { status: 404 });
     }
 
-    if (snap.data()?.userId !== decoded.uid) {
+    if (snap.data()?.userId !== uid) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -47,12 +42,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ id, status });
   } catch (err) {
-    const isAuthError =
-      err instanceof Error &&
-      (err.message.includes('auth') ||
-        err.message.includes('token') ||
-        err.message.includes('Unauthorized'));
-    if (isAuthError) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[entities/merge-suggestions/[id]] PATCH error:', err);

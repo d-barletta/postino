@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split('Bearer ')[1];
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
 
     const { id } = await params;
     const db = adminDb();
@@ -42,8 +38,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       emailAnalysis: data.emailAnalysis ?? null,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error fetching original email:', msg);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (isFirebaseAuthError(error)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.error('Error fetching original email:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

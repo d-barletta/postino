@@ -1,27 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const MAX_REORDER_IDS = 200;
 
-async function verifyUser(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
-  const token = authHeader.split('Bearer ')[1];
-  return adminAuth().verifyIdToken(token);
-}
-
-/**
- * PATCH /api/rules/reorder
- *
- * Body: { orderedIds: string[] }
- *
- * Persists a user-defined rule ordering by writing the array-position index as
- * `sortOrder` on each rule document.  Only rules that belong to the requesting
- * user are updated; any IDs that don't match are silently skipped.
- */
 export async function PATCH(request: NextRequest) {
   try {
-    const decoded = await verifyUser(request);
+    const decoded = await verifyUserRequest(request);
     const body = await request.json();
 
     if (
@@ -67,9 +52,10 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, updated });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[rules/reorder] error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    if (isFirebaseAuthError(error) || (error instanceof Error && error.message === 'Unauthorized')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.error('[rules/reorder] error:', error);
+    return NextResponse.json({ error: 'Failed to reorder rules' }, { status: 500 });
   }
 }

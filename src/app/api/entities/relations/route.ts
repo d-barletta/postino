@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 import type {
   EntityGraphNode,
   EntityGraphEdge,
@@ -25,16 +26,6 @@ const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'places',
   'events',
 ];
-
-/** Returns true when the error is a Firebase authentication / token error. */
-function isAuthError(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    (err.message.includes('auth') ||
-      err.message.includes('token') ||
-      err.message.includes('Firebase'))
-  );
-}
 
 interface CountMap {
   [value: string]: number;
@@ -96,12 +87,7 @@ function collectNormalized(
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split('Bearer ')[1];
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
     const db = adminDb();
 
     const doc = await db.collection('entityRelations').doc(decoded.uid).get();
@@ -119,7 +105,7 @@ export async function GET(request: NextRequest) {
       } satisfies EntityRelationGraph,
     });
   } catch (err) {
-    if (isAuthError(err)) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[entities/relations] GET error:', err);
@@ -132,12 +118,7 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split('Bearer ')[1];
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
     const db = adminDb();
 
     // Fetch email logs and entity merges in parallel
@@ -300,7 +281,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ graph });
   } catch (err) {
-    if (isAuthError(err)) {
+    if (isFirebaseAuthError(err)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[entities/relations] POST error:', err);

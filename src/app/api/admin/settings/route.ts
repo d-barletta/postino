@@ -109,6 +109,24 @@ export async function PUT(request: NextRequest) {
       ]),
     );
 
+    // Validate mailgunBaseUrl to prevent SSRF: only official Mailgun API base URLs are accepted.
+    const ALLOWED_MAILGUN_BASE_URLS = new Set([
+      'https://api.mailgun.net',
+      'https://api.eu.mailgun.net',
+    ]);
+    if (
+      'mailgunBaseUrl' in normalized &&
+      normalized.mailgunBaseUrl !== '' &&
+      !ALLOWED_MAILGUN_BASE_URLS.has(normalized.mailgunBaseUrl as string)
+    ) {
+      return NextResponse.json(
+        {
+          error: `mailgunBaseUrl must be one of: ${[...ALLOWED_MAILGUN_BASE_URLS].join(', ')}`,
+        },
+        { status: 400 },
+      );
+    }
+
     const normalizedWithBounds = {
       ...normalized,
       agentChunkThresholdChars: clampInt(

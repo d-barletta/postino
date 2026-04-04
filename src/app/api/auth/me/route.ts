@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import {
   generateAssignedEmail,
   resolveAssignedEmailDomain,
   isEmailUsingDomain,
 } from '@/lib/email-utils';
+import { verifyUserRequest } from '@/lib/api-auth';
 
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
 
@@ -22,12 +23,7 @@ function toIsoDate(value: unknown): string | null {
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split('Bearer ')[1];
-    const decoded = await adminAuth().verifyIdToken(token);
+    const decoded = await verifyUserRequest(request);
 
     const db = adminDb();
     const settingsDoc = await db.collection('settings').doc('global').get();
