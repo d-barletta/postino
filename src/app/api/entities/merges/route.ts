@@ -69,7 +69,25 @@ export async function POST(request: NextRequest) {
     }
 
     const trimmedCanonical = (canonical as string).trim();
-    const trimmedAliases: string[] = (aliases as string[]).map((a) => a.trim());
+    const rawAliases: string[] = (aliases as string[]).map((a) => a.trim());
+
+    // Deduplicate aliases case-insensitively, preserving first occurrence
+    const seenLower = new Set<string>();
+    const trimmedAliases: string[] = [];
+    for (const a of rawAliases) {
+      const lc = a.toLowerCase();
+      if (!seenLower.has(lc)) {
+        seenLower.add(lc);
+        trimmedAliases.push(a);
+      }
+    }
+
+    if (trimmedAliases.length < 2) {
+      return NextResponse.json(
+        { error: 'At least two non-empty aliases are required' },
+        { status: 400 },
+      );
+    }
 
     const db = adminDb();
 
@@ -83,22 +101,32 @@ export async function POST(request: NextRequest) {
 
     const overlappingDocs = existingSnap.docs.filter((doc) => {
       const existingAliases = doc.data().aliases as string[];
-      return trimmedAliases.some((a) => existingAliases.includes(a));
+      return trimmedAliases.some((a) =>
+        existingAliases.some((ea) => ea.toLowerCase() === a.toLowerCase()),
+      );
     });
 
     if (overlappingDocs.length > 0) {
-      // Combine aliases from all overlapping merges + the new aliases into one unified set
-      const unifiedAliases = new Set([
+      // Combine aliases from all overlapping merges + the new aliases, deduplicating case-insensitively
+      const unifiedSeenLower = new Set<string>();
+      const unifiedAliases: string[] = [];
+      for (const a of [
         ...trimmedAliases,
         ...overlappingDocs.flatMap((doc) => doc.data().aliases as string[]),
-      ]);
+      ]) {
+        const lc = a.toLowerCase();
+        if (!unifiedSeenLower.has(lc)) {
+          unifiedSeenLower.add(lc);
+          unifiedAliases.push(a);
+        }
+      }
 
       // Keep the first overlapping merge as the base; delete the rest
       const [baseDoc, ...docsToDelete] = overlappingDocs;
       const batch = db.batch();
       batch.update(baseDoc.ref, {
         canonical: trimmedCanonical,
-        aliases: Array.from(unifiedAliases),
+        aliases: unifiedAliases,
       });
       for (const doc of docsToDelete) {
         batch.delete(doc.ref);
