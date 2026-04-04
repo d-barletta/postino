@@ -57,6 +57,7 @@ import type { EmailLog } from '@/types';
 import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
+import { Spinner } from '@/components/ui/Spinner';
 
 const PAGE_SIZE = 20;
 const ALL_VALUE = '__all__';
@@ -1565,6 +1566,9 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                               <div className="flex items-center gap-2">
                                 {log.status !== 'forwarded' && (
                                   <Badge variant={statusVariant[log.status] || 'default'}>
+                                    {log.status === 'processing' && (
+                                      <Spinner className="h-3 w-3 mr-1 shrink-0" />
+                                    )}
                                     {statusLabel[log.status] ?? log.status}
                                   </Badge>
                                 )}
@@ -1914,6 +1918,9 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                               variant={statusVariant[log.status] || 'default'}
                               className="text-[10px] px-1.5 py-0 h-4"
                             >
+                              {log.status === 'processing' && (
+                                <Spinner className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                              )}
                               {statusLabel[log.status] ?? log.status}
                             </Badge>
                           )}
