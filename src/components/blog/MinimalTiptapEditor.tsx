@@ -274,7 +274,20 @@ export function MinimalTiptapEditor({
       </div>
       <EditorContent
         editor={editor}
-        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-75 focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-70 [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-gray-400 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none"
+        className={cn(
+          'prose prose-sm dark:prose-invert max-w-none p-4 min-h-75 focus:outline-none',
+          'prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-gray-100',
+          'prose-p:text-gray-700 dark:prose-p:text-gray-300',
+          'prose-a:text-[#a3891f] dark:prose-a:text-[#f3df79] prose-a:underline',
+          'prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:rounded prose-code:px-1',
+          'prose-blockquote:border-l-[#efd957] prose-blockquote:text-gray-600 dark:prose-blockquote:text-gray-400',
+          'prose-img:rounded-xl prose-img:shadow-md',
+          '[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-70',
+          '[&_.ProseMirror_a]:text-[#a3891f] dark:[&_.ProseMirror_a]:text-[#f3df79] [&_.ProseMirror_a]:underline',
+          '[&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-[#efd957] [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-gray-600 dark:[&_.ProseMirror_blockquote]:text-gray-400',
+          '[&_.ProseMirror_code]:bg-gray-100 dark:[&_.ProseMirror_code]:bg-gray-800 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:px-1 [&_.ProseMirror_code]:text-sm',
+          '[&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-gray-400 [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none',
+        )}
       />
     </div>
   );
