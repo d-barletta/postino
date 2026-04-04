@@ -24,10 +24,7 @@ function slugify(title: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await verifyAdminRequest(request);
     const { id } = await params;
@@ -49,7 +46,10 @@ export async function POST(
     const sourceLanguage: string = sourceData.language || 'en';
 
     if (sourceLanguage === targetLanguage) {
-      return NextResponse.json({ error: 'Source and target languages are the same' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Source and target languages are the same' },
+        { status: 400 },
+      );
     }
 
     // Determine the translationGroupId – reuse existing or create new from source id
@@ -64,7 +64,10 @@ export async function POST(
       .get();
     if (!existingSnap.empty) {
       return NextResponse.json(
-        { error: 'A translation in this language already exists', existingId: existingSnap.docs[0].id },
+        {
+          error: 'A translation in this language already exists',
+          existingId: existingSnap.docs[0].id,
+        },
         { status: 409 },
       );
     }
@@ -102,12 +105,7 @@ ${sourceData.content}`;
     // Strip markdown code fences that some models add despite response_format.
     // Trim first so that a leading/trailing newline around the fence doesn't
     // prevent the anchored regexes from matching.
-    const cleaned = raw
-      .trim()
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/\s*```\s*$/i, '')
-      .trim();
+    const cleaned = raw.trim();
 
     let parsed: { title?: string; content?: string };
     try {
@@ -117,19 +115,17 @@ ${sourceData.content}`;
       return NextResponse.json({ error: 'LLM returned invalid JSON' }, { status: 500 });
     }
 
-    const translatedTitle = typeof parsed.title === 'string' ? parsed.title.trim() : sourceData.title;
-    const translatedContent = typeof parsed.content === 'string' ? parsed.content : sourceData.content;
+    const translatedTitle =
+      typeof parsed.title === 'string' ? parsed.title.trim() : sourceData.title;
+    const translatedContent =
+      typeof parsed.content === 'string' ? parsed.content : sourceData.content;
 
     // Generate slug for translated article
     const baseSlug = slugify(translatedTitle);
     let slug = `${baseSlug}-${targetLanguage}`;
     let counter = 1;
     while (counter <= 100) {
-      const existing = await db
-        .collection('blogArticles')
-        .where('slug', '==', slug)
-        .limit(1)
-        .get();
+      const existing = await db.collection('blogArticles').where('slug', '==', slug).limit(1).get();
       if (existing.empty) break;
       slug = `${baseSlug}-${targetLanguage}-${counter++}`;
     }
