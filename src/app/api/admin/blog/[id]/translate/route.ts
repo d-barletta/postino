@@ -82,11 +82,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const targetLangName = LOCALE_NAMES[targetLanguage] ?? targetLanguage;
     const sourceLangName = LOCALE_NAMES[sourceLanguage] ?? sourceLanguage;
 
-    const systemPrompt = `You are a professional translator and content writer. You translate blog articles accurately and naturally, preserving HTML structure and formatting. Translate from ${sourceLangName} to ${targetLangName}. Return ONLY a JSON object with two fields: "title" (translated title string) and "content" (translated HTML content string). Do not add explanations or markdown code blocks.`;
+    const systemPrompt = `You are a professional translator and content writer. You translate blog articles accurately and naturally, preserving HTML structure and formatting. Translate from ${sourceLangName} to ${targetLangName}. Return ONLY a JSON object with three fields: "title" (translated title string), "content" (translated HTML content string), and "tags" (array of translated tag strings). Do not add explanations or markdown code blocks.`;
 
+    const sourceTags: string[] = sourceData.tags ?? [];
     const userPrompt = `Translate this blog article from ${sourceLangName} to ${targetLangName}.
 
 TITLE: ${sourceData.title}
+
+TAGS: ${JSON.stringify(sourceTags)}
 
 CONTENT (HTML):
 ${sourceData.content}`;
@@ -107,7 +110,7 @@ ${sourceData.content}`;
     // prevent the anchored regexes from matching.
     const cleaned = raw.trim();
 
-    let parsed: { title?: string; content?: string };
+    let parsed: { title?: string; content?: string; tags?: unknown };
     try {
       parsed = JSON.parse(jsonrepair(cleaned));
     } catch {
@@ -119,6 +122,10 @@ ${sourceData.content}`;
       typeof parsed.title === 'string' ? parsed.title.trim() : sourceData.title;
     const translatedContent =
       typeof parsed.content === 'string' ? parsed.content : sourceData.content;
+    const translatedTags: string[] =
+      Array.isArray(parsed.tags) && parsed.tags.every((t) => typeof t === 'string')
+        ? (parsed.tags as string[])
+        : (sourceData.tags ?? []);
 
     // Generate slug for translated article
     const baseSlug = slugify(translatedTitle);
@@ -135,7 +142,7 @@ ${sourceData.content}`;
       title: translatedTitle,
       slug,
       content: translatedContent,
-      tags: sourceData.tags ?? [],
+      tags: translatedTags,
       thumbnailUrl: sourceData.thumbnailUrl ?? '',
       published: false, // translated articles start as drafts
       language: targetLanguage,
