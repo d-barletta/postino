@@ -261,6 +261,8 @@ export async function POST(request: NextRequest) {
     // -----------------------------------------------------------------------
     // Pass 2: compute co-occurrence edges (within same bucket)
     // -----------------------------------------------------------------------
+    // Build a Map for O(1) node lookup by id
+    const nodeById = new Map<string, FlowGraphNode>(nodes.map((n) => [n.id, n]));
     const edgeWeights = new Map<string, number>();
 
     for (const { bucketIdx, entities } of perEmailBucketEntities) {
@@ -273,7 +275,7 @@ export async function POST(request: NextRequest) {
           const id = labelToId.get(key);
           if (id) {
             // Check that this node's bucket is this one or later (i.e., node was active here)
-            const node = nodes.find((n) => n.id === id);
+            const node = nodeById.get(id);
             if (node && node.bucketIndex >= bucketIdx && !presentIds.includes(id)) {
               presentIds.push(id);
             }

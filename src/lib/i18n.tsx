@@ -2632,7 +2632,7 @@ const translations: Record<Locale, Translations> = {
           flowError: 'Échec de la génération du diagramme de flux',
           flowLoadError: 'Échec du chargement du diagramme de flux',
           flowGenerated: 'Diagramme de flux mis à jour',
-          flowGeneratedOn: 'Générée le {date}',
+          flowGeneratedOn: 'Généré le {date}',
           flowTotalEmails: 'Basé sur {count} e-mails',
         },
       },
