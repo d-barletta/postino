@@ -8,7 +8,6 @@ import {
   useEdgesState,
   Background,
   BackgroundVariant,
-  Controls,
   Handle,
   Position,
   type Node,
@@ -530,15 +529,6 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
           size={1}
           color={isDark ? '#374151' : '#d1d5db'}
         />
-        <Controls
-          position="bottom-right"
-          showInteractive={false}
-          style={{
-            background: isDark ? '#1f2937' : '#ffffff',
-            border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
-            borderRadius: 8,
-          }}
-        />
       </ReactFlow>
     </div>
   );
@@ -610,7 +600,7 @@ export function RelationFlowChart({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           {isResolvingInitialState ? (
             <div
               className="h-9 w-36 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse"
@@ -677,24 +667,22 @@ export function RelationFlowChart({
           </div>
 
           {/* Legend — below the chart, not inside the canvas */}
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {tr.legend}
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                {(Object.keys(CATEGORY_COLORS) as EntityGraphNodeCategory[]).map((cat) => (
-                  <FlowLegendItem
-                    key={cat}
-                    color={CATEGORY_COLORS[cat]}
-                    label={tr[cat]}
-                    active={!hiddenCategories.has(cat)}
-                    onClick={() => toggleCategory(cat)}
-                  />
-                ))}
-              </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              {tr.legend}
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              {(Object.keys(CATEGORY_COLORS) as EntityGraphNodeCategory[]).map((cat) => (
+                <FlowLegendItem
+                  key={cat}
+                  color={CATEGORY_COLORS[cat]}
+                  label={tr[cat]}
+                  active={!hiddenCategories.has(cat)}
+                  onClick={() => toggleCategory(cat)}
+                />
+              ))}
             </div>
-            <div className="flex flex-col items-end gap-1 shrink-0">
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 pt-0.5">
               <span className="text-xs text-gray-400 dark:text-gray-500">{tr.flowNodeClick}</span>
               {graph.buckets && graph.buckets.length > 0 && (
                 <span className="text-xs text-gray-400 dark:text-gray-500">

@@ -125,7 +125,7 @@ export function RelationsTab() {
                 {k.relations.subtitle}
               </p>
             </div>
-            {/* Mobile-only icon buttons – hidden on sm+ (toolbar handles those) */}
+            {/* Mobile-only icon buttons – hidden on sm+ (toolbar inside component handles those) */}
             <div className="sm:hidden flex items-center gap-1.5 shrink-0">
               {activeSubTab === 'graph' && graph && !isEmpty && (
                 <Button
@@ -146,6 +146,17 @@ export function RelationsTab() {
                   aria-label={k.relations.regenerate}
                 >
                   <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
+                </Button>
+              )}
+              {activeSubTab === 'flow' && flowHasFetched && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={generateFlowGraph}
+                  disabled={flowGenerating}
+                  aria-label={k.relations.flowRegenerate}
+                >
+                  <RefreshCw className={cn('h-4 w-4', flowGenerating && 'animate-spin')} />
                 </Button>
               )}
             </div>
