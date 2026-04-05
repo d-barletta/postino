@@ -14,6 +14,7 @@ import {
 } from '@/components/dashboard/RelationGraph';
 import {
   RelationFlowChart,
+  RelationFlowChartFullPageContent,
   useFlowGraph,
 } from '@/components/dashboard/RelationFlowChart';
 import { useModalHistory } from '@/hooks/useModalHistory';
@@ -67,9 +68,11 @@ export function RelationsTab() {
     body: string;
   } | null>(null);
   const [fullPageGraphOpen, setFullPageGraphOpen] = useState(false);
+  const [fullPageFlowOpen, setFullPageFlowOpen] = useState(false);
 
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
   useModalHistory(fullPageGraphOpen, () => setFullPageGraphOpen(false));
+  useModalHistory(fullPageFlowOpen, () => setFullPageFlowOpen(false));
 
   const handleNodeClick = useCallback(
     (label: string, category: EntityGraphNodeCategory) => {
@@ -108,9 +111,11 @@ export function RelationsTab() {
     flowRegenerate: k.relations.flowRegenerate,
     flowGeneratedOn: k.relations.flowGeneratedOn,
     flowTotalEmails: k.relations.flowTotalEmails,
+    expandFullPage: k.relations.expandFullPage,
   };
 
   const isEmpty = graph && graph.nodes.length === 0;
+  const flowIsEmpty = flowGraph && flowGraph.nodes.length === 0;
 
   return (
     <>
@@ -146,6 +151,16 @@ export function RelationsTab() {
                   aria-label={k.relations.regenerate}
                 >
                   <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
+                </Button>
+              )}
+              {activeSubTab === 'flow' && flowGraph && !flowIsEmpty && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFullPageFlowOpen(true)}
+                  aria-label={k.relations.expandFullPage}
+                >
+                  <Maximize2 className="h-4 w-4" />
                 </Button>
               )}
               {activeSubTab === 'flow' && flowHasFetched && (
@@ -197,6 +212,7 @@ export function RelationsTab() {
                 loading={authLoading || flowLoading || !flowHasFetched}
                 generating={flowGenerating}
                 onGenerate={generateFlowGraph}
+                onExpandFullPage={() => setFullPageFlowOpen(true)}
                 onNodeClick={handleNodeClick}
                 translations={flowTranslations}
               />
@@ -224,6 +240,41 @@ export function RelationsTab() {
                 graph={graph}
                 onNodeClick={handleNodeClick}
                 translations={graphTranslations}
+              />
+            )}
+          </div>
+          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {k.relations.title}
+            </DialogTitle>
+            <DialogClose asChild>
+              <Button size="sm" className="shrink-0">
+                {k.relations.closeFullPage}
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Full-page flow dialog (Flow sub-tab only) */}
+      <Dialog
+        open={fullPageFlowOpen}
+        onOpenChange={(o) => {
+          if (!o) setFullPageFlowOpen(false);
+        }}
+      >
+        <DialogContent
+          hideCloseButton
+          animation="slide-from-bottom"
+          className="w-[95vw] max-w-7xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
+          aria-describedby={undefined}
+        >
+          <div className="flex-1 min-h-0">
+            {flowGraph && flowGraph.nodes.length > 0 && (
+              <RelationFlowChartFullPageContent
+                graph={flowGraph}
+                onNodeClick={handleNodeClick}
+                translations={flowTranslations}
               />
             )}
           </div>

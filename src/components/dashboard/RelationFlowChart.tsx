@@ -16,7 +16,7 @@ import {
   type NodeTypes,
 } from '@xyflow/react';
 import { toast } from 'sonner';
-import { AlertCircle, Eye, EyeOff, RefreshCw, Workflow } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Maximize2, RefreshCw, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/Button';
@@ -542,6 +542,7 @@ export interface RelationFlowChartProps {
   loading: boolean;
   generating: boolean;
   onGenerate: () => void;
+  onExpandFullPage?: () => void;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   translations: {
     legend: string;
@@ -559,6 +560,7 @@ export interface RelationFlowChartProps {
     flowRegenerate: string;
     flowGeneratedOn: string;
     flowTotalEmails: string;
+    expandFullPage?: string;
   };
 }
 
@@ -567,6 +569,7 @@ export function RelationFlowChart({
   loading,
   generating,
   onGenerate,
+  onExpandFullPage,
   onNodeClick,
   translations: tr,
 }: RelationFlowChartProps) {
@@ -601,6 +604,12 @@ export function RelationFlowChart({
           )}
         </div>
         <div className="hidden sm:flex items-center gap-2">
+          {graph && !isEmpty && onExpandFullPage && (
+            <Button size="sm" variant="ghost" onClick={onExpandFullPage}>
+              <Maximize2 className="h-4 w-4" />
+              {tr.expandFullPage}
+            </Button>
+          )}
           {isResolvingInitialState ? (
             <div
               className="h-9 w-36 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse"
@@ -693,6 +702,75 @@ export function RelationFlowChart({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Full-page content component (used inside the full-screen Dialog)
+// ---------------------------------------------------------------------------
+export function RelationFlowChartFullPageContent({
+  graph,
+  onNodeClick,
+  translations: tr,
+}: {
+  graph: EntityFlowGraph;
+  onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
+  translations: Pick<
+    RelationFlowChartProps['translations'],
+    'legend' | 'flowNodeClick' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
+  >;
+}) {
+  const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
+    () => new Set<EntityGraphNodeCategory>(['tags']),
+  );
+
+  const toggleCategory = useCallback((cat: EntityGraphNodeCategory) => {
+    setHiddenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }, []);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 min-h-0">
+        <ReactFlowProvider>
+          <RelationFlowInner
+            graph={graph}
+            onNodeClick={onNodeClick}
+            hiddenCategories={hiddenCategories}
+          />
+        </ReactFlowProvider>
+      </div>
+      <div className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800">
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            {tr.legend}
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {(Object.keys(CATEGORY_COLORS) as EntityGraphNodeCategory[]).map((cat) => (
+              <FlowLegendItem
+                key={cat}
+                color={CATEGORY_COLORS[cat]}
+                label={tr[cat]}
+                active={!hiddenCategories.has(cat)}
+                onClick={() => toggleCategory(cat)}
+              />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 pt-0.5">
+            <span className="text-xs text-gray-400 dark:text-gray-500">{tr.flowNodeClick}</span>
+            {graph.buckets && graph.buckets.length > 0 && (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {graph.buckets[0].label} → {graph.buckets[graph.buckets.length - 1].label}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
