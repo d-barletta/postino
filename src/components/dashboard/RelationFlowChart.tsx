@@ -402,6 +402,7 @@ async function computeElkLayout(
       'elk.spacing.nodeNode': '55',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.edgeRouting': 'SPLINES',
+      'elk.layered.edgeRouting.splines.mode': 'SLOPPY',
     },
     children: visibleNodes.map((n) => {
       const cat = n.data?.category as EntityGraphNodeCategory;
@@ -622,7 +623,7 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
         fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: false }}
         style={{ background: 'transparent', borderRadius: '1rem' }}
-        nodesDraggable={true}
+        nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={true}
         minZoom={0.1}
