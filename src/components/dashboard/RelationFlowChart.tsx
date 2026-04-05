@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -472,35 +472,42 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
     });
   }, []);
 
-  // Build raw nodes/edges from graph data
-  const rawNodes: Node[] = graph.nodes.map((n) => ({
-    id: n.id,
-    type: n.category,
-    position: { x: 0, y: 0 },
-    data: {
-      label: n.label,
-      category: n.category,
-      count: n.count,
-      onNodeClick,
-    },
-  }));
+  // Build raw nodes/edges from graph data (memoized to avoid unnecessary ELK re-runs)
+  const rawNodes: Node[] = useMemo(
+    () =>
+      graph.nodes.map((n) => ({
+        id: n.id,
+        type: n.category,
+        position: { x: 0, y: 0 },
+        data: {
+          label: n.label,
+          category: n.category,
+          count: n.count,
+          onNodeClick,
+        },
+      })),
+    [graph.nodes, onNodeClick],
+  );
 
-  const rawEdges: Edge[] = graph.edges.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    type: 'smoothstep',
-    style: {
-      strokeWidth: 0.8 + (e.weight / Math.max(...graph.edges.map((x) => x.weight), 1)) * 2,
-      stroke: '#475569',
-      opacity: 0.55,
-    },
-    animated: false,
-  }));
+  const rawEdges: Edge[] = useMemo(() => {
+    const maxWeight = Math.max(...graph.edges.map((e) => e.weight), 1);
+    return graph.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      type: 'smoothstep',
+      style: {
+        strokeWidth: 0.8 + (e.weight / maxWeight) * 2,
+        stroke: '#475569',
+        opacity: 0.55,
+      },
+      animated: false,
+    }));
+  }, [graph.edges]);
 
-  // Run ELK layout whenever hidden categories change
+  // Run ELK layout whenever graph data or hidden categories change
   useEffect(() => {
-    if (graph.nodes.length === 0) {
+    if (rawNodes.length === 0) {
       setLayouting(false);
       return;
     }
@@ -520,8 +527,7 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
         setEdges(rawEdges);
       })
       .finally(() => setLayouting(false));
-     
-  }, [graph, hiddenCategories]);
+  }, [rawNodes, rawEdges, hiddenCategories, setNodes, setEdges]);
 
   const isDark =
     typeof document !== 'undefined' &&
