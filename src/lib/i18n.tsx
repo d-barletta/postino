@@ -373,6 +373,9 @@ export interface Translations {
         legend: string;
         loadError: string;
         generated: string;
+        graphTab: string;
+        flowTab: string;
+        flowNodeClick: string;
       };
     };
     rules: {
@@ -922,6 +925,9 @@ const translations: Record<Locale, Translations> = {
           legend: 'Legend',
           loadError: 'Failed to load relation map',
           generated: 'Relation graph updated',
+          graphTab: 'Graph',
+          flowTab: 'Flow',
+          flowNodeClick: 'Click a node to explore related emails',
         },
       },
       rules: {
@@ -1471,6 +1477,9 @@ const translations: Record<Locale, Translations> = {
           legend: 'Legenda',
           loadError: 'Caricamento mappa relazioni non riuscito',
           generated: 'Grafico relazioni aggiornato',
+          graphTab: 'Grafico',
+          flowTab: 'Flusso',
+          flowNodeClick: 'Clicca un nodo per esplorare le email correlate',
         },
       },
       rules: {
@@ -2018,6 +2027,9 @@ const translations: Record<Locale, Translations> = {
           legend: 'Leyenda',
           loadError: 'Error al cargar el mapa de relaciones',
           generated: 'Gráfico de relaciones actualizado',
+          graphTab: 'Gráfico',
+          flowTab: 'Flujo',
+          flowNodeClick: 'Haz clic en un nodo para explorar correos relacionados',
         },
       },
       rules: {
@@ -2565,6 +2577,9 @@ const translations: Record<Locale, Translations> = {
           legend: 'Légende',
           loadError: 'Échec du chargement de la carte des relations',
           generated: 'Graphe de relations mis à jour',
+          graphTab: 'Graphe',
+          flowTab: 'Flux',
+          flowNodeClick: 'Cliquez sur un nœud pour explorer les e-mails associés',
         },
       },
       rules: {
@@ -3113,6 +3128,9 @@ const translations: Record<Locale, Translations> = {
           legend: 'Legende',
           loadError: 'Beziehungskarte konnte nicht geladen werden',
           generated: 'Beziehungsgraph aktualisiert',
+          graphTab: 'Graph',
+          flowTab: 'Fluss',
+          flowNodeClick: 'Klicken Sie auf einen Knoten, um zugehörige E-Mails zu erkunden',
         },
       },
       rules: {

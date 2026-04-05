@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
@@ -11,6 +12,7 @@ import {
   RelationGraphFullPageContent,
   useRelationGraph,
 } from '@/components/dashboard/RelationGraph';
+import { RelationFlowChart } from '@/components/dashboard/RelationFlowChart';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   Dialog,
@@ -20,7 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
-import { Maximize2, RefreshCw } from 'lucide-react';
+import { Maximize2, RefreshCw, Share2, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EntityGraphNodeCategory } from '@/types';
 
@@ -36,6 +38,8 @@ export function RelationsTab() {
   useEffect(() => {
     fetchGraph();
   }, [fetchGraph]);
+
+  const [activeSubTab, setActiveSubTab] = useState<'graph' | 'flow'>('graph');
 
   const [modalChip, setModalChip] = useState<{
     value: string;
@@ -72,6 +76,19 @@ export function RelationsTab() {
     tags: k.tags,
   };
 
+  const flowTranslations = {
+    legend: k.relations.legend,
+    topics: k.topics,
+    people: k.people,
+    organizations: k.organizations,
+    places: k.places,
+    events: k.events,
+    tags: k.tags,
+    flowNodeClick: k.relations.flowNodeClick,
+    noGraph: k.relations.noGraph,
+    noGraphDesc: k.relations.noGraphDesc,
+  };
+
   const isEmpty = graph && graph.nodes.length === 0;
 
   return (
@@ -89,7 +106,7 @@ export function RelationsTab() {
             </div>
             {/* Mobile-only icon buttons – hidden on sm+ (toolbar handles those) */}
             <div className="sm:hidden flex items-center gap-1.5 shrink-0">
-              {graph && !isEmpty && (
+              {activeSubTab === 'graph' && graph && !isEmpty && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -114,16 +131,44 @@ export function RelationsTab() {
           </div>
         </CardHeader>
 
-        <CardContent>
-          <RelationGraph
-            graph={graph}
-            loading={authLoading || loading || !hasFetched}
-            generating={generating}
-            onGenerate={generateGraph}
-            onNodeClick={handleNodeClick}
-            onExpandFullPage={() => setFullPageGraphOpen(true)}
-            translations={graphTranslations}
-          />
+        <CardContent className="space-y-0 p-2">
+          <Tabs
+            value={activeSubTab}
+            onValueChange={(v) => setActiveSubTab(v as 'graph' | 'flow')}
+          >
+            <TabsList>
+              <TabsTrigger value="graph" className="inline-flex items-center gap-1.5">
+                <Share2 className="h-3.5 w-3.5" />
+                {k.relations.graphTab}
+              </TabsTrigger>
+              <TabsTrigger value="flow" className="inline-flex items-center gap-1.5">
+                <Workflow className="h-3.5 w-3.5" />
+                {k.relations.flowTab}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="graph" className="pt-4">
+              <RelationGraph
+                graph={graph}
+                loading={authLoading || loading || !hasFetched}
+                generating={generating}
+                onGenerate={generateGraph}
+                onNodeClick={handleNodeClick}
+                onExpandFullPage={() => setFullPageGraphOpen(true)}
+                translations={graphTranslations}
+              />
+            </TabsContent>
+
+            <TabsContent value="flow" className="pt-4">
+              <RelationFlowChart
+                graph={graph}
+                loading={authLoading || loading || !hasFetched}
+                generating={generating}
+                onNodeClick={handleNodeClick}
+                translations={flowTranslations}
+              />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -183,3 +228,4 @@ export function RelationsTab() {
     </>
   );
 }
+
