@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -11,27 +11,29 @@ import {
   Controls,
   Handle,
   Position,
-  Panel,
   type Node,
   type Edge,
   type NodeProps,
   type NodeTypes,
 } from '@xyflow/react';
-import { Share2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import { AlertCircle, Eye, EyeOff, RefreshCw, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
+import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/Button';
+import type { EntityFlowGraph, EntityGraphNodeCategory } from '@/types';
 import { CATEGORY_COLORS } from './RelationGraph';
 
 // ---------------------------------------------------------------------------
 // Node size constants per category shape
 // ---------------------------------------------------------------------------
 const NODE_DIMS: Record<EntityGraphNodeCategory, { w: number; h: number }> = {
-  people: { w: 68, h: 68 },         // circle
-  organizations: { w: 130, h: 44 }, // rectangle
-  places: { w: 90, h: 78 },         // hexagon
-  events: { w: 84, h: 62 },         // diamond
-  topics: { w: 110, h: 38 },        // pill
-  tags: { w: 90, h: 32 },           // tag/pill (small)
+  people: { w: 72, h: 72 },
+  organizations: { w: 130, h: 44 },
+  places: { w: 92, h: 80 },
+  events: { w: 88, h: 64 },
+  topics: { w: 110, h: 38 },
+  tags: { w: 90, h: 32 },
 };
 
 // ---------------------------------------------------------------------------
@@ -41,12 +43,11 @@ type FlowNodeData = {
   label: string;
   category: EntityGraphNodeCategory;
   count: number;
+  bucketLabel: string;
+  bucketIndex: number;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
 };
 
-// ---------------------------------------------------------------------------
-// Shared handle styles (invisible – connections are visible via edges)
-// ---------------------------------------------------------------------------
 const HANDLE_STYLE: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
@@ -54,9 +55,6 @@ const HANDLE_STYLE: React.CSSProperties = {
   height: 8,
 };
 
-// ---------------------------------------------------------------------------
-// Helper: entity label text style
-// ---------------------------------------------------------------------------
 function LabelText({
   label,
   color,
@@ -89,13 +87,14 @@ function LabelText({
 }
 
 // ---------------------------------------------------------------------------
-// PeopleNode — circle
+// Node shapes
 // ---------------------------------------------------------------------------
 function PeopleNode({ data }: NodeProps & { data: FlowNodeData }) {
   const color = CATEGORY_COLORS['people'];
   const { w, h } = NODE_DIMS['people'];
   return (
     <div
+      title={data.bucketLabel}
       onClick={() => data.onNodeClick(data.label, 'people')}
       style={{
         width: w,
@@ -118,14 +117,12 @@ function PeopleNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// OrgNode — rounded rectangle
-// ---------------------------------------------------------------------------
 function OrgNode({ data }: NodeProps & { data: FlowNodeData }) {
   const color = CATEGORY_COLORS['organizations'];
   const { w, h } = NODE_DIMS['organizations'];
   return (
     <div
+      title={data.bucketLabel}
       onClick={() => data.onNodeClick(data.label, 'organizations')}
       style={{
         width: w,
@@ -148,9 +145,6 @@ function OrgNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// PlaceNode — hexagon (SVG-based)
-// ---------------------------------------------------------------------------
 function PlaceNode({ data }: NodeProps & { data: FlowNodeData }) {
   const color = CATEGORY_COLORS['places'];
   const { w, h } = NODE_DIMS['places'];
@@ -158,20 +152,15 @@ function PlaceNode({ data }: NodeProps & { data: FlowNodeData }) {
   const cy = h / 2;
   const rx = w / 2 - 1;
   const ry = h / 2 - 1;
-  // Flat-top hexagon points
-  const pts = [
-    [cx + rx * Math.cos((Math.PI / 180) * 30), cy + ry * Math.sin((Math.PI / 180) * 30)],
-    [cx + rx * Math.cos((Math.PI / 180) * 90), cy + ry * Math.sin((Math.PI / 180) * 90)],
-    [cx + rx * Math.cos((Math.PI / 180) * 150), cy + ry * Math.sin((Math.PI / 180) * 150)],
-    [cx + rx * Math.cos((Math.PI / 180) * 210), cy + ry * Math.sin((Math.PI / 180) * 210)],
-    [cx + rx * Math.cos((Math.PI / 180) * 270), cy + ry * Math.sin((Math.PI / 180) * 270)],
-    [cx + rx * Math.cos((Math.PI / 180) * 330), cy + ry * Math.sin((Math.PI / 180) * 330)],
-  ]
-    .map((p) => p.join(','))
+  const pts = [0, 60, 120, 180, 240, 300]
+    .map((deg) => {
+      const rad = (deg * Math.PI) / 180;
+      return `${cx + rx * Math.cos(rad)},${cy + ry * Math.sin(rad)}`;
+    })
     .join(' ');
-
   return (
     <div
+      title={data.bucketLabel}
       onClick={() => data.onNodeClick(data.label, 'places')}
       style={{ width: w, height: h, position: 'relative', cursor: 'pointer' }}
     >
@@ -207,16 +196,13 @@ function PlaceNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// EventNode — diamond (SVG-based)
-// ---------------------------------------------------------------------------
 function EventNode({ data }: NodeProps & { data: FlowNodeData }) {
   const color = CATEGORY_COLORS['events'];
   const { w, h } = NODE_DIMS['events'];
   const points = `${w / 2},2 ${w - 2},${h / 2} ${w / 2},${h - 2} 2,${h / 2}`;
-
   return (
     <div
+      title={data.bucketLabel}
       onClick={() => data.onNodeClick(data.label, 'events')}
       style={{ width: w, height: h, position: 'relative', cursor: 'pointer' }}
     >
@@ -252,14 +238,12 @@ function EventNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// TopicNode — pill / ellipse
-// ---------------------------------------------------------------------------
 function TopicNode({ data }: NodeProps & { data: FlowNodeData }) {
   const color = CATEGORY_COLORS['topics'];
   const { w, h } = NODE_DIMS['topics'];
   return (
     <div
+      title={data.bucketLabel}
       onClick={() => data.onNodeClick(data.label, 'topics')}
       style={{
         width: w,
@@ -282,14 +266,12 @@ function TopicNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// TagNode — small rounded pill
-// ---------------------------------------------------------------------------
 function TagNode({ data }: NodeProps & { data: FlowNodeData }) {
   const color = CATEGORY_COLORS['tags'];
   const { w, h } = NODE_DIMS['tags'];
   return (
     <div
+      title={data.bucketLabel}
       onClick={() => data.onNodeClick(data.label, 'tags')}
       style={{
         width: w,
@@ -312,20 +294,17 @@ function TagNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Node types registry
-// ---------------------------------------------------------------------------
 const NODE_TYPES: NodeTypes = {
-  people: PeopleNode,
-  organizations: OrgNode,
-  places: PlaceNode,
-  events: EventNode,
-  topics: TopicNode,
-  tags: TagNode,
+  people: PeopleNode as unknown as NodeTypes[string],
+  organizations: OrgNode as unknown as NodeTypes[string],
+  places: PlaceNode as unknown as NodeTypes[string],
+  events: EventNode as unknown as NodeTypes[string],
+  topics: TopicNode as unknown as NodeTypes[string],
+  tags: TagNode as unknown as NodeTypes[string],
 };
 
 // ---------------------------------------------------------------------------
-// ELK layout helper
+// ELK layout: USER_DEFINED layering — bucketIndex drives the Y layer
 // ---------------------------------------------------------------------------
 async function computeElkLayout(
   rawNodes: Node[],
@@ -339,9 +318,9 @@ async function computeElkLayout(
   const visibleNodes = rawNodes.filter(
     (n) => !hiddenCategories.has(n.data?.category as EntityGraphNodeCategory),
   );
-  const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
+  const visibleIds = new Set(visibleNodes.map((n) => n.id));
   const visibleEdges = rawEdges.filter(
-    (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target),
+    (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
   );
 
   const elkGraph = {
@@ -349,14 +328,24 @@ async function computeElkLayout(
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
-      'elk.spacing.nodeNode': '60',
-      'elk.layered.nodePlacement.strategy': 'SIMPLE',
+      'elk.layered.layering.strategy': 'USER_DEFINED',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '90',
+      'elk.spacing.nodeNode': '55',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.edgeRouting': 'SPLINES',
     },
     children: visibleNodes.map((n) => {
       const cat = n.data?.category as EntityGraphNodeCategory;
       const dims = NODE_DIMS[cat] ?? { w: 100, h: 40 };
-      return { id: n.id, width: dims.w, height: dims.h };
+      const bucketIndex = (n.data?.bucketIndex as number) ?? 0;
+      return {
+        id: n.id,
+        width: dims.w,
+        height: dims.h,
+        layoutOptions: {
+          'elk.layered.layering.userDefinedNode.layer': String(bucketIndex),
+        },
+      };
     }),
     edges: visibleEdges.map((e) => ({
       id: e.id,
@@ -370,7 +359,6 @@ async function computeElkLayout(
   return rawNodes.map((n) => {
     const child = layout.children?.find((c) => c.id === n.id);
     if (!child) {
-      // Hidden node — place off-screen
       return { ...n, position: { x: -9999, y: -9999 }, hidden: true };
     }
     return {
@@ -382,7 +370,7 @@ async function computeElkLayout(
 }
 
 // ---------------------------------------------------------------------------
-// Legend item
+// Legend item (matches RelationGraph style)
 // ---------------------------------------------------------------------------
 function FlowLegendItem({
   color,
@@ -431,48 +419,26 @@ function FlowSkeleton() {
       className="flex items-center justify-center h-[500px] rounded-2xl animate-pulse"
       style={{ backgroundColor: 'var(--surface-muted)' }}
     >
-      <Share2 className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
+      <Workflow className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Inner flow component (needs to be inside ReactFlowProvider)
+// Inner ReactFlow canvas (must be inside ReactFlowProvider)
 // ---------------------------------------------------------------------------
 interface RelationFlowInnerProps {
-  graph: EntityRelationGraph;
+  graph: EntityFlowGraph;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
-  translations: {
-    legend: string;
-    topics: string;
-    people: string;
-    organizations: string;
-    places: string;
-    events: string;
-    tags: string;
-    flowNodeClick: string;
-  };
+  hiddenCategories: Set<EntityGraphNodeCategory>;
 }
 
-function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlowInnerProps) {
+function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlowInnerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [layouting, setLayouting] = useState(true);
+  const prevGraphRef = useRef<EntityFlowGraph | null>(null);
 
-  const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
-    () => new Set<EntityGraphNodeCategory>(['tags']),
-  );
-
-  const toggleCategory = useCallback((cat: EntityGraphNodeCategory) => {
-    setHiddenCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      return next;
-    });
-  }, []);
-
-  // Build raw nodes/edges from graph data (memoized to avoid unnecessary ELK re-runs)
   const rawNodes: Node[] = useMemo(
     () =>
       graph.nodes.map((n) => ({
@@ -483,6 +449,8 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
           label: n.label,
           category: n.category,
           count: n.count,
+          bucketLabel: n.bucketLabel,
+          bucketIndex: n.bucketIndex,
           onNodeClick,
         },
       })),
@@ -497,37 +465,37 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
       target: e.target,
       type: 'smoothstep',
       style: {
-        strokeWidth: 0.8 + (e.weight / maxWeight) * 2,
+        strokeWidth: 0.8 + (e.weight / maxWeight) * 2.5,
         stroke: '#475569',
-        opacity: 0.55,
+        opacity: 0.5,
       },
       animated: false,
     }));
   }, [graph.edges]);
 
-  // Run ELK layout whenever graph data or hidden categories change
   useEffect(() => {
+    const graphChanged = prevGraphRef.current !== graph;
+    prevGraphRef.current = graph;
     if (rawNodes.length === 0) {
       setLayouting(false);
       return;
     }
-    setLayouting(true);
+    if (graphChanged) setLayouting(true);
     computeElkLayout(rawNodes, rawEdges, hiddenCategories)
       .then((positioned) => {
         setNodes(positioned);
         setEdges(rawEdges);
       })
       .catch(() => {
-        // Fallback: simple grid positioning
         const positioned = rawNodes.map((n, i) => ({
           ...n,
-          position: { x: (i % 5) * 160, y: Math.floor(i / 5) * 100 },
+          position: { x: (i % 5) * 160, y: Math.floor(i / 5) * 110 },
         }));
         setNodes(positioned);
         setEdges(rawEdges);
       })
       .finally(() => setLayouting(false));
-  }, [rawNodes, rawEdges, hiddenCategories, setNodes, setEdges]);
+  }, [rawNodes, rawEdges, hiddenCategories, setNodes, setEdges, graph]);
 
   const isDark =
     typeof document !== 'undefined' &&
@@ -537,7 +505,7 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
     <div className="relative h-full w-full">
       {layouting && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 dark:bg-gray-900/60">
-          <Share2 className="h-10 w-10 opacity-20 animate-pulse text-gray-600 dark:text-white" />
+          <Workflow className="h-10 w-10 opacity-20 animate-pulse text-gray-600 dark:text-white" />
         </div>
       )}
       <ReactFlow
@@ -549,10 +517,7 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
         fitView
         fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: false }}
-        style={{
-          background: 'transparent',
-          borderRadius: '1rem',
-        }}
+        style={{ background: 'transparent', borderRadius: '1rem' }}
         nodesDraggable={true}
         nodesConnectable={false}
         elementsSelectable={true}
@@ -574,30 +539,6 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
             borderRadius: 8,
           }}
         />
-        <Panel position="bottom-left" style={{ margin: 12 }}>
-          <div
-            className="space-y-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 px-3 py-2.5 backdrop-blur-sm"
-            style={{ minWidth: 140 }}
-          >
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              {tr.legend}
-            </p>
-            <div className="flex flex-col gap-1">
-              {(Object.keys(CATEGORY_COLORS) as EntityGraphNodeCategory[]).map((cat) => (
-                <FlowLegendItem
-                  key={cat}
-                  color={CATEGORY_COLORS[cat]}
-                  label={tr[cat]}
-                  active={!hiddenCategories.has(cat)}
-                  onClick={() => toggleCategory(cat)}
-                />
-              ))}
-            </div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 pt-1 border-t border-gray-100 dark:border-gray-800">
-              {tr.flowNodeClick}
-            </p>
-          </div>
-        </Panel>
       </ReactFlow>
     </div>
   );
@@ -607,9 +548,10 @@ function RelationFlowInner({ graph, onNodeClick, translations: tr }: RelationFlo
 // Public component
 // ---------------------------------------------------------------------------
 export interface RelationFlowChartProps {
-  graph: EntityRelationGraph | null;
+  graph: EntityFlowGraph | null;
   loading: boolean;
   generating: boolean;
+  onGenerate: () => void;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   translations: {
     legend: string;
@@ -620,8 +562,13 @@ export interface RelationFlowChartProps {
     events: string;
     tags: string;
     flowNodeClick: string;
-    noGraph: string;
-    noGraphDesc: string;
+    flowNoGraph: string;
+    flowNoGraphDesc: string;
+    flowGenerate: string;
+    flowGenerating: string;
+    flowRegenerate: string;
+    flowGeneratedOn: string;
+    flowTotalEmails: string;
   };
 }
 
@@ -629,43 +576,191 @@ export function RelationFlowChart({
   graph,
   loading,
   generating,
+  onGenerate,
   onNodeClick,
   translations: tr,
 }: RelationFlowChartProps) {
   const isEmpty = graph && graph.nodes.length === 0;
+  const isResolvingInitialState = loading && !graph && !generating;
+  const formattedDate = graph?.generatedAt ? new Date(graph.generatedAt).toLocaleString() : null;
 
-  if (loading) return <FlowSkeleton />;
+  const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
+    () => new Set<EntityGraphNodeCategory>(['tags']),
+  );
 
-  if (!graph && !generating) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-16 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-        <Share2 className="h-12 w-12 text-gray-300 dark:text-gray-600" />
-        <div className="text-center">
-          <p className="text-base font-medium text-gray-600 dark:text-gray-400">{tr.noGraph}</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-xs mx-auto">
-            {tr.noGraphDesc}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (generating && !graph) return <FlowSkeleton />;
-
-  if (isEmpty) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 py-12 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-        <AlertCircle className="h-10 w-10 text-gray-300 dark:text-gray-600" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tr.noGraph}</p>
-      </div>
-    );
-  }
+  const toggleCategory = useCallback((cat: EntityGraphNodeCategory) => {
+    setHiddenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }, []);
 
   return (
-    <div className="h-[calc(50vh-120px)] sm:h-[500px]">
-      <ReactFlowProvider>
-        <RelationFlowInner graph={graph!} onNodeClick={onNodeClick} translations={tr} />
-      </ReactFlowProvider>
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          {graph && !isEmpty && formattedDate && (
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {tr.flowGeneratedOn.replace('{date}', formattedDate)}
+              {' · '}
+              {tr.flowTotalEmails.replace('{count}', String(graph.totalEmails))}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {isResolvingInitialState ? (
+            <div
+              className="h-9 w-36 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse"
+              aria-label="Loading flow actions"
+            />
+          ) : (
+            <Button
+              onClick={onGenerate}
+              disabled={generating}
+              size="sm"
+              variant={graph ? 'ghost' : 'primary'}
+            >
+              <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
+              {generating ? tr.flowGenerating : graph ? tr.flowRegenerate : tr.flowGenerate}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Flow area */}
+      {loading && <FlowSkeleton />}
+
+      {!loading && !graph && !generating && (
+        <div className="flex flex-col items-center justify-center gap-4 py-16 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+          <Workflow className="h-12 w-12 text-gray-300 dark:text-gray-600" />
+          <div className="text-center">
+            <p className="text-base font-medium text-gray-600 dark:text-gray-400">
+              {tr.flowNoGraph}
+            </p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1 max-w-xs mx-auto">
+              {tr.flowNoGraphDesc}
+            </p>
+          </div>
+          <Button
+            onClick={onGenerate}
+            className="bg-[#efd957] hover:bg-[#e8cf3c] text-black border-0"
+          >
+            <Workflow className="h-4 w-4" />
+            {tr.flowGenerate}
+          </Button>
+        </div>
+      )}
+
+      {!loading && generating && !graph && <FlowSkeleton />}
+
+      {!loading && graph && isEmpty && (
+        <div className="flex flex-col items-center justify-center gap-3 py-12 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+          <AlertCircle className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">{tr.flowNoGraph}</p>
+        </div>
+      )}
+
+      {!loading && graph && !isEmpty && (
+        <>
+          {/* Canvas */}
+          <div className="h-[calc(50vh-120px)] sm:h-[500px]">
+            <ReactFlowProvider>
+              <RelationFlowInner
+                graph={graph}
+                onNodeClick={onNodeClick}
+                hiddenCategories={hiddenCategories}
+              />
+            </ReactFlowProvider>
+          </div>
+
+          {/* Legend — below the chart, not inside the canvas */}
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {tr.legend}
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {(Object.keys(CATEGORY_COLORS) as EntityGraphNodeCategory[]).map((cat) => (
+                  <FlowLegendItem
+                    key={cat}
+                    color={CATEGORY_COLORS[cat]}
+                    label={tr[cat]}
+                    active={!hiddenCategories.has(cat)}
+                    onClick={() => toggleCategory(cat)}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <span className="text-xs text-gray-400 dark:text-gray-500">{tr.flowNodeClick}</span>
+              {graph.buckets && graph.buckets.length > 0 && (
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {graph.buckets[0].label} → {graph.buckets[graph.buckets.length - 1].label}
+                </span>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// useFlowGraph hook — dedicated hook for the date-based flow API
+// ---------------------------------------------------------------------------
+export function useFlowGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
+  const { t } = useI18n();
+  const [graph, setGraph] = useState<EntityFlowGraph | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    if (firebaseUser) setHasFetched(false);
+  }, [firebaseUser]);
+
+  const fetchGraph = useCallback(async () => {
+    if (!firebaseUser) return;
+    setLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/entities/flow', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
+      const json = (await res.json()) as { graph: EntityFlowGraph | null };
+      setGraph(json.graph);
+    } catch {
+      toast.error(t.dashboard.knowledge.relations.flowLoadError);
+    } finally {
+      setLoading(false);
+      setHasFetched(true);
+    }
+  }, [firebaseUser, t]);
+
+  const generateGraph = useCallback(async () => {
+    if (!firebaseUser) return;
+    setGenerating(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/entities/flow', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to generate');
+      const json = (await res.json()) as { graph: EntityFlowGraph };
+      setGraph(json.graph);
+      toast.success(t.dashboard.knowledge.relations.flowGenerated);
+    } catch {
+      toast.error(t.dashboard.knowledge.relations.flowError);
+    } finally {
+      setGenerating(false);
+    }
+  }, [firebaseUser, t]);
+
+  return { graph, hasFetched, loading, generating, fetchGraph, generateGraph };
 }

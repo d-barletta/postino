@@ -284,6 +284,37 @@ export interface EntityRelationGraph {
   totalEmails: number;
 }
 
+/** A node in the date-based entity flow graph. */
+export interface FlowGraphNode {
+  id: string;
+  label: string;
+  category: EntityGraphNodeCategory;
+  /** Total occurrences across all time buckets. */
+  count: number;
+  /** 0 = most recent bucket, increasing = older buckets. */
+  bucketIndex: number;
+  /** Human-readable label for the bucket, e.g. "Mar 2025". */
+  bucketLabel: string;
+}
+
+/** Time bucket metadata in the flow graph. */
+export interface FlowGraphBucket {
+  index: number;
+  label: string;
+  /** ISO date of the bucket start (oldest email in that bucket). */
+  startDate: string;
+}
+
+/** Date-ordered entity flow graph built from temporal email co-occurrences. */
+export interface EntityFlowGraph {
+  nodes: FlowGraphNode[];
+  edges: EntityGraphEdge[];
+  buckets: FlowGraphBucket[];
+  /** ISO date string of when the graph was last generated. */
+  generatedAt: string;
+  totalEmails: number;
+}
+
 /**
  * Represents a user-defined merge of two or more entity values into a single
  * canonical name.  All `aliases` (including the canonical itself) are treated

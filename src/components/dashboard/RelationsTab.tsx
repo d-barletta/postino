@@ -12,7 +12,10 @@ import {
   RelationGraphFullPageContent,
   useRelationGraph,
 } from '@/components/dashboard/RelationGraph';
-import { RelationFlowChart } from '@/components/dashboard/RelationFlowChart';
+import {
+  RelationFlowChart,
+  useFlowGraph,
+} from '@/components/dashboard/RelationFlowChart';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   Dialog,
@@ -34,10 +37,23 @@ export function RelationsTab() {
   const { graph, hasFetched, loading, generating, fetchGraph, generateGraph } =
     useRelationGraph(firebaseUser);
 
-  // Load any previously-generated (cached) graph on first render
+  const {
+    graph: flowGraph,
+    hasFetched: flowHasFetched,
+    loading: flowLoading,
+    generating: flowGenerating,
+    fetchGraph: fetchFlowGraph,
+    generateGraph: generateFlowGraph,
+  } = useFlowGraph(firebaseUser);
+
+  // Load cached graphs on first render
   useEffect(() => {
     fetchGraph();
   }, [fetchGraph]);
+
+  useEffect(() => {
+    fetchFlowGraph();
+  }, [fetchFlowGraph]);
 
   const [activeSubTab, setActiveSubTab] = useState<'graph' | 'flow'>('graph');
 
@@ -85,8 +101,13 @@ export function RelationsTab() {
     events: k.events,
     tags: k.tags,
     flowNodeClick: k.relations.flowNodeClick,
-    noGraph: k.relations.noGraph,
-    noGraphDesc: k.relations.noGraphDesc,
+    flowNoGraph: k.relations.flowNoGraph,
+    flowNoGraphDesc: k.relations.flowNoGraphDesc,
+    flowGenerate: k.relations.flowGenerate,
+    flowGenerating: k.relations.flowGenerating,
+    flowRegenerate: k.relations.flowRegenerate,
+    flowGeneratedOn: k.relations.flowGeneratedOn,
+    flowTotalEmails: k.relations.flowTotalEmails,
   };
 
   const isEmpty = graph && graph.nodes.length === 0;
@@ -116,7 +137,7 @@ export function RelationsTab() {
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               )}
-              {hasFetched && (
+              {activeSubTab === 'graph' && hasFetched && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -161,9 +182,10 @@ export function RelationsTab() {
 
             <TabsContent value="flow" className="pt-4">
               <RelationFlowChart
-                graph={graph}
-                loading={authLoading || loading || !hasFetched}
-                generating={generating}
+                graph={flowGraph}
+                loading={authLoading || flowLoading || !flowHasFetched}
+                generating={flowGenerating}
+                onGenerate={generateFlowGraph}
                 onNodeClick={handleNodeClick}
                 translations={flowTranslations}
               />
@@ -172,7 +194,7 @@ export function RelationsTab() {
         </CardContent>
       </Card>
 
-      {/* Full-page graph dialog */}
+      {/* Full-page graph dialog (Graph sub-tab only) */}
       <Dialog
         open={fullPageGraphOpen}
         onOpenChange={(o) => {
