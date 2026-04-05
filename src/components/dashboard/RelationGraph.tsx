@@ -567,8 +567,8 @@ export function RelationGraph({
 
       {!loading && graph && !isEmpty && (
         <>
-          {/* Cytoscape container — 50 vh on mobile, 500 px on sm+ */}
-          <div className="h-[50vh] sm:h-[500px]">
+          {/* Cytoscape container — calc(50vh - 120px) on mobile, 500 px on sm+ */}
+          <div className="h-[calc(50vh-120px)] sm:h-[500px]">
             <CytoscapeCanvas
               graph={graph}
               onNodeClick={onNodeClick}
@@ -606,16 +606,67 @@ export function RelationGraph({
 }
 
 // ---------------------------------------------------------------------------
-// Full-page graph dialog content (canvas only, used inside RelationsTab dialog)
+// Full-page graph dialog content (canvas + legend, used inside RelationsTab dialog)
 // ---------------------------------------------------------------------------
 export function RelationGraphFullPageContent({
   graph,
   onNodeClick,
+  translations: tr,
 }: {
   graph: EntityRelationGraph;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
+  translations: Pick<
+    RelationGraphProps['translations'],
+    'legend' | 'nodeClickHint' | 'nodeClickHint2' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
+  >;
 }) {
-  return <CytoscapeCanvas graph={graph} onNodeClick={onNodeClick} />;
+  const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
+    () => new Set<EntityGraphNodeCategory>(['tags']),
+  );
+
+  const toggleCategory = useCallback((cat: EntityGraphNodeCategory) => {
+    setHiddenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) {
+        next.delete(cat);
+      } else {
+        next.add(cat);
+      }
+      return next;
+    });
+  }, []);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 min-h-0">
+        <CytoscapeCanvas graph={graph} onNodeClick={onNodeClick} hiddenCategories={hiddenCategories} />
+      </div>
+      <div className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              {tr.legend}
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              {(Object.keys(CATEGORY_COLORS) as EntityGraphNodeCategory[]).map((cat) => (
+                <LegendItem
+                  key={cat}
+                  color={CATEGORY_COLORS[cat]}
+                  label={tr[cat]}
+                  active={!hiddenCategories.has(cat)}
+                  onClick={() => toggleCategory(cat)}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className="text-xs text-gray-400 dark:text-gray-500">{tr.nodeClickHint}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{tr.nodeClickHint2}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
