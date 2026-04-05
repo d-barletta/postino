@@ -142,7 +142,11 @@ export function RelationsTab() {
         >
           <div className="flex-1 min-h-0">
             {graph && graph.nodes.length > 0 && (
-              <RelationGraphFullPageContent graph={graph} onNodeClick={handleNodeClick} />
+              <RelationGraphFullPageContent
+                graph={graph}
+                onNodeClick={handleNodeClick}
+                translations={graphTranslations}
+              />
             )}
           </div>
           <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
