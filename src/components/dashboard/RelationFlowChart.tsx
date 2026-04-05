@@ -560,7 +560,7 @@ export interface RelationFlowChartProps {
     flowRegenerate: string;
     flowGeneratedOn: string;
     flowTotalEmails: string;
-    expandFullPage?: string;
+    expandFullPage: string;
   };
 }
 
