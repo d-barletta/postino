@@ -373,6 +373,19 @@ export interface Translations {
         legend: string;
         loadError: string;
         generated: string;
+        graphTab: string;
+        flowTab: string;
+        flowNodeClick: string;
+        flowGenerate: string;
+        flowGenerating: string;
+        flowRegenerate: string;
+        flowNoGraph: string;
+        flowNoGraphDesc: string;
+        flowError: string;
+        flowLoadError: string;
+        flowGenerated: string;
+        flowGeneratedOn: string;
+        flowTotalEmails: string;
       };
     };
     rules: {
@@ -922,6 +935,20 @@ const translations: Record<Locale, Translations> = {
           legend: 'Legend',
           loadError: 'Failed to load relation map',
           generated: 'Relation graph updated',
+          graphTab: 'Graph',
+          flowTab: 'Flow',
+          flowNodeClick: 'Click a node to explore related emails',
+          flowGenerate: 'Generate Flow',
+          flowGenerating: 'Generating…',
+          flowRegenerate: 'Regenerate Flow',
+          flowNoGraph: 'No flow chart yet',
+          flowNoGraphDesc:
+            'Click "Generate Flow" to visualize how entities evolved over time in your emails.',
+          flowError: 'Failed to generate flow chart',
+          flowLoadError: 'Failed to load flow chart',
+          flowGenerated: 'Flow chart updated',
+          flowGeneratedOn: 'Generated on {date}',
+          flowTotalEmails: 'Based on {count} emails',
         },
       },
       rules: {
@@ -1471,6 +1498,20 @@ const translations: Record<Locale, Translations> = {
           legend: 'Legenda',
           loadError: 'Caricamento mappa relazioni non riuscito',
           generated: 'Grafico relazioni aggiornato',
+          graphTab: 'Grafico',
+          flowTab: 'Flusso',
+          flowNodeClick: 'Clicca un nodo per esplorare le email correlate',
+          flowGenerate: 'Genera flusso',
+          flowGenerating: 'Generazione…',
+          flowRegenerate: 'Rigenera flusso',
+          flowNoGraph: 'Nessun diagramma di flusso',
+          flowNoGraphDesc:
+            'Clicca "Genera flusso" per visualizzare come le entità si sono evolute nel tempo.',
+          flowError: 'Generazione del diagramma di flusso non riuscita',
+          flowLoadError: 'Caricamento del diagramma di flusso non riuscito',
+          flowGenerated: 'Diagramma di flusso aggiornato',
+          flowGeneratedOn: 'Generato il {date}',
+          flowTotalEmails: 'Basato su {count} email',
         },
       },
       rules: {
@@ -2018,6 +2059,20 @@ const translations: Record<Locale, Translations> = {
           legend: 'Leyenda',
           loadError: 'Error al cargar el mapa de relaciones',
           generated: 'Gráfico de relaciones actualizado',
+          graphTab: 'Gráfico',
+          flowTab: 'Flujo',
+          flowNodeClick: 'Haz clic en un nodo para explorar correos relacionados',
+          flowGenerate: 'Generar flujo',
+          flowGenerating: 'Generando…',
+          flowRegenerate: 'Regenerar flujo',
+          flowNoGraph: 'Sin diagrama de flujo',
+          flowNoGraphDesc:
+            'Haz clic en "Generar flujo" para visualizar cómo evolucionaron las entidades en tus correos.',
+          flowError: 'Error al generar el diagrama de flujo',
+          flowLoadError: 'Error al cargar el diagrama de flujo',
+          flowGenerated: 'Diagrama de flujo actualizado',
+          flowGeneratedOn: 'Generado el {date}',
+          flowTotalEmails: 'Basado en {count} correos',
         },
       },
       rules: {
@@ -2565,6 +2620,20 @@ const translations: Record<Locale, Translations> = {
           legend: 'Légende',
           loadError: 'Échec du chargement de la carte des relations',
           generated: 'Graphe de relations mis à jour',
+          graphTab: 'Graphe',
+          flowTab: 'Flux',
+          flowNodeClick: 'Cliquez sur un nœud pour explorer les e-mails associés',
+          flowGenerate: 'Générer le flux',
+          flowGenerating: 'Génération…',
+          flowRegenerate: 'Régénérer le flux',
+          flowNoGraph: 'Aucun diagramme de flux',
+          flowNoGraphDesc:
+            'Cliquez sur "Générer le flux" pour visualiser l\'évolution des entités dans le temps.',
+          flowError: 'Échec de la génération du diagramme de flux',
+          flowLoadError: 'Échec du chargement du diagramme de flux',
+          flowGenerated: 'Diagramme de flux mis à jour',
+          flowGeneratedOn: 'Généré le {date}',
+          flowTotalEmails: 'Basé sur {count} e-mails',
         },
       },
       rules: {
@@ -3113,6 +3182,20 @@ const translations: Record<Locale, Translations> = {
           legend: 'Legende',
           loadError: 'Beziehungskarte konnte nicht geladen werden',
           generated: 'Beziehungsgraph aktualisiert',
+          graphTab: 'Graph',
+          flowTab: 'Fluss',
+          flowNodeClick: 'Klicken Sie auf einen Knoten, um zugehörige E-Mails zu erkunden',
+          flowGenerate: 'Fluss generieren',
+          flowGenerating: 'Generierung…',
+          flowRegenerate: 'Fluss neu generieren',
+          flowNoGraph: 'Kein Flussdiagramm vorhanden',
+          flowNoGraphDesc:
+            'Klicken Sie auf "Fluss generieren", um zu sehen, wie sich Entitäten über die Zeit entwickelt haben.',
+          flowError: 'Flussdiagramm konnte nicht generiert werden',
+          flowLoadError: 'Flussdiagramm konnte nicht geladen werden',
+          flowGenerated: 'Flussdiagramm aktualisiert',
+          flowGeneratedOn: 'Erstellt am {date}',
+          flowTotalEmails: 'Basierend auf {count} E-Mails',
         },
       },
       rules: {
