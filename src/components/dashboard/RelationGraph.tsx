@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import type cytoscape from 'cytoscape';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { RefreshCw, Share2, AlertCircle } from 'lucide-react';
+import { RefreshCw, Share2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import type { EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -70,18 +70,68 @@ function GraphSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
-// Legend item
+// Legend item – interactive toggle
 // ---------------------------------------------------------------------------
-function LegendItem({ color, label }: { color: string; label: string }) {
+function LegendItem({
+  color,
+  label,
+  active,
+  onClick,
+}: {
+  color: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div className="flex items-center gap-1.5">
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-1.5 rounded px-1 -mx-1 transition-opacity cursor-pointer select-none',
+        active ? 'opacity-100' : 'opacity-35',
+      )}
+      title={label}
+    >
       <span
         className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
-        style={{ backgroundColor: color, boxShadow: `0 0 5px ${color}` }}
+        style={{
+          backgroundColor: color,
+          boxShadow: active ? `0 0 5px ${color}` : undefined,
+        }}
       />
       <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-    </div>
+      {active ? (
+        <Eye className="h-3 w-3 text-gray-400 dark:text-gray-500" />
+      ) : (
+        <EyeOff className="h-3 w-3 text-gray-400 dark:text-gray-500" />
+      )}
+    </button>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Apply hidden categories to a cytoscape instance
+// ---------------------------------------------------------------------------
+function applyHiddenCategories(
+  cy: cytoscape.Core,
+  hiddenCategories: Set<EntityGraphNodeCategory>,
+) {
+  cy.batch(() => {
+    cy.nodes().forEach((node) => {
+      const cat = node.data('category') as EntityGraphNodeCategory;
+      node.style('display', hiddenCategories.has(cat) ? 'none' : 'element');
+    });
+    cy.edges().forEach((edge) => {
+      const srcHidden = hiddenCategories.has(
+        edge.source().data('category') as EntityGraphNodeCategory,
+      );
+      const tgtHidden = hiddenCategories.has(
+        edge.target().data('category') as EntityGraphNodeCategory,
+      );
+      edge.style('display', srcHidden || tgtHidden ? 'none' : 'element');
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -90,12 +140,16 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 function CytoscapeCanvas({
   graph,
   onNodeClick,
+  hiddenCategories = new Set<EntityGraphNodeCategory>(),
 }: {
   graph: EntityRelationGraph;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
+  hiddenCategories?: Set<EntityGraphNodeCategory>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  const hiddenCategoriesRef = useRef(hiddenCategories);
+  hiddenCategoriesRef.current = hiddenCategories;
   const getLabelThemeColors = useCallback(() => {
     const container = containerRef.current;
     if (!container) {
@@ -364,11 +418,15 @@ function CytoscapeCanvas({
       });
 
       cy.on('layoutstop', () => {
-        if (!destroyed && !cy.destroyed()) cy.fit(undefined, 40);
+        if (!destroyed && !cy.destroyed()) {
+          cy.fit(undefined, 40);
+          applyHiddenCategories(cy, hiddenCategoriesRef.current);
+        }
       });
 
       cyRef.current = cy;
       applyLabelThemeToCy();
+      applyHiddenCategories(cy, hiddenCategoriesRef.current);
       return cy;
     };
 
@@ -385,6 +443,13 @@ function CytoscapeCanvas({
         .catch(() => {});
     };
   }, [graph, onNodeClick, applyLabelThemeToCy, getLabelThemeColors]);
+
+  // Apply hidden categories whenever the set changes (after cy is initialised)
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || cy.destroyed()) return;
+    applyHiddenCategories(cy, hiddenCategories);
+  }, [hiddenCategories]);
 
   return (
     <div
@@ -412,6 +477,23 @@ export function RelationGraph({
 
   const isEmpty = graph && graph.nodes.length === 0;
   const isResolvingInitialState = loading && !graph && !generating;
+
+  // Tags hidden by default; toggling a legend item shows/hides that category
+  const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
+    () => new Set<EntityGraphNodeCategory>(['tags']),
+  );
+
+  const toggleCategory = useCallback((cat: EntityGraphNodeCategory) => {
+    setHiddenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) {
+        next.delete(cat);
+      } else {
+        next.add(cat);
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -485,9 +567,13 @@ export function RelationGraph({
 
       {!loading && graph && !isEmpty && (
         <>
-          {/* Cytoscape container */}
-          <div style={{ height: 500 }}>
-            <CytoscapeCanvas graph={graph} onNodeClick={onNodeClick} />
+          {/* Cytoscape container — 50 vh on mobile, 500 px on sm+ */}
+          <div className="h-[50vh] sm:h-[500px]">
+            <CytoscapeCanvas
+              graph={graph}
+              onNodeClick={onNodeClick}
+              hiddenCategories={hiddenCategories}
+            />
           </div>
 
           {/* Legend + hint */}
@@ -498,7 +584,13 @@ export function RelationGraph({
               </p>
               <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                 {(Object.keys(CATEGORY_COLORS) as EntityGraphNodeCategory[]).map((cat) => (
-                  <LegendItem key={cat} color={CATEGORY_COLORS[cat]} label={tr[cat]} />
+                  <LegendItem
+                    key={cat}
+                    color={CATEGORY_COLORS[cat]}
+                    label={tr[cat]}
+                    active={!hiddenCategories.has(cat)}
+                    onClick={() => toggleCategory(cat)}
+                  />
                 ))}
               </div>
             </div>
