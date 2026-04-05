@@ -8,13 +8,17 @@ import {
   useEdgesState,
   Background,
   BackgroundVariant,
+  BaseEdge,
   Handle,
   Position,
   type Node,
   type Edge,
+  type EdgeProps,
   type NodeProps,
   type NodeTypes,
+  type EdgeTypes,
 } from '@xyflow/react';
+import type { ElkExtendedEdge, ElkEdgeSection } from 'elkjs';
 import { toast } from 'sonner';
 import { AlertCircle, Eye, EyeOff, Maximize2, RefreshCw, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -303,13 +307,79 @@ const NODE_TYPES: NodeTypes = {
 };
 
 // ---------------------------------------------------------------------------
+// Custom edge type — draws the path ELK calculated (section waypoints)
+// ---------------------------------------------------------------------------
+type ElkEdgeData = {
+  elkPath: string;
+  strokeWidth: number;
+  stroke: string;
+  opacity: number;
+};
+
+function ElkEdge({ data, markerEnd, style }: EdgeProps & { data: ElkEdgeData }) {
+  const d = data?.elkPath ?? '';
+  return (
+    <BaseEdge
+      path={d}
+      markerEnd={markerEnd}
+      style={{
+        strokeWidth: data?.strokeWidth ?? 1,
+        stroke: data?.stroke ?? '#475569',
+        opacity: data?.opacity ?? 0.5,
+        ...style,
+      }}
+    />
+  );
+}
+
+const EDGE_TYPES: EdgeTypes = {
+  elk: ElkEdge as unknown as EdgeTypes[string],
+};
+
+// ---------------------------------------------------------------------------
+// Build an SVG path string from ELK edge sections
+// ---------------------------------------------------------------------------
+type ElkPoint = { x: number; y: number };
+
+function elkSectionsToPath(sections: ElkEdgeSection[]): string {
+  if (!sections || sections.length === 0) return '';
+  const points: ElkPoint[] = [];
+  for (const sec of sections) {
+    if (points.length === 0) points.push(sec.startPoint);
+    if (sec.bendPoints) points.push(...sec.bendPoints);
+    points.push(sec.endPoint);
+  }
+  if (points.length < 2) return '';
+  // Build a smooth cubic bezier through all waypoints (Catmull-Rom → Bezier)
+  // This produces a natural curve that faithfully follows ELK's routing
+  let d = `M ${points[0].x} ${points[0].y}`;
+  if (points.length === 2) {
+    d += ` L ${points[1].x} ${points[1].y}`;
+    return d;
+  }
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+    // Catmull-Rom to cubic bezier (tension = 0.5)
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+// ---------------------------------------------------------------------------
 // ELK layout: USER_DEFINED layering — bucketIndex drives the Y layer
 // ---------------------------------------------------------------------------
 async function computeElkLayout(
   rawNodes: Node[],
   rawEdges: Edge[],
   hiddenCategories: Set<EntityGraphNodeCategory>,
-): Promise<Node[]> {
+): Promise<{ nodes: Node[]; edges: Edge[] }> {
   const ELKModule = await import('elkjs/lib/elk.bundled.js');
   const ELK = ELKModule.default;
   const elk = new ELK();
@@ -355,7 +425,8 @@ async function computeElkLayout(
 
   const layout = await elk.layout(elkGraph);
 
-  return rawNodes.map((n) => {
+  // Map positioned nodes
+  const positionedNodes = rawNodes.map((n) => {
     const child = layout.children?.find((c) => c.id === n.id);
     if (!child) {
       return { ...n, position: { x: -9999, y: -9999 }, hidden: true };
@@ -366,6 +437,39 @@ async function computeElkLayout(
       hidden: false,
     };
   });
+
+  // Build edges with ELK-calculated paths
+  const elkEdgeMap = new Map<string, ElkEdgeSection[]>();
+  if (layout.edges) {
+    for (const el of layout.edges as ElkExtendedEdge[]) {
+      if (el.sections && el.sections.length > 0) {
+        elkEdgeMap.set(el.id, el.sections);
+      }
+    }
+  }
+
+  const routedEdges: Edge[] = rawEdges.map((e) => {
+    const sections = elkEdgeMap.get(e.id);
+    const elkPath = sections ? elkSectionsToPath(sections) : '';
+    if (!elkPath) {
+      // Edge not routed (hidden node) — keep as-is but mark hidden
+      return { ...e, hidden: true };
+    }
+    return {
+      ...e,
+      type: 'elk',
+      hidden: false,
+      data: {
+        ...(e.data ?? {}),
+        elkPath,
+        strokeWidth: (e.style?.strokeWidth as number) ?? 1,
+        stroke: (e.style?.stroke as string) ?? '#475569',
+        opacity: (e.style?.opacity as number) ?? 0.5,
+      },
+    };
+  });
+
+  return { nodes: positionedNodes, edges: routedEdges };
 }
 
 // ---------------------------------------------------------------------------
@@ -481,9 +585,9 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
     }
     if (graphChanged) setLayouting(true);
     computeElkLayout(rawNodes, rawEdges, hiddenCategories)
-      .then((positioned) => {
+      .then(({ nodes: positioned, edges: routedEdges }) => {
         setNodes(positioned);
-        setEdges(rawEdges);
+        setEdges(routedEdges);
       })
       .catch(() => {
         const positioned = rawNodes.map((n, i) => ({
@@ -513,6 +617,7 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={NODE_TYPES}
+        edgeTypes={EDGE_TYPES}
         fitView
         fitViewOptions={{ padding: 0.15 }}
         proOptions={{ hideAttribution: false }}
