@@ -337,7 +337,7 @@ const EDGE_TYPES: EdgeTypes = {
 };
 
 // ---------------------------------------------------------------------------
-// Build an SVG path string from ELK edge sections
+// Build an SVG path string from ELK edge sections (orthogonal straight lines)
 // ---------------------------------------------------------------------------
 type ElkPoint = { x: number; y: number };
 
@@ -350,24 +350,10 @@ function elkSectionsToPath(sections: ElkEdgeSection[]): string {
     points.push(sec.endPoint);
   }
   if (points.length < 2) return '';
-  // Build a smooth cubic bezier through all waypoints (Catmull-Rom → Bezier)
-  // This produces a natural curve that faithfully follows ELK's routing
+  // Orthogonal path: straight line segments connecting each waypoint
   let d = `M ${points[0].x} ${points[0].y}`;
-  if (points.length === 2) {
-    d += ` L ${points[1].x} ${points[1].y}`;
-    return d;
-  }
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[Math.max(i - 1, 0)];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[Math.min(i + 2, points.length - 1)];
-    // Catmull-Rom to cubic bezier (tension = 0.5)
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  for (let i = 1; i < points.length; i++) {
+    d += ` L ${points[i].x} ${points[i].y}`;
   }
   return d;
 }
@@ -401,8 +387,7 @@ async function computeElkLayout(
       'elk.layered.spacing.nodeNodeBetweenLayers': '90',
       'elk.spacing.nodeNode': '55',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-      'elk.edgeRouting': 'SPLINES',
-      'elk.layered.edgeRouting.splines.mode': 'SLOPPY',
+      'elk.edgeRouting': 'ORTHOGONAL',
     },
     children: visibleNodes.map((n) => {
       const cat = n.data?.category as EntityGraphNodeCategory;
