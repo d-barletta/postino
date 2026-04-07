@@ -86,7 +86,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
             </div>
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
+              className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-300/20 transition-colors"
               aria-label="Toggle menu"
               aria-expanded={mobileMenuOpen}
               onClick={() => setMobileMenuOpen((v) => !v)}

@@ -368,6 +368,7 @@ export interface Translations {
         error: string;
         nodeClickHint: string;
         nodeClickHint2: string;
+        openRelatedEmails: string;
         expandFullPage: string;
         closeFullPage: string;
         legend: string;
@@ -929,7 +930,8 @@ const translations: Record<Locale, Translations> = {
           totalEmails: 'Based on {count} emails',
           error: 'Failed to generate relations',
           nodeClickHint: 'Select a node to highlight connections',
-          nodeClickHint2: 'Click again to explore related emails',
+          nodeClickHint2: 'Use the button to explore related emails',
+          openRelatedEmails: 'Open related emails',
           expandFullPage: 'Full page',
           closeFullPage: 'Close',
           legend: 'Legend',
@@ -937,7 +939,8 @@ const translations: Record<Locale, Translations> = {
           generated: 'Relation graph updated',
           graphTab: 'Graph',
           flowTab: 'Flow',
-          flowNodeClick: 'Click a node to explore related emails',
+          flowNodeClick:
+            'Click once to highlight connected entities, then use the button to explore related emails',
           flowGenerate: 'Generate Flow',
           flowGenerating: 'Generating…',
           flowRegenerate: 'Regenerate Flow',
@@ -1492,7 +1495,8 @@ const translations: Record<Locale, Translations> = {
           totalEmails: 'Basato su {count} email',
           error: 'Generazione relazioni non riuscita',
           nodeClickHint: 'Seleziona un nodo per evidenziare le connessioni',
-          nodeClickHint2: 'Clicca di nuovo per esplorare le email correlate',
+          nodeClickHint2: 'Usa il pulsante per esplorare le email correlate',
+          openRelatedEmails: 'Apri email correlate',
           expandFullPage: 'Pagina intera',
           closeFullPage: 'Chiudi',
           legend: 'Legenda',
@@ -1500,7 +1504,8 @@ const translations: Record<Locale, Translations> = {
           generated: 'Grafico relazioni aggiornato',
           graphTab: 'Grafico',
           flowTab: 'Flusso',
-          flowNodeClick: 'Clicca un nodo per esplorare le email correlate',
+          flowNodeClick:
+            'Clicca una volta per evidenziare le entità collegate, poi usa il pulsante per esplorare le email correlate',
           flowGenerate: 'Genera flusso',
           flowGenerating: 'Generazione…',
           flowRegenerate: 'Rigenera flusso',
@@ -2053,7 +2058,8 @@ const translations: Record<Locale, Translations> = {
           totalEmails: 'Basado en {count} correos',
           error: 'Error al generar relaciones',
           nodeClickHint: 'Selecciona un nodo para resaltar conexiones',
-          nodeClickHint2: 'Haz clic de nuevo para explorar correos relacionados',
+          nodeClickHint2: 'Usa el botón para explorar correos relacionados',
+          openRelatedEmails: 'Abrir correos relacionados',
           expandFullPage: 'Página completa',
           closeFullPage: 'Cerrar',
           legend: 'Leyenda',
@@ -2061,7 +2067,8 @@ const translations: Record<Locale, Translations> = {
           generated: 'Gráfico de relaciones actualizado',
           graphTab: 'Gráfico',
           flowTab: 'Flujo',
-          flowNodeClick: 'Haz clic en un nodo para explorar correos relacionados',
+          flowNodeClick:
+            'Haz clic una vez para resaltar las entidades conectadas y luego usa el botón para explorar correos relacionados',
           flowGenerate: 'Generar flujo',
           flowGenerating: 'Generando…',
           flowRegenerate: 'Regenerar flujo',
@@ -2614,7 +2621,8 @@ const translations: Record<Locale, Translations> = {
           totalEmails: 'Basé sur {count} e-mails',
           error: 'Échec de la génération des relations',
           nodeClickHint: 'Sélectionnez un nœud pour mettre en évidence les connexions',
-          nodeClickHint2: 'Cliquez à nouveau pour explorer les e-mails associés',
+          nodeClickHint2: 'Utilisez le bouton pour explorer les e-mails associés',
+          openRelatedEmails: 'Ouvrir les e-mails associés',
           expandFullPage: 'Pleine page',
           closeFullPage: 'Fermer',
           legend: 'Légende',
@@ -2622,7 +2630,8 @@ const translations: Record<Locale, Translations> = {
           generated: 'Graphe de relations mis à jour',
           graphTab: 'Graphe',
           flowTab: 'Flux',
-          flowNodeClick: 'Cliquez sur un nœud pour explorer les e-mails associés',
+          flowNodeClick:
+            'Cliquez une fois pour mettre en évidence les entités connectées, puis utilisez le bouton pour explorer les e-mails associés',
           flowGenerate: 'Générer le flux',
           flowGenerating: 'Génération…',
           flowRegenerate: 'Régénérer le flux',
@@ -3176,7 +3185,8 @@ const translations: Record<Locale, Translations> = {
           totalEmails: 'Basierend auf {count} E-Mails',
           error: 'Beziehungen konnten nicht generiert werden',
           nodeClickHint: 'Knoten auswählen, um Verbindungen hervorzuheben',
-          nodeClickHint2: 'Erneut klicken, um zugehörige E-Mails zu erkunden',
+          nodeClickHint2: 'Verwenden Sie die Schaltfläche, um zugehörige E-Mails zu erkunden',
+          openRelatedEmails: 'Zugehörige E-Mails öffnen',
           expandFullPage: 'Vollbild',
           closeFullPage: 'Schließen',
           legend: 'Legende',
@@ -3184,7 +3194,8 @@ const translations: Record<Locale, Translations> = {
           generated: 'Beziehungsgraph aktualisiert',
           graphTab: 'Graph',
           flowTab: 'Fluss',
-          flowNodeClick: 'Klicken Sie auf einen Knoten, um zugehörige E-Mails zu erkunden',
+          flowNodeClick:
+            'Klicken Sie einmal, um verbundene Entitäten hervorzuheben, und verwenden Sie dann die Schaltfläche, um zugehörige E-Mails zu erkunden',
           flowGenerate: 'Fluss generieren',
           flowGenerating: 'Generierung…',
           flowRegenerate: 'Fluss neu generieren',

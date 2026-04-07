@@ -111,6 +111,7 @@ export function RelationsTab() {
     flowRegenerate: k.relations.flowRegenerate,
     flowGeneratedOn: k.relations.flowGeneratedOn,
     flowTotalEmails: k.relations.flowTotalEmails,
+    openRelatedEmails: k.relations.openRelatedEmails,
     expandFullPage: k.relations.expandFullPage,
   };
 
@@ -197,7 +198,6 @@ export function RelationsTab() {
                 generating={generating}
                 onGenerate={generateGraph}
                 onNodeClick={handleNodeClick}
-                onExpandFullPage={() => setFullPageGraphOpen(true)}
                 translations={graphTranslations}
               />
             </TabsContent>
@@ -208,7 +208,6 @@ export function RelationsTab() {
                 loading={authLoading || flowLoading || !flowHasFetched}
                 generating={flowGenerating}
                 onGenerate={generateFlowGraph}
-                onExpandFullPage={() => setFullPageFlowOpen(true)}
                 onNodeClick={handleNodeClick}
                 translations={flowTranslations}
               />

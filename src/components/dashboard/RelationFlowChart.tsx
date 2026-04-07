@@ -10,6 +10,7 @@ import {
   BackgroundVariant,
   BaseEdge,
   Handle,
+  MarkerType,
   Position,
   type Node,
   type Edge,
@@ -20,7 +21,7 @@ import {
 } from '@xyflow/react';
 import type { ElkExtendedEdge, ElkEdgeSection } from 'elkjs';
 import { toast } from 'sonner';
-import { AlertCircle, Eye, EyeOff, Maximize2, RefreshCw, Workflow } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/Button';
@@ -48,8 +49,12 @@ type FlowNodeData = {
   count: number;
   bucketLabel: string;
   bucketIndex: number;
-  onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
+  isSelected: boolean;
+  isConnected: boolean;
+  isDimmed: boolean;
 };
+
+type FlowNodeEmphasis = 'default' | 'connected' | 'selected' | 'dimmed';
 
 const HANDLE_STYLE: React.CSSProperties = {
   background: 'transparent',
@@ -57,6 +62,54 @@ const HANDLE_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
 };
+const TARGET_HANDLE_POSITION = Position.Left;
+const SOURCE_HANDLE_POSITION = Position.Right;
+const FLOW_EDGE_COLOR_LIGHT = '#475569';
+const FLOW_EDGE_COLOR_DARK = '#94a3b8';
+const FLOW_EDGE_HIGHLIGHT_COLOR = '#efd957';
+
+function getFlowEdgeColor(isDark: boolean): string {
+  return isDark ? FLOW_EDGE_COLOR_DARK : FLOW_EDGE_COLOR_LIGHT;
+}
+
+function getFlowNodeEmphasis(data: FlowNodeData): FlowNodeEmphasis {
+  if (data.isSelected) return 'selected';
+  if (data.isConnected) return 'connected';
+  if (data.isDimmed) return 'dimmed';
+  return 'default';
+}
+
+function getNodeFrameStyle(data: FlowNodeData): React.CSSProperties {
+  const emphasis = getFlowNodeEmphasis(data);
+
+  return {
+    opacity: emphasis === 'dimmed' ? 0.22 : 1,
+    transform: emphasis === 'selected' ? 'scale(1.04)' : undefined,
+    filter:
+      emphasis === 'selected'
+        ? 'drop-shadow(0 0 8px rgba(239, 217, 87, 0.45))'
+        : undefined,
+    transition: 'opacity 160ms ease, transform 160ms ease, filter 160ms ease, box-shadow 160ms ease',
+  };
+}
+
+function getNodeBoxShadow(color: string, data: FlowNodeData, baseBlur: number): string {
+  const emphasis = getFlowNodeEmphasis(data);
+
+  if (emphasis === 'selected') {
+    return `0 0 0 3px #efd957, 0 0 ${baseBlur + 4}px ${color}66`;
+  }
+
+  if (emphasis === 'connected') {
+    return `0 0 ${baseBlur + 2}px ${color}55`;
+  }
+
+  if (emphasis === 'dimmed') {
+    return `0 0 ${Math.max(baseBlur - 4, 2)}px ${color}22`;
+  }
+
+  return `0 0 ${baseBlur}px ${color}44`;
+}
 
 function LabelText({
   label,
@@ -97,15 +150,15 @@ function PeopleNode({ data }: NodeProps & { data: FlowNodeData }) {
   const { w, h } = NODE_DIMS['people'];
   return (
     <div
-      title={data.bucketLabel}
-      onClick={() => data.onNodeClick(data.label, 'people')}
+      title={`${data.bucketLabel} (${data.count})`}
       style={{
+        ...getNodeFrameStyle(data),
         width: w,
         height: h,
         borderRadius: '50%',
         background: `${color}26`,
         border: `2px solid ${color}`,
-        boxShadow: `0 0 10px ${color}44`,
+        boxShadow: getNodeBoxShadow(color, data, 10),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -113,9 +166,9 @@ function PeopleNode({ data }: NodeProps & { data: FlowNodeData }) {
         cursor: 'pointer',
       }}
     >
-      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
       <LabelText label={data.label} color={color} />
-      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
     </div>
   );
 }
@@ -125,15 +178,15 @@ function OrgNode({ data }: NodeProps & { data: FlowNodeData }) {
   const { w, h } = NODE_DIMS['organizations'];
   return (
     <div
-      title={data.bucketLabel}
-      onClick={() => data.onNodeClick(data.label, 'organizations')}
+      title={`${data.bucketLabel} (${data.count})`}
       style={{
+        ...getNodeFrameStyle(data),
         width: w,
         height: h,
         borderRadius: 6,
         background: `${color}26`,
         border: `2px solid ${color}`,
-        boxShadow: `0 0 10px ${color}44`,
+        boxShadow: getNodeBoxShadow(color, data, 10),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -141,9 +194,9 @@ function OrgNode({ data }: NodeProps & { data: FlowNodeData }) {
         cursor: 'pointer',
       }}
     >
-      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
       <LabelText label={data.label} color={color} />
-      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
     </div>
   );
 }
@@ -163,11 +216,16 @@ function PlaceNode({ data }: NodeProps & { data: FlowNodeData }) {
     .join(' ');
   return (
     <div
-      title={data.bucketLabel}
-      onClick={() => data.onNodeClick(data.label, 'places')}
-      style={{ width: w, height: h, position: 'relative', cursor: 'pointer' }}
+      title={`${data.bucketLabel} (${data.count})`}
+      style={{
+        ...getNodeFrameStyle(data),
+        width: w,
+        height: h,
+        position: 'relative',
+        cursor: 'pointer',
+      }}
     >
-      <Handle type="target" position={Position.Top} style={{ ...HANDLE_STYLE, top: 2 }} />
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
       <svg
         width={w}
         height={h}
@@ -194,7 +252,7 @@ function PlaceNode({ data }: NodeProps & { data: FlowNodeData }) {
       >
         <LabelText label={data.label} color={color} />
       </div>
-      <Handle type="source" position={Position.Bottom} style={{ ...HANDLE_STYLE, bottom: 2 }} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
     </div>
   );
 }
@@ -205,11 +263,16 @@ function EventNode({ data }: NodeProps & { data: FlowNodeData }) {
   const points = `${w / 2},2 ${w - 2},${h / 2} ${w / 2},${h - 2} 2,${h / 2}`;
   return (
     <div
-      title={data.bucketLabel}
-      onClick={() => data.onNodeClick(data.label, 'events')}
-      style={{ width: w, height: h, position: 'relative', cursor: 'pointer' }}
+      title={`${data.bucketLabel} (${data.count})`}
+      style={{
+        ...getNodeFrameStyle(data),
+        width: w,
+        height: h,
+        position: 'relative',
+        cursor: 'pointer',
+      }}
     >
-      <Handle type="target" position={Position.Top} style={{ ...HANDLE_STYLE, top: 0 }} />
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
       <svg
         width={w}
         height={h}
@@ -236,7 +299,7 @@ function EventNode({ data }: NodeProps & { data: FlowNodeData }) {
       >
         <LabelText label={data.label} color={color} style={{ fontSize: 9 }} />
       </div>
-      <Handle type="source" position={Position.Bottom} style={{ ...HANDLE_STYLE, bottom: 0 }} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
     </div>
   );
 }
@@ -246,15 +309,15 @@ function TopicNode({ data }: NodeProps & { data: FlowNodeData }) {
   const { w, h } = NODE_DIMS['topics'];
   return (
     <div
-      title={data.bucketLabel}
-      onClick={() => data.onNodeClick(data.label, 'topics')}
+      title={`${data.bucketLabel} (${data.count})`}
       style={{
+        ...getNodeFrameStyle(data),
         width: w,
         height: h,
         borderRadius: 9999,
         background: `${color}26`,
         border: `2px solid ${color}`,
-        boxShadow: `0 0 10px ${color}44`,
+        boxShadow: getNodeBoxShadow(color, data, 10),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -262,9 +325,9 @@ function TopicNode({ data }: NodeProps & { data: FlowNodeData }) {
         cursor: 'pointer',
       }}
     >
-      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
       <LabelText label={data.label} color={color} style={{ WebkitLineClamp: 1 }} />
-      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
     </div>
   );
 }
@@ -274,15 +337,15 @@ function TagNode({ data }: NodeProps & { data: FlowNodeData }) {
   const { w, h } = NODE_DIMS['tags'];
   return (
     <div
-      title={data.bucketLabel}
-      onClick={() => data.onNodeClick(data.label, 'tags')}
+      title={`${data.bucketLabel} (${data.count})`}
       style={{
+        ...getNodeFrameStyle(data),
         width: w,
         height: h,
         borderRadius: 9999,
         background: `${color}26`,
         border: `1.5px solid ${color}`,
-        boxShadow: `0 0 6px ${color}44`,
+        boxShadow: getNodeBoxShadow(color, data, 6),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -290,9 +353,9 @@ function TagNode({ data }: NodeProps & { data: FlowNodeData }) {
         cursor: 'pointer',
       }}
     >
-      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
       <LabelText label={data.label} color={color} style={{ fontSize: 9, WebkitLineClamp: 1 }} />
-      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
     </div>
   );
 }
@@ -316,19 +379,35 @@ type ElkEdgeData = {
   opacity: number;
 };
 
-function ElkEdge({ data, markerEnd, style }: EdgeProps & { data: ElkEdgeData }) {
+function ElkEdge({ data, markerEnd, style, animated }: EdgeProps & { data: ElkEdgeData }) {
   const d = data?.elkPath ?? '';
   return (
-    <BaseEdge
-      path={d}
-      markerEnd={markerEnd}
-      style={{
-        strokeWidth: data?.strokeWidth ?? 1,
-        stroke: data?.stroke ?? '#475569',
-        opacity: data?.opacity ?? 0.5,
-        ...style,
-      }}
-    />
+    <>
+      <BaseEdge
+        path={d}
+        markerEnd={markerEnd}
+        style={{
+          strokeWidth: data?.strokeWidth ?? 1,
+          stroke: data?.stroke ?? FLOW_EDGE_COLOR_LIGHT,
+          opacity: data?.opacity ?? 0.5,
+          ...style,
+        }}
+      />
+      {animated && d ? (
+        <path
+          d={d}
+          fill="none"
+          stroke={data?.stroke ?? FLOW_EDGE_COLOR_LIGHT}
+          strokeWidth={(data?.strokeWidth ?? 1) + 0.4}
+          strokeLinecap="round"
+          strokeDasharray="10 8"
+          opacity={0.95}
+          className="pointer-events-none"
+        >
+          <animate attributeName="stroke-dashoffset" from="18" to="0" dur="0.7s" repeatCount="indefinite" />
+        </path>
+      ) : null}
+    </>
   );
 }
 
@@ -359,12 +438,13 @@ function elkSectionsToPath(sections: ElkEdgeSection[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// ELK layout: USER_DEFINED layering — bucketIndex drives the Y layer
+// ELK layout: USER_DEFINED layering — bucketIndex drives the X layer
 // ---------------------------------------------------------------------------
 async function computeElkLayout(
   rawNodes: Node[],
   rawEdges: Edge[],
   hiddenCategories: Set<EntityGraphNodeCategory>,
+  defaultEdgeColor: string,
 ): Promise<{ nodes: Node[]; edges: Edge[] }> {
   const { default: ELK } = await import('elkjs/lib/elk.bundled');
   const elk = new ELK();
@@ -381,13 +461,13 @@ async function computeElkLayout(
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
+      'elk.direction': 'RIGHT',
       'elk.layered.layering.strategy': 'USER_DEFINED',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '90',
-      'elk.spacing.nodeNode': '55',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '140',
+      'elk.spacing.nodeNode': '50',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-      'elk.edgeRouting': 'SPLINES',
-      'elk.layered.edgeRouting.splines.mode': 'SLOPPY',
+      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.padding': '[top=24,left=24,bottom=24,right=24]',
     },
     children: visibleNodes.map((n) => {
       const cat = n.data?.category as EntityGraphNodeCategory;
@@ -449,7 +529,7 @@ async function computeElkLayout(
         ...(e.data ?? {}),
         elkPath,
         strokeWidth: (e.style?.strokeWidth as number) ?? 1,
-        stroke: (e.style?.stroke as string) ?? '#475569',
+        stroke: (e.style?.stroke as string) ?? defaultEdgeColor,
         opacity: (e.style?.opacity as number) ?? 0.5,
       },
     };
@@ -520,13 +600,95 @@ interface RelationFlowInnerProps {
   graph: EntityFlowGraph;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   hiddenCategories: Set<EntityGraphNodeCategory>;
+  actionLabel: string;
 }
 
-function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlowInnerProps) {
+function RelationFlowInner({
+  graph,
+  onNodeClick,
+  hiddenCategories,
+  actionLabel,
+}: RelationFlowInnerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [layouting, setLayouting] = useState(true);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+  );
   const prevGraphRef = useRef<EntityFlowGraph | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    const syncTheme = () => setIsDark(root.classList.contains('dark'));
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const baseEdgeColor = useMemo(() => getFlowEdgeColor(isDark), [isDark]);
+
+  const visibleNodeIds = useMemo(
+    () => new Set(graph.nodes.filter((n) => !hiddenCategories.has(n.category)).map((n) => n.id)),
+    [graph.nodes, hiddenCategories],
+  );
+
+  const visibleEdges = useMemo(
+    () => graph.edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)),
+    [graph.edges, visibleNodeIds],
+  );
+
+  const highlightedGraph = useMemo(() => {
+    const highlightedNodeIds = new Set<string>();
+    const highlightedEdgeIds = new Set<string>();
+
+    if (!selectedNodeId || !visibleNodeIds.has(selectedNodeId)) {
+      return { highlightedNodeIds, highlightedEdgeIds };
+    }
+
+    for (const edge of visibleEdges) {
+      if (edge.source === selectedNodeId) {
+        highlightedNodeIds.add(edge.target);
+        highlightedEdgeIds.add(edge.id);
+      } else if (edge.target === selectedNodeId) {
+        highlightedNodeIds.add(edge.source);
+        highlightedEdgeIds.add(edge.id);
+      }
+    }
+
+    highlightedNodeIds.add(selectedNodeId);
+
+    return { highlightedNodeIds, highlightedEdgeIds };
+  }, [selectedNodeId, visibleEdges, visibleNodeIds]);
+
+  const hasPinnedSelection = selectedNodeId !== null && highlightedGraph.highlightedNodeIds.size > 0;
+
+  const selectedNode = useMemo(() => {
+    if (!selectedNodeId || !visibleNodeIds.has(selectedNodeId)) return null;
+    return graph.nodes.find((node) => node.id === selectedNodeId) ?? null;
+  }, [graph.nodes, selectedNodeId, visibleNodeIds]);
+
+  useEffect(() => {
+    setSelectedNodeId((current) => {
+      if (!current || visibleNodeIds.has(current)) return current;
+      return null;
+    });
+  }, [visibleNodeIds]);
+
+  const handleFlowNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setSelectedNodeId(node.id);
+    },
+    [],
+  );
 
   const rawNodes: Node[] = useMemo(
     () =>
@@ -534,16 +696,19 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
         id: n.id,
         type: n.category,
         position: { x: 0, y: 0 },
+        zIndex: n.id === selectedNodeId ? 20 : highlightedGraph.highlightedNodeIds.has(n.id) ? 10 : 1,
         data: {
           label: n.label,
           category: n.category,
           count: n.count,
           bucketLabel: n.bucketLabel,
           bucketIndex: n.bucketIndex,
-          onNodeClick,
+          isSelected: n.id === selectedNodeId,
+          isConnected: highlightedGraph.highlightedNodeIds.has(n.id),
+          isDimmed: hasPinnedSelection && !highlightedGraph.highlightedNodeIds.has(n.id),
         },
       })),
-    [graph.nodes, onNodeClick],
+    [graph.nodes, hasPinnedSelection, highlightedGraph.highlightedNodeIds, selectedNodeId],
   );
 
   const rawEdges: Edge[] = useMemo(() => {
@@ -554,13 +719,28 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
       target: e.target,
       type: 'smoothstep',
       style: {
-        strokeWidth: 0.8 + (e.weight / maxWeight) * 2.5,
-        stroke: '#475569',
-        opacity: 0.5,
+        strokeWidth:
+          0.8 + (e.weight / maxWeight) * 2.5 + (highlightedGraph.highlightedEdgeIds.has(e.id) ? 0.6 : 0),
+        stroke: highlightedGraph.highlightedEdgeIds.has(e.id)
+          ? FLOW_EDGE_HIGHLIGHT_COLOR
+          : baseEdgeColor,
+        opacity: hasPinnedSelection
+          ? highlightedGraph.highlightedEdgeIds.has(e.id)
+            ? 0.95
+            : 0.08
+          : 0.5,
       },
-      animated: false,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: highlightedGraph.highlightedEdgeIds.has(e.id)
+          ? FLOW_EDGE_HIGHLIGHT_COLOR
+          : baseEdgeColor,
+        width: 16,
+        height: 16,
+      },
+      animated: highlightedGraph.highlightedEdgeIds.has(e.id),
     }));
-  }, [graph.edges]);
+  }, [baseEdgeColor, graph.edges, hasPinnedSelection, highlightedGraph.highlightedEdgeIds]);
 
   useEffect(() => {
     const graphChanged = prevGraphRef.current !== graph;
@@ -570,7 +750,7 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
       return;
     }
     if (graphChanged) setLayouting(true);
-    computeElkLayout(rawNodes, rawEdges, hiddenCategories)
+    computeElkLayout(rawNodes, rawEdges, hiddenCategories, baseEdgeColor)
       .then(({ nodes: positioned, edges: routedEdges }) => {
         setNodes(positioned);
         setEdges(routedEdges);
@@ -584,14 +764,22 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
         setEdges(rawEdges);
       })
       .finally(() => setLayouting(false));
-  }, [rawNodes, rawEdges, hiddenCategories, setNodes, setEdges, graph]);
-
-  const isDark =
-    typeof document !== 'undefined' &&
-    document.documentElement.classList.contains('dark');
+  }, [baseEdgeColor, rawNodes, rawEdges, hiddenCategories, setNodes, setEdges, graph]);
 
   return (
     <div className="relative h-full w-full">
+      {selectedNode ? (
+        <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-3">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onNodeClick(selectedNode.label, selectedNode.category)}
+            className="pointer-events-auto border border-[#efd957]/80 bg-white/95 text-gray-900 shadow-sm backdrop-blur hover:bg-[#fff4b0] dark:bg-gray-900/95 dark:text-gray-100 dark:hover:bg-gray-800"
+          >
+            {actionLabel}
+          </Button>
+        </div>
+      ) : null}
       {layouting && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 dark:bg-gray-900/60">
           <Workflow className="h-10 w-10 opacity-20 animate-pulse text-gray-600 dark:text-white" />
@@ -602,6 +790,8 @@ function RelationFlowInner({ graph, onNodeClick, hiddenCategories }: RelationFlo
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeClick={handleFlowNodeClick}
+        onPaneClick={() => setSelectedNodeId(null)}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         fitView
@@ -651,6 +841,7 @@ export interface RelationFlowChartProps {
     flowRegenerate: string;
     flowGeneratedOn: string;
     flowTotalEmails: string;
+    openRelatedEmails: string;
     expandFullPage: string;
   };
 }
@@ -660,12 +851,10 @@ export function RelationFlowChart({
   loading,
   generating,
   onGenerate,
-  onExpandFullPage,
   onNodeClick,
   translations: tr,
 }: RelationFlowChartProps) {
   const isEmpty = graph && graph.nodes.length === 0;
-  const isResolvingInitialState = loading && !graph && !generating;
   const formattedDate = graph?.generatedAt ? new Date(graph.generatedAt).toLocaleString() : null;
 
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
@@ -739,6 +928,7 @@ export function RelationFlowChart({
                 graph={graph}
                 onNodeClick={onNodeClick}
                 hiddenCategories={hiddenCategories}
+                actionLabel={tr.openRelatedEmails}
               />
             </ReactFlowProvider>
           </div>
@@ -786,7 +976,7 @@ export function RelationFlowChartFullPageContent({
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   translations: Pick<
     RelationFlowChartProps['translations'],
-    'legend' | 'flowNodeClick' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
+    'legend' | 'flowNodeClick' | 'openRelatedEmails' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
@@ -810,6 +1000,7 @@ export function RelationFlowChartFullPageContent({
             graph={graph}
             onNodeClick={onNodeClick}
             hiddenCategories={hiddenCategories}
+            actionLabel={tr.openRelatedEmails}
           />
         </ReactFlowProvider>
       </div>

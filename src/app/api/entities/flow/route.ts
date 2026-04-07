@@ -15,10 +15,12 @@ const FETCH_LIMIT = 500;
 const MERGES_LIMIT = 500;
 /** Max entities kept per category per time bucket. */
 const TOP_K_PER_BUCKET = 5;
-/** Minimum co-occurrence weight within a bucket for an edge to be included. */
+/** Minimum continuity weight for a temporal edge to be included. */
 const MIN_EDGE_WEIGHT = 1;
-/** Number of monthly buckets to include (recent → past). */
+/** Maximum number of monthly buckets with data to include. */
 const NUM_BUCKETS = 8;
+/** Bump when the stored flow graph shape or semantics change. */
+const FLOW_GRAPH_VERSION = 2;
 
 const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'people',
@@ -32,6 +34,11 @@ const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
 interface CountMap {
   [value: string]: number;
 }
+
+type AnalyzedEmail = {
+  receivedAt: Date;
+  analysis: Record<string, unknown>;
+};
 
 function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: string[] }>): void {
   for (const merge of merges) {
@@ -60,12 +67,29 @@ function buildAliasToCanonical(
   return m;
 }
 
-/** Return the zero-indexed bucket number (0 = most recent) for a given date. */
-function getBucketIndex(date: Date, bucketStartDates: Date[]): number {
-  for (let i = 0; i < bucketStartDates.length; i++) {
-    if (date >= bucketStartDates[i]) return i;
+function getMonthBucketStart(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function getDateOrNull(value: unknown): Date | null {
+  if (!value) return null;
+
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'toDate' in value &&
+    typeof (value as { toDate?: unknown }).toDate === 'function'
+  ) {
+    const date = (value as { toDate: () => Date }).toDate();
+    return Number.isNaN(date.getTime()) ? null : date;
   }
-  return bucketStartDates.length - 1;
+
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function sortCountEntries(map: CountMap): Array<[string, number]> {
+  return Object.entries(map).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 }
 
 // ---------------------------------------------------------------------------
@@ -82,6 +106,10 @@ export async function GET(request: NextRequest) {
     }
 
     const data = doc.data();
+    if (data?.version !== FLOW_GRAPH_VERSION) {
+      return NextResponse.json({ graph: null });
+    }
+
     return NextResponse.json({
       graph: {
         nodes: data?.nodes ?? [],
@@ -134,71 +162,71 @@ export async function POST(request: NextRequest) {
     ) as Record<EntityGraphNodeCategory, Map<string, string>>;
 
     // -----------------------------------------------------------------------
-    // Build time buckets: NUM_BUCKETS monthly windows from today going back
+    // Build time buckets from actual email months with data.
     // -----------------------------------------------------------------------
-    const now = new Date();
-    // Bucket start dates: index 0 = most recent month, index N-1 = oldest month
-    const bucketStartDates: Date[] = [];
-    for (let i = 0; i < NUM_BUCKETS; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      bucketStartDates.push(d);
+    const analyzedEmails: AnalyzedEmail[] = [];
+
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      const analysis = data.emailAnalysis as Record<string, unknown> | undefined;
+      const receivedAt = getDateOrNull(data.receivedAt);
+      if (!analysis || !receivedAt) continue;
+
+      analyzedEmails.push({ receivedAt, analysis });
     }
+
+    const bucketStartDates = Array.from(
+      new Set(analyzedEmails.map(({ receivedAt }) => getMonthBucketStart(receivedAt).toISOString())),
+    )
+      .map((iso) => new Date(iso))
+      .sort((a, b) => b.getTime() - a.getTime())
+      .slice(0, NUM_BUCKETS)
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    const bucketIndexByStartDate = new Map(
+      bucketStartDates.map((date, index) => [date.toISOString(), index]),
+    );
 
     const bucketLabels: FlowGraphBucket[] = bucketStartDates.map((d, i) => ({
       index: i,
-      label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }),
       startDate: d.toISOString(),
     }));
 
     // -----------------------------------------------------------------------
     // Pass 1: assign each email to a bucket and collect entity occurrences
     // -----------------------------------------------------------------------
-    type PerEmailEntities = Record<EntityGraphNodeCategory, string[]>;
-
     // freqs[bucketIdx][cat][entity] = count
     const bucketFreqs: Array<Record<EntityGraphNodeCategory, CountMap>> = Array.from(
-      { length: NUM_BUCKETS },
+      { length: bucketLabels.length },
       () =>
         Object.fromEntries(
           ALL_CATEGORIES.map((cat) => [cat, {}]),
         ) as Record<EntityGraphNodeCategory, CountMap>,
     );
 
-    const perEmailBucketEntities: Array<{ bucketIdx: number; entities: PerEmailEntities }> = [];
     let totalEmails = 0;
 
-    for (const doc of snap.docs) {
-      const data = doc.data();
-      const analysis = data.emailAnalysis as Record<string, unknown> | undefined;
-      if (!analysis) continue;
-
-      const receivedAt: Date =
-        data.receivedAt?.toDate ? data.receivedAt.toDate() : new Date(data.receivedAt as string);
-
-      const bucketIdx = getBucketIndex(receivedAt, bucketStartDates);
-      if (bucketIdx >= NUM_BUCKETS) continue; // outside our window
+    for (const { receivedAt, analysis } of analyzedEmails) {
+      const bucketIdx = bucketIndexByStartDate.get(getMonthBucketStart(receivedAt).toISOString());
+      if (bucketIdx === undefined) continue;
 
       totalEmails++;
 
-      const raw: PerEmailEntities = {
-        topics: [],
-        tags: [],
-        people: [],
-        organizations: [],
-        places: [],
-        events: [],
-      };
-
       const collectRaw = (cat: EntityGraphNodeCategory, values: unknown) => {
         if (!Array.isArray(values)) return;
+        const seenInEmail = new Set<string>();
+
         for (const v of values) {
           if (typeof v === 'string' && v.trim()) {
             const key = v.trim();
             const aliasMap = aliasMaps[cat];
             const canonical = aliasMap.get(key.toLowerCase()) ?? key;
+            if (seenInEmail.has(canonical)) continue;
+
+            seenInEmail.add(canonical);
             bucketFreqs[bucketIdx][cat][canonical] =
               (bucketFreqs[bucketIdx][cat][canonical] ?? 0) + 1;
-            raw[cat].push(canonical);
           }
         }
       };
@@ -212,12 +240,10 @@ export async function POST(request: NextRequest) {
         collectRaw('places', entities.places);
         collectRaw('events', entities.events);
       }
-
-      perEmailBucketEntities.push({ bucketIdx, entities: raw });
     }
 
     // Apply merges to bucket frequency maps
-    for (let bi = 0; bi < NUM_BUCKETS; bi++) {
+    for (let bi = 0; bi < bucketLabels.length; bi++) {
       for (const cat of ALL_CATEGORIES) {
         const catMerges = mergesByCategory[cat];
         if (catMerges) applyMerges(bucketFreqs[bi][cat], catMerges);
@@ -225,80 +251,58 @@ export async function POST(request: NextRequest) {
     }
 
     // -----------------------------------------------------------------------
-    // Build nodes: top-K entities per category per bucket
-    // Each entity gets the most-recent bucket it appeared in as its bucketIndex
+    // Build nodes: keep top-K entities per category for every displayed bucket.
     // -----------------------------------------------------------------------
     const nodes: FlowGraphNode[] = [];
     let nodeIdx = 0;
+    const nodesByEntity = new Map<string, FlowGraphNode[]>();
 
-    // Track which (cat:label) has been assigned a node already (use most-recent bucket)
-    const labelToId = new Map<string, string>(); // key = "cat:label"
-
-    for (let bi = 0; bi < NUM_BUCKETS; bi++) {
+    for (let bi = 0; bi < bucketLabels.length; bi++) {
       for (const cat of ALL_CATEGORIES) {
-        const topEntities = Object.entries(bucketFreqs[bi][cat])
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, TOP_K_PER_BUCKET);
+        const topEntities = sortCountEntries(bucketFreqs[bi][cat]).slice(0, TOP_K_PER_BUCKET);
 
         for (const [label, count] of topEntities) {
-          const key = `${cat}:${label}`;
-          if (!labelToId.has(key)) {
-            const id = `n${nodeIdx++}`;
-            labelToId.set(key, id);
-            nodes.push({
-              id,
-              label,
-              category: cat,
-              count,
-              bucketIndex: bi,
-              bucketLabel: bucketLabels[bi].label,
-            });
-          }
+          const node: FlowGraphNode = {
+            id: `n${nodeIdx++}`,
+            label,
+            category: cat,
+            count,
+            bucketIndex: bi,
+            bucketLabel: bucketLabels[bi].label,
+          };
+
+          nodes.push(node);
+
+          const entityKey = `${cat}:${label}`;
+          const entityNodes = nodesByEntity.get(entityKey) ?? [];
+          entityNodes.push(node);
+          nodesByEntity.set(entityKey, entityNodes);
         }
       }
     }
 
     // -----------------------------------------------------------------------
-    // Pass 2: compute co-occurrence edges (within same bucket)
+    // Build temporal continuity edges between the same entity across buckets.
     // -----------------------------------------------------------------------
-    // Build a Map for O(1) node lookup by id
-    const nodeById = new Map<string, FlowGraphNode>(nodes.map((n) => [n.id, n]));
-    const edgeWeights = new Map<string, number>();
-
-    for (const { bucketIdx, entities } of perEmailBucketEntities) {
-      // Collect node IDs from this email (only nodes assigned to this or a later bucket)
-      const presentIds: string[] = [];
-
-      for (const cat of ALL_CATEGORIES) {
-        for (const label of entities[cat]) {
-          const key = `${cat}:${label}`;
-          const id = labelToId.get(key);
-          if (id) {
-            // Check that this node's bucket is this one or later (i.e., node was active here)
-            const node = nodeById.get(id);
-            if (node && node.bucketIndex >= bucketIdx && !presentIds.includes(id)) {
-              presentIds.push(id);
-            }
-          }
-        }
-      }
-
-      for (let i = 0; i < presentIds.length; i++) {
-        for (let j = i + 1; j < presentIds.length; j++) {
-          const a = presentIds[i];
-          const b = presentIds[j];
-          const key = a < b ? `${a}~${b}` : `${b}~${a}`;
-          edgeWeights.set(key, (edgeWeights.get(key) ?? 0) + 1);
-        }
-      }
-    }
-
     const edges: EntityGraphEdge[] = [];
     let edgeIdx = 0;
-    for (const [key, weight] of edgeWeights) {
-      if (weight < MIN_EDGE_WEIGHT) continue;
-      const [source, target] = key.split('~');
-      edges.push({ id: `e${edgeIdx++}`, source, target, weight });
+
+    for (const entityNodes of nodesByEntity.values()) {
+      entityNodes.sort((a, b) => a.bucketIndex - b.bucketIndex);
+
+      for (let i = 1; i < entityNodes.length; i++) {
+        const previousNode = entityNodes[i - 1];
+        const currentNode = entityNodes[i];
+        const weight = Math.max(1, Math.min(previousNode.count, currentNode.count));
+        if (weight < MIN_EDGE_WEIGHT) continue;
+
+        edges.push({
+          id: `e${edgeIdx++}`,
+          source: previousNode.id,
+          target: currentNode.id,
+          weight,
+        });
+      }
     }
 
     const generatedAt = new Date().toISOString();
@@ -313,7 +317,7 @@ export async function POST(request: NextRequest) {
     await db
       .collection('entityFlows')
       .doc(decoded.uid)
-      .set({ ...graph, userId: decoded.uid, updatedAt: new Date() });
+      .set({ ...graph, version: FLOW_GRAPH_VERSION, userId: decoded.uid, updatedAt: new Date() });
 
     return NextResponse.json({ graph });
   } catch (err) {

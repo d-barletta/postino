@@ -78,6 +78,10 @@ textarea::placeholder {
   opacity: 1;
 }
 
+.react-flow__attribution {
+  background: transparent;
+}
+
 /* Improve dark mode compatibility for common Tailwind gray utility classes used across the app. */
 .dark .bg-white {
   background-color: #111827;

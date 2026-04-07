@@ -289,9 +289,9 @@ export interface FlowGraphNode {
   id: string;
   label: string;
   category: EntityGraphNodeCategory;
-  /** Total occurrences across all time buckets. */
+  /** Number of emails in this bucket that contain the entity. */
   count: number;
-  /** 0 = most recent bucket, increasing = older buckets. */
+  /** 0 = earliest displayed bucket, increasing toward the most recent bucket. */
   bucketIndex: number;
   /** Human-readable label for the bucket, e.g. "Mar 2025". */
   bucketLabel: string;
@@ -301,11 +301,11 @@ export interface FlowGraphNode {
 export interface FlowGraphBucket {
   index: number;
   label: string;
-  /** ISO date of the bucket start (oldest email in that bucket). */
+  /** ISO date of the bucket start. */
   startDate: string;
 }
 
-/** Date-ordered entity flow graph built from temporal email co-occurrences. */
+/** Date-ordered entity flow graph built from temporal entity continuity. */
 export interface EntityFlowGraph {
   nodes: FlowGraphNode[];
   edges: EntityGraphEdge[];

@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import type cytoscape from 'cytoscape';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { RefreshCw, Share2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Share2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import type { EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +29,6 @@ interface RelationGraphProps {
   loading: boolean;
   generating: boolean;
   onGenerate: () => void;
-  /** Called when a node is clicked a second time (already selected). */
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   onExpandFullPage?: () => void;
   translations: {
@@ -43,6 +42,7 @@ interface RelationGraphProps {
     error: string;
     nodeClickHint: string;
     nodeClickHint2: string;
+    openRelatedEmails: string;
     expandFullPage: string;
     closeFullPage: string;
     legend: string;
@@ -54,6 +54,12 @@ interface RelationGraphProps {
     tags: string;
   };
 }
+
+type SelectedGraphNode = {
+  id: string;
+  label: string;
+  category: EntityGraphNodeCategory;
+};
 
 // ---------------------------------------------------------------------------
 // Skeleton while first loading
@@ -140,16 +146,27 @@ function applyHiddenCategories(
 function CytoscapeCanvas({
   graph,
   onNodeClick,
+  actionLabel,
   hiddenCategories = new Set<EntityGraphNodeCategory>(),
 }: {
   graph: EntityRelationGraph;
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
+  actionLabel: string;
   hiddenCategories?: Set<EntityGraphNodeCategory>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  const pinnedNodeIdRef = useRef<string | null>(null);
+  const selectedNodeRef = useRef<SelectedGraphNode | null>(null);
   const hiddenCategoriesRef = useRef(hiddenCategories);
+  const [selectedNode, setSelectedNode] = useState<SelectedGraphNode | null>(null);
   hiddenCategoriesRef.current = hiddenCategories;
+
+  const updateSelectedNode = useCallback((next: SelectedGraphNode | null) => {
+    selectedNodeRef.current = next;
+    setSelectedNode(next);
+  }, []);
+
   const getLabelThemeColors = useCallback(() => {
     const container = containerRef.current;
     if (!container) {
@@ -183,6 +200,22 @@ function CytoscapeCanvas({
     cy.style().update();
   }, [getLabelThemeColors]);
 
+  const applyPinnedHighlight = useCallback((nodeId: string | null) => {
+    const cy = cyRef.current;
+    pinnedNodeIdRef.current = nodeId;
+    if (!cy || cy.destroyed()) return;
+
+    cy.elements().removeClass('faded highlighted node-selected edge-highlighted');
+    if (nodeId) {
+      const pinned = cy.getElementById(nodeId);
+      cy.elements().addClass('faded');
+      pinned.removeClass('faded').addClass('highlighted node-selected');
+      const connEdges = pinned.connectedEdges();
+      connEdges.removeClass('faded').addClass('edge-highlighted');
+      connEdges.connectedNodes().removeClass('faded').addClass('highlighted');
+    }
+  }, []);
+
   useEffect(() => {
     const root = document.documentElement;
     applyLabelThemeToCy();
@@ -201,6 +234,8 @@ function CytoscapeCanvas({
     if (!containerRef.current || graph.nodes.length === 0) return;
 
     let destroyed = false;
+    updateSelectedNode(null);
+    pinnedNodeIdRef.current = null;
 
     const init = async (): Promise<cytoscape.Core | undefined> => {
       const { default: cytoscape } = await import('cytoscape');
@@ -361,24 +396,9 @@ function CytoscapeCanvas({
         maxZoom: 5,
       });
 
-      // ---- interactions ----
-      let pinnedNodeId: string | null = null;
-
-      const applyPinnedHighlight = (nodeId: string | null) => {
-        cy.elements().removeClass('faded highlighted node-selected edge-highlighted');
-        if (nodeId) {
-          const pinned = cy.getElementById(nodeId);
-          cy.elements().addClass('faded');
-          pinned.removeClass('faded').addClass('highlighted node-selected');
-          const connEdges = pinned.connectedEdges();
-          connEdges.removeClass('faded').addClass('edge-highlighted');
-          connEdges.connectedNodes().removeClass('faded').addClass('highlighted');
-        }
-      };
-
       cy.on('mouseover', 'node', (evt) => {
         const node = evt.target;
-        if (pinnedNodeId) return; // don't disturb pinned highlight on hover
+        if (pinnedNodeIdRef.current) return; // don't disturb pinned highlight on hover
         cy.elements().removeClass('faded highlighted edge-highlighted');
         cy.elements().addClass('faded');
         node.removeClass('faded').addClass('highlighted');
@@ -388,31 +408,27 @@ function CytoscapeCanvas({
       });
 
       cy.on('mouseout', 'node', () => {
-        if (pinnedNodeId) return;
+        if (pinnedNodeIdRef.current) return;
         cy.elements().removeClass('faded highlighted edge-highlighted');
       });
 
-      // First click → pin selection highlight only
-      // Second click on same node → open modal
+      // First click pins selection. Re-click keeps selection; related emails open from overlay button.
       cy.on('tap', 'node', (evt) => {
         const node = evt.target;
         const nodeId = node.id() as string;
-        if (pinnedNodeId === nodeId) {
-          // second tap: open modal, keep selection
-          onNodeClick(
-            node.data('label') as string,
-            node.data('category') as EntityGraphNodeCategory,
-          );
-        } else {
-          // first tap: select only
-          pinnedNodeId = nodeId;
-          applyPinnedHighlight(pinnedNodeId);
-        }
+        if (pinnedNodeIdRef.current === nodeId) return;
+
+        applyPinnedHighlight(nodeId);
+        updateSelectedNode({
+          id: nodeId,
+          label: node.data('label') as string,
+          category: node.data('category') as EntityGraphNodeCategory,
+        });
       });
 
       cy.on('tap', (evt) => {
         if (evt.target === cy) {
-          pinnedNodeId = null;
+          updateSelectedNode(null);
           applyPinnedHighlight(null);
         }
       });
@@ -427,6 +443,13 @@ function CytoscapeCanvas({
       cyRef.current = cy;
       applyLabelThemeToCy();
       applyHiddenCategories(cy, hiddenCategoriesRef.current);
+
+      const currentSelection = selectedNodeRef.current;
+      if (currentSelection && hiddenCategoriesRef.current.has(currentSelection.category)) {
+        updateSelectedNode(null);
+        applyPinnedHighlight(null);
+      }
+
       return cy;
     };
 
@@ -439,25 +462,45 @@ function CytoscapeCanvas({
           if (cyRef.current === cy) cyRef.current = null;
           cy.removeAllListeners();
           cy.destroy();
+          updateSelectedNode(null);
+          pinnedNodeIdRef.current = null;
         })
         .catch(() => {});
     };
-  }, [graph, onNodeClick, applyLabelThemeToCy, getLabelThemeColors]);
+  }, [graph, applyLabelThemeToCy, applyPinnedHighlight, getLabelThemeColors, updateSelectedNode]);
 
   // Apply hidden categories whenever the set changes (after cy is initialised)
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy || cy.destroyed()) return;
     applyHiddenCategories(cy, hiddenCategories);
-  }, [hiddenCategories]);
+    if (selectedNodeRef.current && hiddenCategories.has(selectedNodeRef.current.category)) {
+      updateSelectedNode(null);
+      applyPinnedHighlight(null);
+    }
+  }, [applyPinnedHighlight, hiddenCategories, updateSelectedNode]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full rounded-2xl overflow-hidden [--rg-label-color:#1f2937] [--rg-label-bg:#f3f4f6] [--rg-edge-color:#94a3b8] [--rg-edge-highlighted-color:#cbd5e1] dark:[--rg-label-color:#e2e8f0] dark:[--rg-label-bg:#1f2937] dark:[--rg-edge-color:#64748b] dark:[--rg-edge-highlighted-color:#94a3b8]"
-      style={{ backgroundColor: 'transparent' }}
-      aria-label="Entity relation graph"
-    />
+    <div className="relative h-full w-full">
+      {selectedNode ? (
+        <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-3">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onNodeClick(selectedNode.label, selectedNode.category)}
+            className="pointer-events-auto border border-[#efd957]/80 bg-white/95 text-gray-900 shadow-sm backdrop-blur hover:bg-[#fff4b0] dark:bg-gray-900/95 dark:text-gray-100 dark:hover:bg-gray-800"
+          >
+            {actionLabel}
+          </Button>
+        </div>
+      ) : null}
+      <div
+        ref={containerRef}
+        className="w-full h-full rounded-2xl overflow-hidden [--rg-label-color:#1f2937] [--rg-label-bg:#f3f4f6] [--rg-edge-color:#94a3b8] [--rg-edge-highlighted-color:#cbd5e1] dark:[--rg-label-color:#e2e8f0] dark:[--rg-label-bg:#1f2937] dark:[--rg-edge-color:#64748b] dark:[--rg-edge-highlighted-color:#94a3b8]"
+        style={{ backgroundColor: 'transparent' }}
+        aria-label="Entity relation graph"
+      />
+    </div>
   );
 }
 
@@ -470,13 +513,11 @@ export function RelationGraph({
   generating,
   onGenerate,
   onNodeClick,
-  onExpandFullPage,
   translations: tr,
 }: RelationGraphProps) {
   const formattedDate = graph?.generatedAt ? new Date(graph.generatedAt).toLocaleString() : null;
 
   const isEmpty = graph && graph.nodes.length === 0;
-  const isResolvingInitialState = loading && !graph && !generating;
 
   // Tags hidden by default; toggling a legend item shows/hides that category
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
@@ -544,10 +585,11 @@ export function RelationGraph({
       {!loading && graph && !isEmpty && (
         <>
           {/* Cytoscape container — calc(50vh - 120px) on mobile, 500 px on sm+ */}
-          <div className="h-[calc(50vh-120px)] sm:h-[500px]">
+          <div className="h-[calc(50vh-120px)] sm:h-125">
             <CytoscapeCanvas
               graph={graph}
               onNodeClick={onNodeClick}
+              actionLabel={tr.openRelatedEmails}
               hiddenCategories={hiddenCategories}
             />
           </div>
@@ -593,7 +635,7 @@ export function RelationGraphFullPageContent({
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   translations: Pick<
     RelationGraphProps['translations'],
-    'legend' | 'nodeClickHint' | 'nodeClickHint2' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
+    'legend' | 'nodeClickHint' | 'nodeClickHint2' | 'openRelatedEmails' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
@@ -615,7 +657,12 @@ export function RelationGraphFullPageContent({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 min-h-0">
-        <CytoscapeCanvas graph={graph} onNodeClick={onNodeClick} hiddenCategories={hiddenCategories} />
+        <CytoscapeCanvas
+          graph={graph}
+          onNodeClick={onNodeClick}
+          actionLabel={tr.openRelatedEmails}
+          hiddenCategories={hiddenCategories}
+        />
       </div>
       <div className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800">
         <div className="flex items-start justify-between gap-4 flex-wrap">
