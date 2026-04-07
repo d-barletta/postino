@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -78,11 +79,16 @@ export function BlogArticleContent({ article, translations }: BlogArticleContent
         <article>
           <header className="mb-8">
             {article.thumbnailUrl && (
-              <img
-                src={article.thumbnailUrl}
-                alt={article.title}
-                className="w-full aspect-video object-cover rounded-2xl shadow-md mb-7"
-              />
+              <div className="relative mb-7 aspect-video overflow-hidden rounded-2xl shadow-md">
+                <Image
+                  src={article.thumbnailUrl}
+                  alt={article.title}
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 768px, 100vw"
+                  className="object-cover"
+                />
+              </div>
             )}
 
             <div className="flex flex-wrap gap-2 mb-4">

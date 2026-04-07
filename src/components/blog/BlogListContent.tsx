@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -83,11 +84,14 @@ export function BlogListContent({ articles }: BlogListContentProps) {
                 className="group glass-panel rounded-2xl overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
               >
                 {article.thumbnailUrl && (
-                  <div className="aspect-video overflow-hidden">
-                    <img
+                  <div className="relative aspect-video overflow-hidden">
+                    <Image
                       src={article.thumbnailUrl}
                       alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      unoptimized
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
                 )}

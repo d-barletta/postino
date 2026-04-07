@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -67,6 +68,7 @@ export default function AdminBlogTab() {
   const [tagInput, setTagInput] = useState('');
   const [translateTarget, setTranslateTarget] = useState('');
   const [showTranslateDropdown, setShowTranslateDropdown] = useState(false);
+  const [thumbnailPreviewError, setThumbnailPreviewError] = useState(false);
 
   const fetchArticles = useCallback(async () => {
     if (!firebaseUser) return;
@@ -102,6 +104,7 @@ export default function AdminBlogTab() {
     setTagInput('');
     setTranslateTarget('');
     setShowTranslateDropdown(false);
+    setThumbnailPreviewError(false);
     setView('form');
   };
 
@@ -118,6 +121,7 @@ export default function AdminBlogTab() {
     setTagInput('');
     setTranslateTarget('');
     setShowTranslateDropdown(false);
+    setThumbnailPreviewError(false);
     setView('form');
   };
 
@@ -128,6 +132,7 @@ export default function AdminBlogTab() {
     setTagInput('');
     setTranslateTarget('');
     setShowTranslateDropdown(false);
+    setThumbnailPreviewError(false);
   };
 
   const addTag = () => {
@@ -345,17 +350,24 @@ export default function AdminBlogTab() {
                 id="blog-thumbnail"
                 placeholder="https://example.com/image.jpg"
                 value={form.thumbnailUrl}
-                onChange={(e) => setForm((f) => ({ ...f, thumbnailUrl: e.target.value }))}
+                onChange={(e) => {
+                  setThumbnailPreviewError(false);
+                  setForm((f) => ({ ...f, thumbnailUrl: e.target.value }));
+                }}
               />
-              {form.thumbnailUrl && (
-                <img
-                  src={form.thumbnailUrl}
-                  alt="Thumbnail preview"
-                  className="h-24 w-auto rounded-lg object-cover mt-1"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+              {form.thumbnailUrl && !thumbnailPreviewError && (
+                <div className="relative mt-1 h-24 w-40 overflow-hidden rounded-lg">
+                  <Image
+                    key={form.thumbnailUrl}
+                    src={form.thumbnailUrl}
+                    alt="Thumbnail preview"
+                    fill
+                    unoptimized
+                    sizes="160px"
+                    className="object-cover"
+                    onError={() => setThumbnailPreviewError(true)}
+                  />
+                </div>
               )}
             </div>
 
