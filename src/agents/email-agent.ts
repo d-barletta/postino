@@ -768,10 +768,14 @@ ${bodyExcerpt}`,
   }
 }
 
-async function hydrateEmailAnalysis(rawAnalysis: RawEmailAnalysis | null): Promise<EmailAnalysis | null> {
+async function hydrateEmailAnalysis(
+  rawAnalysis: RawEmailAnalysis | null,
+): Promise<EmailAnalysis | null> {
   if (!rawAnalysis) return null;
 
-  const geocodedPlaces = await geocodePlaceNames(normalizeUniqueStrings(rawAnalysis.entities.places));
+  const geocodedPlaces = await geocodePlaceNames(
+    normalizeUniqueStrings(rawAnalysis.entities.places),
+  );
   const placeNames = extractStoredPlaceNames(geocodedPlaces);
 
   return {

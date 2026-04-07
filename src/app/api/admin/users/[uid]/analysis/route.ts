@@ -44,10 +44,7 @@ async function invalidateDerivedUserData(uid: string): Promise<void> {
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
     await verifyAdminRequest(request);
     const { uid } = await params;
@@ -60,7 +57,7 @@ export async function POST(
 
     const analysisOutputLanguage =
       typeof userSnap.data()?.analysisOutputLanguage === 'string'
-        ? ((userSnap.data()?.analysisOutputLanguage as string) || undefined)
+        ? (userSnap.data()?.analysisOutputLanguage as string) || undefined
         : undefined;
 
     const logsSnap = await db

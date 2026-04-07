@@ -71,10 +71,7 @@ export function extractStoredPlaceObjects(values: unknown): EmailAnalysisPlace[]
   return result;
 }
 
-export function extractStoredPlaceNames(
-  values: unknown,
-  fallbackPlaceNames?: unknown,
-): string[] {
+export function extractStoredPlaceNames(values: unknown, fallbackPlaceNames?: unknown): string[] {
   const explicitNames = normalizeUniqueStrings(fallbackPlaceNames);
   if (explicitNames.length > 0) return explicitNames;
 

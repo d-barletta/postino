@@ -168,9 +168,7 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
                 {eh.analysisEntitiesPlaces}
               </dt>
-              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
-                {placeNames.join(', ')}
-              </dd>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">{placeNames.join(', ')}</dd>
             </>
           )}
           {entities && entities.events.length > 0 && (

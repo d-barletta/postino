@@ -1745,11 +1745,11 @@ const translations: Record<Locale, Translations> = {
         rerunAnalysis: 'Rilancia analisi AI',
         rerunAnalysisTitle: 'Rilancia analisi AI',
         rerunAnalysisDesc:
-          'Eliminare tutte le analisi AI salvate per {email} e rieseguirle su ogni email di questa inbox? Potrebbe richiedere un po\' di tempo.',
+          "Eliminare tutte le analisi AI salvate per {email} e rieseguirle su ogni email di questa inbox? Potrebbe richiedere un po' di tempo.",
         resetData: 'Reimposta dati',
         resetDataTitle: 'Reimposta dati utente',
         resetDataDesc:
-          'Eliminare tutti i dati salvati per {email} e creare un nuovo profilo Postino? L\'accesso resta attivo, ma email, regole, job, knowledge e cache verranno rimossi.',
+          "Eliminare tutti i dati salvati per {email} e creare un nuovo profilo Postino? L'accesso resta attivo, ma email, regole, job, knowledge e cache verranno rimossi.",
       },
       toasts: {
         settingsSaved: 'Impostazioni salvate',
@@ -1763,7 +1763,7 @@ const translations: Record<Locale, Translations> = {
         userAnalysesRerun: 'Analisi AI aggiornata per {count} email.',
         userAnalysesRerunPartial:
           'Analisi AI aggiornata per {done} email, {failed} fallite, {skipped} saltate.',
-        failedToRerunUserAnalyses: 'Riesecuzione dell\'analisi AI utente non riuscita.',
+        failedToRerunUserAnalyses: "Riesecuzione dell'analisi AI utente non riuscita.",
         userDataReset: 'Dati utente reimpostati',
         failedToResetUserData: 'Reimpostazione dati utente non riuscita',
         failedToUpdateUser: 'Aggiornamento utente non riuscito',
@@ -2937,10 +2937,10 @@ const translations: Record<Locale, Translations> = {
     },
     admin: {
       users: {
-        rerunAnalysis: 'Relancer l\'analyse IA',
-        rerunAnalysisTitle: 'Relancer l\'analyse IA',
+        rerunAnalysis: "Relancer l'analyse IA",
+        rerunAnalysisTitle: "Relancer l'analyse IA",
         rerunAnalysisDesc:
-          'Supprimer toute l\'analyse IA enregistrée pour {email} et la relancer sur chaque e-mail de cette boîte ? Cela peut prendre un moment.',
+          "Supprimer toute l'analyse IA enregistrée pour {email} et la relancer sur chaque e-mail de cette boîte ? Cela peut prendre un moment.",
         resetData: 'Réinitialiser les données',
         resetDataTitle: 'Réinitialiser les données utilisateur',
         resetDataDesc:
@@ -2958,11 +2958,10 @@ const translations: Record<Locale, Translations> = {
         userAnalysesRerun: 'Analyse IA relancée pour {count} e-mails.',
         userAnalysesRerunPartial:
           'Analyse IA relancée pour {done} e-mails, {failed} échecs, {skipped} ignorés.',
-        failedToRerunUserAnalyses:
-          'Impossible de relancer l\'analyse IA de l\'utilisateur.',
+        failedToRerunUserAnalyses: "Impossible de relancer l'analyse IA de l'utilisateur.",
         userDataReset: 'Données utilisateur réinitialisées',
         failedToResetUserData: 'Échec de la réinitialisation des données utilisateur',
-        failedToUpdateUser: 'Échec de la mise à jour de l\'utilisateur',
+        failedToUpdateUser: "Échec de la mise à jour de l'utilisateur",
         failedToProcessQueue: 'Échec du traitement du lot',
         failedToUpdateMailgunSetting: 'Échec de la mise à jour du paramètre Mailgun',
         failedToClearLogs: 'Échec de la suppression des journaux',
@@ -3559,8 +3558,7 @@ const translations: Record<Locale, Translations> = {
         userAnalysesRerun: 'KI-Analyse für {count} E-Mails aktualisiert.',
         userAnalysesRerunPartial:
           'KI-Analyse für {done} E-Mails aktualisiert, {failed} fehlgeschlagen, {skipped} übersprungen.',
-        failedToRerunUserAnalyses:
-          'KI-Analyse des Benutzers konnte nicht neu gestartet werden.',
+        failedToRerunUserAnalyses: 'KI-Analyse des Benutzers konnte nicht neu gestartet werden.',
         userDataReset: 'Benutzerdaten zurückgesetzt',
         failedToResetUserData: 'Benutzerdaten konnten nicht zurückgesetzt werden',
         failedToUpdateUser: 'Benutzer konnte nicht aktualisiert werden',

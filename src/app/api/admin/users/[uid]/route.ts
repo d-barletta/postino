@@ -142,7 +142,11 @@ async function provisionFreshUserProfile(uid: string, currentUserData: Record<st
   let assignedEmail = '';
   for (let attempt = 0; attempt < MAX_ASSIGNED_EMAIL_ATTEMPTS; attempt++) {
     const candidate = generateAssignedEmail(assignedDomain);
-    const existing = await db.collection('users').where('assignedEmail', '==', candidate).limit(1).get();
+    const existing = await db
+      .collection('users')
+      .where('assignedEmail', '==', candidate)
+      .limit(1)
+      .get();
     if (existing.empty) {
       assignedEmail = candidate;
       break;
@@ -153,16 +157,19 @@ async function provisionFreshUserProfile(uid: string, currentUserData: Record<st
     throw new Error('Failed to provision assigned email');
   }
 
-  await db.collection('users').doc(uid).set({
-    email: authEmail,
-    assignedEmail,
-    createdAt: new Date(),
-    isAdmin: false,
-    isActive,
-    suspended: false,
-    analysisOutputLanguage: 'en',
-    ...(authDisplayName ? { displayName: authDisplayName } : {}),
-  });
+  await db
+    .collection('users')
+    .doc(uid)
+    .set({
+      email: authEmail,
+      assignedEmail,
+      createdAt: new Date(),
+      isAdmin: false,
+      isActive,
+      suspended: false,
+      analysisOutputLanguage: 'en',
+      ...(authDisplayName ? { displayName: authDisplayName } : {}),
+    });
 }
 
 export async function PATCH(
@@ -198,10 +205,7 @@ export async function PATCH(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ uid: string }> },
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
     await verifyAdminRequest(request);
     const { uid } = await params;

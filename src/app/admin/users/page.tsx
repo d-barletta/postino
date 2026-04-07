@@ -128,19 +128,17 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
             (confirmAction.action === 'reanalyze'
               ? t.admin.toasts.failedToRerunUserAnalyses
               : confirmAction.action === 'reset'
-              ? t.admin.toasts.failedToResetUserData
-              : t.admin.toasts.failedToUpdateUser),
+                ? t.admin.toasts.failedToResetUserData
+                : t.admin.toasts.failedToUpdateUser),
         );
       }
 
-      const data = (await res.json().catch(() => null)) as
-        | {
-            reanalyzedCount?: number;
-            failedCount?: number;
-            skippedCount?: number;
-            totalCount?: number;
-          }
-        | null;
+      const data = (await res.json().catch(() => null)) as {
+        reanalyzedCount?: number;
+        failedCount?: number;
+        skippedCount?: number;
+        totalCount?: number;
+      } | null;
 
       await fetchUsers();
       const label =
@@ -158,13 +156,13 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                 })
             : confirmAction.action === 'reset'
               ? t.admin.toasts.userDataReset
-            : confirmAction.action === 'admin'
-              ? confirmAction.current
-                ? t.admin.toasts.adminRemoved
-                : t.admin.toasts.adminGranted
-              : confirmAction.current
-                ? t.admin.toasts.userSuspended
-                : t.admin.toasts.userActivated;
+              : confirmAction.action === 'admin'
+                ? confirmAction.current
+                  ? t.admin.toasts.adminRemoved
+                  : t.admin.toasts.adminGranted
+                : confirmAction.current
+                  ? t.admin.toasts.userSuspended
+                  : t.admin.toasts.userActivated;
       toast.success(label);
     } catch (error) {
       toast.error(
@@ -172,9 +170,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           ? error.message
           : confirmAction.action === 'reanalyze'
             ? t.admin.toasts.failedToRerunUserAnalyses
-          : confirmAction.action === 'reset'
-            ? t.admin.toasts.failedToResetUserData
-            : t.admin.toasts.failedToUpdateUser,
+            : confirmAction.action === 'reset'
+              ? t.admin.toasts.failedToResetUserData
+              : t.admin.toasts.failedToUpdateUser,
       );
     } finally {
       setConfirming(false);
@@ -188,25 +186,25 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       ? 'Delete user'
       : confirmAction?.action === 'reanalyze'
         ? adminUsers.rerunAnalysisTitle
-      : confirmAction?.action === 'reset'
-        ? adminUsers.resetDataTitle
-      : confirmAction?.action === 'admin'
-        ? confirmAction.current
-          ? 'Remove admin privileges'
-          : 'Grant admin privileges'
-        : confirmAction?.current
-          ? 'Suspend user'
-          : 'Activate user';
+        : confirmAction?.action === 'reset'
+          ? adminUsers.resetDataTitle
+          : confirmAction?.action === 'admin'
+            ? confirmAction.current
+              ? 'Remove admin privileges'
+              : 'Grant admin privileges'
+            : confirmAction?.current
+              ? 'Suspend user'
+              : 'Activate user';
   const confirmDesc =
     confirmAction?.action === 'delete'
       ? `Permanently delete ${confirmUser?.email} and all their data (rules, email logs)? This cannot be undone.`
       : confirmAction?.action === 'reanalyze'
         ? adminUsers.rerunAnalysisDesc.replace('{email}', confirmUser?.email ?? '')
-      : confirmAction?.action === 'reset'
-        ? adminUsers.resetDataDesc.replace('{email}', confirmUser?.email ?? '')
-      : confirmAction?.action === 'admin'
-        ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
-        : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
+        : confirmAction?.action === 'reset'
+          ? adminUsers.resetDataDesc.replace('{email}', confirmUser?.email ?? '')
+          : confirmAction?.action === 'admin'
+            ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
+            : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
 
   return (
     <div className="space-y-6">

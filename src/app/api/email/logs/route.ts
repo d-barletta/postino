@@ -328,9 +328,7 @@ export async function GET(request: NextRequest) {
         const list = extractStoredPlaceNames(entities?.places, entities?.placeNames);
         return (
           list.length > 0 &&
-          placesFilter.some((p) =>
-            list.some((v) => v.toLowerCase() === p.toLowerCase()),
-          )
+          placesFilter.some((p) => list.some((v) => v.toLowerCase() === p.toLowerCase()))
         );
       });
     }
