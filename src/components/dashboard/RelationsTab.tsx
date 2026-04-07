@@ -17,6 +17,11 @@ import {
   RelationFlowChartFullPageContent,
   useFlowGraph,
 } from '@/components/dashboard/RelationFlowChart';
+import {
+  RelationMapChart,
+  RelationMapChartFullPageContent,
+  usePlaceMapGraph,
+} from '@/components/dashboard/RelationMapChart';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   Dialog,
@@ -26,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
-import { Maximize2, RefreshCw, Share2, Workflow } from 'lucide-react';
+import { Map as MapIcon, Maximize2, RefreshCw, Share2, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EntityGraphNodeCategory } from '@/types';
 
@@ -47,6 +52,15 @@ export function RelationsTab() {
     generateGraph: generateFlowGraph,
   } = useFlowGraph(firebaseUser);
 
+  const {
+    graph: placeMap,
+    hasFetched: mapHasFetched,
+    loading: mapLoading,
+    generating: mapGenerating,
+    fetchGraph: fetchPlaceMap,
+    generateGraph: generatePlaceMap,
+  } = usePlaceMapGraph(firebaseUser);
+
   // Load cached graphs on first render
   useEffect(() => {
     fetchGraph();
@@ -56,7 +70,11 @@ export function RelationsTab() {
     fetchFlowGraph();
   }, [fetchFlowGraph]);
 
-  const [activeSubTab, setActiveSubTab] = useState<'graph' | 'flow'>('graph');
+  useEffect(() => {
+    fetchPlaceMap();
+  }, [fetchPlaceMap]);
+
+  const [activeSubTab, setActiveSubTab] = useState<'graph' | 'flow' | 'map'>('graph');
 
   const [modalChip, setModalChip] = useState<{
     value: string;
@@ -69,10 +87,12 @@ export function RelationsTab() {
   } | null>(null);
   const [fullPageGraphOpen, setFullPageGraphOpen] = useState(false);
   const [fullPageFlowOpen, setFullPageFlowOpen] = useState(false);
+  const [fullPageMapOpen, setFullPageMapOpen] = useState(false);
 
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
   useModalHistory(fullPageGraphOpen, () => setFullPageGraphOpen(false));
   useModalHistory(fullPageFlowOpen, () => setFullPageFlowOpen(false));
+  useModalHistory(fullPageMapOpen, () => setFullPageMapOpen(false));
 
   const handleNodeClick = useCallback(
     (label: string, category: EntityGraphNodeCategory) => {
@@ -115,8 +135,19 @@ export function RelationsTab() {
     expandFullPage: k.relations.expandFullPage,
   };
 
+  const mapTranslations = {
+    mapGenerate: k.relations.mapGenerate,
+    mapNoGraph: k.relations.mapNoGraph,
+    mapNoGraphDesc: k.relations.mapNoGraphDesc,
+    mapGeneratedOn: k.relations.mapGeneratedOn,
+    mapTotalEmails: k.relations.mapTotalEmails,
+    mapPinClick: k.relations.mapPinClick,
+    openRelatedEmails: k.relations.openRelatedEmails,
+  };
+
   const isEmpty = graph && graph.nodes.length === 0;
   const flowIsEmpty = flowGraph && flowGraph.nodes.length === 0;
+  const mapIsEmpty = placeMap && placeMap.pins.length === 0;
 
   return (
     <>
@@ -174,12 +205,36 @@ export function RelationsTab() {
                   <RefreshCw className={cn('h-4 w-4', flowGenerating && 'animate-spin')} />
                 </Button>
               )}
+              {activeSubTab === 'map' && placeMap && !mapIsEmpty && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFullPageMapOpen(true)}
+                  aria-label={k.relations.expandFullPage}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              )}
+              {activeSubTab === 'map' && mapHasFetched && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={generatePlaceMap}
+                  disabled={mapGenerating}
+                  aria-label={k.relations.mapRegenerate}
+                >
+                  <RefreshCw className={cn('h-4 w-4', mapGenerating && 'animate-spin')} />
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-0 p-2">
-          <Tabs value={activeSubTab} onValueChange={(v) => setActiveSubTab(v as 'graph' | 'flow')}>
+          <Tabs
+            value={activeSubTab}
+            onValueChange={(v) => setActiveSubTab(v as 'graph' | 'flow' | 'map')}
+          >
             <TabsList>
               <TabsTrigger value="graph" className="inline-flex items-center gap-1.5">
                 <Share2 className="h-3.5 w-3.5" />
@@ -188,6 +243,10 @@ export function RelationsTab() {
               <TabsTrigger value="flow" className="inline-flex items-center gap-1.5">
                 <Workflow className="h-3.5 w-3.5" />
                 {k.relations.flowTab}
+              </TabsTrigger>
+              <TabsTrigger value="map" className="inline-flex items-center gap-1.5">
+                <MapIcon className="h-3.5 w-3.5" />
+                {k.relations.mapTab}
               </TabsTrigger>
             </TabsList>
 
@@ -210,6 +269,18 @@ export function RelationsTab() {
                 onGenerate={generateFlowGraph}
                 onNodeClick={handleNodeClick}
                 translations={flowTranslations}
+              />
+            </TabsContent>
+
+            <TabsContent value="map" className="pt-0">
+              <RelationMapChart
+                graph={placeMap}
+                loading={authLoading || mapLoading || !mapHasFetched}
+                generating={mapGenerating}
+                isActive={activeSubTab === 'map'}
+                onGenerate={generatePlaceMap}
+                onNodeClick={(label) => handleNodeClick(label, 'places')}
+                translations={mapTranslations}
               />
             </TabsContent>
           </Tabs>
@@ -270,6 +341,40 @@ export function RelationsTab() {
                 graph={flowGraph}
                 onNodeClick={handleNodeClick}
                 translations={flowTranslations}
+              />
+            )}
+          </div>
+          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
+            <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {k.relations.title}
+            </DialogTitle>
+            <DialogClose asChild>
+              <Button size="sm" className="shrink-0">
+                {k.relations.closeFullPage}
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={fullPageMapOpen}
+        onOpenChange={(o) => {
+          if (!o) setFullPageMapOpen(false);
+        }}
+      >
+        <DialogContent
+          hideCloseButton
+          animation="slide-from-bottom"
+          className="w-[95vw] max-w-7xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
+          aria-describedby={undefined}
+        >
+          <div className="flex-1 min-h-0">
+            {placeMap && placeMap.pins.length > 0 && (
+              <RelationMapChartFullPageContent
+                graph={placeMap}
+                onNodeClick={(label) => handleNodeClick(label, 'places')}
+                translations={mapTranslations}
               />
             )}
           </div>

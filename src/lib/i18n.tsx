@@ -378,6 +378,7 @@ export interface Translations {
         generated: string;
         graphTab: string;
         flowTab: string;
+        mapTab: string;
         flowNodeClick: string;
         flowGenerate: string;
         flowGenerating: string;
@@ -389,6 +390,16 @@ export interface Translations {
         flowGenerated: string;
         flowGeneratedOn: string;
         flowTotalEmails: string;
+        mapPinClick: string;
+        mapGenerate: string;
+        mapRegenerate: string;
+        mapNoGraph: string;
+        mapNoGraphDesc: string;
+        mapError: string;
+        mapLoadError: string;
+        mapGenerated: string;
+        mapGeneratedOn: string;
+        mapTotalEmails: string;
       };
     };
     rules: {
@@ -945,6 +956,7 @@ const translations: Record<Locale, Translations> = {
           generated: 'Relation graph updated',
           graphTab: 'Graph',
           flowTab: 'Flow',
+          mapTab: 'Map',
           flowNodeClick:
             'Click once to highlight connected entities, then use the button to explore related emails',
           flowGenerate: 'Generate Flow',
@@ -958,6 +970,18 @@ const translations: Record<Locale, Translations> = {
           flowGenerated: 'Flow chart updated',
           flowGeneratedOn: 'Generated on {date}',
           flowTotalEmails: 'Based on {count} emails',
+          mapPinClick:
+            'Click a pin to select a place, then use the button to explore related emails',
+          mapGenerate: 'Generate Map',
+          mapRegenerate: 'Regenerate Map',
+          mapNoGraph: 'No place map yet',
+          mapNoGraphDesc:
+            'Click "Generate Map" to place the locations mentioned in your emails on a real map.',
+          mapError: 'Failed to generate place map',
+          mapLoadError: 'Failed to load place map',
+          mapGenerated: 'Place map updated',
+          mapGeneratedOn: 'Generated on {date}',
+          mapTotalEmails: 'Based on {count} emails',
         },
       },
       rules: {
@@ -1514,6 +1538,7 @@ const translations: Record<Locale, Translations> = {
           generated: 'Grafico relazioni aggiornato',
           graphTab: 'Grafico',
           flowTab: 'Flusso',
+          mapTab: 'Mappa',
           flowNodeClick:
             'Clicca una volta per evidenziare le entità collegate, poi usa il pulsante per esplorare le email correlate',
           flowGenerate: 'Genera flusso',
@@ -1527,6 +1552,18 @@ const translations: Record<Locale, Translations> = {
           flowGenerated: 'Diagramma di flusso aggiornato',
           flowGeneratedOn: 'Generato il {date}',
           flowTotalEmails: 'Basato su {count} email',
+          mapPinClick:
+            'Clicca un pin per selezionare un luogo, poi usa il pulsante per esplorare le email correlate',
+          mapGenerate: 'Genera mappa',
+          mapRegenerate: 'Rigenera mappa',
+          mapNoGraph: 'Nessuna mappa luoghi',
+          mapNoGraphDesc:
+            'Clicca "Genera mappa" per posizionare su una mappa reale i luoghi menzionati nelle tue email.',
+          mapError: 'Generazione della mappa luoghi non riuscita',
+          mapLoadError: 'Caricamento della mappa luoghi non riuscito',
+          mapGenerated: 'Mappa luoghi aggiornata',
+          mapGeneratedOn: 'Generata il {date}',
+          mapTotalEmails: 'Basata su {count} email',
         },
       },
       rules: {
@@ -2082,6 +2119,7 @@ const translations: Record<Locale, Translations> = {
           generated: 'Gráfico de relaciones actualizado',
           graphTab: 'Gráfico',
           flowTab: 'Flujo',
+          mapTab: 'Mapa',
           flowNodeClick:
             'Haz clic una vez para resaltar las entidades conectadas y luego usa el botón para explorar correos relacionados',
           flowGenerate: 'Generar flujo',
@@ -2095,6 +2133,18 @@ const translations: Record<Locale, Translations> = {
           flowGenerated: 'Diagrama de flujo actualizado',
           flowGeneratedOn: 'Generado el {date}',
           flowTotalEmails: 'Basado en {count} correos',
+          mapPinClick:
+            'Haz clic en un pin para seleccionar un lugar y luego usa el botón para explorar correos relacionados',
+          mapGenerate: 'Generar mapa',
+          mapRegenerate: 'Regenerar mapa',
+          mapNoGraph: 'Aún no hay mapa de lugares',
+          mapNoGraphDesc:
+            'Haz clic en "Generar mapa" para colocar en un mapa real los lugares mencionados en tus correos.',
+          mapError: 'Error al generar el mapa de lugares',
+          mapLoadError: 'Error al cargar el mapa de lugares',
+          mapGenerated: 'Mapa de lugares actualizado',
+          mapGeneratedOn: 'Generado el {date}',
+          mapTotalEmails: 'Basado en {count} correos',
         },
       },
       rules: {
@@ -2650,6 +2700,7 @@ const translations: Record<Locale, Translations> = {
           generated: 'Graphe de relations mis à jour',
           graphTab: 'Graphe',
           flowTab: 'Flux',
+          mapTab: 'Carte',
           flowNodeClick:
             'Cliquez une fois pour mettre en évidence les entités connectées, puis utilisez le bouton pour explorer les e-mails associés',
           flowGenerate: 'Générer le flux',
@@ -2663,6 +2714,18 @@ const translations: Record<Locale, Translations> = {
           flowGenerated: 'Diagramme de flux mis à jour',
           flowGeneratedOn: 'Généré le {date}',
           flowTotalEmails: 'Basé sur {count} e-mails',
+          mapPinClick:
+            'Cliquez sur une épingle pour sélectionner un lieu, puis utilisez le bouton pour explorer les e-mails associés',
+          mapGenerate: 'Générer la carte',
+          mapRegenerate: 'Régénérer la carte',
+          mapNoGraph: 'Aucune carte des lieux',
+          mapNoGraphDesc:
+            'Cliquez sur "Générer la carte" pour placer sur une vraie carte les lieux mentionnés dans vos e-mails.',
+          mapError: 'Échec de la génération de la carte des lieux',
+          mapLoadError: 'Échec du chargement de la carte des lieux',
+          mapGenerated: 'Carte des lieux mise à jour',
+          mapGeneratedOn: 'Générée le {date}',
+          mapTotalEmails: 'Basé sur {count} e-mails',
         },
       },
       rules: {
@@ -3219,6 +3282,7 @@ const translations: Record<Locale, Translations> = {
           generated: 'Beziehungsgraph aktualisiert',
           graphTab: 'Graph',
           flowTab: 'Fluss',
+          mapTab: 'Karte',
           flowNodeClick:
             'Klicken Sie einmal, um verbundene Entitäten hervorzuheben, und verwenden Sie dann die Schaltfläche, um zugehörige E-Mails zu erkunden',
           flowGenerate: 'Fluss generieren',
@@ -3232,6 +3296,18 @@ const translations: Record<Locale, Translations> = {
           flowGenerated: 'Flussdiagramm aktualisiert',
           flowGeneratedOn: 'Erstellt am {date}',
           flowTotalEmails: 'Basierend auf {count} E-Mails',
+          mapPinClick:
+            'Klicken Sie auf einen Pin, um einen Ort auszuwählen, und verwenden Sie dann die Schaltfläche, um zugehörige E-Mails zu erkunden',
+          mapGenerate: 'Karte generieren',
+          mapRegenerate: 'Karte neu generieren',
+          mapNoGraph: 'Noch keine Ortskarte',
+          mapNoGraphDesc:
+            'Klicken Sie auf "Karte generieren", um die in Ihren E-Mails erwähnten Orte auf einer echten Karte zu platzieren.',
+          mapError: 'Ortskarte konnte nicht generiert werden',
+          mapLoadError: 'Ortskarte konnte nicht geladen werden',
+          mapGenerated: 'Ortskarte aktualisiert',
+          mapGeneratedOn: 'Erstellt am {date}',
+          mapTotalEmails: 'Basierend auf {count} E-Mails',
         },
       },
       rules: {

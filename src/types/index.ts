@@ -315,6 +315,25 @@ export interface EntityFlowGraph {
   totalEmails: number;
 }
 
+/** A geocoded place pin shown on the relations map. */
+export interface EntityPlaceMapPin {
+  id: string;
+  label: string;
+  category: 'places';
+  count: number;
+  latitude: number;
+  longitude: number;
+  displayName?: string;
+}
+
+/** Real-map view of the places extracted from analyzed emails. */
+export interface EntityPlaceMap {
+  pins: EntityPlaceMapPin[];
+  /** ISO date string of when the map was last generated. */
+  generatedAt: string;
+  totalEmails: number;
+}
+
 /**
  * Represents a user-defined merge of two or more entity values into a single
  * canonical name.  All `aliases` (including the canonical itself) are treated

@@ -623,7 +623,7 @@ const emailAnalysisSchema = z.object({
       places: z
         .array(z.string())
         .describe(
-          'Physical or geographic locations mentioned in the email (cities, addresses, venues, countries, etc.)',
+          'Only physical or geographic locations that are explicitly and unambiguously mentioned in the email (for example cities, countries, full street addresses, airports, stations, or clearly identified venues). Be conservative: include a place only when you are confident it refers to a real-world location. Do not guess. Do not include browsers, operating systems, time zones, standalone postal codes, short ambiguous abbreviations, product names, generic business names, or terms that might be organizations/topics instead of locations. If unsure, return an empty array entry for that item by omitting it.',
         ),
       events: z
         .array(z.string())
@@ -737,7 +737,7 @@ async function preAnalyzeEmail(
     const { object, usage } = await generateObject({
       model: openrouterProvider(model),
       schema: emailAnalysisSchema,
-      system: `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values.${languageInstruction}`,
+      system: `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values. Be conservative with named-entity extraction: only include entities when they are explicitly supported by the email content, and prefer omitting uncertain entities instead of guessing. For the places field in particular, include a value only when you are confident it refers to a real physical/geographic location, not a browser, timezone, product, acronym, postal code, or other ambiguous term.${languageInstruction}`,
       prompt: `Analyze and classify this email in detail:
 
 FROM: ${sanitizeEmailField(emailFrom)}
