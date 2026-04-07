@@ -6,6 +6,7 @@
  */
 
 export {
+  analyzeEmailContent,
   processEmailWithAgent,
   getUserMemory,
   saveUserMemory,

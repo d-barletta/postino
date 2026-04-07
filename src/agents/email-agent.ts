@@ -86,6 +86,14 @@ interface AgentRuntimeSettings {
   fallbackPassMaxTokens: number;
 }
 
+interface AnalyzeEmailContentResult {
+  analysis: EmailAnalysis | null;
+  tokensUsed: number;
+  promptTokens: number;
+  completionTokens: number;
+  model: string;
+}
+
 function pickPositiveInt(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
     ? Math.floor(value)
@@ -750,6 +758,52 @@ ${bodyExcerpt}`,
     console.warn('Email pre-analysis failed, continuing without analysis context:', err);
     return { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
   }
+}
+
+export async function analyzeEmailContent(
+  emailFrom: string,
+  emailSubject: string,
+  emailBody: string,
+  isHtml = false,
+  modelOverride?: string,
+  analysisOutputLanguage?: string,
+): Promise<AnalyzeEmailContentResult> {
+  const { apiKey, model: settingsModel } = await getOpenRouterClient();
+  const model = modelOverride || settingsModel;
+
+  if (!apiKey) {
+    throw new Error('Missing OpenRouter API key');
+  }
+
+  const db = adminDb();
+  const settingsSnap = await db.collection('settings').doc('global').get();
+  const settings = settingsSnap.data() as Record<string, unknown> | undefined;
+  const agentRuntimeSettings = resolveAgentRuntimeSettings(settings);
+
+  const openrouter = createOpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey,
+    headers: {
+      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
+      'X-Title': 'Postino Email Redirector',
+    },
+  });
+
+  const result = await preAnalyzeEmail(
+    emailFrom,
+    emailSubject,
+    emailBody,
+    isHtml,
+    openrouter,
+    model,
+    agentRuntimeSettings,
+    analysisOutputLanguage,
+  );
+
+  return {
+    ...result,
+    model,
+  };
 }
 
 /**

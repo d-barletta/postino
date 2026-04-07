@@ -36,9 +36,9 @@ import {
   Search,
   MousePointerClick,
 } from 'lucide-react';
-import type { EmailLog } from '@/types';
-import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
+import type { EmailAnalysis, EmailLog } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
+import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { Spinner } from '@/components/ui/Spinner';
 
 const PAGE_SIZE = 20;
@@ -80,6 +80,7 @@ interface EmailDetailTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onFullscreen: (logId: string) => void;
+  onAnalysisUpdated: (emailId: string, analysis: EmailAnalysis) => void;
   t: ReturnType<typeof useI18n>['t'];
 }
 
@@ -90,6 +91,7 @@ function EmailDetailTabs({
   activeTab,
   onTabChange,
   onFullscreen,
+  onAnalysisUpdated,
   t,
 }: EmailDetailTabsProps) {
   return (
@@ -219,13 +221,11 @@ function EmailDetailTabs({
 
       {/* AI Analysis tab */}
       <TabsContent value="ai" className="mt-3">
-        {log.emailAnalysis ? (
-          <EmailAnalysisPanel analysis={log.emailAnalysis} />
-        ) : (
-          <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-            {t.dashboard.emailHistory.noAiAnalysis}
-          </p>
-        )}
+        <EmailAnalysisTabContent
+          emailId={log.id}
+          analysis={log.emailAnalysis}
+          onAnalysisUpdated={(analysis) => onAnalysisUpdated(log.id, analysis)}
+        />
       </TabsContent>
     </Tabs>
   );
@@ -259,6 +259,12 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
+
+  const handleAnalysisUpdated = useCallback((emailId: string, analysis: EmailAnalysis) => {
+    setLogs((prev) =>
+      prev.map((log) => (log.id === emailId ? { ...log, emailAnalysis: analysis } : log)),
+    );
+  }, []);
 
   /** Tracks which email IDs have already had their expanded data fetched to avoid duplicate requests. */
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
@@ -707,6 +713,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                               activeTab={activeDetailTab}
                               onTabChange={setActiveDetailTab}
                               onFullscreen={setFullscreenEmailId}
+                              onAnalysisUpdated={handleAnalysisUpdated}
                               t={t}
                             />
                           </div>
@@ -818,6 +825,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                   activeTab={activeDetailTab}
                   onTabChange={setActiveDetailTab}
                   onFullscreen={setFullscreenEmailId}
+                  onAnalysisUpdated={handleAnalysisUpdated}
                   t={t}
                 />
               </div>

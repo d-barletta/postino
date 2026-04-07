@@ -27,9 +27,9 @@ import {
   Brain,
   RefreshCw,
 } from 'lucide-react';
-import type { EmailLog } from '@/types';
-import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
+import type { EmailAnalysis, EmailLog } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
+import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 
 const PAGE_SIZE = 20;
 
@@ -143,6 +143,12 @@ export function ExploreEmailsModal({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
+
+  const handleAnalysisUpdated = useCallback((emailId: string, analysis: EmailAnalysis) => {
+    setLogs((prev) =>
+      prev.map((log) => (log.id === emailId ? { ...log, emailAnalysis: analysis } : log)),
+    );
+  }, []);
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
@@ -627,13 +633,13 @@ export function ExploreEmailsModal({
 
                             {/* AI Analysis tab */}
                             <TabsContent value="ai" className="mt-3">
-                              {log.emailAnalysis ? (
-                                <EmailAnalysisPanel analysis={log.emailAnalysis} />
-                              ) : (
-                                <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-                                  {t.dashboard.emailHistory.noAiAnalysis}
-                                </p>
-                              )}
+                              <EmailAnalysisTabContent
+                                emailId={log.id}
+                                analysis={log.emailAnalysis}
+                                onAnalysisUpdated={(analysis) =>
+                                  handleAnalysisUpdated(log.id, analysis)
+                                }
+                              />
                             </TabsContent>
                           </Tabs>
                         </div>

@@ -103,7 +103,7 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
         )}
         {analysis.requiresResponse && (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-            ↩ {eh.analysisRequiresResponse}
+            {eh.analysisRequiresResponse}
           </span>
         )}
       </div>

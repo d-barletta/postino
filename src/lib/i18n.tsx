@@ -238,6 +238,8 @@ export interface Translations {
       analysisEntitiesEvents: string;
       analysisEntitiesDates: string;
       analysisEntitiesPrices: string;
+      rerunAnalysis: string;
+      rerunningAnalysis: string;
       deleteEmail: string;
       deleteEmailConfirm: string;
       deleteEmailSuccess: string;
@@ -493,6 +495,8 @@ export interface Translations {
       failedToUpdateEmailSetting: string;
       failedToUpdateForwardingHeaderSetting: string;
       failedToUpdateAnalysisLanguageSetting: string;
+      analysisRefreshed: string;
+      analysisRefreshFailed: string;
     };
   };
   emailOriginal: {
@@ -798,6 +802,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesEvents: 'Events:',
         analysisEntitiesDates: 'Dates:',
         analysisEntitiesPrices: 'Prices:',
+        rerunAnalysis: 'Repeat analysis',
+        rerunningAnalysis: 'Repeating analysis...',
         deleteEmail: 'Delete email',
         deleteEmailConfirm:
           'Are you sure you want to permanently delete this email? This action cannot be undone.',
@@ -1056,6 +1062,8 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateEmailSetting: 'Failed to update email address setting',
         failedToUpdateForwardingHeaderSetting: 'Failed to update forwarding header setting',
         failedToUpdateAnalysisLanguageSetting: 'Failed to update analysis language setting',
+        analysisRefreshed: 'AI analysis refreshed.',
+        analysisRefreshFailed: 'Failed to refresh AI analysis.',
       },
     },
     emailOriginal: {
@@ -1362,6 +1370,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesEvents: 'Eventi:',
         analysisEntitiesDates: 'Date:',
         analysisEntitiesPrices: 'Prezzi:',
+        rerunAnalysis: 'Ripeti analisi',
+        rerunningAnalysis: 'Analisi in aggiornamento...',
         deleteEmail: 'Elimina email',
         deleteEmailConfirm:
           'Sei sicuro di voler eliminare definitivamente questa email? Questa azione non può essere annullata.',
@@ -1622,6 +1632,8 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateEmailSetting: 'Aggiornamento indirizzo email non riuscito',
         failedToUpdateForwardingHeaderSetting: 'Aggiornamento intestazione inoltro non riuscito',
         failedToUpdateAnalysisLanguageSetting: 'Aggiornamento lingua di analisi non riuscito',
+        analysisRefreshed: 'Analisi AI aggiornata.',
+        analysisRefreshFailed: "Aggiornamento dell'analisi AI non riuscito.",
       },
     },
     emailOriginal: {
@@ -1925,6 +1937,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesEvents: 'Eventos:',
         analysisEntitiesDates: 'Fechas:',
         analysisEntitiesPrices: 'Precios:',
+        rerunAnalysis: 'Repetir análisis',
+        rerunningAnalysis: 'Repitiendo análisis...',
         deleteEmail: 'Eliminar correo',
         deleteEmailConfirm:
           '¿Seguro que quieres eliminar permanentemente este correo? Esta acción no se puede deshacer.',
@@ -2185,6 +2199,8 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateEmailSetting: 'Error al actualizar la dirección de correo',
         failedToUpdateForwardingHeaderSetting: 'Error al actualizar el encabezado de reenvío',
         failedToUpdateAnalysisLanguageSetting: 'Error al actualizar el idioma de análisis',
+        analysisRefreshed: 'Análisis de IA actualizado.',
+        analysisRefreshFailed: 'No se pudo actualizar el análisis de IA.',
       },
     },
     emailOriginal: {
@@ -2488,6 +2504,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesEvents: 'Événements :',
         analysisEntitiesDates: 'Dates :',
         analysisEntitiesPrices: 'Prix :',
+        rerunAnalysis: "Relancer l'analyse",
+        rerunningAnalysis: "Relance de l'analyse...",
         deleteEmail: "Supprimer l'e-mail",
         deleteEmailConfirm:
           'Voulez-vous vraiment supprimer définitivement cet e-mail ? Cette action est irréversible.',
@@ -2749,6 +2767,8 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateEmailSetting: "Échec de la mise à jour de l'adresse e-mail",
         failedToUpdateForwardingHeaderSetting: "Échec de la mise à jour de l'en-tête de transfert",
         failedToUpdateAnalysisLanguageSetting: "Échec de la mise à jour de la langue d'analyse",
+        analysisRefreshed: 'Analyse IA actualisée.',
+        analysisRefreshFailed: "Impossible d'actualiser l'analyse IA.",
       },
     },
     emailOriginal: {
@@ -3053,6 +3073,8 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesEvents: 'Ereignisse:',
         analysisEntitiesDates: 'Daten:',
         analysisEntitiesPrices: 'Preise:',
+        rerunAnalysis: 'Analyse wiederholen',
+        rerunningAnalysis: 'Analyse wird wiederholt...',
         deleteEmail: 'E-Mail löschen',
         deleteEmailConfirm:
           'Möchten Sie diese E-Mail wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
@@ -3315,6 +3337,8 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateForwardingHeaderSetting:
           'Weiterleitungsheader-Einstellung konnte nicht aktualisiert werden',
         failedToUpdateAnalysisLanguageSetting: 'Analysesprache konnte nicht aktualisiert werden',
+        analysisRefreshed: 'KI-Analyse aktualisiert.',
+        analysisRefreshFailed: 'KI-Analyse konnte nicht aktualisiert werden.',
       },
     },
     emailOriginal: {

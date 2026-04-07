@@ -53,8 +53,8 @@ import {
   Eye,
   ChevronDown,
 } from 'lucide-react';
-import type { EmailLog } from '@/types';
-import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
+import type { EmailAnalysis, EmailLog } from '@/types';
+import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { Spinner } from '@/components/ui/Spinner';
@@ -469,6 +469,12 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const handleAnalysisUpdated = useCallback((emailId: string, analysis: EmailAnalysis) => {
+    setLogs((prev) =>
+      prev.map((log) => (log.id === emailId ? { ...log, emailAnalysis: analysis } : log)),
+    );
+  }, []);
 
   // Integrate the fullscreen email dialog with browser history.
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
@@ -1762,13 +1768,13 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
 
                                 {/* AI Analysis tab */}
                                 <TabsContent value="ai" className="mt-3">
-                                  {log.emailAnalysis ? (
-                                    <EmailAnalysisPanel analysis={log.emailAnalysis} />
-                                  ) : (
-                                    <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-                                      {t.dashboard.emailHistory.noAiAnalysis}
-                                    </p>
-                                  )}
+                                  <EmailAnalysisTabContent
+                                    emailId={log.id}
+                                    analysis={log.emailAnalysis}
+                                    onAnalysisUpdated={(analysis) =>
+                                      handleAnalysisUpdated(log.id, analysis)
+                                    }
+                                  />
                                 </TabsContent>
                               </Tabs>
                             </div>
@@ -2205,13 +2211,11 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                           )}
                       </TabsContent>
                       <TabsContent value="ai" className="mt-3">
-                        {log.emailAnalysis ? (
-                          <EmailAnalysisPanel analysis={log.emailAnalysis} />
-                        ) : (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-                            {t.dashboard.emailHistory.noAiAnalysis}
-                          </p>
-                        )}
+                        <EmailAnalysisTabContent
+                          emailId={log.id}
+                          analysis={log.emailAnalysis}
+                          onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
+                        />
                       </TabsContent>
                     </Tabs>
                   </div>
