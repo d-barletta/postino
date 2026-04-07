@@ -386,7 +386,8 @@ async function computeElkLayout(
       'elk.layered.spacing.nodeNodeBetweenLayers': '90',
       'elk.spacing.nodeNode': '55',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.edgeRouting': 'SPLINES',
+      'elk.layered.edgeRouting.splines.mode': 'SLOPPY',
     },
     children: visibleNodes.map((n) => {
       const cat = n.data?.category as EntityGraphNodeCategory;
@@ -693,30 +694,7 @@ export function RelationFlowChart({
             </p>
           )}
         </div>
-        <div className="hidden sm:flex items-center gap-2">
-          {graph && !isEmpty && onExpandFullPage && (
-            <Button size="sm" variant="ghost" onClick={onExpandFullPage}>
-              <Maximize2 className="h-4 w-4" />
-              {tr.expandFullPage}
-            </Button>
-          )}
-          {isResolvingInitialState ? (
-            <div
-              className="h-9 w-36 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse"
-              aria-label="Loading flow actions"
-            />
-          ) : (
-            <Button
-              onClick={onGenerate}
-              disabled={generating}
-              size="sm"
-              variant={graph ? 'ghost' : 'primary'}
-            >
-              <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
-              {generating ? tr.flowGenerating : graph ? tr.flowRegenerate : tr.flowGenerate}
-            </Button>
-          )}
-        </div>
+
       </div>
 
       {/* Flow area */}

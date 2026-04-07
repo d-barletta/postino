@@ -508,30 +508,6 @@ export function RelationGraph({
             </p>
           )}
         </div>
-        <div className="hidden sm:flex items-center gap-2">
-          {graph && !isEmpty && onExpandFullPage && (
-            <Button size="sm" variant="ghost" onClick={onExpandFullPage}>
-              <i className="bi bi-fullscreen" aria-hidden="true" />
-              {tr.expandFullPage}
-            </Button>
-          )}
-          {isResolvingInitialState ? (
-            <div
-              className="h-9 w-32 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse"
-              aria-label="Loading graph actions"
-            />
-          ) : (
-            <Button
-              onClick={onGenerate}
-              disabled={generating}
-              size="sm"
-              variant={graph ? 'ghost' : 'primary'}
-            >
-              <RefreshCw className={cn('h-4 w-4', generating && 'animate-spin')} />
-              {generating ? tr.generating : graph ? tr.regenerate : tr.generate}
-            </Button>
-          )}
-        </div>
       </div>
 
       {/* Graph area */}

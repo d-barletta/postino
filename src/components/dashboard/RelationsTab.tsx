@@ -130,8 +130,7 @@ export function RelationsTab() {
                 {k.relations.subtitle}
               </p>
             </div>
-            {/* Mobile-only icon buttons – hidden on sm+ (toolbar inside component handles those) */}
-            <div className="sm:hidden flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               {activeSubTab === 'graph' && graph && !isEmpty && (
                 <Button
                   variant="ghost"
@@ -179,10 +178,7 @@ export function RelationsTab() {
         </CardHeader>
 
         <CardContent className="space-y-0 p-2">
-          <Tabs
-            value={activeSubTab}
-            onValueChange={(v) => setActiveSubTab(v as 'graph' | 'flow')}
-          >
+          <Tabs value={activeSubTab} onValueChange={(v) => setActiveSubTab(v as 'graph' | 'flow')}>
             <TabsList>
               <TabsTrigger value="graph" className="inline-flex items-center gap-1.5">
                 <Share2 className="h-3.5 w-3.5" />
@@ -194,7 +190,7 @@ export function RelationsTab() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="graph" className="pt-4">
+            <TabsContent value="graph" className="pt-0">
               <RelationGraph
                 graph={graph}
                 loading={authLoading || loading || !hasFetched}
@@ -206,7 +202,7 @@ export function RelationsTab() {
               />
             </TabsContent>
 
-            <TabsContent value="flow" className="pt-4">
+            <TabsContent value="flow" className="pt-0">
               <RelationFlowChart
                 graph={flowGraph}
                 loading={authLoading || flowLoading || !flowHasFetched}
@@ -312,4 +308,3 @@ export function RelationsTab() {
     </>
   );
 }
-
