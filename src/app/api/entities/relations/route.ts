@@ -145,6 +145,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Build alias maps per category before Pass 1 so collectRaw can resolve aliases
+    // to their canonical names with case-insensitive lookup (mirrors flow route).
+    const aliasMaps = Object.fromEntries(
+      ALL_CATEGORIES.map((cat) => [cat, buildAliasToCanonical(mergesByCategory[cat] ?? [])]),
+    ) as Record<EntityGraphNodeCategory, Map<string, string>>;
+
     // -------------------------------------------------------------------
     // Pass 1: build frequency maps and collect per-email entity lists
     // -------------------------------------------------------------------
@@ -181,8 +187,9 @@ export async function POST(request: NextRequest) {
         for (const v of values) {
           if (typeof v === 'string' && v.trim()) {
             const key = v.trim();
-            freqs[cat][key] = (freqs[cat][key] ?? 0) + 1;
-            raw[cat].push(key);
+            const canonical = aliasMaps[cat].get(key.toLowerCase()) ?? key;
+            freqs[cat][canonical] = (freqs[cat][canonical] ?? 0) + 1;
+            raw[cat].push(canonical);
           }
         }
       };
@@ -200,20 +207,10 @@ export async function POST(request: NextRequest) {
       perEmailRaw.push(raw);
     }
 
-    // Apply merges to frequency maps
-    for (const cat of ALL_CATEGORIES) {
-      const catMerges = mergesByCategory[cat];
-      if (catMerges) applyMerges(freqs[cat], catMerges);
-    }
-
-    // Build top-K sets and alias maps per category
+    // Build top-K sets per category
     const topSets = Object.fromEntries(
       ALL_CATEGORIES.map((cat) => [cat, new Set(toTopK(freqs[cat], TOP_K).map((x) => x.value))]),
     ) as Record<EntityGraphNodeCategory, Set<string>>;
-
-    const aliasMaps = Object.fromEntries(
-      ALL_CATEGORIES.map((cat) => [cat, buildAliasToCanonical(mergesByCategory[cat] ?? [])]),
-    ) as Record<EntityGraphNodeCategory, Map<string, string>>;
 
     // -------------------------------------------------------------------
     // Build nodes
