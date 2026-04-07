@@ -692,6 +692,32 @@ const LANGUAGE_NAMES: Record<string, string> = {
   de: 'German',
 };
 
+type DefuddleRuntime = {
+  Defuddle: typeof import('defuddle/node').Defuddle;
+  JSDOM: typeof import('jsdom').JSDOM;
+};
+
+let defuddleRuntimePromise: Promise<DefuddleRuntime | null> | null = null;
+
+async function loadDefuddleRuntime(): Promise<DefuddleRuntime | null> {
+  if (!defuddleRuntimePromise) {
+    defuddleRuntimePromise = (async () => {
+      try {
+        const [{ Defuddle }, { JSDOM }] = await Promise.all([
+          import('defuddle/node'),
+          import('jsdom'),
+        ]);
+        return { Defuddle, JSDOM };
+      } catch (err) {
+        console.warn('[email-agent] failed to load defuddle runtime, using fallback:', err);
+        return null;
+      }
+    })();
+  }
+
+  return defuddleRuntimePromise;
+}
+
 /**
  * Converts an HTML email body to clean Markdown using defuddle and jsdom.
  *
@@ -704,9 +730,13 @@ const LANGUAGE_NAMES: Record<string, string> = {
  * step always has a usable body excerpt.
  */
 async function htmlToMarkdown(html: string): Promise<string> {
+  const runtime = await loadDefuddleRuntime();
+  if (!runtime) {
+    return stripHtmlForChunking(html);
+  }
+
   try {
-    const { Defuddle } = await import('defuddle/node');
-    const { JSDOM } = await import('jsdom');
+    const { Defuddle, JSDOM } = runtime;
     const dom = new JSDOM(html, { url: 'https://email.local' });
     const result = await Defuddle(dom.window.document, 'https://email.local', { markdown: true });
     const md = (result.content || '').trim();

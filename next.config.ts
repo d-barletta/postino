@@ -9,8 +9,6 @@ const nextConfig: NextConfig = {
     '@google-cloud/firestore',
     'grpc',
     '@grpc/grpc-js',
-    'jsdom',
-    'defuddle',
   ],
 
   async headers() {
