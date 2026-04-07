@@ -17,14 +17,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
-import {
-  Mail,
-  Paperclip,
-  ExternalLink,
-  AlignLeft,
-  Brain,
-  RefreshCw,
-} from 'lucide-react';
+import { Mail, Paperclip, ExternalLink, AlignLeft, Brain, RefreshCw } from 'lucide-react';
 import type { EmailAnalysis, EmailLog } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';

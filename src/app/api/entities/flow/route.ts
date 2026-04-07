@@ -310,7 +310,9 @@ export async function POST(request: NextRequest) {
         ALL_CATEGORIES.map((cat) => {
           const labels = Array.from(
             new Set(
-              entities[cat].filter((label) => nodeIdByBucketEntity.has(`${bucketIdx}:${cat}:${label}`)),
+              entities[cat].filter((label) =>
+                nodeIdByBucketEntity.has(`${bucketIdx}:${cat}:${label}`),
+              ),
             ),
           );
 
@@ -327,11 +329,15 @@ export async function POST(request: NextRequest) {
         const targetCategory = presentCategories[i + 1];
 
         for (const sourceLabel of normalizedByCategory[sourceCategory]) {
-          const sourceId = nodeIdByBucketEntity.get(`${bucketIdx}:${sourceCategory}:${sourceLabel}`);
+          const sourceId = nodeIdByBucketEntity.get(
+            `${bucketIdx}:${sourceCategory}:${sourceLabel}`,
+          );
           if (!sourceId) continue;
 
           for (const targetLabel of normalizedByCategory[targetCategory]) {
-            const targetId = nodeIdByBucketEntity.get(`${bucketIdx}:${targetCategory}:${targetLabel}`);
+            const targetId = nodeIdByBucketEntity.get(
+              `${bucketIdx}:${targetCategory}:${targetLabel}`,
+            );
             if (!targetId || targetId === sourceId) continue;
 
             const key = `${sourceId}~${targetId}`;

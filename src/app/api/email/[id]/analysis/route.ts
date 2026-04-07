@@ -8,10 +8,7 @@ function toFirestoreSafeAnalysis(analysis: EmailAnalysis): EmailAnalysis {
   return JSON.parse(JSON.stringify(analysis)) as EmailAnalysis;
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const decoded = await verifyUserRequest(request);
     const { id } = await params;
@@ -34,17 +31,14 @@ export async function POST(
 
     const originalBody = typeof data.originalBody === 'string' ? data.originalBody : '';
     if (!originalBody.trim()) {
-      return NextResponse.json(
-        { error: 'Original email content unavailable' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Original email content unavailable' }, { status: 400 });
     }
 
     const ownerId = typeof data.userId === 'string' ? data.userId : '';
     const ownerSnap = ownerId ? await db.collection('users').doc(ownerId).get() : null;
     const analysisOutputLanguage =
       typeof ownerSnap?.data()?.analysisOutputLanguage === 'string'
-        ? ((ownerSnap.data()?.analysisOutputLanguage as string) || undefined)
+        ? (ownerSnap.data()?.analysisOutputLanguage as string) || undefined
         : undefined;
 
     const emailFrom = typeof data.fromAddress === 'string' ? data.fromAddress : '';

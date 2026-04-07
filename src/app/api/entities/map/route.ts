@@ -308,12 +308,15 @@ export async function POST(request: NextRequest) {
       totalEmails,
     };
 
-    await db.collection('entityPlaceMaps').doc(decoded.uid).set({
-      ...graph,
-      version: PLACE_MAP_VERSION,
-      userId: decoded.uid,
-      updatedAt: new Date(),
-    });
+    await db
+      .collection('entityPlaceMaps')
+      .doc(decoded.uid)
+      .set({
+        ...graph,
+        version: PLACE_MAP_VERSION,
+        userId: decoded.uid,
+        updatedAt: new Date(),
+      });
 
     return NextResponse.json({ graph });
   } catch (err) {

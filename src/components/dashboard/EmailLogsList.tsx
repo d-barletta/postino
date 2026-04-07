@@ -26,14 +26,7 @@ import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
-import {
-  RefreshCw,
-  Mail,
-  Paperclip,
-  ExternalLink,
-  Search,
-  MousePointerClick,
-} from 'lucide-react';
+import { RefreshCw, Mail, Paperclip, ExternalLink, Search, MousePointerClick } from 'lucide-react';
 import type { EmailAnalysis, EmailLog } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
@@ -508,7 +501,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   const effectiveTotalCount = totalCount ?? totalEmailCount;
   const effectiveTotalPages =
     totalPages ??
-    (totalEmailCount !== undefined ? Math.max(1, Math.ceil(totalEmailCount / PAGE_SIZE)) : undefined);
+    (totalEmailCount !== undefined
+      ? Math.max(1, Math.ceil(totalEmailCount / PAGE_SIZE))
+      : undefined);
 
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
 

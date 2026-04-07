@@ -149,19 +149,32 @@ textarea::placeholder {
   width: 2.625rem;
   height: 2.625rem;
   align-items: center;
-  background: radial-gradient(circle at 35% 30%, #fff8c2 0%, #f6e883 28%, #efd957 62%, #d6c043 100%);
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff8c2 0%,
+    #f6e883 28%,
+    #efd957 62%,
+    #d6c043 100%
+  );
   border: 2px solid rgb(255 255 255 / 0.96);
   border-radius: 9999px;
-  box-shadow: 0 10px 22px rgb(239 217 87 / 0.36), 0 4px 10px rgb(15 23 42 / 0.16);
+  box-shadow:
+    0 10px 22px rgb(239 217 87 / 0.36),
+    0 4px 10px rgb(15 23 42 / 0.16);
   display: flex;
   justify-content: center;
   position: relative;
-  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
 }
 
 .dark .relation-map-pin {
   border-color: rgb(15 23 42 / 0.92);
-  box-shadow: 0 10px 24px rgb(239 217 87 / 0.24), 0 4px 10px rgb(15 23 42 / 0.36);
+  box-shadow:
+    0 10px 24px rgb(239 217 87 / 0.24),
+    0 4px 10px rgb(15 23 42 / 0.36);
 }
 
 .relation-map-pin::after {
@@ -199,10 +212,18 @@ textarea::placeholder {
   width: 3.25rem;
   height: 3.25rem;
   align-items: center;
-  background: radial-gradient(circle at 35% 30%, #fff8c2 0%, #f6e883 30%, #efd957 65%, #d6c043 100%);
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff8c2 0%,
+    #f6e883 30%,
+    #efd957 65%,
+    #d6c043 100%
+  );
   border: 2px solid rgb(255 255 255 / 0.96);
   border-radius: 9999px;
-  box-shadow: 0 12px 28px rgb(239 217 87 / 0.36), 0 6px 14px rgb(15 23 42 / 0.14);
+  box-shadow:
+    0 12px 28px rgb(239 217 87 / 0.36),
+    0 6px 14px rgb(15 23 42 / 0.14);
   display: flex;
   justify-content: center;
   position: relative;
@@ -210,7 +231,9 @@ textarea::placeholder {
 
 .dark .relation-map-cluster {
   border-color: rgb(15 23 42 / 0.92);
-  box-shadow: 0 12px 26px rgb(239 217 87 / 0.24), 0 6px 14px rgb(15 23 42 / 0.3);
+  box-shadow:
+    0 12px 26px rgb(239 217 87 / 0.24),
+    0 6px 14px rgb(15 23 42 / 0.3);
 }
 
 .relation-map-cluster::after {
