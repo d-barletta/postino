@@ -366,8 +366,7 @@ async function computeElkLayout(
   rawEdges: Edge[],
   hiddenCategories: Set<EntityGraphNodeCategory>,
 ): Promise<{ nodes: Node[]; edges: Edge[] }> {
-  const ELKModule = await import('elkjs/lib/elk.bundled.js');
-  const ELK = ELKModule.default;
+  const { default: ELK } = await import('elkjs');
   const elk = new ELK();
 
   const visibleNodes = rawNodes.filter(
@@ -505,7 +504,7 @@ function FlowLegendItem({
 function FlowSkeleton() {
   return (
     <div
-      className="flex items-center justify-center h-[500px] rounded-2xl animate-pulse"
+      className="flex h-125 items-center justify-center rounded-2xl animate-pulse"
       style={{ backgroundColor: 'var(--surface-muted)' }}
     >
       <Workflow className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
@@ -756,7 +755,7 @@ export function RelationFlowChart({
       {!loading && graph && !isEmpty && (
         <>
           {/* Canvas */}
-          <div className="h-[calc(50vh-120px)] sm:h-[500px]">
+          <div className="h-[calc(50vh-120px)] sm:h-125">
             <ReactFlowProvider>
               <RelationFlowInner
                 graph={graph}
