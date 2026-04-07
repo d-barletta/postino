@@ -32,21 +32,6 @@ interface CountMap {
   [value: string]: number;
 }
 
-function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: string[] }>): void {
-  for (const merge of merges) {
-    let total = 0;
-    for (const alias of merge.aliases) {
-      if (alias in map) {
-        total += map[alias];
-        delete map[alias];
-      }
-    }
-    if (total > 0) {
-      map[merge.canonical] = (map[merge.canonical] ?? 0) + total;
-    }
-  }
-}
-
 /** Build an alias → canonical lookup map (case-insensitive key). */
 function buildAliasToCanonical(
   merges: Array<{ canonical: string; aliases: string[] }>,
@@ -145,6 +130,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Build alias maps per category before the email loop so collectRaw can
+    // normalise entity values to their canonical form on the fly.
+    const aliasMaps = Object.fromEntries(
+      ALL_CATEGORIES.map((cat) => [cat, buildAliasToCanonical(mergesByCategory[cat] ?? [])]),
+    ) as Record<EntityGraphNodeCategory, Map<string, string>>;
+
     // -------------------------------------------------------------------
     // Pass 1: build frequency maps and collect per-email entity lists
     // -------------------------------------------------------------------
@@ -181,8 +172,9 @@ export async function POST(request: NextRequest) {
         for (const v of values) {
           if (typeof v === 'string' && v.trim()) {
             const key = v.trim();
-            freqs[cat][key] = (freqs[cat][key] ?? 0) + 1;
-            raw[cat].push(key);
+            const canonical = aliasMaps[cat].get(key.toLowerCase()) ?? key;
+            freqs[cat][canonical] = (freqs[cat][canonical] ?? 0) + 1;
+            raw[cat].push(canonical);
           }
         }
       };
@@ -200,20 +192,10 @@ export async function POST(request: NextRequest) {
       perEmailRaw.push(raw);
     }
 
-    // Apply merges to frequency maps
-    for (const cat of ALL_CATEGORIES) {
-      const catMerges = mergesByCategory[cat];
-      if (catMerges) applyMerges(freqs[cat], catMerges);
-    }
-
-    // Build top-K sets and alias maps per category
+    // Build top-K sets per category
     const topSets = Object.fromEntries(
       ALL_CATEGORIES.map((cat) => [cat, new Set(toTopK(freqs[cat], TOP_K).map((x) => x.value))]),
     ) as Record<EntityGraphNodeCategory, Set<string>>;
-
-    const aliasMaps = Object.fromEntries(
-      ALL_CATEGORIES.map((cat) => [cat, buildAliasToCanonical(mergesByCategory[cat] ?? [])]),
-    ) as Record<EntityGraphNodeCategory, Map<string, string>>;
 
     // -------------------------------------------------------------------
     // Build nodes
