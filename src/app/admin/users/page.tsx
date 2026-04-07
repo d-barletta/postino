@@ -120,7 +120,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           token = await firebaseUser.getIdToken();
         } catch {
           setReanalysis((prev) =>
-            prev ? { ...prev, pendingIds: [batch, ...remaining].flat(), error: t.admin.toasts.failedToRerunUserAnalyses } : null,
+            prev ? { ...prev, pendingIds: [...batch, ...remaining], error: t.admin.toasts.failedToRerunUserAnalyses } : null,
           );
           return;
         }
@@ -137,7 +137,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
             prev
               ? {
                   ...prev,
-                  pendingIds: [batch, ...remaining].flat(),
+                  pendingIds: [...batch, ...remaining],
                   error: payload?.error ?? t.admin.toasts.failedToRerunUserAnalyses,
                 }
               : null,
@@ -534,11 +534,12 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                     variant="primary"
                     onClick={() => {
                       if (!reanalysis) return;
+                      setReanalysis((prev) => (prev ? { ...prev, error: null } : null));
                       if (reanalysis.pendingIds.length === 0) {
                         // Prepare step failed — restart from the beginning.
-                        startReanalysis(reanalysis.uid);
+                        void startReanalysis(reanalysis.uid);
                       } else {
-                        runReanalysisBatches(reanalysis.uid, reanalysis.pendingIds, {
+                        void runReanalysisBatches(reanalysis.uid, reanalysis.pendingIds, {
                           reanalyzed: reanalysis.reanalyzedCount,
                           failed: reanalysis.failedCount,
                           skipped: reanalysis.skippedCount,
