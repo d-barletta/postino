@@ -48,6 +48,13 @@ export interface Rule {
 
 export type EmailStatus = 'received' | 'processing' | 'forwarded' | 'error' | 'skipped';
 
+export interface EmailAnalysisPlace {
+  name: string;
+  latitude: number;
+  longitude: number;
+  displayName?: string;
+}
+
 /**
  * Structured result of the AI pre-analysis pass that runs before rule application.
  * Captures classification, sentiment, intent and enrichment tags for each email.
@@ -86,8 +93,10 @@ export interface EmailAnalysis {
   senderType: 'human' | 'automated' | 'business' | 'newsletter';
   /** Named entities extracted from the email body. */
   entities: {
-    /** Physical or geographic locations mentioned (cities, addresses, venues, countries). */
-    places: string[];
+    /** Physical or geographic locations mentioned, geocoded and stored with coordinates. */
+    places: EmailAnalysisPlace[];
+    /** Denormalized place names used for Firestore search/filter queries. */
+    placeNames: string[];
     /** Events mentioned (meetings, conferences, deadlines, appointments). */
     events: string[];
     /** Specific dates, times, or time references. */

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { extractStoredPlaceNames } from '@/lib/place-utils';
 import type {
   EntityGraphEdge,
   EntityFlowGraph,
@@ -256,7 +257,7 @@ export async function POST(request: NextRequest) {
       if (entities) {
         collectRaw('people', entities.people);
         collectRaw('organizations', entities.organizations);
-        collectRaw('places', entities.places);
+        collectRaw('places', extractStoredPlaceNames(entities.places, entities.placeNames));
         collectRaw('events', entities.events);
       }
 

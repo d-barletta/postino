@@ -20,7 +20,16 @@ import type { User } from '@/types';
 
 type ConfirmAction =
   | { uid: string; action: 'admin' | 'active'; current: boolean }
+  | { uid: string; action: 'reanalyze' }
+  | { uid: string; action: 'reset' }
   | { uid: string; action: 'delete' };
+
+function replaceTokens(template: string, tokens: Record<string, string | number>): string {
+  return Object.entries(tokens).reduce(
+    (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+    template,
+  );
+}
 
 interface AdminUsersPageProps {
   showPageHeader?: boolean;
@@ -29,6 +38,7 @@ interface AdminUsersPageProps {
 export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPageProps) {
   const { firebaseUser } = useAuth();
   const { t } = useI18n();
+  const adminUsers = t.admin.users;
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -82,9 +92,21 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     setConfirming(true);
     try {
       const token = await firebaseUser.getIdToken();
+      let res: Response;
+
       if (confirmAction.action === 'delete') {
-        await fetch(`/api/admin/users/${confirmAction.uid}`, {
+        res = await fetch(`/api/admin/users/${confirmAction.uid}`, {
           method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else if (confirmAction.action === 'reanalyze') {
+        res = await fetch(`/api/admin/users/${confirmAction.uid}/analysis`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else if (confirmAction.action === 'reset') {
+        res = await fetch(`/api/admin/users/${confirmAction.uid}`, {
+          method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
@@ -92,24 +114,68 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           confirmAction.action === 'admin'
             ? { isAdmin: !confirmAction.current }
             : { isActive: !confirmAction.current };
-        await fetch(`/api/admin/users/${confirmAction.uid}`, {
+        res = await fetch(`/api/admin/users/${confirmAction.uid}`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
       }
+
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(
+          payload?.error ||
+            (confirmAction.action === 'reanalyze'
+              ? t.admin.toasts.failedToRerunUserAnalyses
+              : confirmAction.action === 'reset'
+              ? t.admin.toasts.failedToResetUserData
+              : t.admin.toasts.failedToUpdateUser),
+        );
+      }
+
+      const data = (await res.json().catch(() => null)) as
+        | {
+            reanalyzedCount?: number;
+            failedCount?: number;
+            skippedCount?: number;
+            totalCount?: number;
+          }
+        | null;
+
       await fetchUsers();
       const label =
         confirmAction.action === 'delete'
           ? t.admin.toasts.userDeleted
-          : confirmAction.action === 'admin'
-            ? confirmAction.current
-              ? t.admin.toasts.adminRemoved
-              : t.admin.toasts.adminGranted
-            : confirmAction.current
-              ? t.admin.toasts.userSuspended
-              : t.admin.toasts.userActivated;
+          : confirmAction.action === 'reanalyze'
+            ? (data?.failedCount ?? 0) > 0 || (data?.skippedCount ?? 0) > 0
+              ? replaceTokens(t.admin.toasts.userAnalysesRerunPartial, {
+                  done: data?.reanalyzedCount ?? 0,
+                  failed: data?.failedCount ?? 0,
+                  skipped: data?.skippedCount ?? 0,
+                })
+              : replaceTokens(t.admin.toasts.userAnalysesRerun, {
+                  count: data?.reanalyzedCount ?? 0,
+                })
+            : confirmAction.action === 'reset'
+              ? t.admin.toasts.userDataReset
+            : confirmAction.action === 'admin'
+              ? confirmAction.current
+                ? t.admin.toasts.adminRemoved
+                : t.admin.toasts.adminGranted
+              : confirmAction.current
+                ? t.admin.toasts.userSuspended
+                : t.admin.toasts.userActivated;
       toast.success(label);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : confirmAction.action === 'reanalyze'
+            ? t.admin.toasts.failedToRerunUserAnalyses
+          : confirmAction.action === 'reset'
+            ? t.admin.toasts.failedToResetUserData
+            : t.admin.toasts.failedToUpdateUser,
+      );
     } finally {
       setConfirming(false);
       setConfirmAction(null);
@@ -120,6 +186,10 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
   const confirmTitle =
     confirmAction?.action === 'delete'
       ? 'Delete user'
+      : confirmAction?.action === 'reanalyze'
+        ? adminUsers.rerunAnalysisTitle
+      : confirmAction?.action === 'reset'
+        ? adminUsers.resetDataTitle
       : confirmAction?.action === 'admin'
         ? confirmAction.current
           ? 'Remove admin privileges'
@@ -130,6 +200,10 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
   const confirmDesc =
     confirmAction?.action === 'delete'
       ? `Permanently delete ${confirmUser?.email} and all their data (rules, email logs)? This cannot be undone.`
+      : confirmAction?.action === 'reanalyze'
+        ? adminUsers.rerunAnalysisDesc.replace('{email}', confirmUser?.email ?? '')
+      : confirmAction?.action === 'reset'
+        ? adminUsers.resetDataDesc.replace('{email}', confirmUser?.email ?? '')
       : confirmAction?.action === 'admin'
         ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
         : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
@@ -200,6 +274,13 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                       >
                         {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setConfirmAction({ uid: user.uid, action: 'reanalyze' })}
+                      >
+                        {adminUsers.rerunAnalysis}
+                      </Button>
                       {!user.isAdmin && (
                         <Button
                           size="sm"
@@ -213,6 +294,15 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                           }
                         >
                           {user.isActive ? 'Suspend' : 'Activate'}
+                        </Button>
+                      )}
+                      {!user.isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setConfirmAction({ uid: user.uid, action: 'reset' })}
+                        >
+                          {adminUsers.resetData}
                         </Button>
                       )}
                       {!user.isAdmin && (
@@ -254,6 +344,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
             <Button
               variant={
                 confirmAction?.action === 'delete' ||
+                confirmAction?.action === 'reset' ||
                 (confirmAction?.action === 'active' && confirmAction.current)
                   ? 'danger'
                   : 'primary'

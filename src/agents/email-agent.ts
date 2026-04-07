@@ -34,6 +34,8 @@ import {
 } from '@/lib/openrouter';
 import type { ProcessEmailResult, RuleForProcessing } from '@/lib/openrouter';
 import type { EmailAnalysis, EmailMemoryEntry, UserMemory } from '@/types';
+import { geocodePlaceNames } from '@/lib/place-geocoding';
+import { extractStoredPlaceNames, normalizeUniqueStrings } from '@/lib/place-utils';
 import * as cheerio from 'cheerio';
 
 // ---------------------------------------------------------------------------
@@ -93,6 +95,12 @@ interface AnalyzeEmailContentResult {
   completionTokens: number;
   model: string;
 }
+
+type RawEmailAnalysis = Omit<EmailAnalysis, 'entities'> & {
+  entities: Omit<EmailAnalysis['entities'], 'places' | 'placeNames'> & {
+    places: string[];
+  };
+};
 
 function pickPositiveInt(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -651,11 +659,11 @@ const emailAnalysisSchema = z.object({
     ),
 });
 
-// EmailAnalysis is imported from @/types — the Zod schema above must match that interface.
+// This schema describes the raw LLM output before place geocoding enriches the persisted analysis.
 
 /** Returned by `preAnalyzeEmail`; groups the analysis result with its token costs. */
 interface PreAnalysisResult {
-  analysis: EmailAnalysis | null;
+  analysis: RawEmailAnalysis | null;
   tokensUsed: number;
   promptTokens: number;
   completionTokens: number;
@@ -749,7 +757,7 @@ ${bodyExcerpt}`,
     });
 
     return {
-      analysis: object as EmailAnalysis,
+      analysis: object as RawEmailAnalysis,
       tokensUsed: usage?.totalTokens ?? 0,
       promptTokens: usage?.inputTokens ?? 0,
       completionTokens: usage?.outputTokens ?? 0,
@@ -758,6 +766,31 @@ ${bodyExcerpt}`,
     console.warn('Email pre-analysis failed, continuing without analysis context:', err);
     return { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
   }
+}
+
+async function hydrateEmailAnalysis(rawAnalysis: RawEmailAnalysis | null): Promise<EmailAnalysis | null> {
+  if (!rawAnalysis) return null;
+
+  const geocodedPlaces = await geocodePlaceNames(normalizeUniqueStrings(rawAnalysis.entities.places));
+  const placeNames = extractStoredPlaceNames(geocodedPlaces);
+
+  return {
+    ...rawAnalysis,
+    summary: rawAnalysis.summary.trim(),
+    topics: normalizeUniqueStrings(rawAnalysis.topics),
+    tags: normalizeUniqueStrings(rawAnalysis.tags),
+    intent: rawAnalysis.intent.trim(),
+    language: rawAnalysis.language.trim().toLowerCase(),
+    entities: {
+      places: geocodedPlaces,
+      placeNames,
+      events: normalizeUniqueStrings(rawAnalysis.entities.events),
+      dates: normalizeUniqueStrings(rawAnalysis.entities.dates),
+      people: normalizeUniqueStrings(rawAnalysis.entities.people),
+      organizations: normalizeUniqueStrings(rawAnalysis.entities.organizations),
+    },
+    ...(rawAnalysis.prices ? { prices: normalizeUniqueStrings(rawAnalysis.prices) } : {}),
+  };
 }
 
 export async function analyzeEmailContent(
@@ -800,8 +833,13 @@ export async function analyzeEmailContent(
     analysisOutputLanguage,
   );
 
+  const analysis = await hydrateEmailAnalysis(result.analysis);
+
   return {
-    ...result,
+    analysis,
+    tokensUsed: result.tokensUsed,
+    promptTokens: result.promptTokens,
+    completionTokens: result.completionTokens,
     model,
   };
 }
@@ -841,7 +879,8 @@ function buildAnalysisSection(analysis: EmailAnalysis | null): string {
     if (entities.people.length > 0) lines.push(`People: ${entities.people.join(', ')}`);
     if (entities.organizations.length > 0)
       lines.push(`Organizations: ${entities.organizations.join(', ')}`);
-    if (entities.places.length > 0) lines.push(`Places: ${entities.places.join(', ')}`);
+    const placeNames = extractStoredPlaceNames(entities.places, entities.placeNames);
+    if (placeNames.length > 0) lines.push(`Places: ${placeNames.join(', ')}`);
     if (entities.events.length > 0) lines.push(`Events: ${entities.events.join(', ')}`);
     if (entities.dates.length > 0) lines.push(`Dates/times: ${entities.dates.join(', ')}`);
   }
@@ -1646,15 +1685,7 @@ export async function processEmailWithAgent(
 
   // 3. Run pre-analysis and load user memory in parallel — neither depends on
   //    the other, so launching both concurrently reduces overall latency.
-  const [
-    {
-      analysis,
-      tokensUsed: analysisTotalTokens,
-      promptTokens: analysisPromptTokens,
-      completionTokens: analysisCompletionTokens,
-    },
-    memory,
-  ] = await Promise.all([
+  const [preAnalysisResult, memory] = await Promise.all([
     preAnalyzeEmail(
       emailFrom,
       emailSubject,
@@ -1667,6 +1698,12 @@ export async function processEmailWithAgent(
     ),
     getUserMemory(userId),
   ]);
+  const analysis = await hydrateEmailAnalysis(preAnalysisResult.analysis);
+  const {
+    tokensUsed: analysisTotalTokens,
+    promptTokens: analysisPromptTokens,
+    completionTokens: analysisCompletionTokens,
+  } = preAnalysisResult;
   pushTrace(
     'pre_analysis',
     analysis ? 'ok' : 'warning',
@@ -1858,7 +1895,17 @@ export async function processEmailWithAgent(
     ...(analysis?.requiresResponse !== undefined
       ? { requiresResponse: analysis.requiresResponse }
       : {}),
-    ...(analysis?.entities ? { entities: analysis.entities } : {}),
+    ...(analysis?.entities
+      ? {
+          entities: {
+            places: analysis.entities.placeNames,
+            events: analysis.entities.events,
+            dates: analysis.entities.dates,
+            people: analysis.entities.people,
+            organizations: analysis.entities.organizations,
+          },
+        }
+      : {}),
   };
 
   saveUserMemory({

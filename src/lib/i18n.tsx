@@ -547,6 +547,14 @@ export interface Translations {
     };
   };
   admin: {
+    users: {
+      rerunAnalysis: string;
+      rerunAnalysisTitle: string;
+      rerunAnalysisDesc: string;
+      resetData: string;
+      resetDataTitle: string;
+      resetDataDesc: string;
+    };
     toasts: {
       settingsSaved: string;
       failedToLoadStats: string;
@@ -556,6 +564,12 @@ export interface Translations {
       adminRemoved: string;
       userSuspended: string;
       userActivated: string;
+      userAnalysesRerun: string;
+      userAnalysesRerunPartial: string;
+      failedToRerunUserAnalyses: string;
+      userDataReset: string;
+      failedToResetUserData: string;
+      failedToUpdateUser: string;
       failedToProcessQueue: string;
       failedToUpdateMailgunSetting: string;
       failedToClearLogs: string;
@@ -1127,6 +1141,16 @@ const translations: Record<Locale, Translations> = {
       },
     },
     admin: {
+      users: {
+        rerunAnalysis: 'Re-run AI Analysis',
+        rerunAnalysisTitle: 'Re-run AI analysis',
+        rerunAnalysisDesc:
+          'Delete all stored AI analysis for {email} and run it again on every email in this inbox? This can take a while.',
+        resetData: 'Reset Data',
+        resetDataTitle: 'Reset user data',
+        resetDataDesc:
+          'Delete all stored data for {email} and provision a fresh Postino profile? The login stays active, but emails, rules, jobs, knowledge, and caches will be removed.',
+      },
       toasts: {
         settingsSaved: 'Settings saved',
         failedToLoadStats: 'Failed to load stats',
@@ -1136,6 +1160,13 @@ const translations: Record<Locale, Translations> = {
         adminRemoved: 'Admin privileges removed',
         userSuspended: 'User suspended',
         userActivated: 'User activated',
+        userAnalysesRerun: 'AI analysis refreshed for {count} emails.',
+        userAnalysesRerunPartial:
+          'AI analysis refreshed for {done} emails, {failed} failed, {skipped} skipped.',
+        failedToRerunUserAnalyses: 'Failed to re-run user AI analysis.',
+        userDataReset: 'User data reset',
+        failedToResetUserData: 'Failed to reset user data',
+        failedToUpdateUser: 'Failed to update user',
         failedToProcessQueue: 'Failed to process queue batch',
         failedToUpdateMailgunSetting: 'Failed to update Mailgun webhook logging setting',
         failedToClearLogs: 'Failed to clear Mailgun webhook request logs',
@@ -1710,6 +1741,16 @@ const translations: Record<Locale, Translations> = {
       },
     },
     admin: {
+      users: {
+        rerunAnalysis: 'Rilancia analisi AI',
+        rerunAnalysisTitle: 'Rilancia analisi AI',
+        rerunAnalysisDesc:
+          'Eliminare tutte le analisi AI salvate per {email} e rieseguirle su ogni email di questa inbox? Potrebbe richiedere un po\' di tempo.',
+        resetData: 'Reimposta dati',
+        resetDataTitle: 'Reimposta dati utente',
+        resetDataDesc:
+          'Eliminare tutti i dati salvati per {email} e creare un nuovo profilo Postino? L\'accesso resta attivo, ma email, regole, job, knowledge e cache verranno rimossi.',
+      },
       toasts: {
         settingsSaved: 'Impostazioni salvate',
         failedToLoadStats: 'Caricamento statistiche non riuscito',
@@ -1719,6 +1760,13 @@ const translations: Record<Locale, Translations> = {
         adminRemoved: 'Privilegi admin rimossi',
         userSuspended: 'Utente sospeso',
         userActivated: 'Utente attivato',
+        userAnalysesRerun: 'Analisi AI aggiornata per {count} email.',
+        userAnalysesRerunPartial:
+          'Analisi AI aggiornata per {done} email, {failed} fallite, {skipped} saltate.',
+        failedToRerunUserAnalyses: 'Riesecuzione dell\'analisi AI utente non riuscita.',
+        userDataReset: 'Dati utente reimpostati',
+        failedToResetUserData: 'Reimpostazione dati utente non riuscita',
+        failedToUpdateUser: 'Aggiornamento utente non riuscito',
         failedToProcessQueue: 'Elaborazione batch non riuscita',
         failedToUpdateMailgunSetting: 'Aggiornamento impostazione Mailgun non riuscito',
         failedToClearLogs: 'Cancellazione log non riuscita',
@@ -2290,6 +2338,16 @@ const translations: Record<Locale, Translations> = {
       },
     },
     admin: {
+      users: {
+        rerunAnalysis: 'Volver a ejecutar análisis IA',
+        rerunAnalysisTitle: 'Volver a ejecutar análisis IA',
+        rerunAnalysisDesc:
+          '¿Eliminar todo el análisis de IA guardado para {email} y volver a ejecutarlo en cada correo de esta bandeja? Esto puede tardar un poco.',
+        resetData: 'Restablecer datos',
+        resetDataTitle: 'Restablecer datos del usuario',
+        resetDataDesc:
+          '¿Eliminar todos los datos almacenados de {email} y crear un perfil nuevo de Postino? El acceso seguirá activo, pero se eliminarán correos, reglas, trabajos, conocimiento y cachés.',
+      },
       toasts: {
         settingsSaved: 'Ajustes guardados',
         failedToLoadStats: 'Error al cargar las estadísticas',
@@ -2299,6 +2357,13 @@ const translations: Record<Locale, Translations> = {
         adminRemoved: 'Privilegios de administrador eliminados',
         userSuspended: 'Usuario suspendido',
         userActivated: 'Usuario activado',
+        userAnalysesRerun: 'Análisis de IA actualizado para {count} correos.',
+        userAnalysesRerunPartial:
+          'Análisis de IA actualizado para {done} correos, {failed} fallaron, {skipped} se omitieron.',
+        failedToRerunUserAnalyses: 'No se pudo volver a ejecutar el análisis de IA del usuario.',
+        userDataReset: 'Datos del usuario restablecidos',
+        failedToResetUserData: 'Error al restablecer los datos del usuario',
+        failedToUpdateUser: 'Error al actualizar el usuario',
         failedToProcessQueue: 'Error al procesar el lote de la cola',
         failedToUpdateMailgunSetting: 'Error al actualizar la configuración de Mailgun',
         failedToClearLogs: 'Error al limpiar los registros',
@@ -2871,6 +2936,16 @@ const translations: Record<Locale, Translations> = {
       },
     },
     admin: {
+      users: {
+        rerunAnalysis: 'Relancer l\'analyse IA',
+        rerunAnalysisTitle: 'Relancer l\'analyse IA',
+        rerunAnalysisDesc:
+          'Supprimer toute l\'analyse IA enregistrée pour {email} et la relancer sur chaque e-mail de cette boîte ? Cela peut prendre un moment.',
+        resetData: 'Réinitialiser les données',
+        resetDataTitle: 'Réinitialiser les données utilisateur',
+        resetDataDesc:
+          'Supprimer toutes les données stockées pour {email} et recréer un profil Postino vierge ? La connexion reste active, mais les e-mails, règles, tâches, connaissances et caches seront supprimés.',
+      },
       toasts: {
         settingsSaved: 'Paramètres sauvegardés',
         failedToLoadStats: 'Échec du chargement des statistiques',
@@ -2880,6 +2955,14 @@ const translations: Record<Locale, Translations> = {
         adminRemoved: 'Droits administrateur retirés',
         userSuspended: 'Utilisateur suspendu',
         userActivated: 'Utilisateur activé',
+        userAnalysesRerun: 'Analyse IA relancée pour {count} e-mails.',
+        userAnalysesRerunPartial:
+          'Analyse IA relancée pour {done} e-mails, {failed} échecs, {skipped} ignorés.',
+        failedToRerunUserAnalyses:
+          'Impossible de relancer l\'analyse IA de l\'utilisateur.',
+        userDataReset: 'Données utilisateur réinitialisées',
+        failedToResetUserData: 'Échec de la réinitialisation des données utilisateur',
+        failedToUpdateUser: 'Échec de la mise à jour de l\'utilisateur',
         failedToProcessQueue: 'Échec du traitement du lot',
         failedToUpdateMailgunSetting: 'Échec de la mise à jour du paramètre Mailgun',
         failedToClearLogs: 'Échec de la suppression des journaux',
@@ -3454,6 +3537,16 @@ const translations: Record<Locale, Translations> = {
       },
     },
     admin: {
+      users: {
+        rerunAnalysis: 'KI-Analyse neu starten',
+        rerunAnalysisTitle: 'KI-Analyse neu starten',
+        rerunAnalysisDesc:
+          'Die gesamte gespeicherte KI-Analyse für {email} löschen und für jede E-Mail in diesem Postfach neu ausführen? Das kann etwas dauern.',
+        resetData: 'Daten zurücksetzen',
+        resetDataTitle: 'Benutzerdaten zurücksetzen',
+        resetDataDesc:
+          'Alle gespeicherten Daten von {email} löschen und ein frisches Postino-Profil bereitstellen? Der Login bleibt aktiv, aber E-Mails, Regeln, Jobs, Wissen und Caches werden entfernt.',
+      },
       toasts: {
         settingsSaved: 'Einstellungen gespeichert',
         failedToLoadStats: 'Statistiken konnten nicht geladen werden',
@@ -3463,6 +3556,14 @@ const translations: Record<Locale, Translations> = {
         adminRemoved: 'Administratorrechte entfernt',
         userSuspended: 'Benutzer gesperrt',
         userActivated: 'Benutzer aktiviert',
+        userAnalysesRerun: 'KI-Analyse für {count} E-Mails aktualisiert.',
+        userAnalysesRerunPartial:
+          'KI-Analyse für {done} E-Mails aktualisiert, {failed} fehlgeschlagen, {skipped} übersprungen.',
+        failedToRerunUserAnalyses:
+          'KI-Analyse des Benutzers konnte nicht neu gestartet werden.',
+        userDataReset: 'Benutzerdaten zurückgesetzt',
+        failedToResetUserData: 'Benutzerdaten konnten nicht zurückgesetzt werden',
+        failedToUpdateUser: 'Benutzer konnte nicht aktualisiert werden',
         failedToProcessQueue: 'Warteschlangen-Batch konnte nicht verarbeitet werden',
         failedToUpdateMailgunSetting: 'Mailgun-Einstellung konnte nicht aktualisiert werden',
         failedToClearLogs: 'Protokolle konnten nicht gelöscht werden',

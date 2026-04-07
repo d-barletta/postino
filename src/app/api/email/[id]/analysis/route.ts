@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeEmailContent } from '@/lib/agent';
 import { isFirebaseAuthError, verifyUserRequest } from '@/lib/api-auth';
 import { adminDb } from '@/lib/firebase-admin';
-import type { EmailAnalysis } from '@/types';
-
-function toFirestoreSafeAnalysis(analysis: EmailAnalysis): EmailAnalysis {
-  return JSON.parse(JSON.stringify(analysis)) as EmailAnalysis;
-}
+import { analyzeStoredEmailLog } from '@/lib/email-analysis';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,8 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
-    const originalBody = typeof data.originalBody === 'string' ? data.originalBody : '';
-    if (!originalBody.trim()) {
+    if (typeof data.originalBody !== 'string' || !data.originalBody.trim()) {
       return NextResponse.json({ error: 'Original email content unavailable' }, { status: 400 });
     }
 
@@ -41,24 +35,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ? (ownerSnap.data()?.analysisOutputLanguage as string) || undefined
         : undefined;
 
-    const emailFrom = typeof data.fromAddress === 'string' ? data.fromAddress : '';
-    const emailSubject = typeof data.subject === 'string' ? data.subject : '';
-    const isHtml = /<[a-z][\s\S]*>/i.test(originalBody);
-
-    const result = await analyzeEmailContent(
-      emailFrom,
-      emailSubject,
-      originalBody,
-      isHtml,
-      undefined,
-      analysisOutputLanguage,
-    );
-
-    if (!result.analysis) {
-      return NextResponse.json({ error: 'Analysis unavailable' }, { status: 502 });
+    let safeAnalysis;
+    try {
+      safeAnalysis = await analyzeStoredEmailLog({
+        fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
+        subject: typeof data.subject === 'string' ? data.subject : '',
+        originalBody: data.originalBody,
+        analysisOutputLanguage,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Analysis unavailable') {
+        return NextResponse.json({ error: 'Analysis unavailable' }, { status: 502 });
+      }
+      throw error;
     }
 
-    const safeAnalysis = toFirestoreSafeAnalysis(result.analysis);
     await logRef.update({ emailAnalysis: safeAnalysis });
 
     return NextResponse.json({ analysis: safeAnalysis });

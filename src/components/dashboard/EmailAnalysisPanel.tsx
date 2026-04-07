@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/lib/i18n';
+import { extractStoredPlaceNames } from '@/lib/place-utils';
 import type { EmailAnalysis } from '@/types';
 
 const DEFAULT_BADGE_COLOR = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
@@ -39,6 +40,7 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
   const hasTags = analysis.tags && analysis.tags.length > 0;
   const hasTopics = analysis.topics && analysis.topics.length > 0;
   const { entities } = analysis;
+  const placeNames = extractStoredPlaceNames(entities.places, entities.placeNames);
 
   const typeLabel: Record<string, string> = {
     newsletter: ts.typeNewsletter,
@@ -161,13 +163,13 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
               </dd>
             </>
           )}
-          {entities && entities.places.length > 0 && (
+          {entities && placeNames.length > 0 && (
             <>
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
                 {eh.analysisEntitiesPlaces}
               </dt>
               <dd className="text-gray-600 dark:text-gray-300 min-w-0">
-                {entities.places.join(', ')}
+                {placeNames.join(', ')}
               </dd>
             </>
           )}

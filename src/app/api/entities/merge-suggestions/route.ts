@@ -5,6 +5,7 @@ import { getOpenRouterClient } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 import type { EntityCategory } from '@/types';
 import { verifyUserRequest } from '@/lib/api-auth';
+import { extractStoredPlaceNames } from '@/lib/place-utils';
 
 const VALID_CATEGORIES: EntityCategory[] = [
   'topics',
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
       if (entities) {
         incrementAll(people, entities.people);
         incrementAll(organizations, entities.organizations);
-        incrementAll(places, entities.places);
+        incrementAll(places, extractStoredPlaceNames(entities.places, entities.placeNames));
         incrementAll(events, entities.events);
       }
     }

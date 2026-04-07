@@ -122,7 +122,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "emailAnalysis.entities.places", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "emailAnalysis.entities.placeNames", "arrayConfig": "CONTAINS" },
         { "fieldPath": "receivedAt", "order": "DESCENDING" }
       ]
     },

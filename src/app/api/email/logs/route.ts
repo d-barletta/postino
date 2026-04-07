@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import type { Query } from 'firebase-admin/firestore';
 import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { extractStoredPlaceNames } from '@/lib/place-utils';
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -149,7 +150,7 @@ export async function GET(request: NextRequest) {
         pushedArrayField = 'orgs';
       } else if (placesFilter.length > 0) {
         firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.entities.places',
+          'emailAnalysis.entities.placeNames',
           'array-contains-any',
           placesFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
         );
@@ -252,6 +253,9 @@ export async function GET(request: NextRequest) {
         return true;
       const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
       if (entities) {
+        const placeNames = extractStoredPlaceNames(entities.places, entities.placeNames);
+        if (placeNames.some((place) => place.toLowerCase().includes(term))) return true;
+
         for (const list of Object.values(entities)) {
           if (
             Array.isArray(list) &&
@@ -321,11 +325,11 @@ export async function GET(request: NextRequest) {
     if (placesFilter.length > 0 && pushedArrayField !== 'places') {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
-        const list = entities?.places;
+        const list = extractStoredPlaceNames(entities?.places, entities?.placeNames);
         return (
-          Array.isArray(list) &&
+          list.length > 0 &&
           placesFilter.some((p) =>
-            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase()),
+            list.some((v) => v.toLowerCase() === p.toLowerCase()),
           )
         );
       });

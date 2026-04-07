@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { extractStoredPlaceNames } from '@/lib/place-utils';
 
 const FETCH_LIMIT = 1000;
 const MERGES_LIMIT = 500;
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
       if (entities) {
         incrementAll(people, entities.people);
         incrementAll(organizations, entities.organizations);
-        incrementAll(places, entities.places);
+        incrementAll(places, extractStoredPlaceNames(entities.places, entities.placeNames));
         incrementAll(events, entities.events);
       }
     }
