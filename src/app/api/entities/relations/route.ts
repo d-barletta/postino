@@ -36,9 +36,10 @@ function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: 
   for (const merge of merges) {
     let total = 0;
     for (const alias of merge.aliases) {
-      if (alias in map) {
-        total += map[alias];
-        delete map[alias];
+      const key = alias.toLowerCase();
+      if (key in map) {
+        total += map[key];
+        delete map[key];
       }
     }
     if (total > 0) {
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
         if (!Array.isArray(values)) return;
         for (const v of values) {
           if (typeof v === 'string' && v.trim()) {
-            const key = v.trim();
+            const key = v.trim().toLowerCase();
             freqs[cat][key] = (freqs[cat][key] ?? 0) + 1;
             raw[cat].push(key);
           }
