@@ -31,8 +31,8 @@ export async function DELETE(request: NextRequest) {
     const BATCH_SIZE = 500;
     for (let i = 0; i < deleteRefs.length; i += BATCH_SIZE) {
       const batch = db.batch();
-      for (const ref of deleteRefs.slice(i, i + BATCH_SIZE)) {
-        batch.delete(ref);
+      for (let j = i; j < Math.min(i + BATCH_SIZE, deleteRefs.length); j++) {
+        batch.delete(deleteRefs[j]);
       }
       await batch.commit();
     }

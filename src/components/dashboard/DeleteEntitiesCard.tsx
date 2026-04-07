@@ -41,6 +41,10 @@ export function DeleteEntitiesCard() {
     }
   };
 
+  const handleDrawerChange = (o: boolean) => {
+    if (!deleting) setOpen(o);
+  };
+
   return (
     <>
       <Card>
@@ -57,7 +61,7 @@ export function DeleteEntitiesCard() {
         </CardContent>
       </Card>
 
-      <Drawer open={open} onOpenChange={(o) => { if (!deleting) setOpen(o); }}>
+      <Drawer open={open} onOpenChange={handleDrawerChange}>
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>{s.confirmTitle}</DrawerTitle>
