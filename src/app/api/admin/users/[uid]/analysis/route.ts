@@ -87,9 +87,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           ? (userSnap.data()?.analysisOutputLanguage as string) || undefined
           : undefined;
 
-      const emailIds = Array.isArray(body.emailIds)
-        ? body.emailIds.slice(0, MAX_PROCESS_BATCH)
-        : [];
+      if (!Array.isArray(body.emailIds)) {
+        return NextResponse.json({ error: 'emailIds must be an array' }, { status: 400 });
+      }
+
+      const emailIds = body.emailIds.slice(0, MAX_PROCESS_BATCH);
 
       let reanalyzedCount = 0;
       let failedCount = 0;

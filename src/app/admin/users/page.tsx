@@ -118,7 +118,8 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         let token: string;
         try {
           token = await firebaseUser.getIdToken();
-        } catch {
+        } catch (tokenError) {
+          console.error('[admin/users/analysis] failed to refresh auth token:', tokenError);
           setReanalysis((prev) =>
             prev ? { ...prev, pendingIds: [...batch, ...remaining], error: t.admin.toasts.failedToRerunUserAnalyses } : null,
           );
