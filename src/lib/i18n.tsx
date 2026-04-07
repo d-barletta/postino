@@ -171,6 +171,17 @@ export interface Translations {
       buttonLabel: string;
       alreadyInstalled: string;
     };
+    deleteEntities: {
+      title: string;
+      description: string;
+      buttonLabel: string;
+      confirmTitle: string;
+      confirmDescription: string;
+      cancel: string;
+      confirmButton: string;
+      successToast: string;
+      errorToast: string;
+    };
     charts: {
       myEmailVolume: string;
       received: string;
@@ -767,6 +778,19 @@ const translations: Record<Locale, Translations> = {
           'Install Postino as an app on your device for a faster, native-like experience.',
         buttonLabel: 'Install App',
         alreadyInstalled: 'Already Installed',
+      },
+      deleteEntities: {
+        title: 'Delete All Entities & Merges',
+        description:
+          'Permanently delete all entity knowledge (people, topics, organizations, places, events, tags), all entity merges, and all AI merge suggestions. This cannot be undone.',
+        buttonLabel: 'Delete All Entities & Merges',
+        confirmTitle: 'Delete All Entities & Merges?',
+        confirmDescription:
+          'This will permanently delete all your entity knowledge, merges, and AI merge suggestions. This action cannot be undone.',
+        cancel: 'Cancel',
+        confirmButton: 'Delete All',
+        successToast: 'All entity data deleted.',
+        errorToast: 'Failed to delete entity data.',
       },
       charts: {
         myEmailVolume: 'My Email Volume',
@@ -1374,6 +1398,19 @@ const translations: Record<Locale, Translations> = {
         buttonLabel: 'Installa app',
         alreadyInstalled: 'Già installata',
       },
+      deleteEntities: {
+        title: 'Elimina tutte le entità e le unioni',
+        description:
+          'Elimina definitivamente tutte le conoscenze sulle entità (persone, argomenti, organizzazioni, luoghi, eventi, tag), tutte le unioni di entità e tutti i suggerimenti di unione AI. Questa azione non può essere annullata.',
+        buttonLabel: 'Elimina tutte le entità e le unioni',
+        confirmTitle: 'Eliminare tutte le entità e le unioni?',
+        confirmDescription:
+          'Questa azione eliminerà definitivamente tutte le tue conoscenze sulle entità, le unioni e i suggerimenti di unione AI. Questa azione non può essere annullata.',
+        cancel: 'Annulla',
+        confirmButton: 'Elimina tutto',
+        successToast: 'Tutti i dati delle entità eliminati.',
+        errorToast: 'Eliminazione dei dati delle entità non riuscita.',
+      },
       charts: {
         myEmailVolume: 'Il mio volume di email',
         received: 'Ricevute',
@@ -1979,6 +2016,19 @@ const translations: Record<Locale, Translations> = {
         buttonLabel: 'Instalar app',
         alreadyInstalled: 'Ya instalada',
       },
+      deleteEntities: {
+        title: 'Eliminar todas las entidades y fusiones',
+        description:
+          'Elimina permanentemente todo el conocimiento de entidades (personas, temas, organizaciones, lugares, eventos, etiquetas), todas las fusiones de entidades y todas las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
+        buttonLabel: 'Eliminar todas las entidades y fusiones',
+        confirmTitle: '¿Eliminar todas las entidades y fusiones?',
+        confirmDescription:
+          'Esto eliminará permanentemente todo tu conocimiento de entidades, fusiones y sugerencias de fusión de IA. Esta acción no se puede deshacer.',
+        cancel: 'Cancelar',
+        confirmButton: 'Eliminar todo',
+        successToast: 'Todos los datos de entidades eliminados.',
+        errorToast: 'Error al eliminar los datos de entidades.',
+      },
       charts: {
         myEmailVolume: 'Mi volumen de correos',
         received: 'Recibidos',
@@ -2583,6 +2633,19 @@ const translations: Record<Locale, Translations> = {
           'Installez Postino comme application sur votre appareil pour une expérience plus rapide et native.',
         buttonLabel: "Installer l'application",
         alreadyInstalled: 'Déjà installée',
+      },
+      deleteEntities: {
+        title: 'Supprimer toutes les entités et fusions',
+        description:
+          "Supprime définitivement toutes les connaissances sur les entités (personnes, sujets, organisations, lieux, événements, tags), toutes les fusions d'entités et toutes les suggestions de fusion IA. Cette action est irréversible.",
+        buttonLabel: 'Supprimer toutes les entités et fusions',
+        confirmTitle: 'Supprimer toutes les entités et fusions ?',
+        confirmDescription:
+          "Cela supprimera définitivement toutes vos connaissances sur les entités, vos fusions et vos suggestions de fusion IA. Cette action est irréversible.",
+        cancel: 'Annuler',
+        confirmButton: 'Tout supprimer',
+        successToast: "Toutes les données d'entités supprimées.",
+        errorToast: "Échec de la suppression des données d'entités.",
       },
       charts: {
         myEmailVolume: "Mon volume d'e-mails",
@@ -3190,6 +3253,19 @@ const translations: Record<Locale, Translations> = {
           'Installieren Sie Postino als App auf Ihrem Gerät für ein schnelleres, natives Erlebnis.',
         buttonLabel: 'App installieren',
         alreadyInstalled: 'Bereits installiert',
+      },
+      deleteEntities: {
+        title: 'Alle Entitäten und Zusammenführungen löschen',
+        description:
+          'Löscht dauerhaft alle Entitätskenntnisse (Personen, Themen, Organisationen, Orte, Ereignisse, Tags), alle Entitätszusammenführungen und alle KI-Zusammenführungsvorschläge. Diese Aktion kann nicht rückgängig gemacht werden.',
+        buttonLabel: 'Alle Entitäten und Zusammenführungen löschen',
+        confirmTitle: 'Alle Entitäten und Zusammenführungen löschen?',
+        confirmDescription:
+          'Dadurch werden alle Ihre Entitätskenntnisse, Zusammenführungen und KI-Zusammenführungsvorschläge dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
+        cancel: 'Abbrechen',
+        confirmButton: 'Alles löschen',
+        successToast: 'Alle Entitätsdaten gelöscht.',
+        errorToast: 'Entitätsdaten konnten nicht gelöscht werden.',
       },
       charts: {
         myEmailVolume: 'Mein E-Mail-Volumen',

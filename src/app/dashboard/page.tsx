@@ -13,6 +13,7 @@ import { PushNotificationButton } from '@/components/dashboard/PushNotificationB
 import { ForwardingHeaderCard } from '@/components/dashboard/ForwardingHeaderCard';
 import { AnalysisLanguageCard } from '@/components/dashboard/AnalysisLanguageCard';
 import { InstallPwaDrawer } from '@/components/dashboard/InstallPwaDrawer';
+import { DeleteEntitiesCard } from '@/components/dashboard/DeleteEntitiesCard';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -350,6 +351,7 @@ export default function DashboardPage() {
               currentLanguage={user?.analysisOutputLanguage}
               onSave={handleAnalysisLanguageChange}
             />
+            <DeleteEntitiesCard />
             {(isPwa || canShowInstallCard) && (
               <Card>
                 <CardHeader>
