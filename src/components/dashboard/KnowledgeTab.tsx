@@ -298,6 +298,25 @@ export function KnowledgeTab() {
     }
   }, [firebaseUser]);
 
+  const regenerateGraphsInBackground = useCallback(async () => {
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      Promise.all([
+        fetch('/api/entities/relations', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/entities/flow', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]).catch(() => {});
+    } catch {
+      // silent — user can manually regenerate in Relations tab
+    }
+  }, [firebaseUser]);
+
   const fetchMerges = useCallback(async () => {
     if (!firebaseUser) return;
     setMergesLoading(true);
@@ -442,9 +461,10 @@ export function KnowledgeTab() {
       }
 
       await Promise.all([fetchKnowledge(), fetchMerges()]);
+      regenerateGraphsInBackground();
       toast.success(k.mergeCreated);
     },
-    [firebaseUser, merges, pendingAcceptSuggestion, fetchKnowledge, fetchMerges, k],
+    [firebaseUser, merges, pendingAcceptSuggestion, fetchKnowledge, fetchMerges, regenerateGraphsInBackground, k],
   );
 
   useEffect(() => {
@@ -539,6 +559,7 @@ export function KnowledgeTab() {
           throw new Error(patchJson.error ?? 'Failed to update merge');
         }
         await Promise.all([fetchKnowledge(), fetchMerges()]);
+        regenerateGraphsInBackground();
         setMergeMode(false);
         setSelectedChips([]);
         toast.success(k.mergeCreated);
@@ -550,11 +571,12 @@ export function KnowledgeTab() {
         throw new Error(json.error ?? 'Failed to create merge');
       }
       await Promise.all([fetchKnowledge(), fetchMerges()]);
+      regenerateGraphsInBackground();
       setMergeMode(false);
       setSelectedChips([]);
       toast.success(k.mergeCreated);
     },
-    [firebaseUser, fetchKnowledge, fetchMerges, merges, k],
+    [firebaseUser, fetchKnowledge, fetchMerges, regenerateGraphsInBackground, merges, k],
   );
 
   const handleDeleteMerge = useCallback(async () => {
@@ -567,12 +589,13 @@ export function KnowledgeTab() {
         headers: { Authorization: `Bearer ${token}` },
       });
       await Promise.all([fetchKnowledge(), fetchMerges()]);
+      regenerateGraphsInBackground();
       toast.success(k.mergeDeleted);
     } finally {
       setDeletingMerge(false);
       setPendingDeleteMerge(null);
     }
-  }, [firebaseUser, pendingDeleteMerge, fetchKnowledge, fetchMerges, k]);
+  }, [firebaseUser, pendingDeleteMerge, fetchKnowledge, fetchMerges, regenerateGraphsInBackground, k]);
 
   const hasAnyData =
     data &&
