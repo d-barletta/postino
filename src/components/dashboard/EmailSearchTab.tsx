@@ -2227,17 +2227,18 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
             <DrawerDescription>{t.dashboard.emailHistory.deleteEmailConfirm}</DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="pb-8">
-            <Button variant="danger" onClick={handleDeleteEmail} disabled={deleting}>
-              {deleting ? '…' : t.dashboard.emailHistory.deleteEmail}
-            </Button>
             <Button
               variant="ghost"
               onClick={() => {
                 setDeleteEmailId(null);
               }}
               disabled={deleting}
+              className="flex-1"
             >
               {t.dashboard.rules.cancel}
+            </Button>
+            <Button variant="danger" onClick={handleDeleteEmail} disabled={deleting} className="flex-1">
+              {deleting ? '…' : t.dashboard.emailHistory.deleteEmail}
             </Button>
           </DrawerFooter>
         </DrawerContent>

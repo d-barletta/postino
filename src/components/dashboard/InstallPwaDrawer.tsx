@@ -425,14 +425,14 @@ export function InstallPwaDrawer({
         )}
 
         <DrawerFooter>
+          <Button variant="outline" onClick={handleDismiss} className="flex-1">
+            {tr.notNow}
+          </Button>
           {isAvailable && (
-            <Button onClick={handleInstall} className="w-full">
+            <Button onClick={handleInstall} className="flex-1">
               {tr.installButton}
             </Button>
           )}
-          <Button variant="outline" onClick={handleDismiss} className="w-full">
-            {tr.notNow}
-          </Button>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
