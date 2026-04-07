@@ -556,6 +556,9 @@ export interface Translations {
       rerunAnalysis: string;
       rerunAnalysisTitle: string;
       rerunAnalysisDesc: string;
+      rerunAnalysisPreparing: string;
+      rerunAnalysisProgress: string;
+      rerunAnalysisRetry: string;
       resetData: string;
       resetDataTitle: string;
       resetDataDesc: string;
@@ -1156,6 +1159,9 @@ const translations: Record<Locale, Translations> = {
         rerunAnalysisTitle: 'Re-run AI analysis',
         rerunAnalysisDesc:
           'Delete all stored AI analysis for {email} and run it again on every email in this inbox? This can take a while.',
+        rerunAnalysisPreparing: 'Preparing…',
+        rerunAnalysisProgress: '{done} / {total} emails ({percent}%)',
+        rerunAnalysisRetry: 'Retry',
         resetData: 'Reset Data',
         resetDataTitle: 'Reset user data',
         resetDataDesc:
@@ -1761,6 +1767,9 @@ const translations: Record<Locale, Translations> = {
         rerunAnalysisTitle: 'Rilancia analisi AI',
         rerunAnalysisDesc:
           "Eliminare tutte le analisi AI salvate per {email} e rieseguirle su ogni email di questa inbox? Potrebbe richiedere un po' di tempo.",
+        rerunAnalysisPreparing: 'Preparazione…',
+        rerunAnalysisProgress: '{done} / {total} email ({percent}%)',
+        rerunAnalysisRetry: 'Riprova',
         resetData: 'Reimposta dati',
         resetDataTitle: 'Reimposta dati utente',
         resetDataDesc:
@@ -2363,6 +2372,9 @@ const translations: Record<Locale, Translations> = {
         rerunAnalysisTitle: 'Volver a ejecutar análisis IA',
         rerunAnalysisDesc:
           '¿Eliminar todo el análisis de IA guardado para {email} y volver a ejecutarlo en cada correo de esta bandeja? Esto puede tardar un poco.',
+        rerunAnalysisPreparing: 'Preparando…',
+        rerunAnalysisProgress: '{done} / {total} correos ({percent}%)',
+        rerunAnalysisRetry: 'Reintentar',
         resetData: 'Restablecer datos',
         resetDataTitle: 'Restablecer datos del usuario',
         resetDataDesc:
@@ -2966,6 +2978,9 @@ const translations: Record<Locale, Translations> = {
         rerunAnalysisTitle: "Relancer l'analyse IA",
         rerunAnalysisDesc:
           "Supprimer toute l'analyse IA enregistrée pour {email} et la relancer sur chaque e-mail de cette boîte ? Cela peut prendre un moment.",
+        rerunAnalysisPreparing: 'Préparation…',
+        rerunAnalysisProgress: '{done} / {total} e-mails ({percent}%)',
+        rerunAnalysisRetry: 'Réessayer',
         resetData: 'Réinitialiser les données',
         resetDataTitle: 'Réinitialiser les données utilisateur',
         resetDataDesc:
@@ -3571,6 +3586,9 @@ const translations: Record<Locale, Translations> = {
         rerunAnalysisTitle: 'KI-Analyse neu starten',
         rerunAnalysisDesc:
           'Die gesamte gespeicherte KI-Analyse für {email} löschen und für jede E-Mail in diesem Postfach neu ausführen? Das kann etwas dauern.',
+        rerunAnalysisPreparing: 'Wird vorbereitet…',
+        rerunAnalysisProgress: '{done} / {total} E-Mails ({percent}%)',
+        rerunAnalysisRetry: 'Wiederholen',
         resetData: 'Daten zurücksetzen',
         resetDataTitle: 'Benutzerdaten zurücksetzen',
         resetDataDesc:

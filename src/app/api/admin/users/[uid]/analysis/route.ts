@@ -5,8 +5,9 @@ import { adminDb } from '@/lib/firebase-admin';
 import { analyzeStoredEmailLog } from '@/lib/email-analysis';
 
 const BATCH_SIZE = 400;
+const MAX_PROCESS_BATCH = 5;
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 async function clearEmailAnalyses(
   refs: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>[],
@@ -55,57 +56,81 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const analysisOutputLanguage =
-      typeof userSnap.data()?.analysisOutputLanguage === 'string'
-        ? (userSnap.data()?.analysisOutputLanguage as string) || undefined
-        : undefined;
+    const body = (await request.json().catch(() => ({}))) as {
+      action?: 'prepare' | 'process';
+      emailIds?: string[];
+    };
 
-    const logsSnap = await db
-      .collection('emailLogs')
-      .where('userId', '==', uid)
-      .orderBy('receivedAt', 'desc')
-      .get();
+    const action = body.action ?? 'prepare';
 
-    const logDocs = logsSnap.docs;
-    await clearEmailAnalyses(logDocs.map((doc) => doc.ref));
-    await invalidateDerivedUserData(uid);
+    if (action === 'prepare') {
+      // Fetch all email log IDs, clear existing analyses, and return IDs for batch processing.
+      const logsSnap = await db
+        .collection('emailLogs')
+        .where('userId', '==', uid)
+        .orderBy('receivedAt', 'desc')
+        .get();
 
-    let reanalyzedCount = 0;
-    let failedCount = 0;
-    let skippedCount = 0;
+      const logDocs = logsSnap.docs;
+      await clearEmailAnalyses(logDocs.map((doc) => doc.ref));
+      await invalidateDerivedUserData(uid);
 
-    for (const logDoc of logDocs) {
-      const data = logDoc.data();
-      const originalBody = typeof data.originalBody === 'string' ? data.originalBody : '';
-
-      if (!originalBody.trim()) {
-        skippedCount += 1;
-        continue;
-      }
-
-      try {
-        const safeAnalysis = await analyzeStoredEmailLog({
-          fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
-          subject: typeof data.subject === 'string' ? data.subject : '',
-          originalBody,
-          analysisOutputLanguage,
-        });
-
-        await logDoc.ref.update({ emailAnalysis: safeAnalysis });
-        reanalyzedCount += 1;
-      } catch (error) {
-        failedCount += 1;
-        console.error(`[admin/users/${uid}/analysis] failed to analyze log ${logDoc.id}:`, error);
-      }
+      return NextResponse.json({
+        totalCount: logDocs.length,
+        emailIds: logDocs.map((doc) => doc.id),
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      totalCount: logDocs.length,
-      reanalyzedCount,
-      failedCount,
-      skippedCount,
-    });
+    if (action === 'process') {
+      const analysisOutputLanguage =
+        typeof userSnap.data()?.analysisOutputLanguage === 'string'
+          ? (userSnap.data()?.analysisOutputLanguage as string) || undefined
+          : undefined;
+
+      const emailIds = Array.isArray(body.emailIds)
+        ? body.emailIds.slice(0, MAX_PROCESS_BATCH)
+        : [];
+
+      let reanalyzedCount = 0;
+      let failedCount = 0;
+      let skippedCount = 0;
+
+      for (const emailId of emailIds) {
+        const logDoc = await db.collection('emailLogs').doc(emailId).get();
+
+        if (!logDoc.exists) {
+          skippedCount += 1;
+          continue;
+        }
+
+        const data = logDoc.data()!;
+        const originalBody = typeof data.originalBody === 'string' ? data.originalBody : '';
+
+        if (!originalBody.trim()) {
+          skippedCount += 1;
+          continue;
+        }
+
+        try {
+          const safeAnalysis = await analyzeStoredEmailLog({
+            fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
+            subject: typeof data.subject === 'string' ? data.subject : '',
+            originalBody,
+            analysisOutputLanguage,
+          });
+
+          await logDoc.ref.update({ emailAnalysis: safeAnalysis });
+          reanalyzedCount += 1;
+        } catch (error) {
+          failedCount += 1;
+          console.error(`[admin/users/${uid}/analysis] failed to analyze log ${emailId}:`, error);
+        }
+      }
+
+      return NextResponse.json({ reanalyzedCount, failedCount, skippedCount });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
