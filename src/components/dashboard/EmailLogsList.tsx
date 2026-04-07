@@ -28,8 +28,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import {
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   Mail,
   Paperclip,
   ExternalLink,
@@ -39,6 +37,7 @@ import {
 import type { EmailAnalysis, EmailLog } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
+import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
 import { Spinner } from '@/components/ui/Spinner';
 
 const PAGE_SIZE = 20;
@@ -243,6 +242,8 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   const [hasNextPage, setHasNextPage] = useState(false);
   const [totalPages, setTotalPages] = useState<number | undefined>(undefined);
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
+  const [totalEmailCount, setTotalEmailCount] = useState<number | undefined>(undefined);
+  const [totalEmailCountLoading, setTotalEmailCountLoading] = useState(false);
 
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
 
@@ -306,6 +307,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
           page: String(targetPage),
           pageSize: String(PAGE_SIZE),
           ...(searchQuery ? { search: searchQuery } : {}),
+          ...(statusFilter ? { status: statusFilter } : {}),
           ...(hasAttachmentsFilter ? { hasAttachments: 'true' } : {}),
         });
         const res = await fetch(`/api/email/logs?${params}`, {
@@ -326,14 +328,41 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         setRefreshing(false);
       }
     },
-    [firebaseUser, searchQuery, hasAttachmentsFilter],
+    [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter, t],
   );
+
+  const fetchTotalCount = useCallback(async () => {
+    if (!firebaseUser) return;
+    setTotalEmailCountLoading(true);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/email/logs/count', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data: { count: number } = await res.json();
+        setTotalEmailCount(data.count);
+      } else {
+        toast.error(t.dashboard.emailHistory.failedToLoadCount);
+      }
+    } finally {
+      setTotalEmailCountLoading(false);
+    }
+  }, [firebaseUser, t]);
 
   // Initial load and when filters/search change
   useEffect(() => {
     setPage(1);
     fetchLogs(1);
-  }, [firebaseUser, searchQuery, hasAttachmentsFilter, refreshTrigger]);
+  }, [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter, refreshTrigger, fetchLogs]);
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+    setTotalEmailCount(undefined);
+    if (!searchQuery && !statusFilter && !hasAttachmentsFilter) {
+      fetchTotalCount();
+    }
+  }, [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter, fetchTotalCount]);
 
   const handleApplyFilters = () => {
     setSearchQuery(pendingSearch.trim());
@@ -345,6 +374,9 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
 
   const handleRefresh = async () => {
     await fetchLogs(1, true);
+    if (!searchQuery && !statusFilter && !hasAttachmentsFilter) {
+      await fetchTotalCount();
+    }
     setPage(1);
   };
 
@@ -467,13 +499,16 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     };
   }, [fullscreenEmailId]);
 
-  // Client-side status filter applied on top of server results
-  const filteredLogs = statusFilter ? logs.filter((l) => l.status === statusFilter) : logs;
-
   const hasPendingChanges =
     pendingSearch.trim() !== searchQuery ||
     pendingStatus !== statusFilter ||
     pendingAttachments !== hasAttachmentsFilter;
+
+  const filteredLogs = logs;
+  const effectiveTotalCount = totalCount ?? totalEmailCount;
+  const effectiveTotalPages =
+    totalPages ??
+    (totalEmailCount !== undefined ? Math.max(1, Math.ceil(totalEmailCount / PAGE_SIZE)) : undefined);
 
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
 
@@ -556,8 +591,14 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         </div>
         {!logsLoading && (
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {totalCount !== undefined ? totalCount : filteredLogs.length}{' '}
-            {t.dashboard.emailHistory.results}
+            {effectiveTotalCount !== undefined
+              ? effectiveTotalCount
+              : totalEmailCountLoading
+                ? '...'
+                : filteredLogs.length}{' '}
+            {searchQuery || statusFilter || hasAttachmentsFilter
+              ? t.dashboard.emailHistory.results
+              : t.dashboard.emailHistory.messages}
           </span>
         )}
         {(searchQuery || statusFilter || hasAttachmentsFilter) && (
@@ -619,33 +660,22 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
   );
 
   // Pagination controls
-  const pagination =
-    hasNextPage || page > 1 ? (
-      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 dark:border-gray-800">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handlePageChange(page - 1)}
-          disabled={page <= 1 || refreshing}
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          {t.dashboard.emailHistory.previous}
-        </Button>
-        <span className="text-xs text-gray-400 dark:text-gray-500">
-          {t.dashboard.emailHistory.page} {page}
-          {totalPages !== undefined ? ` ${t.dashboard.emailHistory.of} ${totalPages}` : ''}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handlePageChange(page + 1)}
-          disabled={!hasNextPage || refreshing}
-        >
-          {t.dashboard.emailHistory.next}
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
-      </div>
-    ) : null;
+  const showPagination = hasNextPage || page > 1 || (effectiveTotalPages ?? 0) > 1;
+
+  const pagination = showPagination ? (
+    <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+      <ResultsPagination
+        page={page}
+        totalPages={effectiveTotalPages}
+        hasNextPage={hasNextPage}
+        disabled={refreshing || logsLoading}
+        compact
+        previousLabel={t.dashboard.emailHistory.previous}
+        nextLabel={t.dashboard.emailHistory.next}
+        onPageChange={handlePageChange}
+      />
+    </div>
+  ) : null;
 
   return (
     <>
@@ -732,7 +762,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
       {/* ================================================================
           WIDE LAYOUT  (≥ 1200px) — macOS Mail-style split pane
           ================================================================ */}
-      <div className="hidden xl:flex gap-0 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150 max-h-[900px]">
+      <div className="hidden xl:flex gap-0 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150 max-h-225">
         {/* Left pane: list */}
         <div className="w-100 shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700">
           {/* Header / filters */}

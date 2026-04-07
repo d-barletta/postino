@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import type { Query, DocumentSnapshot } from 'firebase-admin/firestore';
+import type { Query } from 'firebase-admin/firestore';
 import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       totalCountFromFirestore = countSnap?.data().count ?? undefined;
     } else if (cursor) {
       // No filters, cursor provided for pagination.
-      const cursorDoc: DocumentSnapshot = await db.collection('emailLogs').doc(cursor).get();
+      const cursorDoc = await db.collection('emailLogs').doc(cursor).get();
       if (cursorDoc.exists) {
         snap = await firestoreQuery
           .startAfter(cursorDoc)
@@ -388,7 +388,13 @@ export async function GET(request: NextRequest) {
       const paginatedDocs = docs.slice(0, pageSize);
       const nextCursor =
         hasNextPage && paginatedDocs.length > 0 ? paginatedDocs[paginatedDocs.length - 1].id : null;
-      return NextResponse.json({ logs: paginatedDocs, page, pageSize, hasNextPage, nextCursor });
+      return NextResponse.json({
+        logs: paginatedDocs,
+        page,
+        pageSize,
+        hasNextPage,
+        nextCursor,
+      });
     }
   } catch (err) {
     if (isFirebaseAuthError(err)) {

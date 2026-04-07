@@ -18,8 +18,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import {
-  ChevronLeft,
-  ChevronRight,
   Mail,
   Paperclip,
   ExternalLink,
@@ -30,6 +28,7 @@ import {
 import type { EmailAnalysis, EmailLog } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
+import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
 
 const PAGE_SIZE = 20;
 
@@ -392,7 +391,7 @@ export function ExploreEmailsModal({
                             <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60 mt-0.5 shrink-0" />
                           )}
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 break-words">
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">
                               {log.subject}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">
@@ -571,7 +570,7 @@ export function ExploreEmailsModal({
                             <TabsContent value="content" className="mt-3 space-y-2">
                               {emailData?.loading && (
                                 <div className="animate-pulse space-y-2 pt-1">
-                                  <div className="h-[200px] w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                                  <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
                                   <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
                                   <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
                                 </div>
@@ -652,7 +651,7 @@ export function ExploreEmailsModal({
           </div>
 
           {/* Footer: result count + optional pagination + close button */}
-          <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
             {/* Left: result count */}
             <span
               role="status"
@@ -669,31 +668,16 @@ export function ExploreEmailsModal({
             </span>
 
             {/* Center: pagination (only when needed) */}
-            {!loading && (hasNextPage || page > 1) && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t.dashboard.emailHistory.previous}
-                </Button>
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {t.dashboard.emailHistory.page} {page}
-                  {totalPages !== undefined ? ` ${t.dashboard.emailHistory.of} ${totalPages}` : ''}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={!hasNextPage}
-                >
-                  {t.dashboard.emailHistory.next}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
+            {!loading && (hasNextPage || page > 1 || (totalPages ?? 0) > 1) && (
+              <ResultsPagination
+                page={page}
+                totalPages={totalPages}
+                hasNextPage={hasNextPage}
+                disabled={loading}
+                previousLabel={t.dashboard.emailHistory.previous}
+                nextLabel={t.dashboard.emailHistory.next}
+                onPageChange={handlePageChange}
+              />
             )}
 
             {/* Right: close button */}

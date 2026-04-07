@@ -38,8 +38,6 @@ import {
 } from '@/components/ui/Drawer';
 import {
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   Mail,
   Paperclip,
   ExternalLink,
@@ -55,6 +53,7 @@ import {
 } from 'lucide-react';
 import type { EmailAnalysis, EmailLog } from '@/types';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
+import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { Spinner } from '@/components/ui/Spinner';
@@ -1536,7 +1535,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                                 <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60 mt-0.5 shrink-0" />
                               )}
                               <div className="min-w-0">
-                                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 break-words">
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">
                                   {log.subject}
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">
@@ -1712,7 +1711,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                                 <TabsContent value="content" className="mt-3 space-y-2">
                                   {emailData?.loading && (
                                     <div className="animate-pulse space-y-2 pt-1">
-                                      <div className="h-[200px] w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                                      <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
                                       <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
                                       <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
                                     </div>
@@ -1786,31 +1785,16 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                 </div>
 
                 {(hasNextPage || page > 1) && (
-                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 dark:border-gray-800">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePageChange(page - 1)}
-                      disabled={page <= 1 || refreshing}
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      {t.dashboard.emailHistory.previous}
-                    </Button>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
-                      {t.dashboard.emailHistory.page} {page}
-                      {totalPages !== undefined
-                        ? ` ${t.dashboard.emailHistory.of} ${totalPages}`
-                        : ''}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePageChange(page + 1)}
-                      disabled={!hasNextPage || refreshing}
-                    >
-                      {t.dashboard.emailHistory.next}
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
+                  <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+                    <ResultsPagination
+                      page={page}
+                      totalPages={totalPages}
+                      hasNextPage={hasNextPage}
+                      disabled={refreshing || logsLoading}
+                      previousLabel={t.dashboard.emailHistory.previous}
+                      nextLabel={t.dashboard.emailHistory.next}
+                      onPageChange={handlePageChange}
+                    />
                   </div>
                 )}
               </>
@@ -1975,29 +1959,17 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
           </div>
           {/* Pagination */}
           {!logsLoading && logs.length > 0 && (hasNextPage || page > 1) && (
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page <= 1 || refreshing}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                {t.dashboard.emailHistory.previous}
-              </Button>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {t.dashboard.emailHistory.page} {page}
-                {totalPages !== undefined ? ` ${t.dashboard.emailHistory.of} ${totalPages}` : ''}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePageChange(page + 1)}
-                disabled={!hasNextPage || refreshing}
-              >
-                {t.dashboard.emailHistory.next}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+            <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+              <ResultsPagination
+                page={page}
+                totalPages={totalPages}
+                hasNextPage={hasNextPage}
+                disabled={refreshing || logsLoading}
+                compact
+                previousLabel={t.dashboard.emailHistory.previous}
+                nextLabel={t.dashboard.emailHistory.next}
+                onPageChange={handlePageChange}
+              />
             </div>
           )}
         </div>
