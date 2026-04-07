@@ -85,11 +85,9 @@ function getNodeFrameStyle(data: FlowNodeData): React.CSSProperties {
   return {
     opacity: emphasis === 'dimmed' ? 0.22 : 1,
     transform: emphasis === 'selected' ? 'scale(1.04)' : undefined,
-    filter:
-      emphasis === 'selected'
-        ? 'drop-shadow(0 0 8px rgba(239, 217, 87, 0.45))'
-        : undefined,
-    transition: 'opacity 160ms ease, transform 160ms ease, filter 160ms ease, box-shadow 160ms ease',
+    filter: emphasis === 'selected' ? 'drop-shadow(0 0 8px rgba(239, 217, 87, 0.45))' : undefined,
+    transition:
+      'opacity 160ms ease, transform 160ms ease, filter 160ms ease, box-shadow 160ms ease',
   };
 }
 
@@ -404,7 +402,13 @@ function ElkEdge({ data, markerEnd, style, animated }: EdgeProps & { data: ElkEd
           opacity={0.95}
           className="pointer-events-none"
         >
-          <animate attributeName="stroke-dashoffset" from="18" to="0" dur="0.7s" repeatCount="indefinite" />
+          <animate
+            attributeName="stroke-dashoffset"
+            from="18"
+            to="0"
+            dur="0.7s"
+            repeatCount="indefinite"
+          />
         </path>
       ) : null}
     </>
@@ -453,9 +457,7 @@ async function computeElkLayout(
     (n) => !hiddenCategories.has(n.data?.category as EntityGraphNodeCategory),
   );
   const visibleIds = new Set(visibleNodes.map((n) => n.id));
-  const visibleEdges = rawEdges.filter(
-    (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
-  );
+  const visibleEdges = rawEdges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target));
 
   const elkGraph = {
     id: 'root',
@@ -669,7 +671,8 @@ function RelationFlowInner({
     return { highlightedNodeIds, highlightedEdgeIds };
   }, [selectedNodeId, visibleEdges, visibleNodeIds]);
 
-  const hasPinnedSelection = selectedNodeId !== null && highlightedGraph.highlightedNodeIds.size > 0;
+  const hasPinnedSelection =
+    selectedNodeId !== null && highlightedGraph.highlightedNodeIds.size > 0;
 
   const selectedNode = useMemo(() => {
     if (!selectedNodeId || !visibleNodeIds.has(selectedNodeId)) return null;
@@ -683,12 +686,9 @@ function RelationFlowInner({
     });
   }, [visibleNodeIds]);
 
-  const handleFlowNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      setSelectedNodeId(node.id);
-    },
-    [],
-  );
+  const handleFlowNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+  }, []);
 
   const rawNodes: Node[] = useMemo(
     () =>
@@ -696,7 +696,8 @@ function RelationFlowInner({
         id: n.id,
         type: n.category,
         position: { x: 0, y: 0 },
-        zIndex: n.id === selectedNodeId ? 20 : highlightedGraph.highlightedNodeIds.has(n.id) ? 10 : 1,
+        zIndex:
+          n.id === selectedNodeId ? 20 : highlightedGraph.highlightedNodeIds.has(n.id) ? 10 : 1,
         data: {
           label: n.label,
           category: n.category,
@@ -720,7 +721,9 @@ function RelationFlowInner({
       type: 'smoothstep',
       style: {
         strokeWidth:
-          0.8 + (e.weight / maxWeight) * 2.5 + (highlightedGraph.highlightedEdgeIds.has(e.id) ? 0.6 : 0),
+          0.8 +
+          (e.weight / maxWeight) * 2.5 +
+          (highlightedGraph.highlightedEdgeIds.has(e.id) ? 0.6 : 0),
         stroke: highlightedGraph.highlightedEdgeIds.has(e.id)
           ? FLOW_EDGE_HIGHLIGHT_COLOR
           : baseEdgeColor,
@@ -883,7 +886,6 @@ export function RelationFlowChart({
             </p>
           )}
         </div>
-
       </div>
 
       {/* Flow area */}
@@ -976,7 +978,15 @@ export function RelationFlowChartFullPageContent({
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   translations: Pick<
     RelationFlowChartProps['translations'],
-    'legend' | 'flowNodeClick' | 'openRelatedEmails' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
+    | 'legend'
+    | 'flowNodeClick'
+    | 'openRelatedEmails'
+    | 'topics'
+    | 'people'
+    | 'organizations'
+    | 'places'
+    | 'events'
+    | 'tags'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(

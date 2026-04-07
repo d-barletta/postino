@@ -305,10 +305,7 @@ Return an empty array if no confident merges are found. Only include suggestions
     }
 
     // Delete old rejected/accepted suggestions before storing new ones
-    const oldSnap = await db
-      .collection('entityMergeSuggestions')
-      .where('userId', '==', uid)
-      .get();
+    const oldSnap = await db.collection('entityMergeSuggestions').where('userId', '==', uid).get();
 
     const batch = db.batch();
     for (const doc of oldSnap.docs) {

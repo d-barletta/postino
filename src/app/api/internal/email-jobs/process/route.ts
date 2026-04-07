@@ -18,7 +18,10 @@ function isAuthorized(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET || '';
 
   const workerHeader = request.headers.get('x-worker-secret') || '';
-  if (workerSecret.length >= MIN_SECRET_LENGTH && timingSafeStringEqual(workerHeader, workerSecret)) {
+  if (
+    workerSecret.length >= MIN_SECRET_LENGTH &&
+    timingSafeStringEqual(workerHeader, workerSecret)
+  ) {
     return true;
   }
 

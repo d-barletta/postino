@@ -65,8 +65,9 @@ export default function AdminPage() {
   // browser restarts).  If no valid tab is found anywhere, stamp the entry
   // with the default 'overview' so that popstate always has a value to read.
   useEffect(() => {
-    const historyTab = (window.history.state as Record<string, unknown> | null)
-      ?.postinoAdminTab as AdminTab | undefined;
+    const historyTab = (window.history.state as Record<string, unknown> | null)?.postinoAdminTab as
+      | AdminTab
+      | undefined;
     const localTab = localStorage.getItem('postinoAdminActiveTab') as AdminTab | null;
     const savedTab =
       historyTab && (ADMIN_TABS as ReadonlyArray<string>).includes(historyTab)

@@ -51,11 +51,7 @@ export async function POST(request: NextRequest) {
     let counter = 1;
     const MAX_SLUG_ITERATIONS = 100;
     while (counter <= MAX_SLUG_ITERATIONS) {
-      const existing = await db
-        .collection('blogArticles')
-        .where('slug', '==', slug)
-        .limit(1)
-        .get();
+      const existing = await db.collection('blogArticles').where('slug', '==', slug).limit(1).get();
       if (existing.empty) break;
       slug = `${baseSlug}-${counter++}`;
     }

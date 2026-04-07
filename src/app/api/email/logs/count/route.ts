@@ -6,7 +6,11 @@ export async function GET(request: NextRequest) {
   try {
     const decoded = await verifyUserRequest(request);
     const db = adminDb();
-    const result = await db.collection('emailLogs').where('userId', '==', decoded.uid).count().get();
+    const result = await db
+      .collection('emailLogs')
+      .where('userId', '==', decoded.uid)
+      .count()
+      .get();
 
     return NextResponse.json({ count: result.data().count });
   } catch (err) {

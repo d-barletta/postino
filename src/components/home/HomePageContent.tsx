@@ -30,7 +30,9 @@ export function HomePageContent() {
           <div className="flex items-center gap-3">
             {!loading && firebaseUser ? (
               <>
-                <Button variant="ghost" onClick={() => signOut()}>{t.nav.signOut}</Button>
+                <Button variant="ghost" onClick={() => signOut()}>
+                  {t.nav.signOut}
+                </Button>
                 <Link href="/dashboard">
                   <Button>
                     <LayoutDashboard className="h-4 w-4" />

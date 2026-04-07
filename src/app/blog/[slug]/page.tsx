@@ -117,11 +117,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function BlogArticlePage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function BlogArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const article = await getArticle(slug);
   if (!article) notFound();

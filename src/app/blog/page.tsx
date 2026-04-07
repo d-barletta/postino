@@ -8,7 +8,8 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export const metadata: Metadata = {
   title: 'Blog',
-  description: 'Tips, updates and insights from the Postino team about AI-powered email management.',
+  description:
+    'Tips, updates and insights from the Postino team about AI-powered email management.',
   openGraph: {
     type: 'website',
     title: 'Blog | Postino',

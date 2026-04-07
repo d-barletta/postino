@@ -221,7 +221,12 @@ export default function AdminBlogTab() {
   const handleTogglePublish = async (article: BlogArticle) => {
     if (!firebaseUser) return;
     const action = article.published ? 'unpublish' : 'publish';
-    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} article "${article.title}"?`)) return;
+    if (
+      !window.confirm(
+        `${action.charAt(0).toUpperCase() + action.slice(1)} article "${article.title}"?`,
+      )
+    )
+      return;
     try {
       const token = await firebaseUser.getIdToken();
       const res = await fetch(`/api/admin/blog/${article.id}`, {
@@ -525,10 +530,7 @@ export default function AdminBlogTab() {
       ) : (
         <div className="space-y-3">
           {articles.map((article) => (
-            <div
-              key={article.id}
-              className="glass-panel rounded-xl p-4 flex flex-col gap-2"
-            >
+            <div key={article.id} className="glass-panel rounded-xl p-4 flex flex-col gap-2">
               {/* Title */}
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                 {article.title}

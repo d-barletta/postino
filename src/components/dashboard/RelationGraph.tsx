@@ -119,10 +119,7 @@ function LegendItem({
 // ---------------------------------------------------------------------------
 // Apply hidden categories to a cytoscape instance
 // ---------------------------------------------------------------------------
-function applyHiddenCategories(
-  cy: cytoscape.Core,
-  hiddenCategories: Set<EntityGraphNodeCategory>,
-) {
+function applyHiddenCategories(cy: cytoscape.Core, hiddenCategories: Set<EntityGraphNodeCategory>) {
   cy.batch(() => {
     cy.nodes().forEach((node) => {
       const cat = node.data('category') as EntityGraphNodeCategory;
@@ -635,7 +632,16 @@ export function RelationGraphFullPageContent({
   onNodeClick: (label: string, category: EntityGraphNodeCategory) => void;
   translations: Pick<
     RelationGraphProps['translations'],
-    'legend' | 'nodeClickHint' | 'nodeClickHint2' | 'openRelatedEmails' | 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags'
+    | 'legend'
+    | 'nodeClickHint'
+    | 'nodeClickHint2'
+    | 'openRelatedEmails'
+    | 'topics'
+    | 'people'
+    | 'organizations'
+    | 'places'
+    | 'events'
+    | 'tags'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(

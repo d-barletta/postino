@@ -49,18 +49,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    await db.collection('blogArticles').doc(id).update({
-      title: title.trim(),
-      content,
-      tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string') : [],
-      thumbnailUrl: typeof thumbnailUrl === 'string' ? thumbnailUrl.trim() : '',
-      published: Boolean(published),
-      language: typeof language === 'string' && language.trim() ? language.trim() : 'en',
-      ...(typeof translationGroupId === 'string' && translationGroupId.trim()
-        ? { translationGroupId: translationGroupId.trim() }
-        : {}),
-      updatedAt: new Date(),
-    });
+    await db
+      .collection('blogArticles')
+      .doc(id)
+      .update({
+        title: title.trim(),
+        content,
+        tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string') : [],
+        thumbnailUrl: typeof thumbnailUrl === 'string' ? thumbnailUrl.trim() : '',
+        published: Boolean(published),
+        language: typeof language === 'string' && language.trim() ? language.trim() : 'en',
+        ...(typeof translationGroupId === 'string' && translationGroupId.trim()
+          ? { translationGroupId: translationGroupId.trim() }
+          : {}),
+        updatedAt: new Date(),
+      });
 
     revalidateTag('blog-articles', {});
     return NextResponse.json({ success: true });

@@ -52,7 +52,10 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, updated });
   } catch (error) {
-    if (isFirebaseAuthError(error) || (error instanceof Error && error.message === 'Unauthorized')) {
+    if (
+      isFirebaseAuthError(error) ||
+      (error instanceof Error && error.message === 'Unauthorized')
+    ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('[rules/reorder] error:', error);

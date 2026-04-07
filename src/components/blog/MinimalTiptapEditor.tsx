@@ -6,10 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import {
-  containsDisallowedBlogQuotes,
-  stripDisallowedBlogQuotes,
-} from '@/lib/blog-text';
+import { containsDisallowedBlogQuotes, stripDisallowedBlogQuotes } from '@/lib/blog-text';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import {
@@ -251,9 +248,7 @@ export function MinimalTiptapEditor({
       <div className="flex flex-wrap gap-1 rounded-t-lg border-b border-gray-200 bg-gray-50/95 p-2 backdrop-blur dark:border-gray-700 dark:bg-gray-800/90">
         {toolbarGroups.map((group, gi) => (
           <div key={gi} className="flex items-center gap-0.5">
-            {gi > 0 && (
-              <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5" />
-            )}
+            {gi > 0 && <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5" />}
             {group.map((btn) => (
               <button
                 key={btn.title}

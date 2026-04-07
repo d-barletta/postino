@@ -203,7 +203,10 @@ interface ExpandedEmailData {
 // ---------------------------------------------------------------------------
 // Suggestion helpers — defined outside the component to avoid recreation.
 // ---------------------------------------------------------------------------
-interface SuggestionItem { value: string; count: number }
+interface SuggestionItem {
+  value: string;
+  count: number;
+}
 
 /** Convert a SuggestionItem array to ComboboxChips options (sorted by count desc, then a-z). */
 function toChipsOptions(items: SuggestionItem[]) {
@@ -213,10 +216,24 @@ function toChipsOptions(items: SuggestionItem[]) {
 }
 
 const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English', it: 'Italiano', es: 'Español', fr: 'Français',
-  de: 'Deutsch', pt: 'Português', nl: 'Nederlands', ru: 'Русский',
-  zh: '中文', ja: '日本語', ar: 'العربية', ko: '한국어', pl: 'Polski',
-  sv: 'Svenska', da: 'Dansk', fi: 'Suomi', no: 'Norsk', tr: 'Türkçe',
+  en: 'English',
+  it: 'Italiano',
+  es: 'Español',
+  fr: 'Français',
+  de: 'Deutsch',
+  pt: 'Português',
+  nl: 'Nederlands',
+  ru: 'Русский',
+  zh: '中文',
+  ja: '日本語',
+  ar: 'العربية',
+  ko: '한국어',
+  pl: 'Polski',
+  sv: 'Svenska',
+  da: 'Dansk',
+  fi: 'Suomi',
+  no: 'Norsk',
+  tr: 'Türkçe',
 };
 
 /** Convert language suggestions to Combobox options with display names where known. */
@@ -1279,7 +1296,10 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
             </span>
           )}
           {applied.tags.map((tag) => (
-            <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
+            >
               {ts.filterTags}: {tag}
               <button
                 onClick={() => {
@@ -1292,7 +1312,10 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
             </span>
           ))}
           {applied.people.map((person) => (
-            <span key={person} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+            <span
+              key={person}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+            >
               {ts.filterPeople}: {person}
               <button
                 onClick={() => {
@@ -1305,7 +1328,10 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
             </span>
           ))}
           {applied.orgs.map((org) => (
-            <span key={org} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+            <span
+              key={org}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+            >
               {ts.filterOrgs}: {org}
               <button
                 onClick={() => {
@@ -1318,7 +1344,10 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
             </span>
           ))}
           {applied.places.map((place) => (
-            <span key={place} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+            <span
+              key={place}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+            >
               {ts.filterPlaces}: {place}
               <button
                 onClick={() => {
@@ -1331,7 +1360,10 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
             </span>
           ))}
           {applied.events.map((event) => (
-            <span key={event} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+            <span
+              key={event}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+            >
               {ts.filterEvents}: {event}
               <button
                 onClick={() => {

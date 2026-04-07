@@ -23,7 +23,10 @@ export function BlogListContent({ articles }: BlogListContentProps) {
 
   // Show articles matching the user's locale; fall back to 'en' if none exist
   const localeArticles = articles.filter((a) => a.language === locale);
-  const displayed = localeArticles.length > 0 ? localeArticles : articles.filter((a) => a.language === 'en' || !a.language);
+  const displayed =
+    localeArticles.length > 0
+      ? localeArticles
+      : articles.filter((a) => a.language === 'en' || !a.language);
 
   return (
     <div className="min-h-full">
@@ -36,7 +39,9 @@ export function BlogListContent({ articles }: BlogListContentProps) {
           <div className="flex items-center gap-3">
             {!loading && firebaseUser ? (
               <>
-                <Button variant="ghost" onClick={() => signOut()}>{t.nav.signOut}</Button>
+                <Button variant="ghost" onClick={() => signOut()}>
+                  {t.nav.signOut}
+                </Button>
                 <Link href="/dashboard">
                   <Button>
                     <LayoutDashboard className="h-4 w-4" />
@@ -63,9 +68,7 @@ export function BlogListContent({ articles }: BlogListContentProps) {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-yellow-100 dark:bg-violet-400/20 mb-4">
             <BookOpen className="h-7 w-7 text-[#8f7a18] dark:text-violet-300" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-            {blog.title}
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">{blog.title}</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
             {blog.subtitle}
           </p>

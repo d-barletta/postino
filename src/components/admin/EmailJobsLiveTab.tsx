@@ -220,8 +220,18 @@ export default function EmailJobsLiveTab() {
   const cards = useMemo(() => {
     const counts = data?.counts;
     return [
-      { label: 'Backlog', value: data?.backlog ?? 0, tone: 'text-amber-600 dark:text-amber-300', spinning: false },
-      { label: 'Pending', value: counts?.pending ?? 0, tone: 'text-blue-600 dark:text-blue-300', spinning: false },
+      {
+        label: 'Backlog',
+        value: data?.backlog ?? 0,
+        tone: 'text-amber-600 dark:text-amber-300',
+        spinning: false,
+      },
+      {
+        label: 'Pending',
+        value: counts?.pending ?? 0,
+        tone: 'text-blue-600 dark:text-blue-300',
+        spinning: false,
+      },
       {
         label: 'Processing',
         value: counts?.processing ?? 0,
@@ -234,8 +244,18 @@ export default function EmailJobsLiveTab() {
         tone: 'text-orange-600 dark:text-orange-300',
         spinning: false,
       },
-      { label: 'Failed', value: counts?.failed ?? 0, tone: 'text-red-600 dark:text-red-300', spinning: false },
-      { label: 'Done', value: counts?.done ?? 0, tone: 'text-green-600 dark:text-green-300', spinning: false },
+      {
+        label: 'Failed',
+        value: counts?.failed ?? 0,
+        tone: 'text-red-600 dark:text-red-300',
+        spinning: false,
+      },
+      {
+        label: 'Done',
+        value: counts?.done ?? 0,
+        tone: 'text-green-600 dark:text-green-300',
+        spinning: false,
+      },
     ];
   }, [data]);
 

@@ -33,7 +33,10 @@ export async function DELETE(
   } catch (error) {
     if (isFirebaseAuthError(error) || (error instanceof Error && error.message === 'Forbidden')) {
       const status = error instanceof Error && error.message === 'Forbidden' ? 403 : 401;
-      return NextResponse.json({ error: error instanceof Error ? error.message : 'Unauthorized' }, { status });
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Unauthorized' },
+        { status },
+      );
     }
     console.error('Error deleting email:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

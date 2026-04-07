@@ -37,13 +37,28 @@ export async function GET(request: NextRequest) {
     const isUrgent = searchParams.get('isUrgent') === 'true';
     const languageFilter = (searchParams.get('language') || '').trim().toLowerCase();
     // tags – multi-value; preserve original case so Firestore array-contains-any can match stored values exactly.
-    const tagsFilter = searchParams.getAll('tags').map((t) => t.trim()).filter(Boolean);
+    const tagsFilter = searchParams
+      .getAll('tags')
+      .map((t) => t.trim())
+      .filter(Boolean);
     const statusFilter = (searchParams.get('status') || '').trim().toLowerCase();
     // entity filters – multi-value; preserve original case for Firestore array-contains-any matching.
-    const peopleFilter = searchParams.getAll('people').map((v) => v.trim()).filter(Boolean);
-    const orgsFilter = searchParams.getAll('orgs').map((v) => v.trim()).filter(Boolean);
-    const placesFilter = searchParams.getAll('places').map((v) => v.trim()).filter(Boolean);
-    const eventsFilter = searchParams.getAll('events').map((v) => v.trim()).filter(Boolean);
+    const peopleFilter = searchParams
+      .getAll('people')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const orgsFilter = searchParams
+      .getAll('orgs')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const placesFilter = searchParams
+      .getAll('places')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const eventsFilter = searchParams
+      .getAll('events')
+      .map((v) => v.trim())
+      .filter(Boolean);
     // cursor-based pagination: pass the last document ID from the previous page
     const cursor = searchParams.get('cursor');
 
@@ -108,8 +123,7 @@ export async function GET(request: NextRequest) {
         firestoreQuery = firestoreQuery.where('emailAnalysis.requiresResponse', '==', true);
       if (hasActionItems)
         firestoreQuery = firestoreQuery.where('emailAnalysis.hasActionItems', '==', true);
-      if (isUrgent)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.isUrgent', '==', true);
+      if (isUrgent) firestoreQuery = firestoreQuery.where('emailAnalysis.isUrgent', '==', true);
 
       // Array filters — push the first active one via array-contains-any; apply remaining in-memory.
       if (tagsFilter.length > 0) {
@@ -177,14 +191,20 @@ export async function GET(request: NextRequest) {
       // No filters, cursor provided for pagination.
       const cursorDoc: DocumentSnapshot = await db.collection('emailLogs').doc(cursor).get();
       if (cursorDoc.exists) {
-        snap = await firestoreQuery.startAfter(cursorDoc).limit(pageSize + 1).get();
+        snap = await firestoreQuery
+          .startAfter(cursorDoc)
+          .limit(pageSize + 1)
+          .get();
       } else {
         snap = await firestoreQuery.limit(pageSize + 1).get();
       }
     } else {
       // No filters, no cursor: offset pagination.
       const offset = (page - 1) * pageSize;
-      snap = await firestoreQuery.offset(offset).limit(pageSize + 1).get();
+      snap = await firestoreQuery
+        .offset(offset)
+        .limit(pageSize + 1)
+        .get();
     }
 
     let docs = snap.docs.map((d) => ({
@@ -262,11 +282,12 @@ export async function GET(request: NextRequest) {
     // (Firestore only supports one array-contains-any per query).
     if (tagsFilter.length > 0 && pushedArrayField !== 'tags') {
       docs = docs.filter((d) =>
-        tagsFilter.some((tag) =>
-          Array.isArray(d.emailAnalysis?.tags) &&
-          d.emailAnalysis.tags.some(
-            (t: unknown) => typeof t === 'string' && t.toLowerCase() === tag.toLowerCase(),
-          ),
+        tagsFilter.some(
+          (tag) =>
+            Array.isArray(d.emailAnalysis?.tags) &&
+            d.emailAnalysis.tags.some(
+              (t: unknown) => typeof t === 'string' && t.toLowerCase() === tag.toLowerCase(),
+            ),
         ),
       );
     }
@@ -278,9 +299,7 @@ export async function GET(request: NextRequest) {
         return (
           Array.isArray(list) &&
           peopleFilter.some((p) =>
-            list.some(
-              (v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase(),
-            ),
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase()),
           )
         );
       });
@@ -293,9 +312,7 @@ export async function GET(request: NextRequest) {
         return (
           Array.isArray(list) &&
           orgsFilter.some((o) =>
-            list.some(
-              (v: unknown) => typeof v === 'string' && v.toLowerCase() === o.toLowerCase(),
-            ),
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === o.toLowerCase()),
           )
         );
       });
@@ -308,9 +325,7 @@ export async function GET(request: NextRequest) {
         return (
           Array.isArray(list) &&
           placesFilter.some((p) =>
-            list.some(
-              (v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase(),
-            ),
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase()),
           )
         );
       });
@@ -323,9 +338,7 @@ export async function GET(request: NextRequest) {
         return (
           Array.isArray(list) &&
           eventsFilter.some((e) =>
-            list.some(
-              (v: unknown) => typeof v === 'string' && v.toLowerCase() === e.toLowerCase(),
-            ),
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === e.toLowerCase()),
           )
         );
       });
@@ -359,7 +372,8 @@ export async function GET(request: NextRequest) {
       const totalPages = Math.max(1, Math.ceil(total / pageSize));
       // If we hit the fetch limit, the in-memory count is a lower bound; prefer the Firestore
       // count aggregation in that case. Otherwise the in-memory count is exact.
-      const totalCount = total >= TEXT_SEARCH_FETCH_LIMIT ? (totalCountFromFirestore ?? total) : total;
+      const totalCount =
+        total >= TEXT_SEARCH_FETCH_LIMIT ? (totalCountFromFirestore ?? total) : total;
       return NextResponse.json({
         logs: paginatedDocs,
         page,

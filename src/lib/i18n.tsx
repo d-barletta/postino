@@ -1730,7 +1730,8 @@ const translations: Record<Locale, Translations> = {
         backToBlog: 'Volver al Blog',
         cta: {
           title: 'Lee nuestro Blog',
-          subtitle: 'Descubre consejos, guías y actualizaciones sobre la gestión de correos con IA.',
+          subtitle:
+            'Descubre consejos, guías y actualizaciones sobre la gestión de correos con IA.',
           button: 'Explorar artículos',
         },
       },
@@ -2292,7 +2293,8 @@ const translations: Record<Locale, Translations> = {
         backToBlog: 'Retour au Blog',
         cta: {
           title: 'Lisez notre Blog',
-          subtitle: "Découvrez des conseils, des guides et des mises à jour sur la gestion des e-mails par IA.",
+          subtitle:
+            'Découvrez des conseils, des guides et des mises à jour sur la gestion des e-mails par IA.',
           button: 'Explorer les articles',
         },
       },
@@ -2855,7 +2857,8 @@ const translations: Record<Locale, Translations> = {
         backToBlog: 'Zurück zum Blog',
         cta: {
           title: 'Lesen Sie unseren Blog',
-          subtitle: 'Entdecken Sie Tipps, Anleitungen und Updates zur KI-gestützten E-Mail-Verwaltung.',
+          subtitle:
+            'Entdecken Sie Tipps, Anleitungen und Updates zur KI-gestützten E-Mail-Verwaltung.',
           button: 'Artikel erkunden',
         },
       },

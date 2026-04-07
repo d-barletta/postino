@@ -153,7 +153,10 @@ export async function POST(request: NextRequest) {
       const d = doc.data();
       const cat = d.category as string;
       if (!mergesByCategory[cat]) mergesByCategory[cat] = [];
-      mergesByCategory[cat].push({ canonical: d.canonical as string, aliases: d.aliases as string[] });
+      mergesByCategory[cat].push({
+        canonical: d.canonical as string,
+        aliases: d.aliases as string[],
+      });
     }
 
     // Build alias maps per category
@@ -176,7 +179,9 @@ export async function POST(request: NextRequest) {
     }
 
     const bucketStartDates = Array.from(
-      new Set(analyzedEmails.map(({ receivedAt }) => getMonthBucketStart(receivedAt).toISOString())),
+      new Set(
+        analyzedEmails.map(({ receivedAt }) => getMonthBucketStart(receivedAt).toISOString()),
+      ),
     )
       .map((iso) => new Date(iso))
       .sort((a, b) => b.getTime() - a.getTime())
@@ -200,9 +205,10 @@ export async function POST(request: NextRequest) {
     const bucketFreqs: Array<Record<EntityGraphNodeCategory, CountMap>> = Array.from(
       { length: bucketLabels.length },
       () =>
-        Object.fromEntries(
-          ALL_CATEGORIES.map((cat) => [cat, {}]),
-        ) as Record<EntityGraphNodeCategory, CountMap>,
+        Object.fromEntries(ALL_CATEGORIES.map((cat) => [cat, {}])) as Record<
+          EntityGraphNodeCategory,
+          CountMap
+        >,
     );
 
     let totalEmails = 0;
