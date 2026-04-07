@@ -538,6 +538,11 @@ export interface Translations {
       searchModels: string;
       noModelsFound: string;
       processing: string;
+      analyze: string;
+      failedToAnalyze: string;
+      analysisResult: string;
+      extractedMarkdown: string;
+      modelUsed: string;
       reprocess: string;
       failedToReprocess: string;
       ruleApplied: string;
@@ -1132,6 +1137,11 @@ const translations: Record<Locale, Translations> = {
         searchModels: 'Search models...',
         noModelsFound: 'No models found.',
         processing: 'Processing…',
+        analyze: 'Test AI analysis',
+        failedToAnalyze: 'Failed to analyze email.',
+        analysisResult: 'AI analysis:',
+        extractedMarkdown: 'Extracted markdown:',
+        modelUsed: 'Model used:',
         reprocess: 'Re-process',
         failedToReprocess: 'Failed to reprocess email.',
         ruleApplied: 'Rule applied:',
@@ -1732,6 +1742,11 @@ const translations: Record<Locale, Translations> = {
         searchModels: 'Cerca modelli...',
         noModelsFound: 'Nessun modello trovato.',
         processing: 'Elaborazione…',
+        analyze: 'Test analisi AI',
+        failedToAnalyze: "Impossibile analizzare l'email.",
+        analysisResult: 'Analisi AI:',
+        extractedMarkdown: 'Markdown estratto:',
+        modelUsed: 'Modello usato:',
         reprocess: 'Rielabora',
         failedToReprocess: "Impossibile rielaborare l'email.",
         ruleApplied: 'Regola applicata:',
@@ -2329,6 +2344,11 @@ const translations: Record<Locale, Translations> = {
         searchModels: 'Buscar modelos...',
         noModelsFound: 'No se encontraron modelos.',
         processing: 'Procesando…',
+        analyze: 'Probar análisis IA',
+        failedToAnalyze: 'No se pudo analizar el correo.',
+        analysisResult: 'Análisis IA:',
+        extractedMarkdown: 'Markdown extraído:',
+        modelUsed: 'Modelo usado:',
         reprocess: 'Reprocesar',
         failedToReprocess: 'No se pudo reprocesar el correo.',
         ruleApplied: 'Regla aplicada:',
@@ -2927,6 +2947,11 @@ const translations: Record<Locale, Translations> = {
         searchModels: 'Rechercher des modèles...',
         noModelsFound: 'Aucun modèle trouvé.',
         processing: 'Traitement…',
+        analyze: "Tester l'analyse IA",
+        failedToAnalyze: "Impossible d'analyser l'e-mail.",
+        analysisResult: 'Analyse IA :',
+        extractedMarkdown: 'Markdown extrait :',
+        modelUsed: 'Modèle utilisé :',
         reprocess: 'Retraiter',
         failedToReprocess: "Impossible de retraiter l'e-mail.",
         ruleApplied: 'Règle appliquée :',
@@ -3527,6 +3552,11 @@ const translations: Record<Locale, Translations> = {
         searchModels: 'Modelle suchen...',
         noModelsFound: 'Keine Modelle gefunden.',
         processing: 'Verarbeitung…',
+        analyze: 'KI-Analyse testen',
+        failedToAnalyze: 'E-Mail konnte nicht analysiert werden.',
+        analysisResult: 'KI-Analyse:',
+        extractedMarkdown: 'Extrahiertes Markdown:',
+        modelUsed: 'Verwendetes Modell:',
         reprocess: 'Neu verarbeiten',
         failedToReprocess: 'E-Mail konnte nicht neu verarbeitet werden.',
         ruleApplied: 'Angewendete Regel:',

@@ -766,7 +766,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                         ),
                       }));
                     }}
-                    hint={`Max Markdown characters sent to pre-analysis after Readability extraction (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}). HTML emails are converted to reader-focused structured text before this limit is applied.`}
+                    hint={`Max Markdown characters sent to pre-analysis after HTML cleanup/extraction (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}). HTML emails are converted to structured text before this limit is applied.`}
                   />
                   <Input
                     label="Chunk Fallback Max Chars"

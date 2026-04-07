@@ -6,15 +6,25 @@ interface StoredEmailAnalysisInput {
   subject?: string;
   originalBody?: string;
   analysisOutputLanguage?: string;
+  modelOverride?: string;
+}
+
+export interface StoredEmailAnalysisDebugResult {
+  analysis: EmailAnalysis | null;
+  extractedBody: string;
+  tokensUsed: number;
+  promptTokens: number;
+  completionTokens: number;
+  model: string;
 }
 
 export function toFirestoreSafeAnalysis(analysis: EmailAnalysis): EmailAnalysis {
   return JSON.parse(JSON.stringify(analysis)) as EmailAnalysis;
 }
 
-export async function analyzeStoredEmailLog(
+export async function analyzeStoredEmailLogWithDebug(
   input: StoredEmailAnalysisInput,
-): Promise<EmailAnalysis> {
+): Promise<StoredEmailAnalysisDebugResult> {
   const originalBody = typeof input.originalBody === 'string' ? input.originalBody : '';
   if (!originalBody.trim()) {
     throw new Error('Original email content unavailable');
@@ -29,13 +39,28 @@ export async function analyzeStoredEmailLog(
     emailSubject,
     originalBody,
     isHtml,
-    undefined,
+    input.modelOverride,
     input.analysisOutputLanguage,
   );
+
+  return {
+    analysis: result.analysis ? toFirestoreSafeAnalysis(result.analysis) : null,
+    extractedBody: result.extractedBody,
+    tokensUsed: result.tokensUsed,
+    promptTokens: result.promptTokens,
+    completionTokens: result.completionTokens,
+    model: result.model,
+  };
+}
+
+export async function analyzeStoredEmailLog(
+  input: StoredEmailAnalysisInput,
+): Promise<EmailAnalysis> {
+  const result = await analyzeStoredEmailLogWithDebug(input);
 
   if (!result.analysis) {
     throw new Error('Analysis unavailable');
   }
 
-  return toFirestoreSafeAnalysis(result.analysis);
+  return result.analysis;
 }

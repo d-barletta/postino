@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
+import { EmailAnalysisPanel } from '@/components/dashboard/EmailAnalysisPanel';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
   Accordion,
@@ -14,6 +15,7 @@ import {
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
+import type { EmailAnalysis } from '@/types';
 
 interface OriginalEmail {
   id: string;
@@ -36,6 +38,15 @@ interface ReprocessResult {
   ruleApplied: string;
 }
 
+interface AnalysisDebugResult {
+  analysis: EmailAnalysis | null;
+  extractedBody: string;
+  tokensUsed: number;
+  promptTokens: number;
+  completionTokens: number;
+  model: string;
+}
+
 interface OpenRouterModel {
   id: string;
   name: string;
@@ -53,6 +64,9 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessResult, setReprocessResult] = useState<ReprocessResult | null>(null);
   const [reprocessError, setReprocessError] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisDebugResult | null>(null);
+  const [analysisError, setAnalysisError] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -110,6 +124,50 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
       setReprocessError(t.emailOriginal.admin.failedToReprocess);
     } finally {
       setReprocessing(false);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!firebaseUser) return;
+    setAnalyzing(true);
+    setAnalysisError('');
+    setAnalysisResult(null);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`/api/admin/email/${id}/analysis`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(selectedModel ? { model: selectedModel } : {}),
+      });
+      const data = (await res.json()) as Partial<AnalysisDebugResult> & { error?: string };
+      if (!res.ok) {
+        setAnalysisError(data.error || t.emailOriginal.admin.failedToAnalyze);
+        if (typeof data.extractedBody === 'string') {
+          setAnalysisResult({
+            analysis: null,
+            extractedBody: data.extractedBody,
+            tokensUsed: data.tokensUsed ?? 0,
+            promptTokens: data.promptTokens ?? 0,
+            completionTokens: data.completionTokens ?? 0,
+            model: data.model ?? '',
+          });
+        }
+        return;
+      }
+
+      setAnalysisResult({
+        analysis: (data.analysis as EmailAnalysis | null) ?? null,
+        extractedBody: data.extractedBody ?? '',
+        tokensUsed: data.tokensUsed ?? 0,
+        promptTokens: data.promptTokens ?? 0,
+        completionTokens: data.completionTokens ?? 0,
+        model: data.model ?? '',
+      });
+    } catch (error) {
+      console.error('Analyze error:', error);
+      setAnalysisError(t.emailOriginal.admin.failedToAnalyze);
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -345,6 +403,23 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                         />
                       </div>
                       <button
+                        onClick={handleAnalyze}
+                        disabled={analyzing}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm border border-[#d9c24f] text-[#8e7710] bg-white dark:bg-gray-900 hover:bg-[#fff8d6] dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {analyzing ? (
+                          <>
+                            <div className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" />
+                            {t.emailOriginal.admin.processing}
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-stars" aria-hidden="true" />
+                            {t.emailOriginal.admin.analyze}
+                          </>
+                        )}
+                      </button>
+                      <button
                         onClick={handleReprocess}
                         disabled={reprocessing}
                         className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#efd957] hover:bg-[#d0b53f] text-black rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -364,6 +439,44 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                     </div>
 
                     {reprocessError && <p className="text-sm text-red-500">{reprocessError}</p>}
+                    {analysisError && <p className="text-sm text-red-500">{analysisError}</p>}
+
+                    {analysisResult && (
+                      <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                            {t.emailOriginal.admin.modelUsed}
+                          </dt>
+                          <dd className="text-gray-800 dark:text-gray-200 min-w-0 break-all">
+                            {analysisResult.model || t.emailOriginal.admin.defaultModel}
+                          </dd>
+                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
+                            {t.emailOriginal.admin.tokensUsed}
+                          </dt>
+                          <dd className="text-gray-800 dark:text-gray-200">
+                            {analysisResult.tokensUsed.toLocaleString()}
+                          </dd>
+                        </dl>
+
+                        {analysisResult.analysis ? (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              {t.emailOriginal.admin.analysisResult}
+                            </p>
+                            <EmailAnalysisPanel analysis={analysisResult.analysis} />
+                          </div>
+                        ) : null}
+
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {t.emailOriginal.admin.extractedMarkdown}
+                          </p>
+                          <pre className="max-h-96 overflow-auto rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 p-3 text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words font-mono">
+                            {analysisResult.extractedBody || '—'}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
 
                     {reprocessResult && (
                       <>

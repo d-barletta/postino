@@ -15,10 +15,8 @@
  */
 
 import { createOpenAI } from '@ai-sdk/openai';
-import { Readability } from '@mozilla/readability';
 import { generateObject, generateText } from 'ai';
 import { jsonrepair } from 'jsonrepair';
-import { parseHTML } from 'linkedom';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -92,6 +90,7 @@ interface AgentRuntimeSettings {
 
 interface AnalyzeEmailContentResult {
   analysis: EmailAnalysis | null;
+  extractedBody: string;
   tokensUsed: number;
   promptTokens: number;
   completionTokens: number;
@@ -665,6 +664,7 @@ const emailAnalysisSchema = z.object({
 /** Returned by `preAnalyzeEmail`; groups the analysis result with its token costs. */
 interface PreAnalysisResult {
   analysis: RawEmailAnalysis | null;
+  extractedBody: string;
   tokensUsed: number;
   promptTokens: number;
   completionTokens: number;
@@ -693,11 +693,60 @@ const LANGUAGE_NAMES: Record<string, string> = {
   de: 'German',
 };
 
+function normalizeInlineStyle(style: string | undefined): string {
+  return style?.toLowerCase().replace(/\s+/g, '') ?? '';
+}
+
+function removeHiddenEmailNodes($: cheerio.CheerioAPI): void {
+  $('[aria-hidden="true"], [hidden]').remove();
+
+  $('[style]').each((_, element) => {
+    const style = normalizeInlineStyle($(element).attr('style'));
+    if (!style) return;
+
+    const isDisplayNone = style.includes('display:none');
+    const isVisibilityHidden = style.includes('visibility:hidden');
+    const isVisuallyCollapsed =
+      (style.includes('opacity:0') ||
+        style.includes('font-size:0') ||
+        style.includes('line-height:0')) &&
+      (style.includes('max-height:1px') ||
+        style.includes('height:0') ||
+        style.includes('height:1px') ||
+        style.includes('width:0') ||
+        style.includes('width:1px') ||
+        style.includes('overflow:hidden'));
+
+    if (isDisplayNone || isVisibilityHidden || isVisuallyCollapsed) {
+      $(element).remove();
+    }
+  });
+
+  $('img').each((_, element) => {
+    const width = Number.parseInt($(element).attr('width') ?? '', 10);
+    const height = Number.parseInt($(element).attr('height') ?? '', 10);
+    const style = normalizeInlineStyle($(element).attr('style'));
+    const isTrackingPixel =
+      (Number.isFinite(width) &&
+        width > 0 &&
+        width <= 1 &&
+        Number.isFinite(height) &&
+        height > 0 &&
+        height <= 1) ||
+      ((style.includes('width:1px') || style.includes('max-width:1px')) &&
+        (style.includes('height:1px') || style.includes('max-height:1px')));
+
+    if (isTrackingPixel) {
+      $(element).remove();
+    }
+  });
+}
+
 function htmlFragmentToMarkdownish(html: string): string {
   const $ = cheerio.load(html);
 
-  $('script, style, noscript, svg, canvas, meta, link, head, iframe').remove();
-  $('[aria-hidden="true"], [hidden]').remove();
+  $('script, style, noscript, svg, canvas, meta, link, head, iframe, title, base').remove();
+  removeHiddenEmailNodes($);
 
   $('br').replaceWith('\n');
 
@@ -739,30 +788,19 @@ function htmlFragmentToMarkdownish(html: string): string {
 }
 
 /**
- * Converts an HTML email body into reader-focused Markdown-like text using
- * Mozilla Readability, then normalizes the cleaned HTML into compact text.
+ * Converts an HTML email body into compact Markdown-like text using Cheerio.
+ * This keeps visible email details from table-based templates that article
+ * extractors often discard, such as dates, venues, and street addresses.
  */
 async function htmlToMarkdown(html: string): Promise<string> {
   try {
-    const wrappedHtml = /<html[\s>]/i.test(html)
-      ? html
-      : `<!doctype html><html><head><base href="https://email.local/" /></head><body>${html}</body></html>`;
-
-    const { document } = parseHTML(wrappedHtml);
-    const article = new Readability(document, {
-      charThreshold: 80,
-      disableJSONLD: true,
-      keepClasses: false,
-      serializer: (el) => (el as unknown as { innerHTML: string }).innerHTML,
-    }).parse();
-
-    const normalized = htmlFragmentToMarkdownish(article?.content || html);
+    const normalized = htmlFragmentToMarkdownish(html);
     if (normalized) return normalized;
 
-    return article?.textContent?.trim() || stripHtmlForChunking(html);
+    return stripHtmlForChunking(html);
   } catch (err) {
-    console.warn('[email-agent] readability extraction failed, using fallback:', err);
-    return htmlFragmentToMarkdownish(html) || stripHtmlForChunking(html);
+    console.warn('[email-agent] cheerio extraction failed, using fallback:', err);
+    return stripHtmlForChunking(html);
   }
 }
 
@@ -806,13 +844,20 @@ ${bodyExcerpt}`,
 
     return {
       analysis: object as RawEmailAnalysis,
+      extractedBody: bodyExcerpt,
       tokensUsed: usage?.totalTokens ?? 0,
       promptTokens: usage?.inputTokens ?? 0,
       completionTokens: usage?.outputTokens ?? 0,
     };
   } catch (err) {
     console.warn('Email pre-analysis failed, continuing without analysis context:', err);
-    return { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
+    return {
+      analysis: null,
+      extractedBody: bodyExcerpt,
+      tokensUsed: 0,
+      promptTokens: 0,
+      completionTokens: 0,
+    };
   }
 }
 
@@ -889,6 +934,7 @@ export async function analyzeEmailContent(
 
   return {
     analysis,
+    extractedBody: result.extractedBody,
     tokensUsed: result.tokensUsed,
     promptTokens: result.promptTokens,
     completionTokens: result.completionTokens,
