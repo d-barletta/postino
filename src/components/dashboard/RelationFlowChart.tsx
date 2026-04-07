@@ -366,7 +366,7 @@ async function computeElkLayout(
   rawEdges: Edge[],
   hiddenCategories: Set<EntityGraphNodeCategory>,
 ): Promise<{ nodes: Node[]; edges: Edge[] }> {
-  const { default: ELK } = await import('elkjs');
+  const { default: ELK } = await import('elkjs/lib/elk.bundled');
   const elk = new ELK();
 
   const visibleNodes = rawNodes.filter(
