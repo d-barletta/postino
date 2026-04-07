@@ -13,6 +13,41 @@ const TILE_ATTRIBUTION = '&copy; OpenStreetMap contributors &copy; CARTO';
 
 type LeafletModule = typeof import('leaflet');
 
+let leafletRuntimePromise: Promise<LeafletModule> | null = null;
+
+async function loadLeafletRuntime(): Promise<LeafletModule> {
+  const globalLeaflet = globalThis as typeof globalThis & {
+    L?: LeafletModule;
+  };
+
+  if (globalLeaflet.L && typeof globalLeaflet.L.markerClusterGroup === 'function') {
+    return globalLeaflet.L;
+  }
+
+  if (!leafletRuntimePromise) {
+    leafletRuntimePromise = (async () => {
+      const leafletModule = await import('leaflet');
+      const sharedLeaflet = globalLeaflet.L ?? ({ ...leafletModule } as LeafletModule);
+
+      Object.assign(sharedLeaflet, leafletModule);
+      globalLeaflet.L = sharedLeaflet;
+
+      await import('leaflet.markercluster');
+
+      if (typeof globalLeaflet.L?.markerClusterGroup !== 'function') {
+        throw new Error('Leaflet markercluster failed to initialize');
+      }
+
+      return globalLeaflet.L;
+    })().catch((error) => {
+      leafletRuntimePromise = null;
+      throw error;
+    });
+  }
+
+  return leafletRuntimePromise;
+}
+
 function MapSkeleton() {
   return (
     <div
@@ -104,20 +139,9 @@ function LeafletCanvas({
     const timers: number[] = [];
 
     const init = async () => {
-      const leafletModule = await import('leaflet');
-      const leaflet = { ...leafletModule } as LeafletModule;
-      const globalLeaflet = globalThis as typeof globalThis & {
-        L?: LeafletModule;
-      };
-
-      globalLeaflet.L = leaflet;
-      await import('leaflet.markercluster');
+      const leaflet = await loadLeafletRuntime();
 
       if (cancelled || !containerRef.current) return;
-
-      if (typeof leaflet.markerClusterGroup !== 'function') {
-        throw new Error('Leaflet markercluster failed to initialize');
-      }
 
       leafletRef.current = leaflet;
       pinLookupRef.current = new Map(graph.pins.map((pin) => [pin.id, pin]));
@@ -205,7 +229,10 @@ function LeafletCanvas({
       );
     };
 
-    void init();
+    void init().catch((error) => {
+      if (cancelled) return;
+      console.error('[relation-map] failed to initialize map:', error);
+    });
 
     return () => {
       cancelled = true;
