@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -18,11 +18,25 @@ import {
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/types';
 
+const ANALYSIS_BATCH_SIZE = 5;
+
 type ConfirmAction =
   | { uid: string; action: 'admin' | 'active'; current: boolean }
   | { uid: string; action: 'reanalyze' }
   | { uid: string; action: 'reset' }
   | { uid: string; action: 'delete' };
+
+type ReanalysisState = {
+  uid: string;
+  totalCount: number;
+  processedCount: number;
+  reanalyzedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  pendingIds: string[];
+  preparing: boolean;
+  error: string | null;
+};
 
 function replaceTokens(template: string, tokens: Record<string, string | number>): string {
   return Object.entries(tokens).reduce(
@@ -46,6 +60,8 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [reanalysis, setReanalysis] = useState<ReanalysisState | null>(null);
+  const abortRef = useRef(false);
 
   const fetchUsers = useCallback(async () => {
     if (!firebaseUser) return;
@@ -87,8 +103,161 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     fetchUsers();
   }, [fetchUsers]);
 
+  const runReanalysisBatches = useCallback(
+    async (uid: string, pendingIds: string[], counters: { reanalyzed: number; failed: number; skipped: number }) => {
+      if (!firebaseUser) return;
+      abortRef.current = false;
+
+      let remaining = [...pendingIds];
+      let { reanalyzed, failed, skipped } = counters;
+
+      while (remaining.length > 0 && !abortRef.current) {
+        const batch = remaining.slice(0, ANALYSIS_BATCH_SIZE);
+        remaining = remaining.slice(ANALYSIS_BATCH_SIZE);
+
+        let token: string;
+        try {
+          token = await firebaseUser.getIdToken();
+        } catch (tokenError) {
+          console.error('[admin/users/analysis] failed to refresh auth token:', tokenError);
+          setReanalysis((prev) =>
+            prev ? { ...prev, pendingIds: [...batch, ...remaining], error: t.admin.toasts.failedToRerunUserAnalyses } : null,
+          );
+          return;
+        }
+
+        const res = await fetch(`/api/admin/users/${uid}/analysis`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'process', emailIds: batch }),
+        });
+
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+          setReanalysis((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  pendingIds: [...batch, ...remaining],
+                  error: payload?.error ?? t.admin.toasts.failedToRerunUserAnalyses,
+                }
+              : null,
+          );
+          return;
+        }
+
+        const result = (await res.json()) as { reanalyzedCount?: number; failedCount?: number; skippedCount?: number };
+        reanalyzed += result.reanalyzedCount ?? 0;
+        failed += result.failedCount ?? 0;
+        skipped += result.skippedCount ?? 0;
+        const processedCount = reanalyzed + failed + skipped;
+
+        setReanalysis((prev) =>
+          prev
+            ? {
+                ...prev,
+                pendingIds: remaining,
+                processedCount,
+                reanalyzedCount: reanalyzed,
+                failedCount: failed,
+                skippedCount: skipped,
+                error: null,
+              }
+            : null,
+        );
+      }
+
+      if (abortRef.current) return;
+
+      // All done
+      const label =
+        failed > 0 || skipped > 0
+          ? replaceTokens(t.admin.toasts.userAnalysesRerunPartial, {
+              done: reanalyzed,
+              failed,
+              skipped,
+            })
+          : replaceTokens(t.admin.toasts.userAnalysesRerun, { count: reanalyzed });
+      toast.success(label);
+      setReanalysis(null);
+      setConfirmAction(null);
+      await fetchUsers();
+    },
+    [firebaseUser, fetchUsers, t],
+  );
+
+  const startReanalysis = useCallback(
+    async (uid: string) => {
+      if (!firebaseUser) return;
+      setReanalysis({
+        uid,
+        totalCount: 0,
+        processedCount: 0,
+        reanalyzedCount: 0,
+        failedCount: 0,
+        skippedCount: 0,
+        pendingIds: [],
+        preparing: true,
+        error: null,
+      });
+
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch(`/api/admin/users/${uid}/analysis`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'prepare' }),
+        });
+
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+          setReanalysis((prev) =>
+            prev
+              ? { ...prev, preparing: false, error: payload?.error ?? t.admin.toasts.failedToRerunUserAnalyses }
+              : null,
+          );
+          return;
+        }
+
+        const { totalCount, emailIds } = (await res.json()) as { totalCount: number; emailIds: string[] };
+
+        setReanalysis((prev) =>
+          prev
+            ? { ...prev, totalCount, pendingIds: emailIds, preparing: false }
+            : null,
+        );
+
+        if (emailIds.length === 0) {
+          toast.success(replaceTokens(t.admin.toasts.userAnalysesRerun, { count: 0 }));
+          setReanalysis(null);
+          setConfirmAction(null);
+          return;
+        }
+
+        await runReanalysisBatches(uid, emailIds, { reanalyzed: 0, failed: 0, skipped: 0 });
+      } catch (error) {
+        setReanalysis((prev) =>
+          prev
+            ? {
+                ...prev,
+                preparing: false,
+                error: error instanceof Error ? error.message : t.admin.toasts.failedToRerunUserAnalyses,
+              }
+            : null,
+        );
+      }
+    },
+    [firebaseUser, runReanalysisBatches, t],
+  );
+
   const executeAction = async () => {
     if (!firebaseUser || !confirmAction) return;
+
+    if (confirmAction.action === 'reanalyze') {
+      void startReanalysis(confirmAction.uid);
+      return;
+    }
+
     setConfirming(true);
     try {
       const token = await firebaseUser.getIdToken();
@@ -97,11 +266,6 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       if (confirmAction.action === 'delete') {
         res = await fetch(`/api/admin/users/${confirmAction.uid}`, {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } else if (confirmAction.action === 'reanalyze') {
-        res = await fetch(`/api/admin/users/${confirmAction.uid}/analysis`, {
-          method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });
       } else if (confirmAction.action === 'reset') {
@@ -125,54 +289,33 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         const payload = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(
           payload?.error ||
-            (confirmAction.action === 'reanalyze'
-              ? t.admin.toasts.failedToRerunUserAnalyses
-              : confirmAction.action === 'reset'
-                ? t.admin.toasts.failedToResetUserData
-                : t.admin.toasts.failedToUpdateUser),
+            (confirmAction.action === 'reset'
+              ? t.admin.toasts.failedToResetUserData
+              : t.admin.toasts.failedToUpdateUser),
         );
       }
-
-      const data = (await res.json().catch(() => null)) as {
-        reanalyzedCount?: number;
-        failedCount?: number;
-        skippedCount?: number;
-        totalCount?: number;
-      } | null;
 
       await fetchUsers();
       const label =
         confirmAction.action === 'delete'
           ? t.admin.toasts.userDeleted
-          : confirmAction.action === 'reanalyze'
-            ? (data?.failedCount ?? 0) > 0 || (data?.skippedCount ?? 0) > 0
-              ? replaceTokens(t.admin.toasts.userAnalysesRerunPartial, {
-                  done: data?.reanalyzedCount ?? 0,
-                  failed: data?.failedCount ?? 0,
-                  skipped: data?.skippedCount ?? 0,
-                })
-              : replaceTokens(t.admin.toasts.userAnalysesRerun, {
-                  count: data?.reanalyzedCount ?? 0,
-                })
-            : confirmAction.action === 'reset'
-              ? t.admin.toasts.userDataReset
-              : confirmAction.action === 'admin'
-                ? confirmAction.current
-                  ? t.admin.toasts.adminRemoved
-                  : t.admin.toasts.adminGranted
-                : confirmAction.current
-                  ? t.admin.toasts.userSuspended
-                  : t.admin.toasts.userActivated;
+          : confirmAction.action === 'reset'
+            ? t.admin.toasts.userDataReset
+            : confirmAction.action === 'admin'
+              ? confirmAction.current
+                ? t.admin.toasts.adminRemoved
+                : t.admin.toasts.adminGranted
+              : confirmAction.current
+                ? t.admin.toasts.userSuspended
+                : t.admin.toasts.userActivated;
       toast.success(label);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : confirmAction.action === 'reanalyze'
-            ? t.admin.toasts.failedToRerunUserAnalyses
-            : confirmAction.action === 'reset'
-              ? t.admin.toasts.failedToResetUserData
-              : t.admin.toasts.failedToUpdateUser,
+          : confirmAction.action === 'reset'
+            ? t.admin.toasts.failedToResetUserData
+            : t.admin.toasts.failedToUpdateUser,
       );
     } finally {
       setConfirming(false);
@@ -205,6 +348,13 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           : confirmAction?.action === 'admin'
             ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
             : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
+
+  const progressPercent =
+    reanalysis && reanalysis.totalCount > 0
+      ? Math.round((reanalysis.processedCount / reanalysis.totalCount) * 100)
+      : 0;
+
+  const isReanalyzing = confirmAction?.action === 'reanalyze' && reanalysis !== null;
 
   return (
     <div className="space-y-6">
@@ -329,30 +479,110 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         </CardContent>
       </Card>
 
-      <Drawer open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+      <Drawer
+        open={!!confirmAction}
+        onOpenChange={(open) => {
+          if (!open && !isReanalyzing) setConfirmAction(null);
+        }}
+      >
         <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>{confirmTitle}</DrawerTitle>
-            <DrawerDescription>{confirmDesc}</DrawerDescription>
-          </DrawerHeader>
-          <DrawerFooter>
-            <Button variant="ghost" onClick={() => setConfirmAction(null)} disabled={confirming}>
-              Cancel
-            </Button>
-            <Button
-              variant={
-                confirmAction?.action === 'delete' ||
-                confirmAction?.action === 'reset' ||
-                (confirmAction?.action === 'active' && confirmAction.current)
-                  ? 'danger'
-                  : 'primary'
-              }
-              onClick={executeAction}
-              loading={confirming}
-            >
-              Confirm
-            </Button>
-          </DrawerFooter>
+          {isReanalyzing && reanalysis ? (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>{adminUsers.rerunAnalysisTitle}</DrawerTitle>
+              </DrawerHeader>
+              <div className="px-4 pb-2 space-y-3">
+                {reanalysis.preparing ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {adminUsers.rerunAnalysisPreparing}
+                  </p>
+                ) : reanalysis.totalCount === 0 && reanalysis.error ? (
+                  <p className="text-sm text-red-500 dark:text-red-400">{reanalysis.error}</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {replaceTokens(adminUsers.rerunAnalysisProgress, {
+                        done: reanalysis.processedCount,
+                        total: reanalysis.totalCount,
+                        percent: progressPercent,
+                      })}
+                    </p>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    {reanalysis.error && (
+                      <p className="text-sm text-red-500 dark:text-red-400">{reanalysis.error}</p>
+                    )}
+                  </>
+                )}
+              </div>
+              {reanalysis.error && (
+                <DrawerFooter>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      abortRef.current = true;
+                      setReanalysis(null);
+                      setConfirmAction(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      if (!reanalysis) return;
+                      setReanalysis((prev) => (prev ? { ...prev, error: null } : null));
+                      if (reanalysis.pendingIds.length === 0) {
+                        // Prepare step failed — restart from the beginning.
+                        void startReanalysis(reanalysis.uid);
+                      } else {
+                        void runReanalysisBatches(reanalysis.uid, reanalysis.pendingIds, {
+                          reanalyzed: reanalysis.reanalyzedCount,
+                          failed: reanalysis.failedCount,
+                          skipped: reanalysis.skippedCount,
+                        });
+                      }
+                    }}
+                  >
+                    {adminUsers.rerunAnalysisRetry}
+                  </Button>
+                </DrawerFooter>
+              )}
+            </>
+          ) : (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>{confirmTitle}</DrawerTitle>
+                <DrawerDescription>{confirmDesc}</DrawerDescription>
+              </DrawerHeader>
+              <DrawerFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setConfirmAction(null)}
+                  disabled={confirming}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant={
+                    confirmAction?.action === 'delete' ||
+                    confirmAction?.action === 'reset' ||
+                    (confirmAction?.action === 'active' && confirmAction.current)
+                      ? 'danger'
+                      : 'primary'
+                  }
+                  onClick={executeAction}
+                  loading={confirming}
+                >
+                  Confirm
+                </Button>
+              </DrawerFooter>
+            </>
+          )}
         </DrawerContent>
       </Drawer>
     </div>
