@@ -528,6 +528,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                       setReanalysis(null);
                       setConfirmAction(null);
                     }}
+                    className="flex-1"
                   >
                     Cancel
                   </Button>
@@ -547,6 +548,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                         });
                       }
                     }}
+                    className="flex-1"
                   >
                     {adminUsers.rerunAnalysisRetry}
                   </Button>
@@ -564,6 +566,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                   variant="ghost"
                   onClick={() => setConfirmAction(null)}
                   disabled={confirming}
+                  className="flex-1"
                 >
                   Cancel
                 </Button>
@@ -577,6 +580,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                   }
                   onClick={executeAction}
                   loading={confirming}
+                  className="flex-1"
                 >
                   Confirm
                 </Button>

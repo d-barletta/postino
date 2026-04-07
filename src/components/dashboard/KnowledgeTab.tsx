@@ -1072,15 +1072,16 @@ export function KnowledgeTab() {
             </DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="pb-8">
-            <Button variant="danger" onClick={handleDeleteMerge} disabled={deletingMerge}>
-              {deletingMerge ? '…' : k.deleteMerge}
-            </Button>
             <Button
               variant="ghost"
               onClick={() => setPendingDeleteMerge(null)}
               disabled={deletingMerge}
+              className="flex-1"
             >
               {k.cancelMerge}
+            </Button>
+            <Button variant="danger" onClick={handleDeleteMerge} disabled={deletingMerge} className="flex-1">
+              {deletingMerge ? '…' : k.deleteMerge}
             </Button>
           </DrawerFooter>
         </DrawerContent>
