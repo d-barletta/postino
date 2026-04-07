@@ -305,7 +305,7 @@ export interface FlowGraphBucket {
   startDate: string;
 }
 
-/** Date-ordered entity flow graph built from temporal entity continuity. */
+/** Date-ordered entity flow graph built from per-bucket entity relationships. */
 export interface EntityFlowGraph {
   nodes: FlowGraphNode[];
   edges: EntityGraphEdge[];

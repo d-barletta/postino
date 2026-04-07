@@ -64,6 +64,18 @@ const HANDLE_STYLE: React.CSSProperties = {
 };
 const TARGET_HANDLE_POSITION = Position.Left;
 const SOURCE_HANDLE_POSITION = Position.Right;
+const FLOW_CATEGORY_ORDER: EntityGraphNodeCategory[] = [
+  'people',
+  'organizations',
+  'events',
+  'places',
+  'topics',
+  'tags',
+];
+const FLOW_BUCKET_LAYER_SPAN = FLOW_CATEGORY_ORDER.length + 1;
+const FLOW_CATEGORY_LAYER_INDEX = new Map(
+  FLOW_CATEGORY_ORDER.map((category, index) => [category, index]),
+);
 const FLOW_EDGE_COLOR_LIGHT = '#475569';
 const FLOW_EDGE_COLOR_DARK = '#94a3b8';
 const FLOW_EDGE_HIGHLIGHT_COLOR = '#efd957';
@@ -442,7 +454,7 @@ function elkSectionsToPath(sections: ElkEdgeSection[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// ELK layout: USER_DEFINED layering — bucketIndex drives the X layer
+// ELK layout: USER_DEFINED layering — bucket and category drive the X layer
 // ---------------------------------------------------------------------------
 async function computeElkLayout(
   rawNodes: Node[],
@@ -465,8 +477,8 @@ async function computeElkLayout(
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
       'elk.layered.layering.strategy': 'USER_DEFINED',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '140',
-      'elk.spacing.nodeNode': '50',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '85',
+      'elk.spacing.nodeNode': '42',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.edgeRouting': 'ORTHOGONAL',
       'elk.padding': '[top=24,left=24,bottom=24,right=24]',
@@ -475,12 +487,14 @@ async function computeElkLayout(
       const cat = n.data?.category as EntityGraphNodeCategory;
       const dims = NODE_DIMS[cat] ?? { w: 100, h: 40 };
       const bucketIndex = (n.data?.bucketIndex as number) ?? 0;
+      const categoryIndex = FLOW_CATEGORY_LAYER_INDEX.get(cat) ?? 0;
+      const layerIndex = bucketIndex * FLOW_BUCKET_LAYER_SPAN + categoryIndex;
       return {
         id: n.id,
         width: dims.w,
         height: dims.h,
         layoutOptions: {
-          'elk.layered.layering.userDefinedNode.layer': String(bucketIndex),
+          'elk.layered.layering.userDefinedNode.layer': String(layerIndex),
         },
       };
     }),

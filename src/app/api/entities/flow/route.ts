@@ -15,12 +15,12 @@ const FETCH_LIMIT = 500;
 const MERGES_LIMIT = 500;
 /** Max entities kept per category per time bucket. */
 const TOP_K_PER_BUCKET = 5;
-/** Minimum continuity weight for a temporal edge to be included. */
+/** Minimum relationship weight for a temporal edge to be included. */
 const MIN_EDGE_WEIGHT = 1;
 /** Maximum number of monthly buckets with data to include. */
 const NUM_BUCKETS = 8;
 /** Bump when the stored flow graph shape or semantics change. */
-const FLOW_GRAPH_VERSION = 2;
+const FLOW_GRAPH_VERSION = 3;
 
 const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'people',
@@ -39,6 +39,8 @@ type AnalyzedEmail = {
   receivedAt: Date;
   analysis: Record<string, unknown>;
 };
+
+type PerEmailEntities = Record<EntityGraphNodeCategory, string[]>;
 
 function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: string[] }>): void {
   for (const merge of merges) {
@@ -210,6 +212,7 @@ export async function POST(request: NextRequest) {
           CountMap
         >,
     );
+    const perEmailBucketEntities: Array<{ bucketIdx: number; entities: PerEmailEntities }> = [];
 
     let totalEmails = 0;
 
@@ -218,6 +221,15 @@ export async function POST(request: NextRequest) {
       if (bucketIdx === undefined) continue;
 
       totalEmails++;
+
+      const raw: PerEmailEntities = {
+        topics: [],
+        tags: [],
+        people: [],
+        organizations: [],
+        places: [],
+        events: [],
+      };
 
       const collectRaw = (cat: EntityGraphNodeCategory, values: unknown) => {
         if (!Array.isArray(values)) return;
@@ -233,6 +245,7 @@ export async function POST(request: NextRequest) {
             seenInEmail.add(canonical);
             bucketFreqs[bucketIdx][cat][canonical] =
               (bucketFreqs[bucketIdx][cat][canonical] ?? 0) + 1;
+            raw[cat].push(canonical);
           }
         }
       };
@@ -246,6 +259,8 @@ export async function POST(request: NextRequest) {
         collectRaw('places', entities.places);
         collectRaw('events', entities.events);
       }
+
+      perEmailBucketEntities.push({ bucketIdx, entities: raw });
     }
 
     // Apply merges to bucket frequency maps
@@ -261,7 +276,7 @@ export async function POST(request: NextRequest) {
     // -----------------------------------------------------------------------
     const nodes: FlowGraphNode[] = [];
     let nodeIdx = 0;
-    const nodesByEntity = new Map<string, FlowGraphNode[]>();
+    const nodeIdByBucketEntity = new Map<string, string>();
 
     for (let bi = 0; bi < bucketLabels.length; bi++) {
       for (const cat of ALL_CATEGORIES) {
@@ -278,37 +293,58 @@ export async function POST(request: NextRequest) {
           };
 
           nodes.push(node);
-
-          const entityKey = `${cat}:${label}`;
-          const entityNodes = nodesByEntity.get(entityKey) ?? [];
-          entityNodes.push(node);
-          nodesByEntity.set(entityKey, entityNodes);
+          nodeIdByBucketEntity.set(`${bi}:${cat}:${label}`, node.id);
         }
       }
     }
 
     // -----------------------------------------------------------------------
-    // Build temporal continuity edges between the same entity across buckets.
+    // Build relationship edges inside each bucket using category-order chaining.
     // -----------------------------------------------------------------------
+    const edgeWeights = new Map<string, number>();
     const edges: EntityGraphEdge[] = [];
     let edgeIdx = 0;
 
-    for (const entityNodes of nodesByEntity.values()) {
-      entityNodes.sort((a, b) => a.bucketIndex - b.bucketIndex);
+    for (const { bucketIdx, entities } of perEmailBucketEntities) {
+      const normalizedByCategory = Object.fromEntries(
+        ALL_CATEGORIES.map((cat) => {
+          const labels = Array.from(
+            new Set(
+              entities[cat].filter((label) => nodeIdByBucketEntity.has(`${bucketIdx}:${cat}:${label}`)),
+            ),
+          );
 
-      for (let i = 1; i < entityNodes.length; i++) {
-        const previousNode = entityNodes[i - 1];
-        const currentNode = entityNodes[i];
-        const weight = Math.max(1, Math.min(previousNode.count, currentNode.count));
-        if (weight < MIN_EDGE_WEIGHT) continue;
+          return [cat, labels];
+        }),
+      ) as Record<EntityGraphNodeCategory, string[]>;
 
-        edges.push({
-          id: `e${edgeIdx++}`,
-          source: previousNode.id,
-          target: currentNode.id,
-          weight,
-        });
+      const presentCategories = ALL_CATEGORIES.filter(
+        (cat) => normalizedByCategory[cat].length > 0,
+      );
+
+      for (let i = 0; i < presentCategories.length - 1; i++) {
+        const sourceCategory = presentCategories[i];
+        const targetCategory = presentCategories[i + 1];
+
+        for (const sourceLabel of normalizedByCategory[sourceCategory]) {
+          const sourceId = nodeIdByBucketEntity.get(`${bucketIdx}:${sourceCategory}:${sourceLabel}`);
+          if (!sourceId) continue;
+
+          for (const targetLabel of normalizedByCategory[targetCategory]) {
+            const targetId = nodeIdByBucketEntity.get(`${bucketIdx}:${targetCategory}:${targetLabel}`);
+            if (!targetId || targetId === sourceId) continue;
+
+            const key = `${sourceId}~${targetId}`;
+            edgeWeights.set(key, (edgeWeights.get(key) ?? 0) + 1);
+          }
+        }
       }
+    }
+
+    for (const [key, weight] of edgeWeights) {
+      if (weight < MIN_EDGE_WEIGHT) continue;
+      const [source, target] = key.split('~');
+      edges.push({ id: `e${edgeIdx++}`, source, target, weight });
     }
 
     const generatedAt = new Date().toISOString();
