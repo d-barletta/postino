@@ -795,12 +795,16 @@ function htmlFragmentToMarkdownish(html: string): string {
     $(element).replaceWith(alt ? `[Image: ${alt}]` : '');
   });
 
-  // Anchors: keep only visible text, drop URLs — URLs are not visible to the
-  // reader and add noise.  Links with no visible text (e.g. image-only
-  // tracking links) are dropped entirely.
+  // Anchors: emit "label (url)" when a link has both visible text and an href
+  // so the AI can see the destination (useful for CTA links, unsubscribe links,
+  // etc.).  When only visible text is present (no href) emit just the text.
+  // Links with no visible text at all (e.g. image-only tracking pixels) are
+  // dropped entirely to avoid noise.
   $('a').each((_, element) => {
     const text = $(element).text().replace(/\s+/g, ' ').trim();
-    $(element).replaceWith(text);
+    const href = $(element).attr('href')?.trim() ?? '';
+    const replacement = text && href ? `${text} (${href})` : text;
+    $(element).replaceWith(replacement);
   });
 
   // Heading hierarchy markers give the AI structural context so it can tell
