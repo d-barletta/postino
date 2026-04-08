@@ -163,7 +163,7 @@ function ChatContent({
           aria-multiline="true"
           className="leading-normal"
         />
-        <InputGroupAddon align="block-end" className="bg-[var(--surface)]">
+        <InputGroupAddon align="block-end" className="bg-[var(--surface,#ffffff)]">
           <InputGroupButton
             className="ml-auto"
             onClick={handleSubmit}
