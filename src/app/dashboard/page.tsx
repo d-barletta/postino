@@ -340,6 +340,32 @@ export default function DashboardPage() {
             )}
             <UserStatsCards stats={userStats ?? EMPTY_STATS} />
             <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
+            {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
+              <Card className="border-[#efd957]/60 bg-gradient-to-br from-[#efd957]/10 to-transparent">
+                <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#efd957]">
+                      <Bot className="h-5 w-5 text-[#171717]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                        {t.dashboard.agent.cta.title}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {t.dashboard.agent.cta.description}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => handleTabChange('agent')}
+                    className="shrink-0 bg-[#efd957] text-[#171717] hover:bg-[#d6c043]"
+                  >
+                    <Bot className="h-4 w-4" />
+                    {t.dashboard.agent.cta.button}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
         <TabsContent value="rules">

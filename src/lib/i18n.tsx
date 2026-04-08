@@ -535,6 +535,11 @@ export interface Translations {
       clearConfirmDescription: string;
       clearConfirmButton: string;
       cancelClear: string;
+      cta: {
+        title: string;
+        description: string;
+        button: string;
+      };
     };
   };
   emailOriginal: {
@@ -1167,6 +1172,11 @@ const translations: Record<Locale, Translations> = {
           'This will remove all messages from the current session. This action cannot be undone.',
         clearConfirmButton: 'Clear',
         cancelClear: 'Cancel',
+        cta: {
+          title: 'Your AI email agent is ready',
+          description: 'Ask questions about your emails in natural language.',
+          button: 'Ask me everything about your emails!',
+        },
       },
     },
     emailOriginal: {
@@ -1805,6 +1815,11 @@ const translations: Record<Locale, Translations> = {
           'Questo rimuoverà tutti i messaggi della sessione corrente. Questa azione non può essere annullata.',
         clearConfirmButton: 'Cancella',
         cancelClear: 'Annulla',
+        cta: {
+          title: 'Il tuo agente AI è pronto',
+          description: 'Fai domande sulle tue email in linguaggio naturale.',
+          button: 'Chiedimi tutto sulle tue email!',
+        },
       },
     },
     emailOriginal: {
@@ -2440,6 +2455,11 @@ const translations: Record<Locale, Translations> = {
           'Esto eliminará todos los mensajes de la sesión actual. Esta acción no se puede deshacer.',
         clearConfirmButton: 'Borrar',
         cancelClear: 'Cancelar',
+        cta: {
+          title: 'Tu agente de IA está listo',
+          description: 'Haz preguntas sobre tus correos en lenguaje natural.',
+          button: '¡Pregúntame todo sobre tus correos!',
+        },
       },
     },
     emailOriginal: {
@@ -3076,6 +3096,11 @@ const translations: Record<Locale, Translations> = {
           'Cela supprimera tous les messages de la session en cours. Cette action est irréversible.',
         clearConfirmButton: 'Effacer',
         cancelClear: 'Annuler',
+        cta: {
+          title: 'Votre agent IA est prêt',
+          description: 'Posez des questions sur vos e-mails en langage naturel.',
+          button: 'Demandez-moi tout sur vos e-mails !',
+        },
       },
     },
     emailOriginal: {
@@ -3714,6 +3739,11 @@ const translations: Record<Locale, Translations> = {
           'Dadurch werden alle Nachrichten der aktuellen Sitzung entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
         clearConfirmButton: 'Löschen',
         cancelClear: 'Abbrechen',
+        cta: {
+          title: 'Ihr KI-E-Mail-Agent ist bereit',
+          description: 'Stellen Sie Fragen zu Ihren E-Mails in natürlicher Sprache.',
+          button: 'Fragen Sie mich alles über Ihre E-Mails!',
+        },
       },
     },
     emailOriginal: {
