@@ -530,6 +530,11 @@ export interface Translations {
       noAnswer: string;
       errorFallback: string;
       sendHint: string;
+      clearConversation: string;
+      clearConfirmTitle: string;
+      clearConfirmDescription: string;
+      clearConfirmButton: string;
+      cancelClear: string;
     };
   };
   emailOriginal: {
@@ -1155,7 +1160,12 @@ const translations: Record<Locale, Translations> = {
         send: 'Send',
         noAnswer: 'No answer found.',
         errorFallback: 'Something went wrong. Please try again.',
-        sendHint: 'Press Enter to send · Shift+Enter for new line',
+        sendHint: 'Shift+Enter to send · Enter for new line',
+        clearConversation: 'Clear conversation',
+        clearConfirmTitle: 'Clear conversation?',
+        clearConfirmDescription: 'This will remove all messages from the current session. This action cannot be undone.',
+        clearConfirmButton: 'Clear',
+        cancelClear: 'Cancel',
       },
     },
     emailOriginal: {
@@ -1787,7 +1797,12 @@ const translations: Record<Locale, Translations> = {
         send: 'Invia',
         noAnswer: 'Nessuna risposta trovata.',
         errorFallback: 'Qualcosa è andato storto. Riprova.',
-        sendHint: 'Premi Invio per inviare · Shift+Invio per andare a capo',
+        sendHint: 'Shift+Invio per inviare · Invio per andare a capo',
+        clearConversation: 'Cancella conversazione',
+        clearConfirmTitle: 'Cancellare la conversazione?',
+        clearConfirmDescription: 'Questo rimuoverà tutti i messaggi della sessione corrente. Questa azione non può essere annullata.',
+        clearConfirmButton: 'Cancella',
+        cancelClear: 'Annulla',
       },
     },
     emailOriginal: {
@@ -2416,7 +2431,12 @@ const translations: Record<Locale, Translations> = {
         send: 'Enviar',
         noAnswer: 'No se encontró respuesta.',
         errorFallback: 'Algo salió mal. Por favor, inténtalo de nuevo.',
-        sendHint: 'Pulsa Intro para enviar · Shift+Intro para nueva línea',
+        sendHint: 'Shift+Intro para enviar · Intro para nueva línea',
+        clearConversation: 'Borrar conversación',
+        clearConfirmTitle: '¿Borrar conversación?',
+        clearConfirmDescription: 'Esto eliminará todos los mensajes de la sesión actual. Esta acción no se puede deshacer.',
+        clearConfirmButton: 'Borrar',
+        cancelClear: 'Cancelar',
       },
     },
     emailOriginal: {
@@ -3046,7 +3066,12 @@ const translations: Record<Locale, Translations> = {
         send: 'Envoyer',
         noAnswer: 'Aucune réponse trouvée.',
         errorFallback: "Quelque chose s'est mal passé. Veuillez réessayer.",
-        sendHint: 'Entrée pour envoyer · Shift+Entrée pour nouvelle ligne',
+        sendHint: 'Shift+Entrée pour envoyer · Entrée pour nouvelle ligne',
+        clearConversation: 'Effacer la conversation',
+        clearConfirmTitle: 'Effacer la conversation ?',
+        clearConfirmDescription: 'Cela supprimera tous les messages de la session en cours. Cette action est irréversible.',
+        clearConfirmButton: 'Effacer',
+        cancelClear: 'Annuler',
       },
     },
     emailOriginal: {
@@ -3678,7 +3703,12 @@ const translations: Record<Locale, Translations> = {
         send: 'Senden',
         noAnswer: 'Keine Antwort gefunden.',
         errorFallback: 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
-        sendHint: 'Enter zum Senden · Shift+Enter für neue Zeile',
+        sendHint: 'Shift+Enter zum Senden · Enter für neue Zeile',
+        clearConversation: 'Konversation löschen',
+        clearConfirmTitle: 'Konversation löschen?',
+        clearConfirmDescription: 'Dadurch werden alle Nachrichten der aktuellen Sitzung entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+        clearConfirmButton: 'Löschen',
+        cancelClear: 'Abbrechen',
       },
     },
     emailOriginal: {
