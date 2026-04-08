@@ -535,6 +535,13 @@ export interface Translations {
       clearConfirmDescription: string;
       clearConfirmButton: string;
       cancelClear: string;
+      expandFullPage: string;
+      closeFullPage: string;
+      cta: {
+        title: string;
+        description: string;
+        button: string;
+      };
     };
   };
   emailOriginal: {
@@ -1154,7 +1161,7 @@ const translations: Record<Locale, Translations> = {
       },
       agent: {
         title: 'Memory Agent',
-        subtitle: 'Ask questions about your emails in natural language.',
+        subtitle: 'Ask me about your emails.',
         placeholder: 'Ask something like "What newsletters did I receive this week?"',
         inputPlaceholder: 'Ask about your emails…',
         send: 'Send',
@@ -1167,6 +1174,13 @@ const translations: Record<Locale, Translations> = {
           'This will remove all messages from the current session. This action cannot be undone.',
         clearConfirmButton: 'Clear',
         cancelClear: 'Cancel',
+        expandFullPage: 'Full page',
+        closeFullPage: 'Close',
+        cta: {
+          title: 'Your AI email agent is ready',
+          description: 'Ask me about your emails.',
+          button: 'Ask me everything about your emails!',
+        },
       },
     },
     emailOriginal: {
@@ -1792,7 +1806,7 @@ const translations: Record<Locale, Translations> = {
       },
       agent: {
         title: 'Agente di Memoria',
-        subtitle: 'Fai domande sulle tue email in linguaggio naturale.',
+        subtitle: 'Chiedimi delle tue email.',
         placeholder: 'Chiedi qualcosa come "Quali newsletter ho ricevuto questa settimana?"',
         inputPlaceholder: 'Chiedi delle tue email…',
         send: 'Invia',
@@ -1805,6 +1819,13 @@ const translations: Record<Locale, Translations> = {
           'Questo rimuoverà tutti i messaggi della sessione corrente. Questa azione non può essere annullata.',
         clearConfirmButton: 'Cancella',
         cancelClear: 'Annulla',
+        expandFullPage: 'Pagina intera',
+        closeFullPage: 'Chiudi',
+        cta: {
+          title: 'Il tuo agente AI è pronto',
+          description: 'Chiedimi delle tue email.',
+          button: 'Chiedimi tutto sulle tue email!',
+        },
       },
     },
     emailOriginal: {
@@ -2427,7 +2448,7 @@ const translations: Record<Locale, Translations> = {
       },
       agent: {
         title: 'Agente de Memoria',
-        subtitle: 'Haz preguntas sobre tus correos en lenguaje natural.',
+        subtitle: 'Pregúntame sobre tus correos.',
         placeholder: 'Pregunta algo como "¿Qué boletines recibí esta semana?"',
         inputPlaceholder: 'Pregunta sobre tus correos…',
         send: 'Enviar',
@@ -2440,6 +2461,13 @@ const translations: Record<Locale, Translations> = {
           'Esto eliminará todos los mensajes de la sesión actual. Esta acción no se puede deshacer.',
         clearConfirmButton: 'Borrar',
         cancelClear: 'Cancelar',
+        expandFullPage: 'Página completa',
+        closeFullPage: 'Cerrar',
+        cta: {
+          title: 'Tu agente de IA está listo',
+          description: 'Pregúntame sobre tus correos.',
+          button: '¡Pregúntame todo sobre tus correos!',
+        },
       },
     },
     emailOriginal: {
@@ -3063,7 +3091,7 @@ const translations: Record<Locale, Translations> = {
       },
       agent: {
         title: 'Agent de Mémoire',
-        subtitle: 'Posez des questions sur vos e-mails en langage naturel.',
+        subtitle: 'Demandez-moi à propos de vos e-mails.',
         placeholder: 'Demandez par exemple "Quels newsletters ai-je reçus cette semaine ?"',
         inputPlaceholder: 'Demandez à propos de vos e-mails…',
         send: 'Envoyer',
@@ -3076,6 +3104,13 @@ const translations: Record<Locale, Translations> = {
           'Cela supprimera tous les messages de la session en cours. Cette action est irréversible.',
         clearConfirmButton: 'Effacer',
         cancelClear: 'Annuler',
+        expandFullPage: 'Pleine page',
+        closeFullPage: 'Fermer',
+        cta: {
+          title: 'Votre agent IA est prêt',
+          description: 'Demandez-moi à propos de vos e-mails.',
+          button: 'Demandez-moi tout sur vos e-mails !',
+        },
       },
     },
     emailOriginal: {
@@ -3701,7 +3736,7 @@ const translations: Record<Locale, Translations> = {
       },
       agent: {
         title: 'Gedächtnis-Agent',
-        subtitle: 'Stellen Sie Fragen zu Ihren E-Mails in natürlicher Sprache.',
+        subtitle: 'Fragen Sie mich zu Ihren E-Mails.',
         placeholder: 'Fragen Sie z.B. "Welche Newsletter habe ich diese Woche erhalten?"',
         inputPlaceholder: 'Fragen Sie zu Ihren E-Mails…',
         send: 'Senden',
@@ -3714,6 +3749,13 @@ const translations: Record<Locale, Translations> = {
           'Dadurch werden alle Nachrichten der aktuellen Sitzung entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
         clearConfirmButton: 'Löschen',
         cancelClear: 'Abbrechen',
+        expandFullPage: 'Vollbild',
+        closeFullPage: 'Schließen',
+        cta: {
+          title: 'Ihr KI-E-Mail-Agent ist bereit',
+          description: 'Fragen Sie mich zu Ihren E-Mails.',
+          button: 'Fragen Sie mich alles über Ihre E-Mails!',
+        },
       },
     },
     emailOriginal: {
