@@ -190,6 +190,8 @@ export interface Settings {
   memoryEnabled?: boolean;
   /** Supermemory.ai API key. Falls back to SUPERMEMORY_API_KEY env variable. */
   memoryApiKey?: string;
+  /** Google Maps Geocoding API key. When set, place geocoding uses Google Maps instead of Nominatim. Falls back to GOOGLE_MAPS_API_KEY env variable. */
+  googleMapsApiKey?: string;
   updatedAt?: Date;
 }
 

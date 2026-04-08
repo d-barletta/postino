@@ -1039,6 +1039,30 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                 </div>
               </AccordionContent>
             </AccordionItem>
+
+            <AccordionItem value="geolocation">
+              <AccordionTrigger>Geolocation Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Place names extracted from emails are geocoded to coordinates. By default,
+                    Postino uses the free Nominatim / OpenStreetMap service (1 req/s rate limit,
+                    non-commercial). For production use, provide a Google Maps Geocoding API key to
+                    get higher rate limits, better accuracy and an SLA.
+                  </p>
+                  <Input
+                    label="Google Maps API Key"
+                    type="password"
+                    value={settings.googleMapsApiKey || ''}
+                    onChange={(e) =>
+                      setSettings((p) => ({ ...p, googleMapsApiKey: e.target.value }))
+                    }
+                    placeholder="AIza..."
+                    hint="Google Maps Geocoding API key. When set, Google Maps is used instead of Nominatim. Falls back to GOOGLE_MAPS_API_KEY environment variable. Leave blank to use the free Nominatim service."
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </CardContent>
       </Card>
