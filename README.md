@@ -14,6 +14,13 @@ AI-powered email redirector: users get a private email address, define rules in 
   - Outbound: SMTP via Nodemailer
 - Charts/Admin analytics: Recharts
 
+## Highlights
+
+- AI Agent chat in the dashboard for asking memory and email-related questions.
+- Agent composer uses a grouped textarea + action layout with `Enter` to send and `Shift+Enter` to add a new line.
+- Assistant states in the Agent tab use the Postino brand avatar for empty, active, and typing states.
+- Agent conversation is preserved while switching dashboard tabs during the same page session.
+
 ## UI Components (Use With Priority)
 
 For any new UI work, use components from these docs as the default and first choice:
@@ -73,6 +80,18 @@ For any new UI work, use components from these docs as the default and first cho
 - Mailgun account/domain for inbound email
 - SMTP credentials for outbound email
 
+## Common Commands
+
+```bash
+npm install
+npm run dev
+npm run lint
+npm run build
+npm run deploy:indexes
+npm run deploy:preview
+npm run deploy:prod
+```
+
 ## Full Deployment Guide (Step by Step)
 
 This section is designed to let you deploy the app from zero with no missing steps.
@@ -83,6 +102,7 @@ This section is designed to let you deploy the app from zero with no missing ste
 - Vercel account (to host the Next.js app)
 - Firebase account/project (Auth + Firestore)
 - OpenRouter account (LLM API)
+- Supermemory account (optional, required for the Agent tab and persistent memory features)
 - Mailgun account/domain (inbound webhook)
 - SMTP provider account (outbound email)
 
@@ -122,6 +142,13 @@ This section is designed to let you deploy the app from zero with no missing ste
 
 - OPEN_ROUTER_API_KEY
 - LLM_MODEL (example: openai/gpt-4o-mini)
+
+#### Supermemory
+
+1. Create an API key in Supermemory if you want to enable persistent memory and the Dashboard Agent tab.
+2. Collect:
+
+- SUPERMEMORY_API_KEY
 
 #### Mailgun
 
@@ -185,6 +212,7 @@ Core app variables:
 - FIREBASE_PRIVATE_KEY
 - OPEN_ROUTER_API_KEY
 - LLM_MODEL
+- SUPERMEMORY_API_KEY (optional, required when memory is enabled unless the key is stored in admin settings)
 - SMTP_HOST
 - SMTP_PORT
 - SMTP_USER
@@ -266,7 +294,7 @@ npm install -g firebase-tools
 firebase login
 
 # Deploy indexes only
-firebase deploy --only firestore:indexes
+npm run deploy:indexes
 ```
 
 Index builds happen asynchronously in Firebase — allow a few minutes before the admin stats page becomes fully functional.
@@ -292,13 +320,15 @@ vercel login
 vercel link
 
 # Deploy to preview
-vercel
+npm run deploy:preview
 
 # Deploy to production
-vercel --prod
+npm run deploy:prod
 ```
 
 Ensure all environment variables are already set in Vercel Project Settings before deploying.
+
+If you plan to use the Dashboard Agent tab or Supermemory persistence in production, also make sure `memoryEnabled` is turned on in admin settings and that a Supermemory API key is configured either in admin settings or via `SUPERMEMORY_API_KEY`.
 
 ### 11) Post-Deploy Verification Checklist
 
@@ -310,6 +340,7 @@ Ensure all environment variables are already set in Vercel Project Settings befo
 6. Confirm jobs move from pending/retrying to done.
 7. Confirm forwarded email arrives in destination mailbox.
 8. Confirm Mailgun webhook requests are accepted (2xx).
+9. Confirm the Dashboard Agent tab loads and returns responses for an authenticated user.
 
 ### 12) Security and Operations Notes
 
@@ -352,6 +383,10 @@ Required at minimum:
 - `MAILGUN_API_KEY`
 - `MAILGUN_WEBHOOK_SIGNING_KEY`
 - `NEXT_PUBLIC_APP_URL`
+
+Optional but recommended for memory features:
+
+- `SUPERMEMORY_API_KEY` for the Dashboard Agent tab and Supermemory-backed persistent memory. This can also be stored in admin settings as `memoryApiKey`.
 
 ## Architecture
 
