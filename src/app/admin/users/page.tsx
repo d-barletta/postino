@@ -104,7 +104,11 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
   }, [fetchUsers]);
 
   const runReanalysisBatches = useCallback(
-    async (uid: string, pendingIds: string[], counters: { reanalyzed: number; failed: number; skipped: number }) => {
+    async (
+      uid: string,
+      pendingIds: string[],
+      counters: { reanalyzed: number; failed: number; skipped: number },
+    ) => {
       if (!firebaseUser) return;
       abortRef.current = false;
 
@@ -121,7 +125,13 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         } catch (tokenError) {
           console.error('[admin/users/analysis] failed to refresh auth token:', tokenError);
           setReanalysis((prev) =>
-            prev ? { ...prev, pendingIds: [...batch, ...remaining], error: t.admin.toasts.failedToRerunUserAnalyses } : null,
+            prev
+              ? {
+                  ...prev,
+                  pendingIds: [...batch, ...remaining],
+                  error: t.admin.toasts.failedToRerunUserAnalyses,
+                }
+              : null,
           );
           return;
         }
@@ -146,7 +156,11 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           return;
         }
 
-        const result = (await res.json()) as { reanalyzedCount?: number; failedCount?: number; skippedCount?: number };
+        const result = (await res.json()) as {
+          reanalyzedCount?: number;
+          failedCount?: number;
+          skippedCount?: number;
+        };
         reanalyzed += result.reanalyzedCount ?? 0;
         failed += result.failedCount ?? 0;
         skipped += result.skippedCount ?? 0;
@@ -213,18 +227,23 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           const payload = (await res.json().catch(() => null)) as { error?: string } | null;
           setReanalysis((prev) =>
             prev
-              ? { ...prev, preparing: false, error: payload?.error ?? t.admin.toasts.failedToRerunUserAnalyses }
+              ? {
+                  ...prev,
+                  preparing: false,
+                  error: payload?.error ?? t.admin.toasts.failedToRerunUserAnalyses,
+                }
               : null,
           );
           return;
         }
 
-        const { totalCount, emailIds } = (await res.json()) as { totalCount: number; emailIds: string[] };
+        const { totalCount, emailIds } = (await res.json()) as {
+          totalCount: number;
+          emailIds: string[];
+        };
 
         setReanalysis((prev) =>
-          prev
-            ? { ...prev, totalCount, pendingIds: emailIds, preparing: false }
-            : null,
+          prev ? { ...prev, totalCount, pendingIds: emailIds, preparing: false } : null,
         );
 
         if (emailIds.length === 0) {
@@ -241,7 +260,8 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
             ? {
                 ...prev,
                 preparing: false,
-                error: error instanceof Error ? error.message : t.admin.toasts.failedToRerunUserAnalyses,
+                error:
+                  error instanceof Error ? error.message : t.admin.toasts.failedToRerunUserAnalyses,
               }
             : null,
         );

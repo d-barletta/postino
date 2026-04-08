@@ -41,7 +41,7 @@ const DrawerContent = React.forwardRef<
         'rounded-t-2xl border border-b-0 border-gray-200 dark:border-gray-700',
         'bg-white shadow-xl dark:bg-gray-900',
         'max-h-[85vh] overflow-y-auto',
-        'px-4 pb-[100px]',
+        'px-4 pb-20',
         className,
       )}
       {...props}

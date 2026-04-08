@@ -687,10 +687,20 @@ export function RulesManager({
             </DrawerDescription>
           </DrawerHeader>
           <DrawerFooter>
-            <Button variant="ghost" onClick={() => setDeleteId(null)} disabled={deleting} className="flex-1">
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteId(null)}
+              disabled={deleting}
+              className="flex-1"
+            >
               {t.dashboard.rules.cancel}
             </Button>
-            <Button variant="danger" onClick={handleDeleteConfirm} loading={deleting} className="flex-1">
+            <Button
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              loading={deleting}
+              className="flex-1"
+            >
               {t.dashboard.rules.deleteRule}
             </Button>
           </DrawerFooter>

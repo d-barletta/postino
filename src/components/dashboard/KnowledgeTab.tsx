@@ -1080,7 +1080,12 @@ export function KnowledgeTab() {
             >
               {k.cancelMerge}
             </Button>
-            <Button variant="danger" onClick={handleDeleteMerge} disabled={deletingMerge} className="flex-1">
+            <Button
+              variant="danger"
+              onClick={handleDeleteMerge}
+              disabled={deletingMerge}
+              className="flex-1"
+            >
               {deletingMerge ? '…' : k.deleteMerge}
             </Button>
           </DrawerFooter>

@@ -44,7 +44,15 @@ const EMPTY_STATS: UserStats = {
   totalEstimatedCost: 0,
 };
 
-const DASHBOARD_TABS = ['overview', 'rules', 'inbox', 'explore', 'relations', 'agent', 'settings'] as const;
+const DASHBOARD_TABS = [
+  'overview',
+  'rules',
+  'inbox',
+  'explore',
+  'relations',
+  'agent',
+  'settings',
+] as const;
 type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
 export default function DashboardPage() {

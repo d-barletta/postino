@@ -149,7 +149,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const settingsData = settingsSnap.data();
       const memoryEnabled = settingsData?.memoryEnabled === true;
       const supermemoryApiKey = memoryEnabled
-        ? ((settingsData?.memoryApiKey as string | undefined) ||
+        ? (
+            (settingsData?.memoryApiKey as string | undefined) ||
             process.env.SUPERMEMORY_API_KEY ||
             ''
           ).trim()

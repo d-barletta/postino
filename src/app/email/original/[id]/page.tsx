@@ -471,7 +471,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {t.emailOriginal.admin.extractedMarkdown}
                           </p>
-                          <pre className="max-h-96 overflow-auto rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 p-3 text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words font-mono">
+                          <pre className="max-h-96 overflow-auto rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 p-3 text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap wrap-break-word font-mono">
                             {analysisResult.extractedBody || '—'}
                           </pre>
                         </div>

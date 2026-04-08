@@ -6,14 +6,16 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   error?: string;
   hint?: string;
   charCount?: { current: number; max: number };
+  containerClassName?: string;
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, hint, charCount, className, id, ...props }, ref) => {
+  ({ label, error, hint, charCount, containerClassName, className, id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const hasFooter = Boolean(hint || error || charCount);
 
     return (
-      <div className="space-y-1.5">
+      <div className={cn('space-y-1.5', containerClassName)}>
         {label && (
           <label
             htmlFor={inputId}
@@ -36,24 +38,26 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           {...props}
         />
-        <div className="flex justify-between items-start">
-          <div>
-            {hint && !error && <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
-            {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+        {hasFooter && (
+          <div className="flex items-start justify-between">
+            <div>
+              {hint && !error && <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
+              {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+            </div>
+            {charCount && (
+              <p
+                className={cn(
+                  'text-xs tabular-nums',
+                  charCount.current > charCount.max
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-gray-400 dark:text-gray-500',
+                )}
+              >
+                {charCount.current}/{charCount.max}
+              </p>
+            )}
           </div>
-          {charCount && (
-            <p
-              className={cn(
-                'text-xs tabular-nums',
-                charCount.current > charCount.max
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-400 dark:text-gray-500',
-              )}
-            >
-              {charCount.current}/{charCount.max}
-            </p>
-          )}
-        </div>
+        )}
       </div>
     );
   },

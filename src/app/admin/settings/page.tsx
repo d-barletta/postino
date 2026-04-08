@@ -1031,9 +1031,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                       label="Supermemory API Key"
                       type="password"
                       value={settings.memoryApiKey || ''}
-                      onChange={(e) =>
-                        setSettings((p) => ({ ...p, memoryApiKey: e.target.value }))
-                      }
+                      onChange={(e) => setSettings((p) => ({ ...p, memoryApiKey: e.target.value }))}
                       placeholder="sm-..."
                       hint="API key from console.supermemory.ai. Falls back to SUPERMEMORY_API_KEY environment variable."
                     />

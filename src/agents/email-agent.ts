@@ -218,8 +218,7 @@ export async function saveToSupermemory(
   if (entry.intent) parts.push(`Intent: ${entry.intent}`);
   if (entry.tags?.length) parts.push(`Tags: ${entry.tags.join(', ')}`);
   if (entry.ruleApplied) parts.push(`Rule applied: ${entry.ruleApplied}`);
-  if (entry.entities?.people?.length)
-    parts.push(`People: ${entry.entities.people.join(', ')}`);
+  if (entry.entities?.people?.length) parts.push(`People: ${entry.entities.people.join(', ')}`);
   if (entry.entities?.organizations?.length)
     parts.push(`Organizations: ${entry.entities.organizations.join(', ')}`);
 

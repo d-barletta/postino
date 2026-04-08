@@ -24,10 +24,7 @@ export async function POST(request: NextRequest) {
 
     const memoryApiKey = resolveMemoryApiKey(settingsData?.memoryApiKey as string | undefined);
     if (!memoryApiKey) {
-      return NextResponse.json(
-        { error: 'Supermemory API key is not configured' },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: 'Supermemory API key is not configured' }, { status: 500 });
     }
 
     const llmApiKey =
@@ -76,7 +73,7 @@ export async function POST(request: NextRequest) {
         : '';
 
     const systemPrompt = memoryContext
-      ? 'You are a helpful assistant answering questions about the user\'s email memories. ' +
+      ? "You are a helpful assistant answering questions about the user's email memories. " +
         'Use only the memory context provided below to answer. ' +
         'Be concise and helpful. If the context does not contain relevant information, say so clearly.\n\n' +
         `<memory_context>\n${memoryContext}\n</memory_context>`

@@ -1163,7 +1163,8 @@ const translations: Record<Locale, Translations> = {
         sendHint: 'AI can make mistakes, always verify.',
         clearConversation: 'Clear conversation',
         clearConfirmTitle: 'Clear conversation?',
-        clearConfirmDescription: 'This will remove all messages from the current session. This action cannot be undone.',
+        clearConfirmDescription:
+          'This will remove all messages from the current session. This action cannot be undone.',
         clearConfirmButton: 'Clear',
         cancelClear: 'Cancel',
       },
@@ -1797,10 +1798,11 @@ const translations: Record<Locale, Translations> = {
         send: 'Invia',
         noAnswer: 'Nessuna risposta trovata.',
         errorFallback: 'Qualcosa è andato storto. Riprova.',
-        sendHint: 'L\'AI può fare errori, verifica sempre.',
+        sendHint: "L'AI può fare errori, verifica sempre.",
         clearConversation: 'Cancella conversazione',
         clearConfirmTitle: 'Cancellare la conversazione?',
-        clearConfirmDescription: 'Questo rimuoverà tutti i messaggi della sessione corrente. Questa azione non può essere annullata.',
+        clearConfirmDescription:
+          'Questo rimuoverà tutti i messaggi della sessione corrente. Questa azione non può essere annullata.',
         clearConfirmButton: 'Cancella',
         cancelClear: 'Annulla',
       },
@@ -2434,7 +2436,8 @@ const translations: Record<Locale, Translations> = {
         sendHint: 'La IA puede cometer errores, verifica siempre.',
         clearConversation: 'Borrar conversación',
         clearConfirmTitle: '¿Borrar conversación?',
-        clearConfirmDescription: 'Esto eliminará todos los mensajes de la sesión actual. Esta acción no se puede deshacer.',
+        clearConfirmDescription:
+          'Esto eliminará todos los mensajes de la sesión actual. Esta acción no se puede deshacer.',
         clearConfirmButton: 'Borrar',
         cancelClear: 'Cancelar',
       },
@@ -2706,7 +2709,7 @@ const translations: Record<Locale, Translations> = {
         buttonLabel: 'Supprimer toutes les entités et fusions',
         confirmTitle: 'Supprimer toutes les entités et fusions ?',
         confirmDescription:
-          "Cela supprimera définitivement toutes vos connaissances sur les entités, vos fusions et vos suggestions de fusion IA. Cette action est irréversible.",
+          'Cela supprimera définitivement toutes vos connaissances sur les entités, vos fusions et vos suggestions de fusion IA. Cette action est irréversible.',
         cancel: 'Annuler',
         confirmButton: 'Tout supprimer',
         successToast: "Toutes les données d'entités supprimées.",
@@ -3059,7 +3062,7 @@ const translations: Record<Locale, Translations> = {
         analysisRefreshFailed: "Impossible d'actualiser l'analyse IA.",
       },
       agent: {
-        title: "Agent de Mémoire",
+        title: 'Agent de Mémoire',
         subtitle: 'Posez des questions sur vos e-mails en langage naturel.',
         placeholder: 'Demandez par exemple "Quels newsletters ai-je reçus cette semaine ?"',
         inputPlaceholder: 'Demandez à propos de vos e-mails…',
@@ -3069,7 +3072,8 @@ const translations: Record<Locale, Translations> = {
         sendHint: "L'IA peut faire des erreurs, vérifiez toujours.",
         clearConversation: 'Effacer la conversation',
         clearConfirmTitle: 'Effacer la conversation ?',
-        clearConfirmDescription: 'Cela supprimera tous les messages de la session en cours. Cette action est irréversible.',
+        clearConfirmDescription:
+          'Cela supprimera tous les messages de la session en cours. Cette action est irréversible.',
         clearConfirmButton: 'Effacer',
         cancelClear: 'Annuler',
       },
@@ -3706,7 +3710,8 @@ const translations: Record<Locale, Translations> = {
         sendHint: 'KI kann Fehler machen, immer überprüfen.',
         clearConversation: 'Konversation löschen',
         clearConfirmTitle: 'Konversation löschen?',
-        clearConfirmDescription: 'Dadurch werden alle Nachrichten der aktuellen Sitzung entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+        clearConfirmDescription:
+          'Dadurch werden alle Nachrichten der aktuellen Sitzung entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
         clearConfirmButton: 'Löschen',
         cancelClear: 'Abbrechen',
       },
