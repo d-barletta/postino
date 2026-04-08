@@ -12,6 +12,8 @@ import {
 const BATCH_SIZE = 400;
 const IN_QUERY_LIMIT = 30;
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
+/** Maximum number of log IDs processed concurrently when deleting storage artifacts. */
+const STORAGE_DELETE_CONCURRENCY = 20;
 
 function dedupeRefs(refs: DocumentReference[]): DocumentReference[] {
   const unique = new Map<string, DocumentReference>();
@@ -56,10 +58,9 @@ async function deleteUserStorageArtifacts(logIds: string[]): Promise<void> {
 
   try {
     const bucket = adminStorage().bucket();
-    const CONCURRENCY = 20;
 
-    for (let i = 0; i < logIds.length; i += CONCURRENCY) {
-      const batch = logIds.slice(i, i + CONCURRENCY);
+    for (let i = 0; i < logIds.length; i += STORAGE_DELETE_CONCURRENCY) {
+      const batch = logIds.slice(i, i + STORAGE_DELETE_CONCURRENCY);
       await Promise.all(
         batch.flatMap((logId) =>
           [`email-attachments/${logId}/`, `mailgun-webhook-logs/${logId}/`].map(async (prefix) => {
