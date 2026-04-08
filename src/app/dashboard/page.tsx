@@ -48,9 +48,9 @@ const DASHBOARD_TABS = [
   'overview',
   'rules',
   'inbox',
+  'agent',
   'explore',
   'relations',
-  'agent',
   'settings',
 ] as const;
 type DashboardTab = (typeof DASHBOARD_TABS)[number];
@@ -309,6 +309,12 @@ export default function DashboardPage() {
             <Inbox className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.inbox}</span>
           </TabsTrigger>
+          {memoryEnabled && (
+            <TabsTrigger value="agent">
+              <Bot className="h-4 w-4 shrink-0" />
+              <span>{t.dashboard.tabs.agent}</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="explore">
             <Compass className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.explore}</span>
@@ -317,12 +323,6 @@ export default function DashboardPage() {
             <Share2 className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.relations}</span>
           </TabsTrigger>
-          {memoryEnabled && (
-            <TabsTrigger value="agent">
-              <Bot className="h-4 w-4 shrink-0" />
-              <span>{t.dashboard.tabs.agent}</span>
-            </TabsTrigger>
-          )}
           <TabsTrigger value="settings">
             <Settings className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.settings}</span>
@@ -378,17 +378,17 @@ export default function DashboardPage() {
             refreshTrigger={emailListRefreshTrigger}
           />
         </TabsContent>
+        {memoryEnabled && (
+          <TabsContent value="agent">
+            <AgentTab />
+          </TabsContent>
+        )}
         <TabsContent value="explore">
           <KnowledgeTab />
         </TabsContent>
         <TabsContent value="relations">
           <RelationsTab />
         </TabsContent>
-        {memoryEnabled && (
-          <TabsContent value="agent">
-            <AgentTab />
-          </TabsContent>
-        )}
         <TabsContent value="settings">
           <div className="space-y-6">
             <PushNotificationButton />
