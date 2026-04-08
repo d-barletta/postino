@@ -48,7 +48,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    // Search user's memories directly via the Supermemory client
+    // uid comes from server-side Firebase token verification and cannot be
+    // spoofed by the client. The containerTag ensures each search query is
+    // restricted to the authenticated user's own memory partition in
+    // Supermemory, preventing any cross-user data access.
     const containerTag = `user_${uid}`;
     const client = new Supermemory({ apiKey: memoryApiKey });
     const searchResult = await client.search.execute({

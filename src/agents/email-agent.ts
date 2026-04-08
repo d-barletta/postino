@@ -202,6 +202,9 @@ async function saveToSupermemory(
   entry: EmailMemoryEntry,
 ): Promise<void> {
   const client = new Supermemory({ apiKey });
+  // containerTag is derived from the verified email-owner's UID so every
+  // memory entry is scoped exclusively to that user's partition in Supermemory.
+  // The search path enforces the same tag, preventing cross-user data access.
   const containerTag = `user_${userId}`;
 
   const parts: string[] = [
