@@ -529,6 +529,7 @@ export interface Translations {
       send: string;
       noAnswer: string;
       errorFallback: string;
+      sendHint: string;
     };
   };
   emailOriginal: {
@@ -1154,6 +1155,7 @@ const translations: Record<Locale, Translations> = {
         send: 'Send',
         noAnswer: 'No answer found.',
         errorFallback: 'Something went wrong. Please try again.',
+        sendHint: 'Press Enter to send · Shift+Enter for new line',
       },
     },
     emailOriginal: {
@@ -1785,6 +1787,7 @@ const translations: Record<Locale, Translations> = {
         send: 'Invia',
         noAnswer: 'Nessuna risposta trovata.',
         errorFallback: 'Qualcosa è andato storto. Riprova.',
+        sendHint: 'Premi Invio per inviare · Shift+Invio per andare a capo',
       },
     },
     emailOriginal: {
@@ -2413,6 +2416,7 @@ const translations: Record<Locale, Translations> = {
         send: 'Enviar',
         noAnswer: 'No se encontró respuesta.',
         errorFallback: 'Algo salió mal. Por favor, inténtalo de nuevo.',
+        sendHint: 'Pulsa Intro para enviar · Shift+Intro para nueva línea',
       },
     },
     emailOriginal: {
@@ -3042,6 +3046,7 @@ const translations: Record<Locale, Translations> = {
         send: 'Envoyer',
         noAnswer: 'Aucune réponse trouvée.',
         errorFallback: "Quelque chose s'est mal passé. Veuillez réessayer.",
+        sendHint: 'Entrée pour envoyer · Shift+Entrée pour nouvelle ligne',
       },
     },
     emailOriginal: {
@@ -3673,6 +3678,7 @@ const translations: Record<Locale, Translations> = {
         send: 'Senden',
         noAnswer: 'Keine Antwort gefunden.',
         errorFallback: 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
+        sendHint: 'Enter zum Senden · Shift+Enter für neue Zeile',
       },
     },
     emailOriginal: {
