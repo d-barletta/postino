@@ -196,7 +196,7 @@ export function compactMemory(entries: EmailMemoryEntry[]): EmailMemoryEntry[] {
  * Save an email memory entry to Supermemory.ai, scoped to the given user.
  * Runs fire-and-forget from the caller — errors are caught and logged.
  */
-async function saveToSupermemory(
+export async function saveToSupermemory(
   apiKey: string,
   userId: string,
   entry: EmailMemoryEntry,
