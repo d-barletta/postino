@@ -3,7 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { verifyUserRequest } from '@/lib/api-auth';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { searchMemoriesTool } from '@supermemory/tools/ai-sdk';
+import Supermemory from 'supermemory';
 
 function resolveMemoryApiKey(settingsApiKey?: string): string {
   return (settingsApiKey || process.env.SUPERMEMORY_API_KEY || '').trim();
@@ -30,8 +30,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const llmApiKey = (settingsData?.llmApiKey as string | undefined) || process.env.OPEN_ROUTER_API_KEY || '';
-    const llmModel = (settingsData?.llmModel as string | undefined) || process.env.LLM_MODEL || 'openai/gpt-4o-mini';
+    const llmApiKey =
+      (settingsData?.llmApiKey as string | undefined) || process.env.OPEN_ROUTER_API_KEY || '';
+    const llmModel =
+      (settingsData?.llmModel as string | undefined) ||
+      process.env.LLM_MODEL ||
+      'openai/gpt-4o-mini';
 
     if (!llmApiKey) {
       return NextResponse.json({ error: 'LLM API key is not configured' }, { status: 500 });
@@ -44,24 +48,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
+    // Search user's memories directly via the Supermemory client
+    const containerTag = `user_${uid}`;
+    const client = new Supermemory({ apiKey: memoryApiKey });
+    const searchResult = await client.search.execute({
+      q: query,
+      containerTags: [containerTag],
+      limit: 10,
+    });
+
+    const memories = searchResult.results ?? [];
+    const memoryContext =
+      memories.length > 0
+        ? memories
+            .map((r, i) => {
+              const chunkTexts = r.chunks
+                .filter((c) => c.isRelevant)
+                .map((c) => c.content)
+                .join(' ');
+              return chunkTexts ? `[${i + 1}] ${chunkTexts}` : null;
+            })
+            .filter(Boolean)
+            .join('\n\n')
+        : '';
+
+    const systemPrompt = memoryContext
+      ? 'You are a helpful assistant answering questions about the user\'s email memories. ' +
+        'Use only the memory context provided below to answer. ' +
+        'Be concise and helpful. If the context does not contain relevant information, say so clearly.\n\n' +
+        `<memory_context>\n${memoryContext}\n</memory_context>`
+      : 'You are a helpful assistant. The user asked a question about their email memories, ' +
+        'but no relevant memories were found. Let them know politely.';
+
     const openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: llmApiKey,
     });
 
-    const containerTag = `user_${uid}`;
-    const searchTool = searchMemoriesTool(memoryApiKey, { containerTags: [containerTag] });
-
     const result = await generateText({
       model: openrouter(llmModel),
-      system:
-        'You are a helpful assistant with access to the user\'s email memories. ' +
-        'Use the search_memories tool to find relevant information about the user\'s emails, ' +
-        'then answer their question based on what you find. ' +
-        'Be concise and helpful. If no relevant memories are found, say so clearly.',
+      system: systemPrompt,
       messages: [{ role: 'user', content: query }],
-      tools: { search_memories: searchTool },
-      maxSteps: 3,
     });
 
     return NextResponse.json({ answer: result.text });
