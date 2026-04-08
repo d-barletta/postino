@@ -817,21 +817,92 @@ function htmlFragmentToMarkdownish(html: string): string {
     $(el).prepend('> ');
   });
 
+  // Inline emphasis: bold/strong text (prices, names, key dates) is wrapped
+  // in ** and italic/em in _ so the AI can recognise highlighted content.
+  $('strong, b').each((_, el) => {
+    const text = $(el).text().trim();
+    if (text) $(el).replaceWith(`**${text}**`);
+  });
+  $('em, i').each((_, el) => {
+    const text = $(el).text().trim();
+    if (text) $(el).replaceWith(`_${text}_`);
+  });
+
   $('li').each((_, element) => {
     const prefix = $(element).parents('ol').length > 0 ? '1. ' : '- ';
     $(element).prepend(prefix);
   });
 
-  $('td, th').each((_, element) => {
-    $(element).append(' | ');
-  });
+  // Tables: process from innermost to outermost so nested tables are resolved
+  // before their parent examines cell content.
+  //
+  // Data tables — those that directly own <th> or <thead> elements (not
+  // inherited from inner nested tables) and are not marked as presentational —
+  // are rendered as Markdown pipe-table rows so structured data like pricing,
+  // schedules, order summaries, and event details is legible to the AI.
+  //
+  // Layout/presentation tables (role="presentation"|"none", or no header
+  // elements) are left in the DOM so their cells receive paragraph breaks via
+  // the block-elements loop below, keeping sectioned content readable without
+  // emitting spurious `| | |` rows.
+  $('table')
+    .toArray()
+    .reverse()
+    .forEach((table) => {
+      const $table = $(table);
+      const role = $table.attr('role')?.toLowerCase();
+      const isPresentation = role === 'presentation' || role === 'none';
+
+      // Only count <th>/<thead> that belong directly to this table, not to an
+      // already-replaced inner table.
+      const hasOwnHeaders =
+        $table
+          .find('th, thead')
+          .filter((_, el) => $(el).closest('table').is(table)).length > 0;
+
+      if (!isPresentation && hasOwnHeaders) {
+        const lines: string[] = [];
+        let separatorDone = false;
+
+        $table
+          .find('tr')
+          .filter((_, row) => $(row).closest('table').is(table))
+          .each((_, row) => {
+            const $row = $(row);
+            const isHeaderRow =
+              $row.closest('thead').length > 0 ||
+              $row
+                .find('th')
+                .filter((_, el) => $(el).closest('tr').is(row)).length > 0;
+
+            const cells: string[] = [];
+            $row
+              .find('th, td')
+              .filter((_, el) => $(el).closest('tr').is(row))
+              .each((_, cell) => {
+                cells.push($(cell).text().replace(/\s+/g, ' ').trim());
+              });
+
+            if (!cells.length) return;
+            lines.push('| ' + cells.join(' | ') + ' |');
+            if (isHeaderRow && !separatorDone) {
+              lines.push('| ' + cells.map(() => '---').join(' | ') + ' |');
+              separatorDone = true;
+            }
+          });
+
+        $table.replaceWith(lines.length ? '\n\n' + lines.join('\n') + '\n\n' : '\n\n');
+      }
+      // Presentation/layout tables fall through to the block-elements loop.
+    });
 
   // Append double newlines after all block-level elements so their text is
-  // separated from surrounding content.  `button`, `caption`, `dd`, `details`,
-  // `dt`, and `summary` are added here because they appear in email HTML and
-  // carry visible text that was previously run together.
+  // separated from surrounding content.  `td`, `th`, `tr`, `thead`, `tbody`,
+  // and `tfoot` are included here so that cells from layout/presentation tables
+  // (not converted to Markdown rows above) are rendered as individual
+  // paragraphs rather than run together.
   $(
-    'address, article, blockquote, button, caption, dd, details, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, li, main, nav, ol, p, pre, section, summary, table, tr, ul',
+    'address, article, blockquote, button, caption, dd, details, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, li, main, nav, ol, p, pre, section, summary, table, tbody, td, tfoot, th, thead, tr, ul',
   ).each((_, element) => {
     $(element).append('\n\n');
   });
