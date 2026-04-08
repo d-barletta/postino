@@ -128,7 +128,7 @@ export function AgentTab() {
           </div>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-3 px-3 py-3 sm:px-4">
           {/* Chat area — no border, no background */}
           <div className="flex h-[320px] flex-col gap-3 overflow-y-auto p-1 sm:h-[420px] lg:h-[520px]">
             {messages.length === 0 ? (
@@ -149,14 +149,15 @@ export function AgentTab() {
                     msg.role === 'user' ? 'flex-row-reverse' : 'flex-row',
                   )}
                 >
-                  {/* Avatar */}
+                  {/* Avatar — user avatar always uses fixed dark icon color regardless of dark mode */}
                   <div
                     className={cn(
                       'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full',
                       msg.role === 'user'
-                        ? 'bg-[#efd957] text-gray-900'
+                        ? 'bg-[#efd957]'
                         : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
                     )}
+                    style={msg.role === 'user' ? { color: '#171717' } : undefined}
                   >
                     {msg.role === 'user' ? (
                       <User className="h-3.5 w-3.5" />
@@ -164,14 +165,15 @@ export function AgentTab() {
                       <Bot className="h-3.5 w-3.5" />
                     )}
                   </div>
-                  {/* Bubble */}
+                  {/* Bubble — user bubble always has dark text regardless of dark mode */}
                   <div
                     className={cn(
                       'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
                       msg.role === 'user'
-                        ? 'rounded-tr-sm bg-[#efd957] text-gray-900'
+                        ? 'rounded-tr-sm bg-[#efd957]'
                         : 'rounded-tl-sm border border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100',
                     )}
+                    style={msg.role === 'user' ? { color: '#171717' } : undefined}
                   >
                     {msg.content}
                   </div>
@@ -207,8 +209,8 @@ export function AgentTab() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Input row — single line, inline with send button */}
-          <div className="flex items-center gap-2">
+          {/* Input row — single line, full width on all breakpoints, inline with send button */}
+          <div className="flex w-full items-end gap-2">
             <Textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -217,7 +219,7 @@ export function AgentTab() {
               rows={1}
               disabled={loading}
               aria-multiline="true"
-              className="min-h-0 flex-1 resize-none leading-normal"
+              className="min-h-0 min-w-0 flex-1 resize-none leading-normal"
             />
             <Button
               onClick={handleSubmit}
