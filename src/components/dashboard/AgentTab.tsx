@@ -95,6 +95,7 @@ export function AgentTab() {
   };
 
   const handleClearConfirm = () => {
+    _persistedMessages = [];
     setMessages([]);
     setClearDrawerOpen(false);
   };
@@ -215,6 +216,7 @@ export function AgentTab() {
               placeholder={a.inputPlaceholder}
               rows={1}
               disabled={loading}
+              aria-multiline="true"
               className="min-h-0 flex-1 resize-none leading-normal"
             />
             <Button
