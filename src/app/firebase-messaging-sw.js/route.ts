@@ -14,6 +14,11 @@ export const dynamic = 'force-dynamic';
  * `/firebase-messaging-sw.js`.
  */
 export async function GET() {
+  // Use the first 8 chars of the Vercel deployment commit SHA as the cache version
+  // so that every new deployment automatically busts the old caches.
+  // Falls back to 'dev' when running locally without the Vercel env var.
+  const deploymentId = (process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev').slice(0, 8);
+
   const config = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
@@ -82,10 +87,125 @@ self.addEventListener('notificationclick', function(event) {
   );
 });
 
-// Required for PWA installability — Chrome will not show the install button
-// unless the service worker has a fetch handler.
-self.addEventListener('fetch', function(event) {
-  event.respondWith(fetch(event.request));
+// ─── PWA Caching ────────────────────────────────────────────────────────────
+
+const CACHE_VERSION = '${deploymentId}';
+const STATIC_CACHE = 'postino-static-' + CACHE_VERSION;
+const PAGES_CACHE  = 'postino-pages-'  + CACHE_VERSION;
+const ALL_CACHES   = [STATIC_CACHE, PAGES_CACHE];
+
+// Static public assets that are safe to cache long-term.
+// These are also pre-cached at install time for instant availability.
+const STATIC_ASSET_PATHS = [
+  '/favicon.ico',
+  '/favicon-96x96.png',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-precomposed.png',
+  '/web-app-manifest-192x192.png',
+  '/web-app-manifest-512x512.png',
+  '/manifest.json',
+  '/logo.svg',
+  '/icon0.svg',
+  '/icon1.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(STATIC_ASSET_PATHS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((n) => n.startsWith('postino-') && !ALL_CACHES.includes(n))
+            .map((n) => caches.delete(n))
+        )
+      )
+      .then(() => self.clients.claim())
+  );
+});
+
+/**
+ * Cache-first: return the cached response immediately; fetch and cache on miss.
+ * Ideal for immutable or long-lived assets (hashed JS/CSS, icons).
+ */
+const cacheFirst = (request, cacheName) =>
+  caches.open(cacheName).then((cache) =>
+    cache.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response.ok) cache.put(request, response.clone());
+        return response;
+      });
+    })
+  );
+
+/**
+ * Stale-while-revalidate: return cached response instantly (if available) while
+ * updating the cache from the network in the background.
+ * Ideal for navigation pages — the UI appears immediately, data refreshes silently.
+ */
+const staleWhileRevalidate = (request, cacheName) =>
+  caches.open(cacheName).then((cache) =>
+    cache.match(request).then((cached) => {
+      const networkFetch = fetch(request).then((response) => {
+        if (response.ok) cache.put(request, response.clone());
+        return response;
+      });
+      // Return the cached response right away; network update runs in the background.
+      if (cached) {
+        networkFetch.catch((err) => console.warn('[SW] Background revalidation failed:', err));
+        return cached;
+      }
+      return networkFetch;
+    })
+  );
+
+const SW_SCRIPT_PATH = '/firebase-messaging-sw.js';
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  // Only intercept GET requests.
+  if (request.method !== 'GET') return;
+
+  // Only intercept same-origin requests.
+  if (url.origin !== self.location.origin) return;
+
+  // Never cache API routes or the service worker script itself.
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith(SW_SCRIPT_PATH)) return;
+
+  // Next.js immutable static assets (content-hashed) → cache-first.
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // Next.js page-data requests → stale-while-revalidate.
+  if (url.pathname.startsWith('/_next/data/')) {
+    event.respondWith(staleWhileRevalidate(request, PAGES_CACHE));
+    return;
+  }
+
+  // Public static assets (icons, manifest, images) → cache-first.
+  if (request.destination === 'image' || STATIC_ASSET_PATHS.includes(url.pathname)) {
+    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // Navigation requests (HTML pages) → stale-while-revalidate.
+  // The cached shell is shown instantly; the network response updates it silently.
+  if (request.mode === 'navigate') {
+    event.respondWith(staleWhileRevalidate(request, PAGES_CACHE));
+    return;
+  }
 });
 `;
 
