@@ -900,11 +900,13 @@ ${bodyExcerpt}`,
 
 async function hydrateEmailAnalysis(
   rawAnalysis: RawEmailAnalysis | null,
+  googleMapsApiKey?: string,
 ): Promise<EmailAnalysis | null> {
   if (!rawAnalysis) return null;
 
   const geocodedPlaces = await geocodePlaceNames(
     normalizeUniqueStrings(rawAnalysis.entities.places),
+    googleMapsApiKey,
   );
   const placeNames = extractStoredPlaceNames(geocodedPlaces);
 
@@ -946,6 +948,10 @@ export async function analyzeEmailContent(
   const settingsSnap = await db.collection('settings').doc('global').get();
   const settings = settingsSnap.data() as Record<string, unknown> | undefined;
   const agentRuntimeSettings = resolveAgentRuntimeSettings(settings);
+  const googleMapsApiKey =
+    (typeof settings?.googleMapsApiKey === 'string' ? settings.googleMapsApiKey.trim() : '') ||
+    process.env.GOOGLE_MAPS_API_KEY ||
+    '';
 
   const openrouter = createOpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
@@ -967,7 +973,7 @@ export async function analyzeEmailContent(
     analysisOutputLanguage,
   );
 
-  const analysis = await hydrateEmailAnalysis(result.analysis);
+  const analysis = await hydrateEmailAnalysis(result.analysis, googleMapsApiKey);
 
   return {
     analysis,
@@ -1787,6 +1793,10 @@ export async function processEmailWithAgent(
   const agentRuntimeSettings = resolveAgentRuntimeSettings(
     settings as Record<string, unknown> | undefined,
   );
+  const googleMapsApiKey =
+    (typeof settings?.googleMapsApiKey === 'string' ? settings.googleMapsApiKey.trim() : '') ||
+    process.env.GOOGLE_MAPS_API_KEY ||
+    '';
   // Keep DOM patch mode opt-in because some models/providers are unstable with nested patch schemas.
   const htmlDomPatchEnabled = settings?.agentHtmlDomPatchEnabled === true;
   tracingEnabled = settings?.agentTracingEnabled !== false;
@@ -1833,7 +1843,7 @@ export async function processEmailWithAgent(
     ),
     getUserMemory(userId),
   ]);
-  const analysis = await hydrateEmailAnalysis(preAnalysisResult.analysis);
+  const analysis = await hydrateEmailAnalysis(preAnalysisResult.analysis, googleMapsApiKey);
   const {
     tokensUsed: analysisTotalTokens,
     promptTokens: analysisPromptTokens,

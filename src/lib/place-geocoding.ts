@@ -8,6 +8,60 @@ import { normalizePlaceLabel, placeLabelKey } from '@/lib/place-utils';
 const GEOCODE_CACHE_COLLECTION = 'placeGeocodes';
 const GEOCODE_MIN_INTERVAL_MS = 1100;
 
+// ---------------------------------------------------------------------------
+// Google Maps Geocoding
+// ---------------------------------------------------------------------------
+
+async function geocodePlaceWithGoogleMaps(
+  label: string,
+  apiKey: string,
+): Promise<GeocodeResult | null> {
+  const params = new URLSearchParams({ address: label, key: apiKey });
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+
+    if (!response.ok) {
+      console.warn('[place-geocoding] Google Maps geocode failed:', label, response.status);
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      status: string;
+      results?: Array<{
+        formatted_address?: string;
+        geometry?: { location?: { lat?: number; lng?: number } };
+      }>;
+    };
+
+    if (data.status !== 'OK' || !data.results?.length) {
+      if (data.status !== 'ZERO_RESULTS') {
+        console.warn('[place-geocoding] Google Maps status:', data.status, label);
+      }
+      return null;
+    }
+
+    const first = data.results[0];
+    const latitude = first?.geometry?.location?.lat;
+    const longitude = first?.geometry?.location?.lng;
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+    return {
+      name: normalizePlaceLabel(label),
+      latitude: latitude as number,
+      longitude: longitude as number,
+      ...(typeof first?.formatted_address === 'string' && first.formatted_address.trim()
+        ? { displayName: first.formatted_address.trim() }
+        : {}),
+    };
+  } catch (error) {
+    console.warn('[place-geocoding] Google Maps geocode exception:', label, error);
+    return null;
+  }
+}
+
 const PLACE_BLOCKLIST = new Set([
   'chrome',
   'chromium',
@@ -176,22 +230,39 @@ async function writeCachedPlace(place: GeocodeResult): Promise<void> {
     });
 }
 
-export async function geocodePlaceName(label: string): Promise<GeocodeResult | null> {
+export async function geocodePlaceName(
+  label: string,
+  googleMapsApiKey?: string,
+): Promise<GeocodeResult | null> {
   const normalized = normalizePlaceLabel(label);
   if (!isLikelyPlaceLabel(normalized)) return null;
 
   const cached = await readCachedPlace(normalized);
   if (cached) return cached;
 
-  await waitForGeocodeWindow();
-  const geocoded = await geocodePlace(normalized);
+  const resolvedKey = googleMapsApiKey || process.env.GOOGLE_MAPS_API_KEY || '';
+
+  let geocoded: GeocodeResult | null = null;
+
+  if (resolvedKey) {
+    geocoded = await geocodePlaceWithGoogleMaps(normalized, resolvedKey);
+  }
+
+  if (!geocoded) {
+    await waitForGeocodeWindow();
+    geocoded = await geocodePlace(normalized);
+  }
+
   if (!geocoded) return null;
 
   await writeCachedPlace(geocoded);
   return geocoded;
 }
 
-export async function geocodePlaceNames(labels: string[]): Promise<GeocodeResult[]> {
+export async function geocodePlaceNames(
+  labels: string[],
+  googleMapsApiKey?: string,
+): Promise<GeocodeResult[]> {
   const result: GeocodeResult[] = [];
   const seen = new Set<string>();
 
@@ -201,7 +272,7 @@ export async function geocodePlaceNames(labels: string[]): Promise<GeocodeResult
     if (!normalized || seen.has(key)) continue;
     seen.add(key);
 
-    const place = await geocodePlaceName(normalized);
+    const place = await geocodePlaceName(normalized, googleMapsApiKey);
     if (!place) continue;
     result.push(place);
   }

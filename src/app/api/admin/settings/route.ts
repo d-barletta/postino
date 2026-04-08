@@ -100,6 +100,7 @@ export async function PUT(request: NextRequest) {
       'agentTraceIncludeExcerpts',
       'memoryEnabled',
       'memoryApiKey',
+      'googleMapsApiKey',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),
