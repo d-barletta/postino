@@ -39,15 +39,16 @@ async function queryRefsByIds(
   if (ids.length === 0) return [];
 
   const db = adminDb();
-  const refs: DocumentReference[] = [];
-
+  const chunks: string[][] = [];
   for (let i = 0; i < ids.length; i += IN_QUERY_LIMIT) {
-    const chunk = ids.slice(i, i + IN_QUERY_LIMIT);
-    const snap = await db.collection(collection).where(fieldPath, 'in', chunk).get();
-    refs.push(...snap.docs.map((doc) => doc.ref));
+    chunks.push(ids.slice(i, i + IN_QUERY_LIMIT));
   }
 
-  return refs;
+  const snaps = await Promise.all(
+    chunks.map((chunk) => db.collection(collection).where(fieldPath, 'in', chunk).get()),
+  );
+
+  return snaps.flatMap((snap) => snap.docs.map((doc) => doc.ref));
 }
 
 async function deleteUserStorageArtifacts(logIds: string[]): Promise<void> {
@@ -55,16 +56,20 @@ async function deleteUserStorageArtifacts(logIds: string[]): Promise<void> {
 
   try {
     const bucket = adminStorage().bucket();
+    const CONCURRENCY = 20;
 
-    for (const logId of logIds) {
-      const prefixes = [`email-attachments/${logId}/`, `mailgun-webhook-logs/${logId}/`];
-
-      for (const prefix of prefixes) {
-        const [files] = await bucket.getFiles({ prefix });
-        await Promise.all(
-          files.map((file) => file.delete({ ignoreNotFound: true }).catch(() => undefined)),
-        );
-      }
+    for (let i = 0; i < logIds.length; i += CONCURRENCY) {
+      const batch = logIds.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        batch.flatMap((logId) =>
+          [`email-attachments/${logId}/`, `mailgun-webhook-logs/${logId}/`].map(async (prefix) => {
+            const [files] = await bucket.getFiles({ prefix });
+            await Promise.all(
+              files.map((file) => file.delete({ ignoreNotFound: true }).catch(() => undefined)),
+            );
+          }),
+        ),
+      );
     }
   } catch (error) {
     console.error('[admin/users/[uid]] failed to delete storage artifacts:', error);
