@@ -14,6 +14,11 @@ export const dynamic = 'force-dynamic';
  * `/firebase-messaging-sw.js`.
  */
 export async function GET() {
+  // Use the first 8 chars of the Vercel deployment commit SHA as the cache version
+  // so that every new deployment automatically busts the old caches.
+  // Falls back to 'dev' when running locally without the Vercel env var.
+  const deploymentId = (process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev').slice(0, 8);
+
   const config = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
@@ -84,7 +89,7 @@ self.addEventListener('notificationclick', function(event) {
 
 // ─── PWA Caching ────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = '${deploymentId}';
 const STATIC_CACHE = 'postino-static-' + CACHE_VERSION;
 const PAGES_CACHE  = 'postino-pages-'  + CACHE_VERSION;
 const ALL_CACHES   = [STATIC_CACHE, PAGES_CACHE];
