@@ -761,8 +761,7 @@ function removeHiddenEmailNodes($: cheerio.CheerioAPI): void {
       style.includes('line-height:0') ||
       style.includes('line-height:1px') ||
       style.includes('color:transparent');
-    const isVisuallyCollapsed =
-      hasInvisibleText && hasCollapsedBounds && hasHiddenOverflow;
+    const isVisuallyCollapsed = hasInvisibleText && hasCollapsedBounds && hasHiddenOverflow;
 
     if (isDisplayNone || isVisibilityHidden || isMsoHidden || isVisuallyCollapsed) {
       $(element).remove();
@@ -870,9 +869,7 @@ function htmlFragmentToMarkdownish(html: string): string {
       // Only count <th>/<thead> that belong directly to this table, not to an
       // already-replaced inner table.
       const hasOwnHeaders =
-        $table
-          .find('th, thead')
-          .filter((_, el) => $(el).closest('table').is(table)).length > 0;
+        $table.find('th, thead').filter((_, el) => $(el).closest('table').is(table)).length > 0;
 
       if (!isPresentation && hasOwnHeaders) {
         const lines: string[] = [];
@@ -885,9 +882,7 @@ function htmlFragmentToMarkdownish(html: string): string {
             const $row = $(row);
             const isHeaderRow =
               $row.closest('thead').length > 0 ||
-              $row
-                .find('th')
-                .filter((_, el) => $(el).closest('tr').is(row)).length > 0;
+              $row.find('th').filter((_, el) => $(el).closest('tr').is(row)).length > 0;
 
             const cells: string[] = [];
             $row

@@ -70,7 +70,10 @@ function ChatContent({
   return (
     <div className={cn('flex flex-col gap-3', wrapperClass)}>
       {/* Chat area */}
-      <div ref={chatContainerRef} className={cn('flex flex-col gap-3 overflow-y-auto p-1', heightClass)}>
+      <div
+        ref={chatContainerRef}
+        className={cn('flex flex-col gap-3 overflow-y-auto p-1', heightClass)}
+      >
         {messages.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
@@ -377,4 +380,3 @@ export function AgentTab() {
     </div>
   );
 }
-
