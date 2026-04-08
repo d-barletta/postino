@@ -129,6 +129,7 @@ export interface Translations {
       explore: string;
       relations: string;
       settings: string;
+      agent: string;
     };
     address: {
       title: string;
@@ -520,6 +521,15 @@ export interface Translations {
       analysisRefreshed: string;
       analysisRefreshFailed: string;
     };
+    agent: {
+      title: string;
+      subtitle: string;
+      placeholder: string;
+      inputPlaceholder: string;
+      send: string;
+      noAnswer: string;
+      errorFallback: string;
+    };
   };
   emailOriginal: {
     back: string;
@@ -729,6 +739,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Explore',
         relations: 'Relations',
         settings: 'Settings',
+        agent: 'Agent',
       },
       address: {
         title: 'Your Postino Address',
@@ -1135,6 +1146,15 @@ const translations: Record<Locale, Translations> = {
         analysisRefreshed: 'AI analysis refreshed.',
         analysisRefreshFailed: 'Failed to refresh AI analysis.',
       },
+      agent: {
+        title: 'Memory Agent',
+        subtitle: 'Ask questions about your emails in natural language.',
+        placeholder: 'Ask something like "What newsletters did I receive this week?"',
+        inputPlaceholder: 'Ask about your emails…',
+        send: 'Send',
+        noAnswer: 'No answer found.',
+        errorFallback: 'Something went wrong. Please try again.',
+      },
     },
     emailOriginal: {
       back: 'Back',
@@ -1347,6 +1367,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Esplora',
         relations: 'Relazioni',
         settings: 'Impostazioni',
+        agent: 'Agente',
       },
       address: {
         title: 'Il tuo indirizzo Postino',
@@ -1756,6 +1777,15 @@ const translations: Record<Locale, Translations> = {
         analysisRefreshed: 'Analisi AI aggiornata.',
         analysisRefreshFailed: "Aggiornamento dell'analisi AI non riuscito.",
       },
+      agent: {
+        title: 'Agente di Memoria',
+        subtitle: 'Fai domande sulle tue email in linguaggio naturale.',
+        placeholder: 'Chiedi qualcosa come "Quali newsletter ho ricevuto questa settimana?"',
+        inputPlaceholder: 'Chiedi delle tue email…',
+        send: 'Invia',
+        noAnswer: 'Nessuna risposta trovata.',
+        errorFallback: 'Qualcosa è andato storto. Riprova.',
+      },
     },
     emailOriginal: {
       back: 'Indietro',
@@ -1965,6 +1995,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Explorar',
         relations: 'Relaciones',
         settings: 'Configuración',
+        agent: 'Agente',
       },
       address: {
         title: 'Tu dirección Postino',
@@ -2374,6 +2405,15 @@ const translations: Record<Locale, Translations> = {
         analysisRefreshed: 'Análisis de IA actualizado.',
         analysisRefreshFailed: 'No se pudo actualizar el análisis de IA.',
       },
+      agent: {
+        title: 'Agente de Memoria',
+        subtitle: 'Haz preguntas sobre tus correos en lenguaje natural.',
+        placeholder: 'Pregunta algo como "¿Qué boletines recibí esta semana?"',
+        inputPlaceholder: 'Pregunta sobre tus correos…',
+        send: 'Enviar',
+        noAnswer: 'No se encontró respuesta.',
+        errorFallback: 'Algo salió mal. Por favor, inténtalo de nuevo.',
+      },
     },
     emailOriginal: {
       back: 'Volver',
@@ -2583,6 +2623,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Explorer',
         relations: 'Relations',
         settings: 'Paramètres',
+        agent: 'Agent',
       },
       address: {
         title: 'Votre adresse Postino',
@@ -2993,6 +3034,15 @@ const translations: Record<Locale, Translations> = {
         analysisRefreshed: 'Analyse IA actualisée.',
         analysisRefreshFailed: "Impossible d'actualiser l'analyse IA.",
       },
+      agent: {
+        title: "Agent de Mémoire",
+        subtitle: 'Posez des questions sur vos e-mails en langage naturel.',
+        placeholder: 'Demandez par exemple "Quels newsletters ai-je reçus cette semaine ?"',
+        inputPlaceholder: 'Demandez à propos de vos e-mails…',
+        send: 'Envoyer',
+        noAnswer: 'Aucune réponse trouvée.',
+        errorFallback: "Quelque chose s'est mal passé. Veuillez réessayer.",
+      },
     },
     emailOriginal: {
       back: 'Retour',
@@ -3203,6 +3253,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Erkunden',
         relations: 'Beziehungen',
         settings: 'Einstellungen',
+        agent: 'Agent',
       },
       address: {
         title: 'Ihre Postino-Adresse',
@@ -3613,6 +3664,15 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateAnalysisLanguageSetting: 'Analysesprache konnte nicht aktualisiert werden',
         analysisRefreshed: 'KI-Analyse aktualisiert.',
         analysisRefreshFailed: 'KI-Analyse konnte nicht aktualisiert werden.',
+      },
+      agent: {
+        title: 'Gedächtnis-Agent',
+        subtitle: 'Stellen Sie Fragen zu Ihren E-Mails in natürlicher Sprache.',
+        placeholder: 'Fragen Sie z.B. "Welche Newsletter habe ich diese Woche erhalten?"',
+        inputPlaceholder: 'Fragen Sie zu Ihren E-Mails…',
+        send: 'Senden',
+        noAnswer: 'Keine Antwort gefunden.',
+        errorFallback: 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
       },
     },
     emailOriginal: {

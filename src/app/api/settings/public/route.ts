@@ -12,6 +12,7 @@ export async function GET() {
       maxRuleLength: data?.maxRuleLength ?? 1000,
       assignedEmailDomain: resolveAssignedEmailDomain(data),
       signupMaintenanceMode: data?.signupMaintenanceMode === true,
+      memoryEnabled: data?.memoryEnabled === true,
     });
   } catch (err) {
     console.warn('[settings/public] Firestore read failed, using defaults:', err);
@@ -19,6 +20,7 @@ export async function GET() {
       maxRuleLength: 1000,
       assignedEmailDomain: resolveAssignedEmailDomain(),
       signupMaintenanceMode: false,
+      memoryEnabled: false,
     });
   }
 }

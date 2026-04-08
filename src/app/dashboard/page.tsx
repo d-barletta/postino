@@ -7,6 +7,7 @@ import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailSearchTab } from '@/components/dashboard/EmailSearchTab';
 import { KnowledgeTab } from '@/components/dashboard/KnowledgeTab';
 import { RelationsTab } from '@/components/dashboard/RelationsTab';
+import { AgentTab } from '@/components/dashboard/AgentTab';
 import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
@@ -31,6 +32,7 @@ import {
   CheckCircle,
   Compass,
   Share2,
+  Bot,
 } from 'lucide-react';
 
 const EMPTY_STATS: UserStats = {
@@ -42,13 +44,14 @@ const EMPTY_STATS: UserStats = {
   totalEstimatedCost: 0,
 };
 
-const DASHBOARD_TABS = ['overview', 'rules', 'inbox', 'explore', 'relations', 'settings'] as const;
+const DASHBOARD_TABS = ['overview', 'rules', 'inbox', 'explore', 'relations', 'agent', 'settings'] as const;
 type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
   const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
+  const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -146,6 +149,7 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength);
+        setMemoryEnabled(d.memoryEnabled === true);
       })
       .catch(() => {});
   }, []);
@@ -305,6 +309,12 @@ export default function DashboardPage() {
             <Share2 className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.relations}</span>
           </TabsTrigger>
+          {memoryEnabled && (
+            <TabsTrigger value="agent">
+              <Bot className="h-4 w-4 shrink-0" />
+              <span>{t.dashboard.tabs.agent}</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="settings">
             <Settings className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.settings}</span>
@@ -340,6 +350,11 @@ export default function DashboardPage() {
         <TabsContent value="relations">
           <RelationsTab />
         </TabsContent>
+        {memoryEnabled && (
+          <TabsContent value="agent">
+            <AgentTab />
+          </TabsContent>
+        )}
         <TabsContent value="settings">
           <div className="space-y-6">
             <PushNotificationButton />

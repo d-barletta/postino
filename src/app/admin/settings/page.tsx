@@ -103,6 +103,8 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     maintenanceMode: false,
     signupMaintenanceMode: false,
     rulesExecutionMode: 'sequential',
+    memoryEnabled: false,
+    memoryApiKey: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -998,6 +1000,44 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                       </div>
                     )}
                   </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="memory">
+              <AccordionTrigger>Memory Settings</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Enable Memory (Supermemory.ai)
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        When enabled, processed emails are saved to Supermemory.ai and users get
+                        access to the Agent tab to query their memories in natural language.
+                      </p>
+                    </div>
+                    <Switch
+                      id="memory-enabled"
+                      checked={settings.memoryEnabled === true}
+                      onCheckedChange={(checked) =>
+                        setSettings((p) => ({ ...p, memoryEnabled: checked }))
+                      }
+                    />
+                  </div>
+                  {settings.memoryEnabled && (
+                    <Input
+                      label="Supermemory API Key"
+                      type="password"
+                      value={settings.memoryApiKey || ''}
+                      onChange={(e) =>
+                        setSettings((p) => ({ ...p, memoryApiKey: e.target.value }))
+                      }
+                      placeholder="sm-..."
+                      hint="API key from console.supermemory.ai. Falls back to SUPERMEMORY_API_KEY environment variable."
+                    />
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
