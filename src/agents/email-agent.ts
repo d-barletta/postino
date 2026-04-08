@@ -743,18 +743,28 @@ function removeHiddenEmailNodes($: cheerio.CheerioAPI): void {
 
     const isDisplayNone = style.includes('display:none');
     const isVisibilityHidden = style.includes('visibility:hidden');
+    const isMsoHidden = style.includes('mso-hide:all');
+    const hasHiddenOverflow = style.includes('overflow:hidden');
+    const hasCollapsedBounds =
+      style.includes('max-height:0') ||
+      style.includes('max-height:1px') ||
+      style.includes('height:0') ||
+      style.includes('height:1px') ||
+      style.includes('max-width:0') ||
+      style.includes('max-width:1px') ||
+      style.includes('width:0') ||
+      style.includes('width:1px');
+    const hasInvisibleText =
+      style.includes('opacity:0') ||
+      style.includes('font-size:0') ||
+      style.includes('font-size:1px') ||
+      style.includes('line-height:0') ||
+      style.includes('line-height:1px') ||
+      style.includes('color:transparent');
     const isVisuallyCollapsed =
-      (style.includes('opacity:0') ||
-        style.includes('font-size:0') ||
-        style.includes('line-height:0')) &&
-      (style.includes('max-height:1px') ||
-        style.includes('height:0') ||
-        style.includes('height:1px') ||
-        style.includes('width:0') ||
-        style.includes('width:1px') ||
-        style.includes('overflow:hidden'));
+      hasInvisibleText && hasCollapsedBounds && hasHiddenOverflow;
 
-    if (isDisplayNone || isVisibilityHidden || isVisuallyCollapsed) {
+    if (isDisplayNone || isVisibilityHidden || isMsoHidden || isVisuallyCollapsed) {
       $(element).remove();
     }
   });
