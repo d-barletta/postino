@@ -787,17 +787,34 @@ function htmlFragmentToMarkdownish(html: string): string {
 
   $('br').replaceWith('\n');
 
+  // Horizontal rules become visible separators rather than silent blank lines.
+  $('hr').replaceWith('\n---\n');
+
   $('img').each((_, element) => {
     const alt = $(element).attr('alt')?.trim();
     $(element).replaceWith(alt ? `[Image: ${alt}]` : '');
   });
 
+  // Anchors: keep only visible text, drop URLs — URLs are not visible to the
+  // reader and add noise.  Links with no visible text (e.g. image-only
+  // tracking links) are dropped entirely.
   $('a').each((_, element) => {
-    // Only keep visible anchor text — URLs are not visible to the reader and
-    // add noise to the extracted content.  Links with no visible text (e.g.
-    // image-only tracking links) are dropped entirely.
     const text = $(element).text().replace(/\s+/g, ' ').trim();
     $(element).replaceWith(text);
+  });
+
+  // Heading hierarchy markers give the AI structural context so it can tell
+  // apart titles, section headings, and sub-headings.
+  (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const).forEach((tag, i) => {
+    const marker = '#'.repeat(i + 1) + ' ';
+    $(tag).each((_, el) => {
+      $(el).prepend(marker);
+    });
+  });
+
+  // Blockquotes: prefix content so quoted passages are clearly delimited.
+  $('blockquote').each((_, el) => {
+    $(el).prepend('> ');
   });
 
   $('li').each((_, element) => {
@@ -809,8 +826,12 @@ function htmlFragmentToMarkdownish(html: string): string {
     $(element).append(' | ');
   });
 
+  // Append double newlines after all block-level elements so their text is
+  // separated from surrounding content.  `button`, `caption`, `dd`, `details`,
+  // `dt`, and `summary` are added here because they appear in email HTML and
+  // carry visible text that was previously run together.
   $(
-    'address, article, blockquote, div, dl, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hr, li, main, nav, ol, p, pre, section, table, tr, ul',
+    'address, article, blockquote, button, caption, dd, details, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, li, main, nav, ol, p, pre, section, summary, table, tr, ul',
   ).each((_, element) => {
     $(element).append('\n\n');
   });
