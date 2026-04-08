@@ -37,6 +37,7 @@ import type { EmailAnalysis, EmailMemoryEntry, UserMemory } from '@/types';
 import { geocodePlaceNames } from '@/lib/place-geocoding';
 import { extractStoredPlaceNames, normalizeUniqueStrings } from '@/lib/place-utils';
 import * as cheerio from 'cheerio';
+import Supermemory from 'supermemory';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -189,6 +190,43 @@ export function compactMemory(entries: EmailMemoryEntry[]): EmailMemoryEntry[] {
   return recent.length > MAX_MEMORY_ENTRIES
     ? recent.slice(recent.length - MAX_MEMORY_ENTRIES)
     : recent;
+}
+
+/**
+ * Save an email memory entry to Supermemory.ai, scoped to the given user.
+ * Runs fire-and-forget from the caller — errors are caught and logged.
+ */
+export async function saveToSupermemory(
+  apiKey: string,
+  userId: string,
+  entry: EmailMemoryEntry,
+): Promise<void> {
+  const client = new Supermemory({ apiKey });
+  // containerTag is derived from the verified email-owner's UID so every
+  // memory entry is scoped exclusively to that user's partition in Supermemory.
+  // The search path enforces the same tag, preventing cross-user data access.
+  const containerTag = `user_${userId}`;
+
+  const parts: string[] = [
+    `From: ${entry.fromAddress}`,
+    `Subject: ${entry.subject}`,
+    `Date: ${entry.date}`,
+  ];
+  if (entry.summary) parts.push(`Summary: ${entry.summary}`);
+  if (entry.emailType) parts.push(`Type: ${entry.emailType}`);
+  if (entry.sentiment) parts.push(`Sentiment: ${entry.sentiment}`);
+  if (entry.intent) parts.push(`Intent: ${entry.intent}`);
+  if (entry.tags?.length) parts.push(`Tags: ${entry.tags.join(', ')}`);
+  if (entry.ruleApplied) parts.push(`Rule applied: ${entry.ruleApplied}`);
+  if (entry.entities?.people?.length)
+    parts.push(`People: ${entry.entities.people.join(', ')}`);
+  if (entry.entities?.organizations?.length)
+    parts.push(`Organizations: ${entry.entities.organizations.join(', ')}`);
+
+  await client.add({
+    content: parts.join('\n'),
+    containerTags: [containerTag],
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -2011,6 +2049,20 @@ export async function processEmailWithAgent(
     entries: [...memory.entries, newEntry],
     updatedAt: new Date(),
   }).catch((err) => console.error('Failed to update user memory:', err));
+
+  // Optionally save to Supermemory.ai if memory integration is enabled
+  if (settings?.memoryEnabled === true) {
+    const supermemoryApiKey = (
+      (settings.memoryApiKey as string | undefined) ||
+      process.env.SUPERMEMORY_API_KEY ||
+      ''
+    ).trim();
+    if (supermemoryApiKey) {
+      saveToSupermemory(supermemoryApiKey, userId, newEntry).catch((err) =>
+        console.error('Failed to save to Supermemory:', err),
+      );
+    }
+  }
 
   const trace: AgentTrace | undefined = tracingEnabled
     ? {

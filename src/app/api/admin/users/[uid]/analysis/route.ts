@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { verifyAdminRequest } from '@/lib/api-auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { analyzeStoredEmailLog } from '@/lib/email-analysis';
+import { saveToSupermemory } from '@/agents/email-agent';
+import type { EmailAnalysis, EmailMemoryEntry } from '@/types';
 
 const BATCH_SIZE = 400;
 const MAX_PROCESS_BATCH = 5;
@@ -43,6 +45,55 @@ async function invalidateDerivedUserData(uid: string): Promise<void> {
     refs.slice(i, i + BATCH_SIZE).forEach((ref) => batch.delete(ref));
     await batch.commit();
   }
+}
+
+function buildMemoryEntry(
+  emailId: string,
+  data: FirebaseFirestore.DocumentData,
+  analysis: EmailAnalysis,
+): EmailMemoryEntry {
+  // Derive a YYYY-MM-DD date string from the Firestore Timestamp (or fall back to today)
+  let date = new Date().toISOString().slice(0, 10);
+  let timestamp = new Date().toISOString();
+  if (data.receivedAt instanceof Timestamp) {
+    const d = data.receivedAt.toDate();
+    date = d.toISOString().slice(0, 10);
+    timestamp = d.toISOString();
+  }
+
+  return {
+    logId: emailId,
+    date,
+    timestamp,
+    fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
+    subject: typeof data.subject === 'string' ? data.subject : '',
+    ruleApplied: typeof data.ruleApplied === 'string' ? data.ruleApplied : undefined,
+    // wasSummarized reflects whether the email was forwarded via a rule;
+    // derive from the stored ruleApplied field since we don't reprocess here.
+    wasSummarized: typeof data.ruleApplied === 'string' && data.ruleApplied.length > 0,
+    ...(analysis.summary ? { summary: analysis.summary } : {}),
+    ...(analysis.emailType ? { emailType: analysis.emailType } : {}),
+    ...(analysis.language ? { language: analysis.language } : {}),
+    ...(analysis.sentiment ? { sentiment: analysis.sentiment } : {}),
+    ...(analysis.priority ? { priority: analysis.priority } : {}),
+    ...(analysis.tags?.length ? { tags: analysis.tags } : {}),
+    ...(analysis.intent ? { intent: analysis.intent } : {}),
+    ...(analysis.senderType ? { senderType: analysis.senderType } : {}),
+    ...(analysis.requiresResponse !== undefined
+      ? { requiresResponse: analysis.requiresResponse }
+      : {}),
+    ...(analysis.entities
+      ? {
+          entities: {
+            places: analysis.entities.placeNames,
+            events: analysis.entities.events,
+            dates: analysis.entities.dates,
+            people: analysis.entities.people,
+            organizations: analysis.entities.organizations,
+          },
+        }
+      : {}),
+  };
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
@@ -93,6 +144,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       const emailIds = body.emailIds.slice(0, MAX_PROCESS_BATCH);
 
+      // Check if Supermemory is enabled and resolve the API key once per batch
+      const settingsSnap = await db.collection('settings').doc('global').get();
+      const settingsData = settingsSnap.data();
+      const memoryEnabled = settingsData?.memoryEnabled === true;
+      const supermemoryApiKey = memoryEnabled
+        ? ((settingsData?.memoryApiKey as string | undefined) ||
+            process.env.SUPERMEMORY_API_KEY ||
+            ''
+          ).trim()
+        : '';
+
       let reanalyzedCount = 0;
       let failedCount = 0;
       let skippedCount = 0;
@@ -123,6 +185,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
           await logDoc.ref.update({ emailAnalysis: safeAnalysis });
           reanalyzedCount += 1;
+
+          // Optionally persist the updated analysis to Supermemory (fire-and-forget)
+          if (memoryEnabled && supermemoryApiKey) {
+            const entry = buildMemoryEntry(emailId, data, safeAnalysis);
+            saveToSupermemory(supermemoryApiKey, uid, entry).catch((err) =>
+              console.error(
+                `[admin/users/${uid}/analysis] failed to save log ${emailId} to Supermemory:`,
+                err,
+              ),
+            );
+          }
         } catch (error) {
           failedCount += 1;
           console.error(`[admin/users/${uid}/analysis] failed to analyze log ${emailId}:`, error);

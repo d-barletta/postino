@@ -98,6 +98,8 @@ export async function PUT(request: NextRequest) {
       'agentFallbackMaxTokens',
       'agentTracingEnabled',
       'agentTraceIncludeExcerpts',
+      'memoryEnabled',
+      'memoryApiKey',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),
