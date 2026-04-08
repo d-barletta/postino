@@ -45,6 +45,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
+    const MAX_QUERY_LENGTH = 1000;
+    if (query.length > MAX_QUERY_LENGTH) {
+      return NextResponse.json(
+        { error: `Query must be at most ${MAX_QUERY_LENGTH} characters` },
+        { status: 400 },
+      );
+    }
+
     // uid comes from server-side Firebase token verification and cannot be
     // spoofed by the client. The containerTag ensures each search query is
     // restricted to the authenticated user's own memory partition in

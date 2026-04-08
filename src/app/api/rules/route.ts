@@ -96,19 +96,22 @@ export async function POST(request: NextRequest) {
 
     const db = adminDb();
 
-    // Check name uniqueness for this user
-    const existingSnap = await db
-      .collection('rules')
-      .where('userId', '==', decoded.uid)
-      .where('name', '==', name.trim())
-      .limit(1)
-      .get();
+    // Fetch name-uniqueness check, settings and user doc in parallel.
+    const [existingSnap, settingsSnap, userSnap] = await Promise.all([
+      db
+        .collection('rules')
+        .where('userId', '==', decoded.uid)
+        .where('name', '==', name.trim())
+        .limit(1)
+        .get(),
+      db.collection('settings').doc('global').get(),
+      db.collection('users').doc(decoded.uid).get(),
+    ]);
 
     if (!existingSnap.empty) {
       return NextResponse.json({ error: 'A rule with this name already exists' }, { status: 409 });
     }
 
-    const settingsSnap = await db.collection('settings').doc('global').get();
     const maxRuleLength = settingsSnap.data()?.maxRuleLength ?? 1000;
 
     if (text.length > maxRuleLength) {
@@ -119,7 +122,6 @@ export async function POST(request: NextRequest) {
     }
 
     const maxActiveRules = settingsSnap.data()?.maxActiveRules ?? 3;
-    const userSnap = await db.collection('users').doc(decoded.uid).get();
     const isAdmin = !!userSnap.data()?.isAdmin;
 
     if (!isAdmin) {

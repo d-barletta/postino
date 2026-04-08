@@ -25,9 +25,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     if (isActive === true && !ruleSnap.data()?.isActive) {
-      const settingsSnap = await db.collection('settings').doc('global').get();
+      const [settingsSnap, userSnap] = await Promise.all([
+        db.collection('settings').doc('global').get(),
+        db.collection('users').doc(decoded.uid).get(),
+      ]);
       const maxActiveRules = settingsSnap.data()?.maxActiveRules ?? 3;
-      const userSnap = await db.collection('users').doc(decoded.uid).get();
       const isUserAdmin = !!userSnap.data()?.isAdmin;
 
       if (!isUserAdmin) {

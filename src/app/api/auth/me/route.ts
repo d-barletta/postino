@@ -104,10 +104,12 @@ export async function GET(request: NextRequest) {
     }
 
     const userData = userSnap.data()!;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { fcmTokens: _fcmTokens, ...safeUserData } = userData;
     return NextResponse.json({
       user: {
         uid: decoded.uid,
-        ...userData,
+        ...safeUserData,
         createdAt: toIsoDate(userData.createdAt),
       },
     });
