@@ -51,6 +51,7 @@ interface ChatContentProps {
   chatContainerRef: React.RefObject<HTMLDivElement | null>;
   a: ReturnType<typeof useI18n>['t']['dashboard']['agent'];
   heightClass?: string;
+  wrapperClass?: string;
 }
 
 function ChatContent({
@@ -64,9 +65,10 @@ function ChatContent({
   chatContainerRef,
   a,
   heightClass = 'h-80 sm:h-105 lg:h-130',
+  wrapperClass = '',
 }: ChatContentProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className={cn('flex flex-col gap-3', wrapperClass)}>
       {/* Chat area */}
       <div ref={chatContainerRef} className={cn('flex flex-col gap-3 overflow-y-auto p-1', heightClass)}>
         {messages.length === 0 ? (
@@ -339,6 +341,7 @@ export function AgentTab() {
               chatContainerRef={fullPageChatContainerRef}
               a={a}
               heightClass="flex-1 min-h-0"
+              wrapperClass="flex-1 min-h-0 overflow-hidden"
             />
           </div>
           <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
