@@ -793,10 +793,11 @@ function htmlFragmentToMarkdownish(html: string): string {
   });
 
   $('a').each((_, element) => {
+    // Only keep visible anchor text — URLs are not visible to the reader and
+    // add noise to the extracted content.  Links with no visible text (e.g.
+    // image-only tracking links) are dropped entirely.
     const text = $(element).text().replace(/\s+/g, ' ').trim();
-    const href = $(element).attr('href')?.trim();
-    const replacement = text && href ? `${text} (${href})` : text || href || '';
-    $(element).replaceWith(replacement);
+    $(element).replaceWith(text);
   });
 
   $('li').each((_, element) => {
