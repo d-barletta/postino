@@ -152,6 +152,11 @@ export interface Translations {
       emailsSkipped: string;
       tokensUsed: string;
       estCost: string;
+      period: string;
+      last24h: string;
+      last7days: string;
+      lastMonth: string;
+      allTime: string;
     };
     pushNotifications: {
       title: string;
@@ -809,6 +814,11 @@ const translations: Record<Locale, Translations> = {
         emailsSkipped: 'Emails Skipped',
         tokensUsed: 'Tokens Used',
         estCost: 'Est. Cost',
+        period: 'Period',
+        last24h: 'Last 24h',
+        last7days: 'Last 7 days',
+        lastMonth: 'Last month',
+        allTime: 'All time',
       },
       pushNotifications: {
         title: 'Push Notifications',
@@ -1487,6 +1497,11 @@ const translations: Record<Locale, Translations> = {
         emailsSkipped: 'Email saltate',
         tokensUsed: 'Token usati',
         estCost: 'Costo stimato',
+        period: 'Periodo',
+        last24h: 'Ultime 24h',
+        last7days: 'Ultimi 7 giorni',
+        lastMonth: 'Ultimo mese',
+        allTime: 'Tutto',
       },
       pushNotifications: {
         title: 'Notifiche push',
@@ -2166,6 +2181,11 @@ const translations: Record<Locale, Translations> = {
         emailsSkipped: 'Correos omitidos',
         tokensUsed: 'Tokens usados',
         estCost: 'Coste est.',
+        period: 'Período',
+        last24h: 'Últimas 24h',
+        last7days: 'Últimos 7 días',
+        lastMonth: 'Último mes',
+        allTime: 'Todo',
       },
       pushNotifications: {
         title: 'Notificaciones push',
@@ -2845,6 +2865,11 @@ const translations: Record<Locale, Translations> = {
         emailsSkipped: 'E-mails ignorés',
         tokensUsed: 'Tokens utilisés',
         estCost: 'Coût est.',
+        period: 'Période',
+        last24h: 'Dernières 24h',
+        last7days: '7 derniers jours',
+        lastMonth: 'Dernier mois',
+        allTime: 'Tout',
       },
       pushNotifications: {
         title: 'Notifications push',
@@ -3526,6 +3551,11 @@ const translations: Record<Locale, Translations> = {
         emailsSkipped: 'Übersprungene E-Mails',
         tokensUsed: 'Verwendete Tokens',
         estCost: 'Gesch. Kosten',
+        period: 'Zeitraum',
+        last24h: 'Letzte 24h',
+        last7days: 'Letzte 7 Tage',
+        lastMonth: 'Letzter Monat',
+        allTime: 'Gesamt',
       },
       pushNotifications: {
         title: 'Push-Benachrichtigungen',

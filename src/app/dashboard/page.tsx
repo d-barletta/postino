@@ -8,7 +8,7 @@ import { EmailSearchTab } from '@/components/dashboard/EmailSearchTab';
 import { KnowledgeTab } from '@/components/dashboard/KnowledgeTab';
 import { RelationsTab } from '@/components/dashboard/RelationsTab';
 import { AgentTab } from '@/components/dashboard/AgentTab';
-import { UserStatsCards } from '@/components/dashboard/UserStatsCards';
+import { UserStatsCards, type StatsPeriod } from '@/components/dashboard/UserStatsCards';
 import { UserOverviewCharts } from '@/components/dashboard/UserOverviewCharts';
 import { PushNotificationButton } from '@/components/dashboard/PushNotificationButton';
 import { ForwardingHeaderCard } from '@/components/dashboard/ForwardingHeaderCard';
@@ -131,6 +131,7 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>('all');
   const [emailListRefreshTrigger, setEmailListRefreshTrigger] = useState(0);
   const [installPwaTrigger, setInstallPwaTrigger] = useState(0);
   const [isPwa, setIsPwa] = useState(false);
@@ -243,17 +244,18 @@ export default function DashboardPage() {
     }
   }, [firebaseUser]);
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (period: StatsPeriod = statsPeriod) => {
     if (!firebaseUser) return;
     const token = await firebaseUser.getIdToken();
-    const res = await fetch('/api/user/stats', { headers: { Authorization: `Bearer ${token}` } });
+    const url = period === 'all' ? '/api/user/stats' : `/api/user/stats?period=${period}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const data = await res.json();
       if (data.stats) setUserStats(data.stats);
     } else {
       toast.error(t.dashboard.toasts.failedToLoadStats);
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, statsPeriod]);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -261,8 +263,18 @@ export default function DashboardPage() {
       return;
     }
     setLogsLoading(true);
-    Promise.all([fetchLogs(), fetchStats()]).finally(() => setLogsLoading(false));
+    // Use 'all' on initial load; period changes are handled by handleStatsPeriodChange.
+    Promise.all([fetchLogs(), fetchStats('all')]).finally(() => setLogsLoading(false));
   }, [firebaseUser]); // fetchLogs and fetchStats are derived from firebaseUser — no separate dep needed
+
+  // Re-fetch stats when period changes.
+  const handleStatsPeriodChange = useCallback(
+    (period: StatsPeriod) => {
+      setStatsPeriod(period);
+      fetchStats(period);
+    },
+    [fetchStats],
+  );
 
   const handleLogsRefresh = useCallback(async () => {
     await Promise.all([fetchLogs(), fetchStats()]);
@@ -409,7 +421,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         )}
-        <UserStatsCards stats={userStats ?? EMPTY_STATS} />
+        <UserStatsCards stats={userStats ?? EMPTY_STATS} period={statsPeriod} onPeriodChange={handleStatsPeriodChange} />
         <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
       </div>
     );
