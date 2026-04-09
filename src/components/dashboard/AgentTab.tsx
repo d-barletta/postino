@@ -216,10 +216,6 @@ export function AgentTab() {
   const [clearDrawerOpen, setClearDrawerOpen] = useState(false);
   const [fullPageOpen, setFullPageOpen] = useState(false);
   const [sourceEmailsLogIds, setSourceEmailsLogIds] = useState<string[] | null>(null);
-  const [singleEmailOpen, setSingleEmailOpen] = useState(false);
-  const [singleEmailSubject, setSingleEmailSubject] = useState('');
-  const [singleEmailBody, setSingleEmailBody] = useState<string | null>(null);
-  const [singleEmailLoading, setSingleEmailLoading] = useState(false);
   const [exploreFullscreenEmail, setExploreFullscreenEmail] = useState<{
     subject: string;
     body: string;
@@ -251,6 +247,8 @@ export function AgentTab() {
     if (!trimmed || loading || !firebaseUser) return;
 
     const userMessage: Message = { role: 'user', content: trimmed };
+    // Capture current messages as history before appending the new user message
+    const currentMessages = messages;
     setMessages((prev) => [...prev, userMessage]);
     setQuery('');
     setLoading(true);
@@ -263,7 +261,10 @@ export function AgentTab() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: trimmed }),
+        body: JSON.stringify({
+          query: trimmed,
+          history: currentMessages.map(({ role, content }) => ({ role, content })),
+        }),
       });
       const data = await res.json();
       setMessages((prev) => [
@@ -303,29 +304,8 @@ export function AgentTab() {
     setClearDrawerOpen(false);
   };
 
-  const handleOpenSourceEmails = async (ids: string[]) => {
-    if (!firebaseUser) return;
-    if (ids.length === 1) {
-      setSingleEmailSubject('');
-      setSingleEmailBody(null);
-      setSingleEmailLoading(true);
-      setSingleEmailOpen(true);
-      try {
-        const token = await firebaseUser.getIdToken();
-        const res = await fetch(`/api/email/original/${ids[0]}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setSingleEmailSubject(data.subject || '');
-          setSingleEmailBody(data.originalBody ?? null);
-        }
-      } finally {
-        setSingleEmailLoading(false);
-      }
-    } else {
-      setSourceEmailsLogIds(ids);
-    }
+  const handleOpenSourceEmails = (ids: string[]) => {
+    setSourceEmailsLogIds(ids);
   };
 
   const a = t.dashboard.agent;
@@ -459,15 +439,6 @@ export function AgentTab() {
         body={exploreFullscreenEmail?.body ?? null}
         overlayClassName="z-[100]"
         contentClassName="z-[100]"
-      />
-
-      {/* Single-email full-page dialog */}
-      <FullPageEmailDialog
-        open={singleEmailOpen}
-        onClose={() => setSingleEmailOpen(false)}
-        subject={singleEmailSubject}
-        body={singleEmailBody}
-        loading={singleEmailLoading}
       />
     </div>
   );

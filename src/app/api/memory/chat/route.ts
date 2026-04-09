@@ -55,14 +55,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    type ChatMessage = { role: 'user' | 'assistant'; content: string };
+    const rawHistory = Array.isArray(body.history) ? body.history : [];
+    const MAX_HISTORY = 20;
+    const history: ChatMessage[] = rawHistory
+      .slice(-MAX_HISTORY)
+      .filter(
+        (m: unknown): m is ChatMessage =>
+          typeof m === 'object' &&
+          m !== null &&
+          ((m as ChatMessage).role === 'user' || (m as ChatMessage).role === 'assistant') &&
+          typeof (m as ChatMessage).content === 'string',
+      )
+      .map((m: ChatMessage) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
+
     // uid comes from server-side Firebase token verification and cannot be
     // spoofed by the client. The containerTag ensures each search query is
     // restricted to the authenticated user's own memory partition in
     // Supermemory, preventing any cross-user data access.
     const containerTag = `user_${uid}`;
     const client = new Supermemory({ apiKey: memoryApiKey });
+
+    // Build a search query that combines recent conversation context so that
+    // follow-up questions retrieve memories relevant to the full dialogue.
+    const recentUserMessages = history
+      .filter((m) => m.role === 'user')
+      .slice(-3)
+      .map((m) => m.content)
+      .join(' ');
+    const searchQuery = recentUserMessages ? `${recentUserMessages} ${query}`.slice(0, 500) : query;
+
     const searchResult = await client.search.memories({
-      q: query,
+      q: searchQuery,
       containerTag,
       limit: 10,
     });
@@ -113,7 +137,7 @@ export async function POST(request: NextRequest) {
     const result = await generateText({
       model: openrouter(llmModel),
       system: systemPrompt,
-      messages: [{ role: 'user', content: query }],
+      messages: [...history, { role: 'user', content: query }],
     });
 
     // Track token usage on the user document (fire-and-forget).
