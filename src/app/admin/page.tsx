@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useState, useEffect, useTransition, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
-import { StatsCards } from '@/components/admin/StatsCards';
+import { StatsCards, type StatsPeriod } from '@/components/admin/StatsCards';
 import { AdminOverviewCharts } from '@/components/admin/AdminOverviewCharts';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
@@ -31,15 +31,18 @@ export default function AdminPage() {
   const { t } = useI18n();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>('all');
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [, startTransition] = useTransition();
 
-  useEffect(() => {
-    const fetchStats = async () => {
+  const fetchAdminStats = useCallback(
+    async (period: StatsPeriod = statsPeriod) => {
       if (!firebaseUser) return;
       try {
         const token = await firebaseUser.getIdToken();
-        const res = await fetch('/api/admin/stats', {
+        const url =
+          period === 'all' ? '/api/admin/stats' : `/api/admin/stats?period=${period}`;
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -51,9 +54,22 @@ export default function AdminPage() {
       } finally {
         setLoading(false);
       }
-    };
-    fetchStats();
-  }, [firebaseUser]);
+    },
+    [firebaseUser, statsPeriod],
+  );
+
+  useEffect(() => {
+    fetchAdminStats(statsPeriod);
+  }, [firebaseUser]); // fetchAdminStats is derived from firebaseUser — no separate dep needed
+
+  const handleStatsPeriodChange = useCallback(
+    (period: StatsPeriod) => {
+      setStatsPeriod(period);
+      setLoading(true);
+      fetchAdminStats(period);
+    },
+    [fetchAdminStats],
+  );
 
   // ---------------------------------------------------------------------------
   // Tab history: push a history entry when the user clicks a tab so the
@@ -132,7 +148,7 @@ export default function AdminPage() {
     if (stats) {
       return (
         <>
-          <StatsCards stats={stats} />
+          <StatsCards stats={stats} period={statsPeriod} onPeriodChange={handleStatsPeriodChange} />
           <AdminOverviewCharts stats={stats} />
         </>
       );

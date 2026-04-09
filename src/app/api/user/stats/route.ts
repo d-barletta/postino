@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { AggregateField } from 'firebase-admin/firestore';
+import { AggregateField, Timestamp } from 'firebase-admin/firestore';
 import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+
+type StatsPeriod = '24h' | '7d' | '30d' | 'all';
+const VALID_PERIODS = new Set<StatsPeriod>(['24h', '7d', '30d', 'all']);
+
+const PERIOD_MS: Record<Exclude<StatsPeriod, 'all'>, number> = {
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '30d': 30 * 24 * 60 * 60 * 1000,
+};
 
 export async function GET(request: NextRequest) {
   try {
     const decoded = await verifyUserRequest(request);
     const db = adminDb();
-    const base = db.collection('emailLogs').where('userId', '==', decoded.uid);
+    const { searchParams } = new URL(request.url);
+    const periodParam = searchParams.get('period') ?? 'all';
+    const period: StatsPeriod = VALID_PERIODS.has(periodParam as StatsPeriod)
+      ? (periodParam as StatsPeriod)
+      : 'all';
+
+    let base = db.collection('emailLogs').where('userId', '==', decoded.uid);
+    if (period !== 'all') {
+      const from = new Date(Date.now() - PERIOD_MS[period]);
+      base = base.where('receivedAt', '>=', Timestamp.fromDate(from)) as typeof base;
+    }
 
     // Use server-side aggregation queries to avoid reading every document.
     const [totalResult, forwardedResult, errorResult, skippedResult, aggregateResult] =
