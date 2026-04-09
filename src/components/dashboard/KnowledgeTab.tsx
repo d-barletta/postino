@@ -79,9 +79,9 @@ const CATEGORIES: CategoryConfig[] = [
   { key: 'organizations', icon: <Building2 className="h-3.5 w-3.5" />, dataKey: 'organizations' },
   { key: 'places', icon: <MapPin className="h-3.5 w-3.5" />, dataKey: 'places' },
   { key: 'events', icon: <Calendar className="h-3.5 w-3.5" />, dataKey: 'events' },
+  { key: 'numbers', icon: <Binary className="h-3.5 w-3.5" />, dataKey: 'numbers' },
   { key: 'topics', icon: <Hash className="h-3.5 w-3.5" />, dataKey: 'topics' },
   { key: 'tags', icon: <Tag className="h-3.5 w-3.5" />, dataKey: 'tags' },
-  { key: 'numbers', icon: <Binary className="h-3.5 w-3.5" />, dataKey: 'numbers' },
 ];
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
@@ -783,9 +783,9 @@ export function KnowledgeTab() {
                     'organizations',
                     'places',
                     'events',
+                    'numbers',
                     'topics',
                     'tags',
-                    'numbers',
                   ] as const
                 ).map((key) => (
                   <Section
