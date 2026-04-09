@@ -69,7 +69,7 @@ type SelectedGraphNode = {
 function GraphSkeleton() {
   return (
     <div
-      className="flex items-center justify-center h-130 rounded-2xl animate-pulse"
+      className="flex items-center justify-center h-90 rounded-2xl animate-pulse"
       style={{ backgroundColor: 'var(--surface-muted)' }}
     >
       <Share2 className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
@@ -159,6 +159,7 @@ function CytoscapeCanvas({
   const selectedNodeRef = useRef<SelectedGraphNode | null>(null);
   const hiddenCategoriesRef = useRef(hiddenCategories);
   const [selectedNode, setSelectedNode] = useState<SelectedGraphNode | null>(null);
+  const [isReady, setIsReady] = useState(false);
   hiddenCategoriesRef.current = hiddenCategories;
 
   const updateSelectedNode = useCallback((next: SelectedGraphNode | null) => {
@@ -233,6 +234,7 @@ function CytoscapeCanvas({
     if (!containerRef.current || graph.nodes.length === 0) return;
 
     let destroyed = false;
+    setIsReady(false);
     updateSelectedNode(null);
     pinnedNodeIdRef.current = null;
 
@@ -436,6 +438,7 @@ function CytoscapeCanvas({
         if (!destroyed && !cy.destroyed()) {
           cy.fit(undefined, 40);
           applyHiddenCategories(cy, hiddenCategoriesRef.current);
+          setIsReady(true);
         }
       });
 
@@ -481,6 +484,11 @@ function CytoscapeCanvas({
 
   return (
     <div className="relative h-full w-full">
+      {!isReady && (
+        <div className="absolute inset-0 z-10">
+          <GraphSkeleton />
+        </div>
+      )}
       {selectedNode ? (
         <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-3">
           <Button
@@ -495,7 +503,10 @@ function CytoscapeCanvas({
       ) : null}
       <div
         ref={containerRef}
-        className="w-full h-full rounded-2xl overflow-hidden [--rg-label-color:#1f2937] [--rg-label-bg:#f3f4f6] [--rg-edge-color:#94a3b8] [--rg-edge-highlighted-color:#cbd5e1] dark:[--rg-label-color:#e2e8f0] dark:[--rg-label-bg:#1f2937] dark:[--rg-edge-color:#64748b] dark:[--rg-edge-highlighted-color:#94a3b8]"
+        className={cn(
+          'w-full h-full rounded-2xl overflow-hidden [--rg-label-color:#1f2937] [--rg-label-bg:#f3f4f6] [--rg-edge-color:#94a3b8] [--rg-edge-highlighted-color:#cbd5e1] dark:[--rg-label-color:#e2e8f0] dark:[--rg-label-bg:#1f2937] dark:[--rg-edge-color:#64748b] dark:[--rg-edge-highlighted-color:#94a3b8] transition-opacity duration-300',
+          isReady ? 'opacity-100' : 'opacity-0',
+        )}
         style={{ backgroundColor: 'transparent' }}
         aria-label="Entity relation graph"
       />
