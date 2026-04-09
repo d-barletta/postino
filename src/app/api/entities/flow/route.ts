@@ -30,6 +30,7 @@ const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'places',
   'topics',
   'tags',
+  'numbers',
 ];
 
 interface CountMap {
@@ -230,6 +231,7 @@ export async function POST(request: NextRequest) {
         organizations: [],
         places: [],
         events: [],
+        numbers: [],
       };
 
       const collectRaw = (cat: EntityGraphNodeCategory, values: unknown) => {
@@ -259,6 +261,7 @@ export async function POST(request: NextRequest) {
         collectRaw('organizations', entities.organizations);
         collectRaw('places', extractStoredPlaceNames(entities.places, entities.placeNames));
         collectRaw('events', entities.events);
+        collectRaw('numbers', entities.numbers);
       }
 
       perEmailBucketEntities.push({ bucketIdx, entities: raw });

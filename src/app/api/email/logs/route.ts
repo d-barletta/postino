@@ -60,6 +60,10 @@ export async function GET(request: NextRequest) {
       .getAll('events')
       .map((v) => v.trim())
       .filter(Boolean);
+    const numbersFilter = searchParams
+      .getAll('numbers')
+      .map((v) => v.trim())
+      .filter(Boolean);
     // cursor-based pagination: pass the last document ID from the previous page
     const cursor = searchParams.get('cursor');
 
@@ -75,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     // Track which array filter was pushed to Firestore.
     // Firestore allows only ONE array-contains / array-contains-any per query.
-    let pushedArrayField: 'tags' | 'people' | 'orgs' | 'places' | 'events' | null = null;
+    let pushedArrayField: 'tags' | 'people' | 'orgs' | 'places' | 'events' | 'numbers' | null = null;
 
     // ---------------------------------------------------------------------------
     // Build Firestore query – push all structured filters to the database.
@@ -104,7 +108,8 @@ export async function GET(request: NextRequest) {
       peopleFilter.length > 0 ||
       orgsFilter.length > 0 ||
       placesFilter.length > 0 ||
-      eventsFilter.length > 0
+      eventsFilter.length > 0 ||
+      numbersFilter.length > 0
     );
 
     if (structuredFiltersActive) {
@@ -162,6 +167,13 @@ export async function GET(request: NextRequest) {
           eventsFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
         );
         pushedArrayField = 'events';
+      } else if (numbersFilter.length > 0) {
+        firestoreQuery = firestoreQuery.where(
+          'emailAnalysis.entities.numbers',
+          'array-contains-any',
+          numbersFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
+        );
+        pushedArrayField = 'numbers';
       }
     }
 
@@ -341,6 +353,19 @@ export async function GET(request: NextRequest) {
           Array.isArray(list) &&
           eventsFilter.some((e) =>
             list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === e.toLowerCase()),
+          )
+        );
+      });
+    }
+
+    if (numbersFilter.length > 0 && pushedArrayField !== 'numbers') {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.numbers;
+        return (
+          Array.isArray(list) &&
+          numbersFilter.some((n) =>
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === n.toLowerCase()),
           )
         );
       });

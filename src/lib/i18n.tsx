@@ -280,12 +280,14 @@ export interface Translations {
       filterOrgs: string;
       filterPlaces: string;
       filterEvents: string;
+      filterNumbers: string;
       languagePlaceholder: string;
       tagsPlaceholder: string;
       peoplePlaceholder: string;
       orgsPlaceholder: string;
       placesPlaceholder: string;
       eventsPlaceholder: string;
+      numbersPlaceholder: string;
       advancedFilters: string;
       withAttachments: string;
       requiresResponse: string;
@@ -324,6 +326,7 @@ export interface Translations {
       places: string;
       events: string;
       tags: string;
+      numbers: string;
       emailsAnalyzed: string;
       noData: string;
       noDataDesc: string;
@@ -921,12 +924,14 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organizations',
         filterPlaces: 'Places',
         filterEvents: 'Events',
+        filterNumbers: 'Numbers & codes',
         languagePlaceholder: 'Select language…',
         tagsPlaceholder: 'Select tags…',
         peoplePlaceholder: 'Select people…',
         orgsPlaceholder: 'Select organizations…',
         placesPlaceholder: 'Select places…',
         eventsPlaceholder: 'Select events…',
+        numbersPlaceholder: 'Select numbers/codes…',
         advancedFilters: 'Advanced filters',
         withAttachments: 'With attachments',
         requiresResponse: 'Requires response',
@@ -965,7 +970,7 @@ const translations: Record<Locale, Translations> = {
         places: 'Places',
         events: 'Events',
         tags: 'Tags',
-        emailsAnalyzed: '{count} emails analyzed',
+        numbers: 'Numbers & codes',
         noData: 'No knowledge data yet',
         noDataDesc:
           'Send some emails to your Postino address to start building your knowledge graph.',
@@ -1571,12 +1576,14 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organizzazioni',
         filterPlaces: 'Luoghi',
         filterEvents: 'Eventi',
+        filterNumbers: 'Numeri e codici',
         languagePlaceholder: 'Seleziona lingua…',
         tagsPlaceholder: 'Seleziona tag…',
         peoplePlaceholder: 'Seleziona persone…',
         orgsPlaceholder: 'Seleziona organizzazioni…',
         placesPlaceholder: 'Seleziona luoghi…',
         eventsPlaceholder: 'Seleziona eventi…',
+        numbersPlaceholder: 'Seleziona numeri/codici…',
         advancedFilters: 'Filtri avanzati',
         withAttachments: 'Con allegati',
         requiresResponse: 'Richiede risposta',
@@ -1615,7 +1622,7 @@ const translations: Record<Locale, Translations> = {
         places: 'Luoghi',
         events: 'Eventi',
         tags: 'Tag',
-        emailsAnalyzed: '{count} email analizzate',
+        numbers: 'Numeri e codici',
         noData: 'Nessun dato disponibile',
         noDataDesc:
           'Invia alcune email al tuo indirizzo Postino per iniziare a costruire il grafo della conoscenza.',
@@ -2220,12 +2227,14 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organizaciones',
         filterPlaces: 'Lugares',
         filterEvents: 'Eventos',
+        filterNumbers: 'Números y códigos',
         languagePlaceholder: 'Seleccionar idioma…',
         tagsPlaceholder: 'Seleccionar etiquetas…',
         peoplePlaceholder: 'Seleccionar personas…',
         orgsPlaceholder: 'Seleccionar organizaciones…',
         placesPlaceholder: 'Seleccionar lugares…',
         eventsPlaceholder: 'Seleccionar eventos…',
+        numbersPlaceholder: 'Seleccionar números/códigos…',
         advancedFilters: 'Filtros avanzados',
         withAttachments: 'Con adjuntos',
         requiresResponse: 'Requiere respuesta',
@@ -2264,7 +2273,7 @@ const translations: Record<Locale, Translations> = {
         places: 'Lugares',
         events: 'Eventos',
         tags: 'Etiquetas',
-        emailsAnalyzed: '{count} correos analizados',
+        numbers: 'Números y códigos',
         noData: 'Sin datos de conocimiento',
         noDataDesc:
           'Envía algunos correos a tu dirección Postino para comenzar a construir tu gráfico de conocimiento.',
@@ -2869,12 +2878,14 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organisations',
         filterPlaces: 'Lieux',
         filterEvents: 'Événements',
+        filterNumbers: 'Numéros et codes',
         languagePlaceholder: 'Sélectionner une langue…',
         tagsPlaceholder: 'Sélectionner des tags…',
         peoplePlaceholder: 'Sélectionner des personnes…',
         orgsPlaceholder: 'Sélectionner des organisations…',
         placesPlaceholder: 'Sélectionner des lieux…',
         eventsPlaceholder: 'Sélectionner des événements…',
+        numbersPlaceholder: 'Sélectionner des numéros/codes…',
         advancedFilters: 'Filtres avancés',
         withAttachments: 'Avec pièces jointes',
         requiresResponse: 'Nécessite une réponse',
@@ -2913,7 +2924,7 @@ const translations: Record<Locale, Translations> = {
         places: 'Lieux',
         events: 'Événements',
         tags: 'Étiquettes',
-        emailsAnalyzed: '{count} emails analysés',
+        numbers: 'Numéros et codes',
         noData: 'Aucune donnée disponible',
         noDataDesc:
           'Envoyez des emails à votre adresse Postino pour commencer à construire votre graphe de connaissance.',
@@ -3520,12 +3531,14 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organisationen',
         filterPlaces: 'Orte',
         filterEvents: 'Ereignisse',
+        filterNumbers: 'Nummern & Codes',
         languagePlaceholder: 'Sprache auswählen…',
         tagsPlaceholder: 'Tags auswählen…',
         peoplePlaceholder: 'Personen auswählen…',
         orgsPlaceholder: 'Organisationen auswählen…',
         placesPlaceholder: 'Orte auswählen…',
         eventsPlaceholder: 'Ereignisse auswählen…',
+        numbersPlaceholder: 'Nummern/Codes auswählen…',
         advancedFilters: 'Erweiterte Filter',
         withAttachments: 'Mit Anhängen',
         requiresResponse: 'Antwort erforderlich',
@@ -3564,7 +3577,7 @@ const translations: Record<Locale, Translations> = {
         places: 'Orte',
         events: 'Ereignisse',
         tags: 'Tags',
-        emailsAnalyzed: '{count} E-Mails analysiert',
+        numbers: 'Nummern & Codes',
         noData: 'Keine Wissensdaten vorhanden',
         noDataDesc:
           'Senden Sie E-Mails an Ihre Postino-Adresse, um Ihren Wissensgraphen aufzubauen.',

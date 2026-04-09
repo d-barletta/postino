@@ -107,6 +107,9 @@ export interface EmailAnalysis {
     people: string[];
     /** Company, brand, or organization names mentioned. */
     organizations: string[];
+    /** Labelled numeric codes and identifiers (phone numbers, card numbers, client IDs, etc.).
+     *  Each entry is formatted as "<label> <number>" (e.g. "codice carta 134533"). */
+    numbers: string[];
   };
   /** Prices, costs, or monetary amounts mentioned in the email (e.g. "$19.99/month", "€50 discount"). */
   prices?: string[];
@@ -259,6 +262,8 @@ export interface EmailMemoryEntry {
     dates: string[];
     people: string[];
     organizations: string[];
+    /** Labelled numeric codes and identifiers (e.g. "codice carta 134533"). */
+    numbers: string[];
   };
 }
 
@@ -270,7 +275,14 @@ export interface UserMemory {
 }
 
 /** Category of an entity that can be merged. */
-export type EntityCategory = 'topics' | 'people' | 'organizations' | 'places' | 'events' | 'tags';
+export type EntityCategory =
+  | 'topics'
+  | 'people'
+  | 'organizations'
+  | 'places'
+  | 'events'
+  | 'tags'
+  | 'numbers';
 
 /** Category used for entity graph nodes (same values as EntityCategory). */
 export type EntityGraphNodeCategory = EntityCategory;
