@@ -90,6 +90,7 @@ function buildMemoryEntry(
             dates: analysis.entities.dates,
             people: analysis.entities.people,
             organizations: analysis.entities.organizations,
+            numbers: analysis.entities.numbers,
           },
         }
       : {}),

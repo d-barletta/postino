@@ -14,6 +14,7 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'places',
   'events',
   'tags',
+  'numbers',
 ];
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
     const organizations: CountMap = {};
     const places: CountMap = {};
     const events: CountMap = {};
+    const numbers: CountMap = {};
 
     for (const doc of snap.docs) {
       const analysis = doc.data().emailAnalysis as Record<string, unknown> | undefined;
@@ -156,6 +158,7 @@ export async function POST(request: NextRequest) {
         incrementAll(organizations, entities.organizations);
         incrementAll(places, extractStoredPlaceNames(entities.places, entities.placeNames));
         incrementAll(events, entities.events);
+        incrementAll(numbers, entities.numbers);
       }
     }
 
@@ -178,6 +181,7 @@ export async function POST(request: NextRequest) {
       organizations: toTopN(organizations),
       places: toTopN(places),
       events: toTopN(events),
+      numbers: toTopN(numbers),
     };
 
     // Filter out already-merged entries
