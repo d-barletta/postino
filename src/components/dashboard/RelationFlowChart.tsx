@@ -659,6 +659,7 @@ function RelationFlowInner({
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [layouting, setLayouting] = useState(true);
+  const [layoutVersion, setLayoutVersion] = useState(0);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(
     () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
@@ -741,20 +742,20 @@ function RelationFlowInner({
         id: n.id,
         type: n.category,
         position: { x: 0, y: 0 },
-        zIndex:
-          n.id === selectedNodeId ? 20 : highlightedGraph.highlightedNodeIds.has(n.id) ? 10 : 1,
+        zIndex: 1,
         data: {
           label: n.label,
           category: n.category,
           count: n.count,
           bucketLabel: n.bucketLabel,
           bucketIndex: n.bucketIndex,
-          isSelected: n.id === selectedNodeId,
-          isConnected: highlightedGraph.highlightedNodeIds.has(n.id),
-          isDimmed: hasPinnedSelection && !highlightedGraph.highlightedNodeIds.has(n.id),
+          // Emphasis fields start neutral; applied by a separate effect post-layout
+          isSelected: false,
+          isConnected: false,
+          isDimmed: false,
         },
       })),
-    [graph.nodes, hasPinnedSelection, highlightedGraph.highlightedNodeIds, selectedNodeId],
+    [graph.nodes],
   );
 
   const rawEdges: Edge[] = useMemo(() => {
@@ -765,30 +766,19 @@ function RelationFlowInner({
       target: e.target,
       type: 'smoothstep',
       style: {
-        strokeWidth:
-          0.8 +
-          (e.weight / maxWeight) * 2.5 +
-          (highlightedGraph.highlightedEdgeIds.has(e.id) ? 0.6 : 0),
-        stroke: highlightedGraph.highlightedEdgeIds.has(e.id)
-          ? FLOW_EDGE_HIGHLIGHT_COLOR
-          : baseEdgeColor,
-        opacity: hasPinnedSelection
-          ? highlightedGraph.highlightedEdgeIds.has(e.id)
-            ? 0.95
-            : 0.08
-          : 0.5,
+        strokeWidth: 0.8 + (e.weight / maxWeight) * 2.5,
+        stroke: baseEdgeColor,
+        opacity: 0.5,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: highlightedGraph.highlightedEdgeIds.has(e.id)
-          ? FLOW_EDGE_HIGHLIGHT_COLOR
-          : baseEdgeColor,
+        color: baseEdgeColor,
         width: 16,
         height: 16,
       },
-      animated: highlightedGraph.highlightedEdgeIds.has(e.id),
+      animated: false,
     }));
-  }, [baseEdgeColor, graph.edges, hasPinnedSelection, highlightedGraph.highlightedEdgeIds]);
+  }, [baseEdgeColor, graph.edges]);
 
   useEffect(() => {
     const graphChanged = prevGraphRef.current !== graph;
@@ -802,6 +792,7 @@ function RelationFlowInner({
       .then(({ nodes: positioned, edges: routedEdges }) => {
         setNodes(positioned);
         setEdges(routedEdges);
+        setLayoutVersion((v) => v + 1);
       })
       .catch(() => {
         const positioned = rawNodes.map((n, i) => ({
@@ -810,9 +801,63 @@ function RelationFlowInner({
         }));
         setNodes(positioned);
         setEdges(rawEdges);
+        setLayoutVersion((v) => v + 1);
       })
       .finally(() => setLayouting(false));
   }, [baseEdgeColor, rawNodes, rawEdges, hiddenCategories, setNodes, setEdges, graph]);
+
+  // Apply selection/emphasis overlay without re-running ELK layout
+  useEffect(() => {
+    setNodes((current) =>
+      current.map((n) => ({
+        ...n,
+        zIndex:
+          n.id === selectedNodeId ? 20 : highlightedGraph.highlightedNodeIds.has(n.id) ? 10 : 1,
+        data: {
+          ...n.data,
+          isSelected: n.id === selectedNodeId,
+          isConnected: highlightedGraph.highlightedNodeIds.has(n.id),
+          isDimmed: hasPinnedSelection && !highlightedGraph.highlightedNodeIds.has(n.id),
+        },
+      })),
+    );
+  }, [
+    selectedNodeId,
+    highlightedGraph.highlightedNodeIds,
+    hasPinnedSelection,
+    setNodes,
+    layoutVersion,
+  ]);
+
+  useEffect(() => {
+    const maxWeight = Math.max(...graph.edges.map((e) => e.weight), 1);
+    const weightMap = new Map(graph.edges.map((e) => [e.id, e.weight]));
+    setEdges((current) =>
+      current.map((e) => {
+        if (e.hidden) return e;
+        const weight = weightMap.get(e.id) ?? 1;
+        const isHighlighted = highlightedGraph.highlightedEdgeIds.has(e.id);
+        const stroke = isHighlighted ? FLOW_EDGE_HIGHLIGHT_COLOR : baseEdgeColor;
+        const strokeWidth = 0.8 + (weight / maxWeight) * 2.5 + (isHighlighted ? 0.6 : 0);
+        const opacity = hasPinnedSelection ? (isHighlighted ? 0.95 : 0.08) : 0.5;
+        return {
+          ...e,
+          animated: isHighlighted,
+          markerEnd: { type: MarkerType.ArrowClosed, color: stroke, width: 16, height: 16 },
+          ...(e.type === 'elk'
+            ? { data: { ...e.data, stroke, strokeWidth, opacity } }
+            : { style: { ...(e.style ?? {}), strokeWidth, stroke, opacity } }),
+        };
+      }),
+    );
+  }, [
+    highlightedGraph.highlightedEdgeIds,
+    hasPinnedSelection,
+    baseEdgeColor,
+    graph.edges,
+    setEdges,
+    layoutVersion,
+  ]);
 
   return (
     <div className="relative h-full w-full">
