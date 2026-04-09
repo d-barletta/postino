@@ -180,7 +180,7 @@ function Chip({
       {isMerged && !mergeMode && (
         <GitMerge className="h-3 w-3 shrink-0 text-gray-400 dark:text-gray-500" />
       )}
-      <span className={cn('truncate max-w-[180px]', isMerged && 'font-semibold')}>
+      <span className={cn('truncate max-w-45', isMerged && 'font-semibold')}>
         <HighlightedText text={item.value} query={highlight} />
       </span>
       <Badge
