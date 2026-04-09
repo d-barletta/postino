@@ -971,6 +971,7 @@ const translations: Record<Locale, Translations> = {
         events: 'Events',
         tags: 'Tags',
         numbers: 'Numbers & codes',
+        emailsAnalyzed: '{count} emails analyzed',
         noData: 'No knowledge data yet',
         noDataDesc:
           'Send some emails to your Postino address to start building your knowledge graph.',
@@ -1623,6 +1624,7 @@ const translations: Record<Locale, Translations> = {
         events: 'Eventi',
         tags: 'Tag',
         numbers: 'Numeri e codici',
+        emailsAnalyzed: '{count} email analizzate',
         noData: 'Nessun dato disponibile',
         noDataDesc:
           'Invia alcune email al tuo indirizzo Postino per iniziare a costruire il grafo della conoscenza.',
@@ -2274,6 +2276,7 @@ const translations: Record<Locale, Translations> = {
         events: 'Eventos',
         tags: 'Etiquetas',
         numbers: 'Números y códigos',
+        emailsAnalyzed: '{count} correos analizados',
         noData: 'Sin datos de conocimiento',
         noDataDesc:
           'Envía algunos correos a tu dirección Postino para comenzar a construir tu gráfico de conocimiento.',
@@ -2925,6 +2928,7 @@ const translations: Record<Locale, Translations> = {
         events: 'Événements',
         tags: 'Étiquettes',
         numbers: 'Numéros et codes',
+        emailsAnalyzed: '{count} emails analysés',
         noData: 'Aucune donnée disponible',
         noDataDesc:
           'Envoyez des emails à votre adresse Postino pour commencer à construire votre graphe de connaissance.',
@@ -3578,6 +3582,7 @@ const translations: Record<Locale, Translations> = {
         events: 'Ereignisse',
         tags: 'Tags',
         numbers: 'Nummern & Codes',
+        emailsAnalyzed: '{count} E-Mails analysiert',
         noData: 'Keine Wissensdaten vorhanden',
         noDataDesc:
           'Senden Sie E-Mails an Ihre Postino-Adresse, um Ihren Wissensgraphen aufzubauen.',

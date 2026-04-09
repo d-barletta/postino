@@ -263,7 +263,7 @@ export interface EmailMemoryEntry {
     people: string[];
     organizations: string[];
     /** Labelled numeric codes and identifiers (e.g. "codice carta 134533"). */
-    numbers: string[];
+    numbers?: string[];
   };
 }
 
