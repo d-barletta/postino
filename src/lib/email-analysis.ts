@@ -15,6 +15,7 @@ export interface StoredEmailAnalysisDebugResult {
   tokensUsed: number;
   promptTokens: number;
   completionTokens: number;
+  estimatedCost: number;
   model: string;
 }
 
@@ -49,6 +50,7 @@ export async function analyzeStoredEmailLogWithDebug(
     tokensUsed: result.tokensUsed,
     promptTokens: result.promptTokens,
     completionTokens: result.completionTokens,
+    estimatedCost: result.estimatedCost,
     model: result.model,
   };
 }

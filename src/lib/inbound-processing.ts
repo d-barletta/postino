@@ -344,6 +344,7 @@ export async function processQueuedInboundPayload(
         processedAt: Timestamp.now(),
         status: 'skipped',
         tokensUsed: analysisResult.tokensUsed,
+        estimatedCost: analysisResult.estimatedCost,
         ...(safeAnalysis ? { emailAnalysis: safeAnalysis } : {}),
       });
 

@@ -95,6 +95,7 @@ interface AnalyzeEmailContentResult {
   tokensUsed: number;
   promptTokens: number;
   completionTokens: number;
+  estimatedCost: number;
   model: string;
 }
 
@@ -1077,12 +1078,16 @@ export async function analyzeEmailContent(
 
   const analysis = await hydrateEmailAnalysis(result.analysis, googleMapsApiKey);
 
+  const pricing = await getModelPricing(model, apiKey);
+  const estimatedCost = calculateCost(result.promptTokens, result.completionTokens, pricing);
+
   return {
     analysis,
     extractedBody: result.extractedBody,
     tokensUsed: result.tokensUsed,
     promptTokens: result.promptTokens,
     completionTokens: result.completionTokens,
+    estimatedCost,
     model,
   };
 }
