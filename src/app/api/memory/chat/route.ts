@@ -79,12 +79,16 @@ export async function POST(request: NextRequest) {
             .join('\n\n')
         : '';
 
-    // Extract email IDs from memory content for source-email links in the UI.
+    // Extract email IDs from memory metadata (set during add()) or fall back to
+    // parsing the memory text for entries stored before metadata was introduced.
     const emailIdPattern = /^Email ID:\s*(\S+)$/m;
     const sourceEmailIds = [
       ...new Set(
         memories
           .map((r) => {
+            if (r.metadata && typeof r.metadata.logId === 'string' && r.metadata.logId) {
+              return r.metadata.logId;
+            }
             if (!r.memory) return null;
             const m = r.memory.match(emailIdPattern);
             return m ? m[1] : null;
