@@ -16,7 +16,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/Drawer';
 
-export function ClearAnalysisCard() {
+export function ClearAnalysisCard({ onSuccess }: { onSuccess?: () => Promise<void> | void }) {
   const { firebaseUser } = useAuth();
   const { t } = useI18n();
   const s = t.dashboard.clearAnalysis;
@@ -35,6 +35,7 @@ export function ClearAnalysisCard() {
       if (!res.ok) throw new Error();
       setOpen(false);
       toast.success(s.successToast);
+      await onSuccess?.();
     } catch {
       toast.error(s.errorToast);
     } finally {

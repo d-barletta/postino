@@ -310,6 +310,15 @@ export default function DashboardPage() {
     setEmailListRefreshTrigger((n) => n + 1);
   }, [fetchLogs, fetchStats]);
 
+  const handleAnalysisClear = useCallback(async () => {
+    await Promise.all([fetchLogs(), fetchStats(), fetchKnowledge()]);
+    setEmailListRefreshTrigger((n) => n + 1);
+  }, [fetchLogs, fetchStats, fetchKnowledge]);
+
+  const handleEntitiesDelete = useCallback(async () => {
+    await fetchKnowledge();
+  }, [fetchKnowledge]);
+
   // Refresh email list when a push notification is clicked. The service worker
   // broadcasts an 'EMAIL_NOTIFICATION_CLICK' message via BroadcastChannel so that
   // any open dashboard window re-fetches without requiring a full page reload.
@@ -478,8 +487,8 @@ export default function DashboardPage() {
         />
         <ResetUsageStatsCard onSuccess={handleLogsRefresh} />
         <ClearMemoriesCard />
-        <ClearAnalysisCard />
-        <DeleteEntitiesCard />
+        <ClearAnalysisCard onSuccess={handleAnalysisClear} />
+        <DeleteEntitiesCard onSuccess={handleEntitiesDelete} />
         {(isPwa || canShowInstallCard) && (
           <Card>
             <CardHeader>
