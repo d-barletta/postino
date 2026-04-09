@@ -288,6 +288,7 @@ export async function saveToSupermemory(
   await client.add({
     content: parts.join('\n'),
     containerTag,
+    ...(entry.logId ? { metadata: { logId: entry.logId } } : {}),
   });
 }
 
