@@ -249,12 +249,16 @@ export interface EmailMemoryEntry {
   priority?: string;
   /** Descriptive tags detected by pre-analysis. */
   tags?: string[];
+  /** Key topics or themes extracted from the email body. */
+  topics?: string[];
   /** Sender's primary intent as detected by pre-analysis. */
   intent?: string;
   /** Characterises who sent the email (human, automated, business, newsletter). */
   senderType?: string;
   /** True if the email explicitly or implicitly expected a direct reply. */
   requiresResponse?: boolean;
+  /** Prices, costs, or monetary amounts mentioned in the email. */
+  prices?: string[];
   /** Named entities extracted from the email body. */
   entities?: {
     places: string[];

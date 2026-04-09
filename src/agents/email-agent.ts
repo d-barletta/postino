@@ -198,6 +198,52 @@ export function compactMemory(entries: EmailMemoryEntry[]): EmailMemoryEntry[] {
 }
 
 /**
+ * Build an EmailMemoryEntry from core metadata and an optional EmailAnalysis result.
+ * All callers that construct a memory entry should use this to stay consistent.
+ */
+export function buildMemoryEntryFromAnalysis(
+  core: {
+    logId: string;
+    date: string;
+    timestamp: string;
+    fromAddress: string;
+    subject: string;
+    ruleApplied?: string;
+    wasSummarized: boolean;
+  },
+  analysis?: EmailAnalysis | null,
+): EmailMemoryEntry {
+  return {
+    ...core,
+    ...(analysis?.summary ? { summary: analysis.summary } : {}),
+    ...(analysis?.emailType ? { emailType: analysis.emailType } : {}),
+    ...(analysis?.language ? { language: analysis.language } : {}),
+    ...(analysis?.sentiment ? { sentiment: analysis.sentiment } : {}),
+    ...(analysis?.priority ? { priority: analysis.priority } : {}),
+    ...(analysis?.tags?.length ? { tags: analysis.tags } : {}),
+    ...(analysis?.topics?.length ? { topics: analysis.topics } : {}),
+    ...(analysis?.intent ? { intent: analysis.intent } : {}),
+    ...(analysis?.senderType ? { senderType: analysis.senderType } : {}),
+    ...(analysis?.requiresResponse !== undefined
+      ? { requiresResponse: analysis.requiresResponse }
+      : {}),
+    ...(analysis?.prices?.length ? { prices: analysis.prices } : {}),
+    ...(analysis?.entities
+      ? {
+          entities: {
+            places: analysis.entities.placeNames,
+            events: analysis.entities.events,
+            dates: analysis.entities.dates,
+            people: analysis.entities.people,
+            organizations: analysis.entities.organizations,
+            numbers: analysis.entities.numbers,
+          },
+        }
+      : {}),
+  };
+}
+
+/**
  * Save an email memory entry to Supermemory.ai, scoped to the given user.
  * Runs fire-and-forget from the caller — errors are caught and logged.
  */
@@ -226,6 +272,7 @@ export async function saveToSupermemory(
   if (entry.intent) parts.push(`Intent: ${entry.intent}`);
   if (entry.senderType) parts.push(`Sender type: ${entry.senderType}`);
   if (entry.tags?.length) parts.push(`Tags: ${entry.tags.join(', ')}`);
+  if (entry.topics?.length) parts.push(`Topics: ${entry.topics.join(', ')}`);
   if (entry.ruleApplied) parts.push(`Rule applied: ${entry.ruleApplied}`);
   if (entry.wasSummarized) parts.push(`Was summarized: yes`);
   if (entry.requiresResponse) parts.push(`Requires response: yes`);
@@ -237,6 +284,7 @@ export async function saveToSupermemory(
   if (entry.entities?.dates?.length) parts.push(`Dates: ${entry.entities.dates.join(', ')}`);
   if (entry.entities?.numbers?.length)
     parts.push(`Numbers/codes: ${entry.entities.numbers.join(', ')}`);
+  if (entry.prices?.length) parts.push(`Prices: ${entry.prices.join(', ')}`);
 
   await client.add({
     content: parts.join('\n'),
@@ -2149,39 +2197,18 @@ export async function processEmailWithAgent(
     activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';
 
   // 8. Update user memory with enriched entry (fire-and-forget; don't block the response)
-  const newEntry: EmailMemoryEntry = {
-    logId,
-    date: todayUtc(),
-    timestamp: new Date().toISOString(),
-    fromAddress: emailFrom,
-    subject: emailSubject,
-    ruleApplied: activeRules.length > 0 ? ruleApplied : undefined,
-    wasSummarized: !lastParseError && activeRules.length > 0,
-    // Persist all analysis results so future memory context is richer
-    ...(analysis?.summary ? { summary: analysis.summary } : {}),
-    ...(analysis?.emailType ? { emailType: analysis.emailType } : {}),
-    ...(analysis?.language ? { language: analysis.language } : {}),
-    ...(analysis?.sentiment ? { sentiment: analysis.sentiment } : {}),
-    ...(analysis?.priority ? { priority: analysis.priority } : {}),
-    ...(analysis?.tags?.length ? { tags: analysis.tags } : {}),
-    ...(analysis?.intent ? { intent: analysis.intent } : {}),
-    ...(analysis?.senderType ? { senderType: analysis.senderType } : {}),
-    ...(analysis?.requiresResponse !== undefined
-      ? { requiresResponse: analysis.requiresResponse }
-      : {}),
-    ...(analysis?.entities
-      ? {
-          entities: {
-            places: analysis.entities.placeNames,
-            events: analysis.entities.events,
-            dates: analysis.entities.dates,
-            people: analysis.entities.people,
-            organizations: analysis.entities.organizations,
-            numbers: analysis.entities.numbers,
-          },
-        }
-      : {}),
-  };
+  const newEntry: EmailMemoryEntry = buildMemoryEntryFromAnalysis(
+    {
+      logId,
+      date: todayUtc(),
+      timestamp: new Date().toISOString(),
+      fromAddress: emailFrom,
+      subject: emailSubject,
+      ruleApplied: activeRules.length > 0 ? ruleApplied : undefined,
+      wasSummarized: !lastParseError && activeRules.length > 0,
+    },
+    analysis,
+  );
 
   saveUserMemory({
     userId,

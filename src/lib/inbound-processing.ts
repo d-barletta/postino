@@ -6,10 +6,10 @@ import {
   getUserMemory,
   saveUserMemory,
   saveToSupermemory,
+  buildMemoryEntryFromAnalysis,
 } from '@/agents/email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
-import type { EmailMemoryEntry } from '@/types';
 
 /**
  * Attachment serialized for Firestore storage (base64-encoded content or Firebase Storage ref).
@@ -354,46 +354,17 @@ export async function processQueuedInboundPayload(
         ...(safeAnalysis ? { emailAnalysis: safeAnalysis } : {}),
       });
 
-      const newEntry: EmailMemoryEntry = {
-        logId: payload.logId,
-        date: new Date().toISOString().slice(0, 10),
-        timestamp: new Date().toISOString(),
-        fromAddress: payload.sender,
-        subject: payload.subject,
-        wasSummarized: false,
-        ...(analysisResult.analysis?.summary ? { summary: analysisResult.analysis.summary } : {}),
-        ...(analysisResult.analysis?.emailType
-          ? { emailType: analysisResult.analysis.emailType }
-          : {}),
-        ...(analysisResult.analysis?.language
-          ? { language: analysisResult.analysis.language }
-          : {}),
-        ...(analysisResult.analysis?.sentiment
-          ? { sentiment: analysisResult.analysis.sentiment }
-          : {}),
-        ...(analysisResult.analysis?.priority
-          ? { priority: analysisResult.analysis.priority }
-          : {}),
-        ...(analysisResult.analysis?.tags?.length ? { tags: analysisResult.analysis.tags } : {}),
-        ...(analysisResult.analysis?.intent ? { intent: analysisResult.analysis.intent } : {}),
-        ...(analysisResult.analysis?.senderType
-          ? { senderType: analysisResult.analysis.senderType }
-          : {}),
-        ...(analysisResult.analysis?.requiresResponse !== undefined
-          ? { requiresResponse: analysisResult.analysis.requiresResponse }
-          : {}),
-        ...(analysisResult.analysis?.entities
-          ? {
-              entities: {
-                places: analysisResult.analysis.entities.placeNames,
-                events: analysisResult.analysis.entities.events,
-                dates: analysisResult.analysis.entities.dates,
-                people: analysisResult.analysis.entities.people,
-                organizations: analysisResult.analysis.entities.organizations,
-              },
-            }
-          : {}),
-      };
+      const newEntry = buildMemoryEntryFromAnalysis(
+        {
+          logId: payload.logId,
+          date: new Date().toISOString().slice(0, 10),
+          timestamp: new Date().toISOString(),
+          fromAddress: payload.sender,
+          subject: payload.subject,
+          wasSummarized: false,
+        },
+        analysisResult.analysis,
+      );
 
       saveUserMemory({
         userId: payload.userId,

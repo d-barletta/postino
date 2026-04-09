@@ -11,4 +11,5 @@ export {
   saveUserMemory,
   compactMemory,
   buildMemoryContext,
+  buildMemoryEntryFromAnalysis,
 } from './email-agent';
