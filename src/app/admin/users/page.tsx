@@ -19,6 +19,7 @@ import { formatDate } from '@/lib/utils';
 import type { User } from '@/types';
 
 const ANALYSIS_BATCH_SIZE = 1;
+const ANALYSIS_PARALLEL_BATCHES = 3;
 
 type ConfirmAction =
   | { uid: string; action: 'admin' | 'active'; current: boolean }
@@ -116,8 +117,12 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       let { reanalyzed, failed, skipped } = counters;
 
       while (remaining.length > 0 && !abortRef.current) {
-        const batch = remaining.slice(0, ANALYSIS_BATCH_SIZE);
-        remaining = remaining.slice(ANALYSIS_BATCH_SIZE);
+        // Dequeue up to ANALYSIS_PARALLEL_BATCHES batches to run concurrently.
+        const activeBatches: string[][] = [];
+        for (let i = 0; i < ANALYSIS_PARALLEL_BATCHES && remaining.length > 0; i++) {
+          activeBatches.push(remaining.slice(0, ANALYSIS_BATCH_SIZE));
+          remaining = remaining.slice(ANALYSIS_BATCH_SIZE);
+        }
 
         let token: string;
         try {
@@ -128,7 +133,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
             prev
               ? {
                   ...prev,
-                  pendingIds: [...batch, ...remaining],
+                  pendingIds: [...activeBatches.flat(), ...remaining],
                   error: t.admin.toasts.failedToRerunUserAnalyses,
                 }
               : null,
@@ -136,35 +141,61 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           return;
         }
 
-        const res = await fetch(`/api/admin/users/${uid}/analysis`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'process', emailIds: batch }),
+        const settlements = await Promise.allSettled(
+          activeBatches.map((batch) =>
+            fetch(`/api/admin/users/${uid}/analysis`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'process', emailIds: batch }),
+            }).then(async (res) => {
+              if (!res.ok) {
+                const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+                throw new Error(payload?.error ?? t.admin.toasts.failedToRerunUserAnalyses);
+              }
+              return res.json() as Promise<{
+                reanalyzedCount?: number;
+                failedCount?: number;
+                skippedCount?: number;
+              }>;
+            }),
+          ),
+        );
+
+        let firstError: string | null = null;
+        const failedBatches: string[][] = [];
+        settlements.forEach((s, i) => {
+          if (s.status === 'fulfilled') {
+            reanalyzed += s.value.reanalyzedCount ?? 0;
+            failed += s.value.failedCount ?? 0;
+            skipped += s.value.skippedCount ?? 0;
+          } else {
+            if (!firstError)
+              firstError =
+                s.reason instanceof Error
+                  ? s.reason.message
+                  : t.admin.toasts.failedToRerunUserAnalyses;
+            failedBatches.push(activeBatches[i]);
+          }
         });
 
-        if (!res.ok) {
-          const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        const processedCount = reanalyzed + failed + skipped;
+
+        if (firstError) {
           setReanalysis((prev) =>
             prev
               ? {
                   ...prev,
-                  pendingIds: [...batch, ...remaining],
-                  error: payload?.error ?? t.admin.toasts.failedToRerunUserAnalyses,
+                  pendingIds: [...failedBatches.flat(), ...remaining],
+                  processedCount,
+                  reanalyzedCount: reanalyzed,
+                  failedCount: failed,
+                  skippedCount: skipped,
+                  error: firstError,
                 }
               : null,
           );
           return;
         }
-
-        const result = (await res.json()) as {
-          reanalyzedCount?: number;
-          failedCount?: number;
-          skippedCount?: number;
-        };
-        reanalyzed += result.reanalyzedCount ?? 0;
-        failed += result.failedCount ?? 0;
-        skipped += result.skippedCount ?? 0;
-        const processedCount = reanalyzed + failed + skipped;
 
         setReanalysis((prev) =>
           prev
