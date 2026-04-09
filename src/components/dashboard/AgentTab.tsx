@@ -80,6 +80,7 @@ function ChatContent({
               <PostinoLogo className="h-6 w-6" title={a.title} />
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500">{a.placeholder}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{a.sendHint}</p>
           </div>
         ) : (
           messages.map((msg, i) => (
@@ -300,7 +301,7 @@ export function AgentTab() {
               </Button>
             </div>
           </div>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{a.subtitle} {a.sendHint}</p>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{a.subtitle}</p>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-3 px-3 py-3 sm:px-4">
