@@ -1827,7 +1827,8 @@ const translations: Record<Locale, Translations> = {
         failedToLoadStats: 'Caricamento statistiche non riuscito',
         failedToUpdateEmailSetting: 'Aggiornamento indirizzo email non riuscito',
         failedToUpdateForwardingHeaderSetting: 'Aggiornamento intestazione inoltro non riuscito',
-        failedToUpdateAiAnalysisOnlySetting: 'Aggiornamento impostazione solo analisi AI non riuscito',
+        failedToUpdateAiAnalysisOnlySetting:
+          'Aggiornamento impostazione solo analisi AI non riuscito',
         failedToUpdateAnalysisLanguageSetting: 'Aggiornamento lingua di analisi non riuscito',
         analysisRefreshed: 'Analisi AI aggiornata.',
         analysisRefreshFailed: "Aggiornamento dell'analisi AI non riuscito.",
@@ -2479,7 +2480,8 @@ const translations: Record<Locale, Translations> = {
         failedToLoadStats: 'Error al cargar las estadísticas',
         failedToUpdateEmailSetting: 'Error al actualizar la dirección de correo',
         failedToUpdateForwardingHeaderSetting: 'Error al actualizar el encabezado de reenvío',
-        failedToUpdateAiAnalysisOnlySetting: 'Error al actualizar la configuración de solo análisis IA',
+        failedToUpdateAiAnalysisOnlySetting:
+          'Error al actualizar la configuración de solo análisis IA',
         failedToUpdateAnalysisLanguageSetting: 'Error al actualizar el idioma de análisis',
         analysisRefreshed: 'Análisis de IA actualizado.',
         analysisRefreshFailed: 'No se pudo actualizar el análisis de IA.',
@@ -2734,7 +2736,7 @@ const translations: Record<Locale, Translations> = {
           "Les e-mails entrants sont analysés par l'IA et enregistrés en mémoire, mais les règles et le transfert sont ignorés.",
         aiAnalysisOnlyDisabledDescription:
           "Activez pour analyser les e-mails avec l'IA et mettre à jour la mémoire même lorsque le transfert est désactivé.",
-        aiAnalysisOnlyToggleAriaLabel: "Activer ou désactiver le mode analyse IA uniquement",
+        aiAnalysisOnlyToggleAriaLabel: 'Activer ou désactiver le mode analyse IA uniquement',
       },
       stats: {
         emailsReceived: 'E-mails reçus',
@@ -3132,7 +3134,8 @@ const translations: Record<Locale, Translations> = {
         failedToLoadStats: 'Échec du chargement des statistiques',
         failedToUpdateEmailSetting: "Échec de la mise à jour de l'adresse e-mail",
         failedToUpdateForwardingHeaderSetting: "Échec de la mise à jour de l'en-tête de transfert",
-        failedToUpdateAiAnalysisOnlySetting: "Échec de la mise à jour du paramètre analyse IA uniquement",
+        failedToUpdateAiAnalysisOnlySetting:
+          'Échec de la mise à jour du paramètre analyse IA uniquement',
         failedToUpdateAnalysisLanguageSetting: "Échec de la mise à jour de la langue d'analyse",
         analysisRefreshed: 'Analyse IA actualisée.',
         analysisRefreshFailed: "Impossible d'actualiser l'analyse IA.",

@@ -35,7 +35,11 @@ import {
 import type { ProcessEmailResult, RuleForProcessing } from '@/lib/openrouter';
 import type { EmailAnalysis, EmailMemoryEntry, UserMemory } from '@/types';
 import { geocodePlaceNames } from '@/lib/place-geocoding';
-import { extractStoredPlaceNames, normalizeUniqueStrings, normalizeUniqueNumberStrings } from '@/lib/place-utils';
+import {
+  extractStoredPlaceNames,
+  normalizeUniqueStrings,
+  normalizeUniqueNumberStrings,
+} from '@/lib/place-utils';
 import * as cheerio from 'cheerio';
 import Supermemory from 'supermemory';
 

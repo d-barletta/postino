@@ -1,6 +1,12 @@
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { adminDb, adminStorage, adminMessaging } from '@/lib/firebase-admin';
-import { processEmailWithAgent, analyzeEmailContent, getUserMemory, saveUserMemory, saveToSupermemory } from '@/agents/email-agent';
+import {
+  processEmailWithAgent,
+  analyzeEmailContent,
+  getUserMemory,
+  saveUserMemory,
+  saveToSupermemory,
+} from '@/agents/email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
 import type { EmailMemoryEntry } from '@/types';
@@ -368,9 +374,7 @@ export async function processQueuedInboundPayload(
         ...(analysisResult.analysis?.priority
           ? { priority: analysisResult.analysis.priority }
           : {}),
-        ...(analysisResult.analysis?.tags?.length
-          ? { tags: analysisResult.analysis.tags }
-          : {}),
+        ...(analysisResult.analysis?.tags?.length ? { tags: analysisResult.analysis.tags } : {}),
         ...(analysisResult.analysis?.intent ? { intent: analysisResult.analysis.intent } : {}),
         ...(analysisResult.analysis?.senderType
           ? { senderType: analysisResult.analysis.senderType }
@@ -413,7 +417,13 @@ export async function processQueuedInboundPayload(
       console.error('AI-analysis-only processing failed:', err);
       await logRef.update({ status: 'skipped', processedAt: Timestamp.now() });
     }
-    await sendEmailPushNotification(payload.userId, payload.sender, payload.subject, payload.logId, 'skipped');
+    await sendEmailPushNotification(
+      payload.userId,
+      payload.sender,
+      payload.subject,
+      payload.logId,
+      'skipped',
+    );
     return;
   }
 

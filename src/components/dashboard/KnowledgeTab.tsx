@@ -777,22 +777,30 @@ export function KnowledgeTab() {
 
             {!loading && !error && hasAnyData && activeCategory === 'all' && (
               <div className="space-y-5">
-                {(['people', 'organizations', 'places', 'events', 'topics', 'tags', 'numbers'] as const).map(
-                  (key) => (
-                    <Section
-                      key={key}
-                      title={k[key]}
-                      icon={SECTION_ICONS[key]}
-                      items={data?.[key] ?? []}
-                      category={key}
-                      highlight={searchQuery}
-                      mergeMode={mergeMode}
-                      selectedKeys={new Set(selectedChips.map((c) => `${c.category}:${c.value}`))}
-                      mergedCanonicals={mergedCanonicals}
-                      onChipClick={handleChipClick}
-                    />
-                  ),
-                )}
+                {(
+                  [
+                    'people',
+                    'organizations',
+                    'places',
+                    'events',
+                    'topics',
+                    'tags',
+                    'numbers',
+                  ] as const
+                ).map((key) => (
+                  <Section
+                    key={key}
+                    title={k[key]}
+                    icon={SECTION_ICONS[key]}
+                    items={data?.[key] ?? []}
+                    category={key}
+                    highlight={searchQuery}
+                    mergeMode={mergeMode}
+                    selectedKeys={new Set(selectedChips.map((c) => `${c.category}:${c.value}`))}
+                    mergedCanonicals={mergedCanonicals}
+                    onChipClick={handleChipClick}
+                  />
+                ))}
               </div>
             )}
 

@@ -79,7 +79,8 @@ export async function GET(request: NextRequest) {
 
     // Track which array filter was pushed to Firestore.
     // Firestore allows only ONE array-contains / array-contains-any per query.
-    let pushedArrayField: 'tags' | 'people' | 'orgs' | 'places' | 'events' | 'numbers' | null = null;
+    let pushedArrayField: 'tags' | 'people' | 'orgs' | 'places' | 'events' | 'numbers' | null =
+      null;
 
     // ---------------------------------------------------------------------------
     // Build Firestore query – push all structured filters to the database.

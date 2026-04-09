@@ -510,9 +510,7 @@ export default function DashboardPage() {
             <span>{t.dashboard.tabs.settings}</span>
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="overview">
-          {renderOverviewContent()}
-        </TabsContent>
+        <TabsContent value="overview">{renderOverviewContent()}</TabsContent>
         <TabsContent value="rules">
           {loading ? (
             <DashboardPanelSkeleton />
@@ -542,9 +540,7 @@ export default function DashboardPage() {
         <TabsContent value="relations">
           {loading ? <DashboardPanelSkeleton /> : <RelationsTab />}
         </TabsContent>
-        <TabsContent value="settings">
-          {renderSettingsContent()}
-        </TabsContent>
+        <TabsContent value="settings">{renderSettingsContent()}</TabsContent>
       </Tabs>
       <InstallPwaDrawer forceOpenTrigger={installPwaTrigger} />
     </div>

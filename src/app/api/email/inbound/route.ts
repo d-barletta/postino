@@ -1346,7 +1346,9 @@ export async function POST(request: NextRequest) {
           linked: { emailLogId: logRef.id, jobId: nonceId },
         });
         scheduleProcessingTrigger(request);
-        console.log(`User ${userId} has address disabled (AI analysis only), email queued for analysis`);
+        console.log(
+          `User ${userId} has address disabled (AI analysis only), email queued for analysis`,
+        );
         return NextResponse.json({ success: true, queued: true });
       }
 
