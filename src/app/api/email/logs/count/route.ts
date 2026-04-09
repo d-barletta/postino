@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,10 +14,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ count: result.data().count });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[email/logs/count] error:', err);
-    return NextResponse.json({ error: 'Failed to fetch email count' }, { status: 500 });
+    return handleUserError(err, 'email/logs/count GET');
   }
 }

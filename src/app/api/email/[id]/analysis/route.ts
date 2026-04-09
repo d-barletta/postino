@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isFirebaseAuthError, verifyUserRequest } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { analyzeStoredEmailLog } from '@/lib/email-analysis';
 
@@ -54,15 +54,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ analysis: safeAnalysis });
   } catch (error) {
-    if (isFirebaseAuthError(error) || (error instanceof Error && error.message === 'Forbidden')) {
-      const status = error instanceof Error && error.message === 'Forbidden' ? 403 : 401;
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Unauthorized' },
-        { status },
-      );
-    }
-
-    console.error('[api/email/[id]/analysis] error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleUserError(error, 'email/[id]/analysis');
   }
 }

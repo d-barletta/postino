@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import type { Query } from 'firebase-admin/firestore';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -425,10 +425,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[email/logs] error:', err);
-    return NextResponse.json({ error: 'Failed to fetch email logs' }, { status: 500 });
+    return handleUserError(err, 'email/logs GET');
   }
 }

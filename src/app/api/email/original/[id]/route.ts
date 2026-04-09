@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -38,10 +38,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       emailAnalysis: data.emailAnalysis ?? null,
     });
   } catch (error) {
-    if (isFirebaseAuthError(error)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('Error fetching original email:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleUserError(error, 'email/original/[id] GET');
   }
 }

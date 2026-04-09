@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 // ---------------------------------------------------------------------------
 // PATCH – accept or reject a suggestion
@@ -42,10 +42,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ id, status });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[entities/merge-suggestions/[id]] PATCH error:', err);
-    return NextResponse.json({ error: 'Failed to update suggestion' }, { status: 500 });
+    return handleUserError(err, 'entities/merge-suggestions/[id] PATCH');
   }
 }

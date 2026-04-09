@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { AggregateField, Timestamp } from 'firebase-admin/firestore';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 type StatsPeriod = '24h' | '7d' | '30d' | 'all';
 const VALID_PERIODS = new Set<StatsPeriod>(['24h', '7d', '30d', 'all']);
@@ -70,10 +70,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ stats });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[/api/user/stats] Failed to fetch stats:', err);
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
+    return handleUserError(err, 'user/stats GET');
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const BATCH_SIZE = 500;
 
@@ -65,10 +65,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[entities/all] DELETE error:', err);
-    return NextResponse.json({ error: 'Failed to delete entity data' }, { status: 500 });
+    return handleUserError(err, 'entities/all DELETE');
   }
 }

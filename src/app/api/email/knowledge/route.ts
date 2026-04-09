@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 
 const FETCH_LIMIT = 1000;
@@ -127,10 +127,6 @@ export async function GET(request: NextRequest) {
       totalEmails,
     });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[email/knowledge] error:', err);
-    return NextResponse.json({ error: 'Failed to fetch knowledge data' }, { status: 500 });
+    return handleUserError(err, 'email/knowledge GET');
   }
 }

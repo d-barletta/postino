@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOpenRouterClient } from '@/lib/openrouter';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 function maskKey(key: string): string {
   if (!key) return '(empty)';
@@ -36,9 +36,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(diagnostics);
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/test-llm] error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/test-llm POST');
   }
 }

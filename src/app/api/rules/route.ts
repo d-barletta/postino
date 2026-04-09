@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,11 +33,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ rules });
   } catch (err) {
-    if (err instanceof Error && (err.message === 'Unauthorized' || isFirebaseAuthError(err))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[rules] GET error:', err);
-    return NextResponse.json({ error: 'Failed to fetch rules' }, { status: 500 });
+    return handleUserError(err, 'rules GET');
   }
 }
 
@@ -154,10 +150,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id: ref.id }, { status: 201 });
   } catch (error) {
-    if (isFirebaseAuthError(error)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('Create rule error:', error);
-    return NextResponse.json({ error: 'Failed to create rule' }, { status: 500 });
+    return handleUserError(error, 'rules POST');
   }
 }

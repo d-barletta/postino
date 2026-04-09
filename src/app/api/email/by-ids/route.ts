@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const MAX_IDS = 20;
 
@@ -49,10 +49,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ logs });
   } catch (error) {
-    if (isFirebaseAuthError(error)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('Error fetching emails by IDs:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleUserError(error, 'email/by-ids POST');
   }
 }

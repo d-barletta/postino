@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { FieldPath } from 'firebase-admin/firestore';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 const VALID_STATUSES = new Set(['received', 'processing', 'forwarded', 'error', 'skipped']);
 const DEFAULT_PAGE_SIZE = 20;
@@ -137,9 +137,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
-    if (statusCode === 500) console.error('[admin/emails] error:', error);
-    return NextResponse.json({ error: msg }, { status: statusCode });
+    return handleAdminError(error, 'admin/emails GET');
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 import type {
   EntityGraphEdge,
@@ -124,11 +124,7 @@ export async function GET(request: NextRequest) {
       } satisfies EntityFlowGraph,
     });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[entities/flow] GET error:', err);
-    return NextResponse.json({ error: 'Failed to fetch flow graph' }, { status: 500 });
+    return handleUserError(err, 'entities/flow GET');
   }
 }
 
@@ -373,10 +369,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ graph });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[entities/flow] POST error:', err);
-    return NextResponse.json({ error: 'Failed to generate flow graph' }, { status: 500 });
+    return handleUserError(err, 'entities/flow POST');
   }
 }

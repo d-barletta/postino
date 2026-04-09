@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { generateAssignedEmail } from '@/lib/email';
 import { resolveAssignedEmailDomain } from '@/lib/email-utils';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const MAX_ATTEMPTS = 10;
 
@@ -40,10 +40,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ assignedEmail: newEmail });
   } catch (error) {
-    if (isFirebaseAuthError(error)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('Generate email error:', error);
-    return NextResponse.json({ error: 'Failed to generate email' }, { status: 500 });
+    return handleUserError(error, 'email/generate POST');
   }
 }

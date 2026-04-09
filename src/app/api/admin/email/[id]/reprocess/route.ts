@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { processEmailWithAgent } from '@/lib/agent';
 import type { RuleForProcessing } from '@/lib/openrouter';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 /** Returns true if the value contains the pattern (case-insensitive), or if pattern is empty. */
 function matchesPattern(value: string, pattern?: string): boolean {
@@ -109,9 +109,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ruleApplied: result.ruleApplied,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/email/[id]/reprocess] error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/email/[id]/reprocess POST');
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const MAX_RULE_NAME_LENGTH = 100;
 const MAX_PATTERN_LENGTH = 200;
@@ -135,11 +135,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await ruleRef.update(updateData);
     return NextResponse.json({ success: true });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[rules/[id]] PATCH error:', err);
-    return NextResponse.json({ error: 'Failed to update rule' }, { status: 500 });
+    return handleUserError(err, 'rules/[id] PUT');
   }
 }
 
@@ -161,10 +157,6 @@ export async function DELETE(
     await ruleRef.delete();
     return NextResponse.json({ success: true });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[rules/[id]] DELETE error:', err);
-    return NextResponse.json({ error: 'Failed to delete rule' }, { status: 500 });
+    return handleUserError(err, 'rules/[id] DELETE');
   }
 }

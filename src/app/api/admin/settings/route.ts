@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { resolveAssignedEmailDomain } from '@/lib/email-utils';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 const USER_UPDATE_BATCH_SIZE = 400;
 
@@ -48,10 +48,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/settings] GET error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/settings GET');
   }
 }
 
@@ -228,9 +225,6 @@ export async function PUT(request: NextRequest) {
       reassignedUsers,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/settings] PUT error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/settings PUT');
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import { getOpenRouterClient } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 
@@ -154,9 +154,6 @@ ${sourceData.content}`;
     revalidateTag('blog-articles', {});
     return NextResponse.json({ id: newDoc.id, slug, title: translatedTitle }, { status: 201 });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/blog/[id]/translate] POST error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/blog/[id]/translate POST');
   }
 }

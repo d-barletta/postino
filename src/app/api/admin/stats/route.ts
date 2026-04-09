@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { AggregateField, Timestamp } from 'firebase-admin/firestore';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 type StatsPeriod = '24h' | '7d' | '30d' | 'all';
 const VALID_PERIODS = new Set<StatsPeriod>(['24h', '7d', '30d', 'all']);
@@ -67,9 +67,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ stats });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/stats] error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/stats GET');
   }
 }

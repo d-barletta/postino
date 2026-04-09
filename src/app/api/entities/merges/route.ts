@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { EntityCategory } from '@/types';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const VALID_CATEGORIES: EntityCategory[] = [
   'topics',
@@ -39,8 +39,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ merges });
   } catch (err) {
-    console.error('[entities/merges] GET error:', err);
-    return NextResponse.json({ error: 'Failed to fetch merges' }, { status: 500 });
+    return handleUserError(err, 'entities/merges GET');
   }
 }
 
@@ -147,10 +146,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id: ref.id }, { status: 201 });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[entities/merges] POST error:', err);
-    return NextResponse.json({ error: 'Failed to create merge' }, { status: 500 });
+    return handleUserError(err, 'entities/merges POST');
   }
 }

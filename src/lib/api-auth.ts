@@ -1,4 +1,4 @@
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
@@ -42,4 +42,35 @@ export async function verifyAdminRequest(request: NextRequest): Promise<DecodedI
   if (!userData?.isAdmin) throw new Error('Forbidden');
   if (userData?.suspended) throw new Error('Forbidden');
   return decoded;
+}
+
+/**
+ * Standard error handler for admin routes. Maps 'Forbidden' → 403,
+ * 'Unauthorized' → 401, everything else → 500 (with logging).
+ */
+export function handleAdminError(error: unknown, context: string): NextResponse {
+  const msg = error instanceof Error ? error.message : 'Error';
+  const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
+  if (status === 500) console.error(`[${context}] error:`, error);
+  return NextResponse.json({ error: msg }, { status });
+}
+
+/**
+ * Standard error handler for user-facing routes. Maps Firebase auth errors
+ * and explicit 'Unauthorized'/'Forbidden' throws to 401/403; everything else
+ * → 500 (with logging).
+ */
+export function handleUserError(error: unknown, context: string): NextResponse {
+  if (
+    isFirebaseAuthError(error) ||
+    (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Forbidden'))
+  ) {
+    const status = error instanceof Error && error.message === 'Forbidden' ? 403 : 401;
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unauthorized' },
+      { status },
+    );
+  }
+  console.error(`[${context}] error:`, error);
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 }

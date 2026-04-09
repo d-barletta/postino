@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 const MAX_PAGE_SIZE = 500;
 const DEFAULT_PAGE_SIZE = 100;
@@ -43,9 +43,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ users, hasNextPage, nextCursor });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/users] GET error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/users GET');
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const MAX_REORDER_IDS = 200;
 
@@ -52,13 +52,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, updated });
   } catch (error) {
-    if (
-      isFirebaseAuthError(error) ||
-      (error instanceof Error && error.message === 'Unauthorized')
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[rules/reorder] error:', error);
-    return NextResponse.json({ error: 'Failed to reorder rules' }, { status: 500 });
+    return handleUserError(error, 'rules/reorder POST');
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceObjects, placeLabelKey } from '@/lib/place-utils';
 import type { EntityPlaceMap, EntityPlaceMapPin } from '@/types';
 
@@ -53,11 +53,7 @@ export async function GET(request: NextRequest) {
       } satisfies EntityPlaceMap,
     });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[entities/map] GET error:', err);
-    return NextResponse.json({ error: 'Failed to fetch place map' }, { status: 500 });
+    return handleUserError(err, 'entities/map GET');
   }
 }
 
@@ -160,10 +156,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ graph });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[entities/map] POST error:', err);
-    return NextResponse.json({ error: 'Failed to generate place map' }, { status: 500 });
+    return handleUserError(err, 'entities/map POST');
   }
 }

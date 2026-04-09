@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { DocumentReference } from 'firebase-admin/firestore';
 import { adminAuth, adminDb, adminStorage } from '@/lib/firebase-admin';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import {
   generateAssignedEmail,
   isEmailUsingDomain,
@@ -204,10 +204,7 @@ export async function PATCH(
     await db.collection('users').doc(uid).update(filtered);
     return NextResponse.json({ success: true });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/users/[uid]] PATCH error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/users/[uid] PATCH');
   }
 }
 
@@ -232,10 +229,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/users/[uid]] POST error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/users/[uid] POST');
   }
 }
 
@@ -272,9 +266,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/users/[uid]] DELETE error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/users/[uid] DELETE');
   }
 }

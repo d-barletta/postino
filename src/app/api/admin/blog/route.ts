@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 function slugify(title: string): string {
   return title
@@ -25,10 +25,7 @@ export async function GET(request: NextRequest) {
     }));
     return NextResponse.json({ articles });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/blog] GET error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/blog GET');
   }
 }
 
@@ -78,9 +75,6 @@ export async function POST(request: NextRequest) {
     revalidateTag('blog-articles', {});
     return NextResponse.json({ id: docRef.id, slug }, { status: 201 });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/blog] POST error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/blog POST');
   }
 }

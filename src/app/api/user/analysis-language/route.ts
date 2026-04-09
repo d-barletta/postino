@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 /** The set of language codes accepted for AI analysis output — must match the UI locale selector. */
 const SUPPORTED_ANALYSIS_LANGUAGES = new Set(['en', 'it', 'es', 'fr', 'de']);
@@ -37,10 +37,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, analysisOutputLanguage: value });
   } catch (error) {
-    if (isFirebaseAuthError(error)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('Analysis language update error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleUserError(error, 'user/analysis-language PATCH');
   }
 }

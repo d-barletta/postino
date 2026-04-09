@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Supermemory from 'supermemory';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 function resolveMemoryApiKey(settingsApiKey?: string): string {
   return (settingsApiKey || process.env.SUPERMEMORY_API_KEY || '').trim();
@@ -41,10 +41,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[user/memories] Failed to clear user memories:', err);
-    return NextResponse.json({ error: 'Failed to clear memories' }, { status: 500 });
+    return handleUserError(err, 'user/memories DELETE');
   }
 }

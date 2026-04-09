@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { analyzeStoredEmailLogWithDebug } from '@/lib/email-analysis';
 import { saveToSupermemory, buildMemoryEntryFromAnalysis } from '@/agents/email-agent';
@@ -179,11 +179,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) {
-      console.error('[admin/users/[uid]/analysis] POST error:', error);
-    }
-    return NextResponse.json({ error: msg }, { status });
+    return handleAdminError(error, 'admin/users/[uid]/analysis POST');
   }
 }

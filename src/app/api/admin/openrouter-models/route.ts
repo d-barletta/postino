@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 interface OpenRouterModel {
   id: string;
@@ -63,9 +63,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ models });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Forbidden' ? 403 : msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[admin/openrouter-models] error:', error);
-    return NextResponse.json({ error: msg, models: [] }, { status });
+    return handleAdminError(error, 'admin/openrouter-models GET');
   }
 }

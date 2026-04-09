@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { processEmailJobsBatch } from '@/lib/email-jobs';
-import { verifyAdminRequest } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 const STATUSES = ['pending', 'processing', 'retrying', 'done', 'failed'] as const;
 
@@ -173,10 +173,7 @@ export async function GET(request: NextRequest) {
       recentWebhookRequests,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
-    if (statusCode === 500) console.error('[admin/email-jobs] GET error:', error);
-    return NextResponse.json({ error: msg }, { status: statusCode });
+    return handleAdminError(error, 'admin/email-jobs GET');
   }
 }
 
@@ -205,10 +202,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, webhookLoggingEnabled: body.webhookLoggingEnabled });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
-    if (statusCode === 500) console.error('[admin/email-jobs] PUT error:', error);
-    return NextResponse.json({ error: msg }, { status: statusCode });
+    return handleAdminError(error, 'admin/email-jobs PUT');
   }
 }
 
@@ -223,10 +217,7 @@ export async function POST(request: NextRequest) {
     const result = await processEmailJobsBatch(batchSize);
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
-    if (statusCode === 500) console.error('[admin/email-jobs] POST error:', error);
-    return NextResponse.json({ error: msg }, { status: statusCode });
+    return handleAdminError(error, 'admin/email-jobs POST');
   }
 }
 
@@ -253,9 +244,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, deletedCount });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const statusCode = msg === 'Unauthorized' ? 401 : msg === 'Forbidden' ? 403 : 500;
-    if (statusCode === 500) console.error('[admin/email-jobs] DELETE error:', error);
-    return NextResponse.json({ error: msg }, { status: statusCode });
+    return handleAdminError(error, 'admin/email-jobs DELETE');
   }
 }

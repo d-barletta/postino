@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest, isFirebaseAuthError } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const BATCH_SIZE = 400;
 
@@ -23,10 +23,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, updatedCount: logsSnap.size });
   } catch (err) {
-    if (isFirebaseAuthError(err)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[user/stats/reset] Failed to reset token and cost stats:', err);
-    return NextResponse.json({ error: 'Failed to reset stats' }, { status: 500 });
+    return handleUserError(err, 'user/stats/reset POST');
   }
 }

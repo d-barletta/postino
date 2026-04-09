@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase-admin';
-import { verifyUserRequest } from '@/lib/api-auth';
+import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { getModelPricing, calculateCost } from '@/lib/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
@@ -133,9 +133,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ answer: result.text, sourceEmailIds });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error';
-    const status = msg === 'Unauthorized' ? 401 : 500;
-    if (status === 500) console.error('[memory/chat] POST error:', error);
-    return NextResponse.json({ error: msg }, { status });
+    return handleUserError(error, 'memory/chat POST');
   }
 }
