@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     await logRef.update({ emailAnalysis: safeAnalysis });
 
-    // Optionally persist the updated analysis to Supermemory (fire-and-forget)
+    // Optionally persist the updated analysis to Supermemory.
     const settingsSnap = await db.collection('settings').doc('global').get();
     const settingsData = settingsSnap.data();
     if (settingsData?.memoryEnabled === true) {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         process.env.SUPERMEMORY_API_KEY ||
         ''
       ).trim();
-      if (supermemoryApiKey) {
+      if (supermemoryApiKey && ownerId) {
         const receivedAt =
           data.receivedAt instanceof Timestamp ? data.receivedAt.toDate() : new Date();
         const entry = buildMemoryEntryFromAnalysis(
@@ -78,9 +78,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           },
           safeAnalysis,
         );
-        saveToSupermemory(supermemoryApiKey, ownerId, entry).catch((err) =>
-          console.error(`[email/${id}/analysis] failed to save to Supermemory:`, err),
-        );
+        try {
+          await saveToSupermemory(supermemoryApiKey, ownerId, entry);
+        } catch (err) {
+          console.error(`[email/${id}/analysis] failed to save to Supermemory:`, err);
+        }
       }
     }
 

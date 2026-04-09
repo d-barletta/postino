@@ -245,7 +245,6 @@ export function buildMemoryEntryFromAnalysis(
 
 /**
  * Save an email memory entry to Supermemory.ai, scoped to the given user.
- * Runs fire-and-forget from the caller — errors are caught and logged.
  */
 export async function saveToSupermemory(
   apiKey: string,

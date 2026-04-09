@@ -145,7 +145,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           });
           reanalyzedCount += 1;
 
-          // Optionally persist the updated analysis to Supermemory (fire-and-forget)
+          // Optionally persist the updated analysis to Supermemory.
           if (memoryEnabled && supermemoryApiKey) {
             const receivedAt =
               data.receivedAt instanceof Timestamp ? data.receivedAt.toDate() : new Date();
@@ -161,12 +161,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               },
               debugResult.analysis,
             );
-            saveToSupermemory(supermemoryApiKey, uid, entry).catch((err) =>
+            try {
+              await saveToSupermemory(supermemoryApiKey, uid, entry);
+            } catch (err) {
               console.error(
                 `[admin/users/${uid}/analysis] failed to save log ${emailId} to Supermemory:`,
                 err,
-              ),
-            );
+              );
+            }
           }
         } catch (error) {
           failedCount += 1;
