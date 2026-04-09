@@ -18,7 +18,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/types';
 
-const ANALYSIS_BATCH_SIZE = 5;
+const ANALYSIS_BATCH_SIZE = 1;
 
 type ConfirmAction =
   | { uid: string; action: 'admin' | 'active'; current: boolean }
@@ -539,8 +539,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                   </>
                 )}
               </div>
-              {reanalysis.error && (
-                <DrawerFooter>
+              <DrawerFooter>
                   <Button
                     variant="ghost"
                     onClick={() => {
@@ -552,28 +551,29 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                   >
                     Cancel
                   </Button>
-                  <Button
-                    variant="primary"
-                    onClick={() => {
-                      if (!reanalysis) return;
-                      setReanalysis((prev) => (prev ? { ...prev, error: null } : null));
-                      if (reanalysis.pendingIds.length === 0) {
-                        // Prepare step failed — restart from the beginning.
-                        void startReanalysis(reanalysis.uid);
-                      } else {
-                        void runReanalysisBatches(reanalysis.uid, reanalysis.pendingIds, {
-                          reanalyzed: reanalysis.reanalyzedCount,
-                          failed: reanalysis.failedCount,
-                          skipped: reanalysis.skippedCount,
-                        });
-                      }
-                    }}
-                    className="flex-1"
-                  >
-                    {adminUsers.rerunAnalysisRetry}
-                  </Button>
+                  {reanalysis.error && (
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        if (!reanalysis) return;
+                        setReanalysis((prev) => (prev ? { ...prev, error: null } : null));
+                        if (reanalysis.pendingIds.length === 0) {
+                          // Prepare step failed — restart from the beginning.
+                          void startReanalysis(reanalysis.uid);
+                        } else {
+                          void runReanalysisBatches(reanalysis.uid, reanalysis.pendingIds, {
+                            reanalyzed: reanalysis.reanalyzedCount,
+                            failed: reanalysis.failedCount,
+                            skipped: reanalysis.skippedCount,
+                          });
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      {adminUsers.rerunAnalysisRetry}
+                    </Button>
+                  )}
                 </DrawerFooter>
-              )}
             </>
           ) : (
             <>
