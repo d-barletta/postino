@@ -25,6 +25,7 @@ import {
   Wand2,
   CheckCircle,
   XCircle,
+  Binary,
 } from 'lucide-react';
 import {
   Drawer,
@@ -52,10 +53,19 @@ interface KnowledgeData {
   events: KnowledgeItem[];
   topics: KnowledgeItem[];
   tags: KnowledgeItem[];
+  numbers: KnowledgeItem[];
   totalEmails: number;
 }
 
-type CategoryKey = 'all' | 'people' | 'organizations' | 'places' | 'events' | 'topics' | 'tags';
+type CategoryKey =
+  | 'all'
+  | 'people'
+  | 'organizations'
+  | 'places'
+  | 'events'
+  | 'topics'
+  | 'tags'
+  | 'numbers';
 
 interface CategoryConfig {
   key: CategoryKey;
@@ -71,6 +81,7 @@ const CATEGORIES: CategoryConfig[] = [
   { key: 'events', icon: <Calendar className="h-3.5 w-3.5" />, dataKey: 'events' },
   { key: 'topics', icon: <Hash className="h-3.5 w-3.5" />, dataKey: 'topics' },
   { key: 'tags', icon: <Tag className="h-3.5 w-3.5" />, dataKey: 'tags' },
+  { key: 'numbers', icon: <Binary className="h-3.5 w-3.5" />, dataKey: 'numbers' },
 ];
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
@@ -80,6 +91,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   events: <Calendar className="h-4 w-4" />,
   topics: <Hash className="h-4 w-4" />,
   tags: <Tag className="h-4 w-4" />,
+  numbers: <Binary className="h-4 w-4" />,
 };
 
 function getFrequencyClass(count: number, maxCount: number): string {
@@ -581,7 +593,8 @@ export function KnowledgeTab() {
       data.people.length > 0 ||
       data.organizations.length > 0 ||
       data.places.length > 0 ||
-      data.events.length > 0);
+      data.events.length > 0 ||
+      data.numbers.length > 0);
 
   const activeCategoryConfig = CATEGORIES.find((c) => c.key === activeCategory);
   const activeItems: KnowledgeItem[] =
@@ -764,7 +777,7 @@ export function KnowledgeTab() {
 
             {!loading && !error && hasAnyData && activeCategory === 'all' && (
               <div className="space-y-5">
-                {(['people', 'organizations', 'places', 'events', 'topics', 'tags'] as const).map(
+                {(['people', 'organizations', 'places', 'events', 'topics', 'tags', 'numbers'] as const).map(
                   (key) => (
                     <Section
                       key={key}

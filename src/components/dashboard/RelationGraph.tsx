@@ -19,6 +19,7 @@ export const CATEGORY_COLORS: Record<EntityGraphNodeCategory, string> = {
   places: '#38bdf8', // sky-400
   events: '#f472b6', // pink-400
   tags: '#c084fc', // purple-400
+  numbers: '#f9a8d4', // pink-300
 };
 
 // ---------------------------------------------------------------------------
@@ -52,6 +53,7 @@ interface RelationGraphProps {
     places: string;
     events: string;
     tags: string;
+    numbers: string;
   };
 }
 
@@ -642,6 +644,7 @@ export function RelationGraphFullPageContent({
     | 'places'
     | 'events'
     | 'tags'
+    | 'numbers'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(

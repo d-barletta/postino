@@ -113,6 +113,7 @@ export function RelationsTab() {
     places: k.places,
     events: k.events,
     tags: k.tags,
+    numbers: k.numbers,
   };
 
   const flowTranslations = {
@@ -123,6 +124,7 @@ export function RelationsTab() {
     places: k.places,
     events: k.events,
     tags: k.tags,
+    numbers: k.numbers,
     flowNodeClick: k.relations.flowNodeClick,
     flowNoGraph: k.relations.flowNoGraph,
     flowNoGraphDesc: k.relations.flowNoGraphDesc,

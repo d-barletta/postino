@@ -102,6 +102,7 @@ interface FilterState {
   orgs: string[];
   places: string[];
   events: string[];
+  numbers: string[];
   attachments: boolean;
   requiresResponse: boolean;
   hasActionItems: boolean;
@@ -121,6 +122,7 @@ const EMPTY_FILTERS: FilterState = {
   orgs: [],
   places: [],
   events: [],
+  numbers: [],
   attachments: false,
   requiresResponse: false,
   hasActionItems: false,
@@ -148,6 +150,7 @@ function filtersEqual(a: FilterState, b: FilterState): boolean {
     setEq(a.orgs, b.orgs) &&
     setEq(a.places, b.places) &&
     setEq(a.events, b.events) &&
+    setEq(a.numbers, b.numbers) &&
     a.attachments === b.attachments &&
     a.requiresResponse === b.requiresResponse &&
     a.hasActionItems === b.hasActionItems &&
@@ -169,6 +172,7 @@ function hasActiveFilter(f: FilterState): boolean {
     f.orgs.length > 0 ||
     f.places.length > 0 ||
     f.events.length > 0 ||
+    f.numbers.length > 0 ||
     f.attachments ||
     f.requiresResponse ||
     f.hasActionItems ||
@@ -496,6 +500,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     organizations: SuggestionItem[];
     places: SuggestionItem[];
     events: SuggestionItem[];
+    numbers: SuggestionItem[];
     languages: SuggestionItem[];
   }
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
@@ -519,6 +524,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
           organizations: data.organizations ?? [],
           places: data.places ?? [],
           events: data.events ?? [],
+          numbers: data.numbers ?? [],
           languages: data.languages ?? [],
         });
       }
@@ -636,6 +642,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
         applied.orgs.forEach((o) => params.append('orgs', o));
         applied.places.forEach((p) => params.append('places', p));
         applied.events.forEach((e) => params.append('events', e));
+        applied.numbers.forEach((n) => params.append('numbers', n));
         if (applied.attachments) params.set('hasAttachments', 'true');
         if (applied.requiresResponse) params.set('requiresResponse', 'true');
         if (applied.hasActionItems) params.set('hasActionItems', 'true');
@@ -1128,6 +1135,20 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
                             onValuesChange={(v) => setPending((p) => ({ ...p, events: v }))}
                             placeholder={ts.eventsPlaceholder}
                             searchPlaceholder={ts.eventsPlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterNumbers}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.numbers) : []}
+                            values={pending.numbers}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, numbers: v }))}
+                            placeholder={ts.numbersPlaceholder}
+                            searchPlaceholder={ts.numbersPlaceholder}
                             loading={suggestionsLoading}
                           />
                         </div>

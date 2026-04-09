@@ -35,7 +35,7 @@ import {
 import type { ProcessEmailResult, RuleForProcessing } from '@/lib/openrouter';
 import type { EmailAnalysis, EmailMemoryEntry, UserMemory } from '@/types';
 import { geocodePlaceNames } from '@/lib/place-geocoding';
-import { extractStoredPlaceNames, normalizeUniqueStrings } from '@/lib/place-utils';
+import { extractStoredPlaceNames, normalizeUniqueStrings, normalizeUniqueNumberStrings } from '@/lib/place-utils';
 import * as cheerio from 'cheerio';
 import Supermemory from 'supermemory';
 
@@ -222,6 +222,8 @@ export async function saveToSupermemory(
   if (entry.entities?.people?.length) parts.push(`People: ${entry.entities.people.join(', ')}`);
   if (entry.entities?.organizations?.length)
     parts.push(`Organizations: ${entry.entities.organizations.join(', ')}`);
+  if (entry.entities?.numbers?.length)
+    parts.push(`Numbers/codes: ${entry.entities.numbers.join(', ')}`);
 
   await client.add({
     content: parts.join('\n'),
@@ -687,6 +689,11 @@ const emailAnalysisSchema = z.object({
       organizations: z
         .array(z.string())
         .describe('Company, brand, or organization names mentioned in the email'),
+      numbers: z
+        .array(z.string())
+        .describe(
+          'Labelled numeric codes and identifiers found in the email: phone numbers, credit card numbers, client IDs, order codes, account numbers, tracking codes, etc. Each entry must be formatted as "<label> <number>" where the label describes what the number represents and the number itself is written without spaces, hyphens, or other separators (e.g. "telefono +390212345678", "codice carta 134533", "numero cliente 98765", "tracking IT123456789IT"). Do NOT include postal/ZIP codes (already captured in places), monetary amounts (captured in prices), or dates (captured in dates). Deduplicate: if the same number appears in multiple formats, include it only once.',
+        ),
     })
     .describe('Named entities extracted from the email content'),
   prices: z
@@ -1027,6 +1034,7 @@ async function hydrateEmailAnalysis(
       dates: normalizeUniqueStrings(rawAnalysis.entities.dates),
       people: normalizeUniqueStrings(rawAnalysis.entities.people),
       organizations: normalizeUniqueStrings(rawAnalysis.entities.organizations),
+      numbers: normalizeUniqueNumberStrings(rawAnalysis.entities.numbers),
     },
     ...(rawAnalysis.prices ? { prices: normalizeUniqueStrings(rawAnalysis.prices) } : {}),
   };
@@ -1131,6 +1139,7 @@ function buildAnalysisSection(analysis: EmailAnalysis | null): string {
     if (placeNames.length > 0) lines.push(`Places: ${placeNames.join(', ')}`);
     if (entities.events.length > 0) lines.push(`Events: ${entities.events.join(', ')}`);
     if (entities.dates.length > 0) lines.push(`Dates/times: ${entities.dates.join(', ')}`);
+    if (entities.numbers.length > 0) lines.push(`Numbers/codes: ${entities.numbers.join(', ')}`);
   }
 
   lines.push(`</email_analysis>`);
@@ -2155,6 +2164,7 @@ export async function processEmailWithAgent(
             dates: analysis.entities.dates,
             people: analysis.entities.people,
             organizations: analysis.entities.organizations,
+            numbers: analysis.entities.numbers,
           },
         }
       : {}),

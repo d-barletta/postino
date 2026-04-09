@@ -38,6 +38,7 @@ const NODE_DIMS: Record<EntityGraphNodeCategory, { w: number; h: number }> = {
   events: { w: 88, h: 64 },
   topics: { w: 110, h: 38 },
   tags: { w: 90, h: 32 },
+  numbers: { w: 120, h: 36 },
 };
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,7 @@ const FLOW_CATEGORY_ORDER: EntityGraphNodeCategory[] = [
   'places',
   'topics',
   'tags',
+  'numbers',
 ];
 const FLOW_BUCKET_LAYER_SPAN = FLOW_CATEGORY_ORDER.length + 1;
 const FLOW_CATEGORY_LAYER_INDEX = new Map(
@@ -370,6 +372,34 @@ function TagNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
+function NumberNode({ data }: NodeProps & { data: FlowNodeData }) {
+  const color = CATEGORY_COLORS['numbers'];
+  const { w, h } = NODE_DIMS['numbers'];
+  return (
+    <div
+      title={`${data.bucketLabel} (${data.count})`}
+      style={{
+        ...getNodeFrameStyle(data),
+        width: w,
+        height: h,
+        borderRadius: 6,
+        background: `${color}26`,
+        border: `1.5px solid ${color}`,
+        boxShadow: getNodeBoxShadow(color, data, 6),
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 12px',
+        cursor: 'pointer',
+      }}
+    >
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
+      <LabelText label={data.label} color={color} style={{ fontSize: 9, WebkitLineClamp: 1 }} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
+    </div>
+  );
+}
+
 const NODE_TYPES: NodeTypes = {
   people: PeopleNode as unknown as NodeTypes[string],
   organizations: OrgNode as unknown as NodeTypes[string],
@@ -377,6 +407,7 @@ const NODE_TYPES: NodeTypes = {
   events: EventNode as unknown as NodeTypes[string],
   topics: TopicNode as unknown as NodeTypes[string],
   tags: TagNode as unknown as NodeTypes[string],
+  numbers: NumberNode as unknown as NodeTypes[string],
 };
 
 // ---------------------------------------------------------------------------
@@ -850,6 +881,7 @@ export interface RelationFlowChartProps {
     places: string;
     events: string;
     tags: string;
+    numbers: string;
     flowNodeClick: string;
     flowNoGraph: string;
     flowNoGraphDesc: string;
@@ -1001,6 +1033,7 @@ export function RelationFlowChartFullPageContent({
     | 'places'
     | 'events'
     | 'tags'
+    | 'numbers'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
