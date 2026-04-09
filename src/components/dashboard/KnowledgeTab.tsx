@@ -599,24 +599,23 @@ export function KnowledgeTab() {
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{k.title}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{k.subtitle}</p>
-            {data && (
+            {/* {data && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 {k.emailsAnalyzed.replace('{count}', String(data.totalEmails))}
               </p>
-            )}
+            )} */}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {hasAnyData && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleMergeMode}
-                aria-label={mergeMode ? k.cancelMerge : k.merge}
-                className={cn(mergeMode && 'text-[#a3891f] dark:text-[#efd957]')}
-              >
-                <GitMerge className="h-4 w-4" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!hasAnyData}
+              onClick={toggleMergeMode}
+              aria-label={mergeMode ? k.cancelMerge : k.merge}
+              className={cn(mergeMode && 'text-[#a3891f] dark:text-[#efd957]')}
+            >
+              <GitMerge className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
