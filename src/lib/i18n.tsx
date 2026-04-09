@@ -187,6 +187,28 @@ export interface Translations {
       successToast: string;
       errorToast: string;
     };
+    resetUsageStats: {
+      title: string;
+      description: string;
+      buttonLabel: string;
+      confirmTitle: string;
+      confirmDescription: string;
+      cancel: string;
+      confirmButton: string;
+      successToast: string;
+      errorToast: string;
+    };
+    clearMemories: {
+      title: string;
+      description: string;
+      buttonLabel: string;
+      confirmTitle: string;
+      confirmDescription: string;
+      cancel: string;
+      confirmButton: string;
+      successToast: string;
+      errorToast: string;
+    };
     charts: {
       myEmailVolume: string;
       received: string;
@@ -829,6 +851,32 @@ const translations: Record<Locale, Translations> = {
         confirmButton: 'Delete All',
         successToast: 'All entity data deleted.',
         errorToast: 'Failed to delete entity data.',
+      },
+      resetUsageStats: {
+        title: 'Reset Cost & Token Stats',
+        description:
+          'Set all saved token and estimated cost values across your processed emails back to zero. This does not delete the emails themselves.',
+        buttonLabel: 'Reset Cost & Token Stats',
+        confirmTitle: 'Reset Cost & Token Stats?',
+        confirmDescription:
+          'This will set all saved token and estimated cost values for your processed emails back to zero. This action cannot be undone.',
+        cancel: 'Cancel',
+        confirmButton: 'Reset Stats',
+        successToast: 'Cost and token stats reset.',
+        errorToast: 'Failed to reset cost and token stats.',
+      },
+      clearMemories: {
+        title: 'Clear All Memories',
+        description:
+          'Permanently delete all saved user memories, including local memory history and Supermemory data when configured. This cannot be undone.',
+        buttonLabel: 'Clear All Memories',
+        confirmTitle: 'Clear All Memories?',
+        confirmDescription:
+          'This will permanently delete all your saved memories. This action cannot be undone.',
+        cancel: 'Cancel',
+        confirmButton: 'Clear Memories',
+        successToast: 'All memories cleared.',
+        errorToast: 'Failed to clear memories.',
       },
       charts: {
         myEmailVolume: 'My Email Volume',
@@ -1483,6 +1531,32 @@ const translations: Record<Locale, Translations> = {
         successToast: 'Tutti i dati delle entità eliminati.',
         errorToast: 'Eliminazione dei dati delle entità non riuscita.',
       },
+      resetUsageStats: {
+        title: 'Reimposta statistiche costi e token',
+        description:
+          'Riporta a zero tutti i valori salvati di token e costo stimato nelle tue email elaborate. Le email non verranno eliminate.',
+        buttonLabel: 'Reimposta statistiche costi e token',
+        confirmTitle: 'Reimpostare le statistiche di costi e token?',
+        confirmDescription:
+          'Questa azione riporterà a zero tutti i valori salvati di token e costo stimato per le tue email elaborate. Questa azione non può essere annullata.',
+        cancel: 'Annulla',
+        confirmButton: 'Reimposta statistiche',
+        successToast: 'Statistiche di costi e token reimpostate.',
+        errorToast: 'Reimpostazione delle statistiche di costi e token non riuscita.',
+      },
+      clearMemories: {
+        title: 'Elimina tutte le memorie',
+        description:
+          'Elimina definitivamente tutte le memorie utente salvate, inclusa la cronologia locale e i dati Supermemory quando configurati. Questa azione non può essere annullata.',
+        buttonLabel: 'Elimina tutte le memorie',
+        confirmTitle: 'Eliminare tutte le memorie?',
+        confirmDescription:
+          'Questa azione eliminerà definitivamente tutte le tue memorie salvate. Questa azione non può essere annullata.',
+        cancel: 'Annulla',
+        confirmButton: 'Elimina memorie',
+        successToast: 'Tutte le memorie eliminate.',
+        errorToast: 'Eliminazione delle memorie non riuscita.',
+      },
       charts: {
         myEmailVolume: 'Il mio volume di email',
         received: 'Ricevute',
@@ -2136,6 +2210,32 @@ const translations: Record<Locale, Translations> = {
         successToast: 'Todos los datos de entidades eliminados.',
         errorToast: 'Error al eliminar los datos de entidades.',
       },
+      resetUsageStats: {
+        title: 'Restablecer estadísticas de coste y tokens',
+        description:
+          'Restablece a cero todos los valores guardados de tokens y coste estimado de tus correos procesados. Esto no elimina los correos.',
+        buttonLabel: 'Restablecer estadísticas de coste y tokens',
+        confirmTitle: '¿Restablecer estadísticas de coste y tokens?',
+        confirmDescription:
+          'Esto restablecerá a cero todos los valores guardados de tokens y coste estimado de tus correos procesados. Esta acción no se puede deshacer.',
+        cancel: 'Cancelar',
+        confirmButton: 'Restablecer estadísticas',
+        successToast: 'Estadísticas de coste y tokens restablecidas.',
+        errorToast: 'Error al restablecer las estadísticas de coste y tokens.',
+      },
+      clearMemories: {
+        title: 'Borrar todas las memorias',
+        description:
+          'Elimina permanentemente todas las memorias guardadas del usuario, incluido el historial local y los datos de Supermemory cuando estén configurados. Esta acción no se puede deshacer.',
+        buttonLabel: 'Borrar todas las memorias',
+        confirmTitle: '¿Borrar todas las memorias?',
+        confirmDescription:
+          'Esto eliminará permanentemente todas tus memorias guardadas. Esta acción no se puede deshacer.',
+        cancel: 'Cancelar',
+        confirmButton: 'Borrar memorias',
+        successToast: 'Todas las memorias eliminadas.',
+        errorToast: 'Error al eliminar las memorias.',
+      },
       charts: {
         myEmailVolume: 'Mi volumen de correos',
         received: 'Recibidos',
@@ -2788,6 +2888,32 @@ const translations: Record<Locale, Translations> = {
         confirmButton: 'Tout supprimer',
         successToast: "Toutes les données d'entités supprimées.",
         errorToast: "Échec de la suppression des données d'entités.",
+      },
+      resetUsageStats: {
+        title: 'Réinitialiser les statistiques de coût et de tokens',
+        description:
+          'Remet à zéro toutes les valeurs enregistrées de tokens et de coût estimé pour vos e-mails traités. Les e-mails eux-mêmes ne sont pas supprimés.',
+        buttonLabel: 'Réinitialiser les statistiques de coût et de tokens',
+        confirmTitle: 'Réinitialiser les statistiques de coût et de tokens ?',
+        confirmDescription:
+          'Cela remettra à zéro toutes les valeurs enregistrées de tokens et de coût estimé pour vos e-mails traités. Cette action est irréversible.',
+        cancel: 'Annuler',
+        confirmButton: 'Réinitialiser',
+        successToast: 'Statistiques de coût et de tokens réinitialisées.',
+        errorToast: 'Échec de la réinitialisation des statistiques de coût et de tokens.',
+      },
+      clearMemories: {
+        title: 'Effacer toutes les mémoires',
+        description:
+          "Supprime définitivement toutes les mémoires utilisateur enregistrées, y compris l'historique local et les données Supermemory lorsqu'elles sont configurées. Cette action est irréversible.",
+        buttonLabel: 'Effacer toutes les mémoires',
+        confirmTitle: 'Effacer toutes les mémoires ?',
+        confirmDescription:
+          'Cela supprimera définitivement toutes vos mémoires enregistrées. Cette action est irréversible.',
+        cancel: 'Annuler',
+        confirmButton: 'Effacer les mémoires',
+        successToast: 'Toutes les mémoires ont été effacées.',
+        errorToast: "Échec de l'effacement des mémoires.",
       },
       charts: {
         myEmailVolume: "Mon volume d'e-mails",
@@ -3443,6 +3569,32 @@ const translations: Record<Locale, Translations> = {
         confirmButton: 'Alles löschen',
         successToast: 'Alle Entitätsdaten gelöscht.',
         errorToast: 'Entitätsdaten konnten nicht gelöscht werden.',
+      },
+      resetUsageStats: {
+        title: 'Kosten- und Token-Statistiken zurücksetzen',
+        description:
+          'Setzt alle gespeicherten Token- und geschätzten Kostenwerte Ihrer verarbeiteten E-Mails auf null zurück. Die E-Mails selbst werden nicht gelöscht.',
+        buttonLabel: 'Kosten- und Token-Statistiken zurücksetzen',
+        confirmTitle: 'Kosten- und Token-Statistiken zurücksetzen?',
+        confirmDescription:
+          'Dadurch werden alle gespeicherten Token- und geschätzten Kostenwerte Ihrer verarbeiteten E-Mails auf null zurückgesetzt. Diese Aktion kann nicht rückgängig gemacht werden.',
+        cancel: 'Abbrechen',
+        confirmButton: 'Statistiken zurücksetzen',
+        successToast: 'Kosten- und Token-Statistiken zurückgesetzt.',
+        errorToast: 'Kosten- und Token-Statistiken konnten nicht zurückgesetzt werden.',
+      },
+      clearMemories: {
+        title: 'Alle Erinnerungen löschen',
+        description:
+          'Löscht dauerhaft alle gespeicherten Erinnerungen, einschließlich des lokalen Verlaufs und der Supermemory-Daten, wenn diese konfiguriert sind. Diese Aktion kann nicht rückgängig gemacht werden.',
+        buttonLabel: 'Alle Erinnerungen löschen',
+        confirmTitle: 'Alle Erinnerungen löschen?',
+        confirmDescription:
+          'Dadurch werden alle Ihre gespeicherten Erinnerungen dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
+        cancel: 'Abbrechen',
+        confirmButton: 'Erinnerungen löschen',
+        successToast: 'Alle Erinnerungen gelöscht.',
+        errorToast: 'Erinnerungen konnten nicht gelöscht werden.',
       },
       charts: {
         myEmailVolume: 'Mein E-Mail-Volumen',

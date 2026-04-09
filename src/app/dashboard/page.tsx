@@ -15,6 +15,8 @@ import { ForwardingHeaderCard } from '@/components/dashboard/ForwardingHeaderCar
 import { AnalysisLanguageCard } from '@/components/dashboard/AnalysisLanguageCard';
 import { InstallPwaDrawer } from '@/components/dashboard/InstallPwaDrawer';
 import { DeleteEntitiesCard } from '@/components/dashboard/DeleteEntitiesCard';
+import { ResetUsageStatsCard } from '@/components/dashboard/ResetUsageStatsCard';
+import { ClearMemoriesCard } from '@/components/dashboard/ClearMemoriesCard';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -415,7 +417,7 @@ export default function DashboardPage() {
 
   const renderSettingsContent = () => {
     if (loading) {
-      return <DashboardPanelSkeleton cards={4} />;
+      return <DashboardPanelSkeleton cards={6} />;
     }
 
     return (
@@ -429,6 +431,8 @@ export default function DashboardPage() {
           currentLanguage={user?.analysisOutputLanguage}
           onSave={handleAnalysisLanguageChange}
         />
+        <ResetUsageStatsCard onSuccess={handleLogsRefresh} />
+        <ClearMemoriesCard />
         <DeleteEntitiesCard />
         {(isPwa || canShowInstallCard) && (
           <Card>
