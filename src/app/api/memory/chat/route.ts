@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     type ChatMessage = { role: 'user' | 'assistant'; content: string };
     const rawHistory = Array.isArray(body.history) ? body.history : [];
-    const MAX_HISTORY = 20;
+    const MAX_HISTORY = 10;
     const MAX_MESSAGE_LENGTH = 2000;
     const MAX_SEARCH_QUERY_LENGTH = 500;
     const history: ChatMessage[] = rawHistory
@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
       q: searchQuery,
       containerTag,
       limit: 10,
+      include: { documents: true },
     });
 
     const memories = searchResult.results ?? [];
@@ -105,16 +106,31 @@ export async function POST(request: NextRequest) {
             .join('\n\n')
         : '';
 
-    // Extract email IDs from memory metadata (set during add()) or fall back to
-    // parsing the memory text for entries stored before metadata was introduced.
+    // Extract email IDs from memory metadata (set during add()) or from the
+    // associated source documents (returned when include.documents=true), or fall
+    // back to parsing the memory text for entries stored before metadata was introduced.
     const emailIdPattern = /^Email ID:\s*(\S+)$/m;
     const sourceEmailIds = [
       ...new Set(
         memories
           .map((r) => {
+            // 1. Memory-level metadata
             if (r.metadata && typeof r.metadata.logId === 'string' && r.metadata.logId) {
               return r.metadata.logId;
             }
+            // 2. Source document metadata (available when include.documents=true)
+            if (Array.isArray(r.documents) && r.documents.length > 0) {
+              for (const doc of r.documents) {
+                if (
+                  doc.metadata &&
+                  typeof doc.metadata.logId === 'string' &&
+                  doc.metadata.logId
+                ) {
+                  return doc.metadata.logId as string;
+                }
+              }
+            }
+            // 3. Text-based fallback for older entries
             if (!r.memory) return null;
             const m = r.memory.match(emailIdPattern);
             return m ? m[1] : null;
