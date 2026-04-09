@@ -19,7 +19,7 @@ import { formatDate } from '@/lib/utils';
 import type { User } from '@/types';
 
 const ANALYSIS_BATCH_SIZE = 1;
-const ANALYSIS_PARALLEL_BATCHES = 3;
+const ANALYSIS_PARALLEL_BATCHES = 5;
 
 type ConfirmAction =
   | { uid: string; action: 'admin' | 'active'; current: boolean }
