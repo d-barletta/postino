@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Timestamp } from 'firebase-admin/firestore';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { analyzeStoredEmailLog } from '@/lib/email-analysis';
+import { saveToSupermemory, buildMemoryEntryFromAnalysis } from '@/agents/email-agent';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -51,6 +53,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     await logRef.update({ emailAnalysis: safeAnalysis });
+
+    // Optionally persist the updated analysis to Supermemory (fire-and-forget)
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settingsData = settingsSnap.data();
+    if (settingsData?.memoryEnabled === true) {
+      const supermemoryApiKey = (
+        (settingsData?.memoryApiKey as string | undefined) ||
+        process.env.SUPERMEMORY_API_KEY ||
+        ''
+      ).trim();
+      if (supermemoryApiKey) {
+        const receivedAt =
+          data.receivedAt instanceof Timestamp ? data.receivedAt.toDate() : new Date();
+        const entry = buildMemoryEntryFromAnalysis(
+          {
+            logId: id,
+            date: receivedAt.toISOString().slice(0, 10),
+            timestamp: receivedAt.toISOString(),
+            fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
+            subject: typeof data.subject === 'string' ? data.subject : '',
+            ruleApplied: typeof data.ruleApplied === 'string' ? data.ruleApplied : undefined,
+            wasSummarized: typeof data.ruleApplied === 'string' && data.ruleApplied.length > 0,
+          },
+          safeAnalysis,
+        );
+        saveToSupermemory(supermemoryApiKey, ownerId, entry).catch((err) =>
+          console.error(`[email/${id}/analysis] failed to save to Supermemory:`, err),
+        );
+      }
+    }
 
     return NextResponse.json({ analysis: safeAnalysis });
   } catch (error) {

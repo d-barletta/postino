@@ -288,7 +288,7 @@ export async function saveToSupermemory(
 
   await client.add({
     content: parts.join('\n'),
-    containerTags: [containerTag],
+    containerTag,
   });
 }
 

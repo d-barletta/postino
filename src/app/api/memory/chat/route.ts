@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
     // Supermemory, preventing any cross-user data access.
     const containerTag = `user_${uid}`;
     const client = new Supermemory({ apiKey: memoryApiKey });
-    const searchResult = await client.search.execute({
+    const searchResult = await client.search.memories({
       q: query,
-      containerTags: [containerTag],
+      containerTag,
       limit: 10,
     });
 
@@ -72,29 +72,23 @@ export async function POST(request: NextRequest) {
       memories.length > 0
         ? memories
             .map((r, i) => {
-              const chunkTexts = r.chunks
-                .filter((c) => c.isRelevant)
-                .map((c) => c.content)
-                .join(' ');
-              return chunkTexts ? `[${i + 1}] ${chunkTexts}` : null;
+              const text = r.memory;
+              return text ? `[${i + 1}] ${text}` : null;
             })
             .filter(Boolean)
             .join('\n\n')
         : '';
 
-    // Extract email IDs from relevant chunks for source-email links in the UI.
+    // Extract email IDs from memory content for source-email links in the UI.
     const emailIdPattern = /^Email ID:\s*(\S+)$/m;
     const sourceEmailIds = [
       ...new Set(
         memories
-          .flatMap((r) =>
-            r.chunks
-              .filter((c) => c.isRelevant)
-              .map((c) => {
-                const m = c.content.match(emailIdPattern);
-                return m ? m[1] : null;
-              }),
-          )
+          .map((r) => {
+            if (!r.memory) return null;
+            const m = r.memory.match(emailIdPattern);
+            return m ? m[1] : null;
+          })
           .filter((id): id is string => id !== null),
       ),
     ];
