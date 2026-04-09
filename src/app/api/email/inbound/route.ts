@@ -1295,6 +1295,61 @@ export async function POST(request: NextRequest) {
 
     // If the user has disabled their Postino address, register the email as skipped
     if (userData.isAddressEnabled === false) {
+      // If AI-analysis-only mode is enabled, queue for analysis + memory but skip rules/forwarding
+      if (userData.isAiAnalysisOnlyEnabled === true) {
+        const logRef = await db.collection('emailLogs').add({
+          toAddress: matchedRecipient,
+          fromAddress: sender,
+          subject,
+          receivedAt: Timestamp.now(),
+          status: 'received',
+          userId,
+          originalBody: emailBody,
+          processingMode: 'queued',
+          ...(messageId ? { messageId } : {}),
+        });
+        logId = logRef.id;
+        await updateWebhookLog({
+          status: 'accepted',
+          result: 'log-created',
+          linked: { emailLogId: logRef.id },
+        });
+        const aiOnlyPayload: QueuedInboundPayload = {
+          logId: logRef.id,
+          userId,
+          userEmail: (userData.email as string) || '',
+          matchedRecipient,
+          sender,
+          fromHeader: fromHeader || undefined,
+          replyToHeader,
+          subject,
+          emailBody,
+          bodyHtml,
+          bodyPlain,
+          messageId,
+          aiAnalysisOnly: true,
+        };
+        const queued = await enqueueEmailJob(aiOnlyPayload, nonceId);
+        if (!queued) {
+          await updateWebhookLog({
+            status: 'skipped',
+            result: 'duplicate-job',
+            reason: 'Duplicate queue job, already queued',
+            linked: { emailLogId: logRef.id, jobId: nonceId },
+          });
+          return NextResponse.json({ message: 'Duplicate job, already queued' });
+        }
+        await updateWebhookLog({
+          status: 'queued',
+          result: 'queued',
+          reason: null,
+          linked: { emailLogId: logRef.id, jobId: nonceId },
+        });
+        scheduleProcessingTrigger(request);
+        console.log(`User ${userId} has address disabled (AI analysis only), email queued for analysis`);
+        return NextResponse.json({ success: true, queued: true });
+      }
+
       const skippedRef = await db.collection('emailLogs').add({
         toAddress: matchedRecipient,
         fromAddress: sender,

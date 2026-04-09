@@ -140,6 +140,10 @@ export interface Translations {
       copy: string;
       copied: string;
       toggleAriaLabel: string;
+      aiAnalysisOnly: string;
+      aiAnalysisOnlyEnabledDescription: string;
+      aiAnalysisOnlyDisabledDescription: string;
+      aiAnalysisOnlyToggleAriaLabel: string;
     };
     stats: {
       emailsReceived: string;
@@ -517,6 +521,7 @@ export interface Translations {
       failedToLoadStats: string;
       failedToUpdateEmailSetting: string;
       failedToUpdateForwardingHeaderSetting: string;
+      failedToUpdateAiAnalysisOnlySetting: string;
       failedToUpdateAnalysisLanguageSetting: string;
       analysisRefreshed: string;
       analysisRefreshFailed: string;
@@ -765,6 +770,12 @@ const translations: Record<Locale, Translations> = {
         copy: 'Copy',
         copied: 'Copied',
         toggleAriaLabel: 'Enable or disable your Postino address',
+        aiAnalysisOnly: 'AI Analysis Only',
+        aiAnalysisOnlyEnabledDescription:
+          'Incoming emails are analysed by AI and saved to memory, but rules and forwarding are skipped.',
+        aiAnalysisOnlyDisabledDescription:
+          'Enable to analyse emails with AI and update memory even when forwarding is disabled.',
+        aiAnalysisOnlyToggleAriaLabel: 'Enable or disable AI analysis only mode',
       },
       stats: {
         emailsReceived: 'Emails Received',
@@ -1155,6 +1166,7 @@ const translations: Record<Locale, Translations> = {
         failedToLoadStats: 'Failed to load stats',
         failedToUpdateEmailSetting: 'Failed to update email address setting',
         failedToUpdateForwardingHeaderSetting: 'Failed to update forwarding header setting',
+        failedToUpdateAiAnalysisOnlySetting: 'Failed to update AI analysis only setting',
         failedToUpdateAnalysisLanguageSetting: 'Failed to update analysis language setting',
         analysisRefreshed: 'AI analysis refreshed.',
         analysisRefreshFailed: 'Failed to refresh AI analysis.',
@@ -1407,6 +1419,12 @@ const translations: Record<Locale, Translations> = {
         copy: 'Copia',
         copied: 'Copiato',
         toggleAriaLabel: 'Abilita o disabilita il tuo indirizzo Postino',
+        aiAnalysisOnly: 'Solo analisi AI',
+        aiAnalysisOnlyEnabledDescription:
+          "Le email in arrivo vengono analizzate dall'AI e salvate in memoria, ma le regole e l'inoltro vengono saltati.",
+        aiAnalysisOnlyDisabledDescription:
+          "Attiva per analizzare le email con l'AI e aggiornare la memoria anche quando l'inoltro è disabilitato.",
+        aiAnalysisOnlyToggleAriaLabel: 'Abilita o disabilita la modalità solo analisi AI',
       },
       stats: {
         emailsReceived: 'Email ricevute',
@@ -1800,6 +1818,7 @@ const translations: Record<Locale, Translations> = {
         failedToLoadStats: 'Caricamento statistiche non riuscito',
         failedToUpdateEmailSetting: 'Aggiornamento indirizzo email non riuscito',
         failedToUpdateForwardingHeaderSetting: 'Aggiornamento intestazione inoltro non riuscito',
+        failedToUpdateAiAnalysisOnlySetting: 'Aggiornamento impostazione solo analisi AI non riuscito',
         failedToUpdateAnalysisLanguageSetting: 'Aggiornamento lingua di analisi non riuscito',
         analysisRefreshed: 'Analisi AI aggiornata.',
         analysisRefreshFailed: "Aggiornamento dell'analisi AI non riuscito.",
@@ -2049,6 +2068,12 @@ const translations: Record<Locale, Translations> = {
         copy: 'Copiar',
         copied: 'Copiado',
         toggleAriaLabel: 'Habilitar o deshabilitar tu dirección Postino',
+        aiAnalysisOnly: 'Solo análisis IA',
+        aiAnalysisOnlyEnabledDescription:
+          'Los correos entrantes son analizados por IA y guardados en memoria, pero se omiten las reglas y el reenvío.',
+        aiAnalysisOnlyDisabledDescription:
+          'Activa para analizar correos con IA y actualizar la memoria aunque el reenvío esté desactivado.',
+        aiAnalysisOnlyToggleAriaLabel: 'Activar o desactivar el modo solo análisis IA',
       },
       stats: {
         emailsReceived: 'Correos recibidos',
@@ -2442,6 +2467,7 @@ const translations: Record<Locale, Translations> = {
         failedToLoadStats: 'Error al cargar las estadísticas',
         failedToUpdateEmailSetting: 'Error al actualizar la dirección de correo',
         failedToUpdateForwardingHeaderSetting: 'Error al actualizar el encabezado de reenvío',
+        failedToUpdateAiAnalysisOnlySetting: 'Error al actualizar la configuración de solo análisis IA',
         failedToUpdateAnalysisLanguageSetting: 'Error al actualizar el idioma de análisis',
         analysisRefreshed: 'Análisis de IA actualizado.',
         analysisRefreshFailed: 'No se pudo actualizar el análisis de IA.',
@@ -2691,6 +2717,12 @@ const translations: Record<Locale, Translations> = {
         copy: 'Copier',
         copied: 'Copié',
         toggleAriaLabel: 'Activer ou désactiver votre adresse Postino',
+        aiAnalysisOnly: 'Analyse IA uniquement',
+        aiAnalysisOnlyEnabledDescription:
+          "Les e-mails entrants sont analysés par l'IA et enregistrés en mémoire, mais les règles et le transfert sont ignorés.",
+        aiAnalysisOnlyDisabledDescription:
+          "Activez pour analyser les e-mails avec l'IA et mettre à jour la mémoire même lorsque le transfert est désactivé.",
+        aiAnalysisOnlyToggleAriaLabel: "Activer ou désactiver le mode analyse IA uniquement",
       },
       stats: {
         emailsReceived: 'E-mails reçus',
@@ -3085,6 +3117,7 @@ const translations: Record<Locale, Translations> = {
         failedToLoadStats: 'Échec du chargement des statistiques',
         failedToUpdateEmailSetting: "Échec de la mise à jour de l'adresse e-mail",
         failedToUpdateForwardingHeaderSetting: "Échec de la mise à jour de l'en-tête de transfert",
+        failedToUpdateAiAnalysisOnlySetting: "Échec de la mise à jour du paramètre analyse IA uniquement",
         failedToUpdateAnalysisLanguageSetting: "Échec de la mise à jour de la langue d'analyse",
         analysisRefreshed: 'Analyse IA actualisée.',
         analysisRefreshFailed: "Impossible d'actualiser l'analyse IA.",
@@ -3335,6 +3368,12 @@ const translations: Record<Locale, Translations> = {
         copy: 'Kopieren',
         copied: 'Kopiert',
         toggleAriaLabel: 'Ihre Postino-Adresse aktivieren oder deaktivieren',
+        aiAnalysisOnly: 'Nur KI-Analyse',
+        aiAnalysisOnlyEnabledDescription:
+          'Eingehende E-Mails werden von der KI analysiert und im Speicher abgelegt, aber Regeln und Weiterleitung werden übersprungen.',
+        aiAnalysisOnlyDisabledDescription:
+          'Aktivieren, um E-Mails mit KI zu analysieren und den Speicher zu aktualisieren, auch wenn die Weiterleitung deaktiviert ist.',
+        aiAnalysisOnlyToggleAriaLabel: 'Nur-KI-Analyse-Modus aktivieren oder deaktivieren',
       },
       stats: {
         emailsReceived: 'Empfangene E-Mails',
@@ -3730,6 +3769,8 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateEmailSetting: 'E-Mail-Adresseinstellung konnte nicht aktualisiert werden',
         failedToUpdateForwardingHeaderSetting:
           'Weiterleitungsheader-Einstellung konnte nicht aktualisiert werden',
+        failedToUpdateAiAnalysisOnlySetting:
+          'Einstellung für nur KI-Analyse konnte nicht aktualisiert werden',
         failedToUpdateAnalysisLanguageSetting: 'Analysesprache konnte nicht aktualisiert werden',
         analysisRefreshed: 'KI-Analyse aktualisiert.',
         analysisRefreshFailed: 'KI-Analyse konnte nicht aktualisiert werden.',

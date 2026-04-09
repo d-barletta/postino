@@ -13,6 +13,8 @@ interface AssignedEmailCardProps {
   userEmail: string;
   isAddressEnabled: boolean;
   onToggle: (enabled: boolean) => Promise<void>;
+  isAiAnalysisOnlyEnabled: boolean;
+  onAiAnalysisOnlyToggle: (enabled: boolean) => Promise<void>;
 }
 
 export function AssignedEmailCard({
@@ -20,9 +22,12 @@ export function AssignedEmailCard({
   userEmail,
   isAddressEnabled,
   onToggle,
+  isAiAnalysisOnlyEnabled,
+  onAiAnalysisOnlyToggle,
 }: AssignedEmailCardProps) {
   const [copied, setCopied] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [togglingAiAnalysis, setTogglingAiAnalysis] = useState(false);
   const { t } = useI18n();
   const tr = t.dashboard.address;
 
@@ -38,6 +43,15 @@ export function AssignedEmailCard({
       await onToggle(checked);
     } finally {
       setToggling(false);
+    }
+  };
+
+  const handleAiAnalysisOnlyToggle = async (checked: boolean) => {
+    setTogglingAiAnalysis(true);
+    try {
+      await onAiAnalysisOnlyToggle(checked);
+    } finally {
+      setTogglingAiAnalysis(false);
     }
   };
 
@@ -94,6 +108,31 @@ export function AssignedEmailCard({
             )}
           </Button>
         </div>
+        {!isAddressEnabled && (
+          <div className="mt-4 flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2">
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {tr.aiAnalysisOnly}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {isAiAnalysisOnlyEnabled
+                  ? tr.aiAnalysisOnlyEnabledDescription
+                  : tr.aiAnalysisOnlyDisabledDescription}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 ml-3 shrink-0">
+              <Switch
+                checked={isAiAnalysisOnlyEnabled}
+                onCheckedChange={handleAiAnalysisOnlyToggle}
+                disabled={togglingAiAnalysis}
+                aria-label={tr.aiAnalysisOnlyToggleAriaLabel}
+              />
+              <Badge variant={isAiAnalysisOnlyEnabled ? 'success' : 'default'}>
+                {isAiAnalysisOnlyEnabled ? tr.active : tr.disabled}
+              </Badge>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -240,6 +240,26 @@ export default function DashboardPage() {
     [firebaseUser, refreshUser],
   );
 
+  const handleAiAnalysisOnlyToggle = useCallback(
+    async (enabled: boolean) => {
+      if (!firebaseUser) return;
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/user/ai-analysis-toggle', {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isAiAnalysisOnlyEnabled: enabled }),
+        });
+        if (!res.ok) throw new Error();
+        await refreshUser();
+        toast.success(t.dashboard.toasts.settingSaved);
+      } catch {
+        toast.error(t.dashboard.toasts.failedToUpdateAiAnalysisOnlySetting);
+      }
+    },
+    [firebaseUser, refreshUser],
+  );
+
   const handleForwardingHeaderToggle = useCallback(
     async (enabled: boolean) => {
       if (!firebaseUser) return;
@@ -371,6 +391,8 @@ export default function DashboardPage() {
                 userEmail={user.email}
                 isAddressEnabled={user.isAddressEnabled !== false}
                 onToggle={handleAddressToggle}
+                isAiAnalysisOnlyEnabled={user.isAiAnalysisOnlyEnabled === true}
+                onAiAnalysisOnlyToggle={handleAiAnalysisOnlyToggle}
               />
             )}
             <UserStatsCards stats={userStats ?? EMPTY_STATS} />
