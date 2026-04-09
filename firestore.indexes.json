@@ -170,6 +170,15 @@
         { "fieldPath": "tokensUsed", "order": "ASCENDING" }
       ]
     },
+    {
+      "collectionGroup": "emailLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "receivedAt", "order": "ASCENDING" },
+        { "fieldPath": "estimatedCost", "order": "ASCENDING" },
+        { "fieldPath": "tokensUsed", "order": "ASCENDING" }
+      ]
+    },
 
     {
       "collectionGroup": "rules",
