@@ -1015,7 +1015,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         When enabled, processed emails are saved to Supermemory.ai and users get
-                        access to the Agent tab to query their memories in natural language.
+                        access to the Memory tab to query their memories in natural language.
                       </p>
                     </div>
                     <Switch

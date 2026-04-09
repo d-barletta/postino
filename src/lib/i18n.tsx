@@ -757,7 +757,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Explore',
         relations: 'Relations',
         settings: 'Settings',
-        agent: 'Agent',
+        agent: 'Memory',
       },
       address: {
         title: 'Your Postino Address',
@@ -1406,7 +1406,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Esplora',
         relations: 'Relazioni',
         settings: 'Impostazioni',
-        agent: 'Agente',
+        agent: 'Memoria',
       },
       address: {
         title: 'Il tuo indirizzo Postino',
@@ -2055,7 +2055,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Explorar',
         relations: 'Relaciones',
         settings: 'Configuración',
-        agent: 'Agente',
+        agent: 'Memoria',
       },
       address: {
         title: 'Tu dirección Postino',
@@ -2704,7 +2704,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Explorer',
         relations: 'Relations',
         settings: 'Paramètres',
-        agent: 'Agent',
+        agent: 'Mémoire',
       },
       address: {
         title: 'Votre adresse Postino',
@@ -3355,7 +3355,7 @@ const translations: Record<Locale, Translations> = {
         explore: 'Erkunden',
         relations: 'Beziehungen',
         settings: 'Einstellungen',
-        agent: 'Agent',
+        agent: 'Speicher',
       },
       address: {
         title: 'Ihre Postino-Adresse',

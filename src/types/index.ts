@@ -188,7 +188,7 @@ export interface Settings {
   agentTracingEnabled?: boolean;
   /** Includes prompt/response excerpts in trace payloads when tracing is enabled. */
   agentTraceIncludeExcerpts?: boolean;
-  /** Enables the Supermemory.ai integration for persistent memory and the Agent tab. */
+  /** Enables the Supermemory.ai integration for persistent memory and the Memory tab. */
   memoryEnabled?: boolean;
   /** Supermemory.ai API key. Falls back to SUPERMEMORY_API_KEY env variable. */
   memoryApiKey?: string;

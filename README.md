@@ -18,7 +18,7 @@ AI-powered email redirector: users get a private email address, define rules in 
 
 - AI Agent chat in the dashboard for asking memory and email-related questions.
 - Agent composer uses a grouped textarea + action layout with `Enter` to send and `Shift+Enter` to add a new line.
-- Assistant states in the Agent tab use the Postino brand avatar for empty, active, and typing states.
+- Assistant states in the Memory tab use the Postino brand avatar for empty, active, and typing states.
 - Agent conversation is preserved while switching dashboard tabs during the same page session.
 
 ## UI Components (Use With Priority)
@@ -102,7 +102,7 @@ This section is designed to let you deploy the app from zero with no missing ste
 - Vercel account (to host the Next.js app)
 - Firebase account/project (Auth + Firestore)
 - OpenRouter account (LLM API)
-- Supermemory account (optional, required for the Agent tab and persistent memory features)
+- Supermemory account (optional, required for the Memory tab and persistent memory features)
 - Mailgun account/domain (inbound webhook)
 - SMTP provider account (outbound email)
 
@@ -145,7 +145,7 @@ This section is designed to let you deploy the app from zero with no missing ste
 
 #### Supermemory
 
-1. Create an API key in Supermemory if you want to enable persistent memory and the Dashboard Agent tab.
+1. Create an API key in Supermemory if you want to enable persistent memory and the Dashboard Memory tab.
 2. Collect:
 
 - SUPERMEMORY_API_KEY
@@ -328,7 +328,7 @@ npm run deploy:prod
 
 Ensure all environment variables are already set in Vercel Project Settings before deploying.
 
-If you plan to use the Dashboard Agent tab or Supermemory persistence in production, also make sure `memoryEnabled` is turned on in admin settings and that a Supermemory API key is configured either in admin settings or via `SUPERMEMORY_API_KEY`.
+If you plan to use the Dashboard Memory tab or Supermemory persistence in production, also make sure `memoryEnabled` is turned on in admin settings and that a Supermemory API key is configured either in admin settings or via `SUPERMEMORY_API_KEY`.
 
 ### 11) Post-Deploy Verification Checklist
 
@@ -340,7 +340,7 @@ If you plan to use the Dashboard Agent tab or Supermemory persistence in product
 6. Confirm jobs move from pending/retrying to done.
 7. Confirm forwarded email arrives in destination mailbox.
 8. Confirm Mailgun webhook requests are accepted (2xx).
-9. Confirm the Dashboard Agent tab loads and returns responses for an authenticated user.
+9. Confirm the Dashboard Memory tab loads and returns responses for an authenticated user.
 
 ### 12) Security and Operations Notes
 
@@ -386,7 +386,7 @@ Required at minimum:
 
 Optional but recommended for memory features:
 
-- `SUPERMEMORY_API_KEY` for the Dashboard Agent tab and Supermemory-backed persistent memory. This can also be stored in admin settings as `memoryApiKey`.
+- `SUPERMEMORY_API_KEY` for the Dashboard Memory tab and Supermemory-backed persistent memory. This can also be stored in admin settings as `memoryApiKey`.
 
 ## Architecture
 
