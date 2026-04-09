@@ -27,7 +27,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import { RefreshCw, Mail, Paperclip, ExternalLink, Search, MousePointerClick } from 'lucide-react';
-import type { EmailAnalysis, EmailLog } from '@/types';
+import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
@@ -39,15 +39,6 @@ const ALL_STATUS_VALUE = '__all__';
 interface EmailLogsListProps {
   selectedEmailId?: string;
   refreshTrigger?: number;
-}
-
-interface LogsResponse {
-  logs: EmailLog[];
-  page: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  totalCount?: number;
-  totalPages?: number;
 }
 
 interface ExpandedEmailData {

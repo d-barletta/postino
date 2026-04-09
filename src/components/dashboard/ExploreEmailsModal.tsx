@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import { Mail, Paperclip, ExternalLink, AlignLeft, Brain, RefreshCw } from 'lucide-react';
-import type { EmailAnalysis, EmailLog } from '@/types';
+import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
@@ -59,15 +59,6 @@ interface ExpandedEmailData {
   attachmentNames: string[];
   loading: boolean;
   error?: string;
-}
-
-interface LogsResponse {
-  logs: EmailLog[];
-  page: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  totalCount?: number;
-  totalPages?: number;
 }
 
 export interface ExploreEmailsModalProps {

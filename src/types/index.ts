@@ -142,6 +142,15 @@ export interface EmailLog {
   emailAnalysis?: EmailAnalysis;
 }
 
+export interface LogsResponse {
+  logs: EmailLog[];
+  page: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  totalCount?: number;
+  totalPages?: number;
+}
+
 export interface Settings {
   maxRuleLength: number;
   /** Maximum number of active rules a non-admin user can have. Defaults to 3. */

@@ -51,7 +51,7 @@ import {
   Eye,
   ChevronDown,
 } from 'lucide-react';
-import type { EmailAnalysis, EmailLog } from '@/types';
+import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import type { KnowledgeData } from '@/components/dashboard/KnowledgeTab';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
@@ -184,15 +184,6 @@ function hasActiveFilter(f: FilterState): boolean {
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-interface LogsResponse {
-  logs: EmailLog[];
-  page: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  totalCount?: number;
-  totalPages?: number;
-}
-
 interface ExpandedEmailData {
   originalBody: string | null;
   toAddress: string;
