@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Trash2 } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -60,6 +61,7 @@ export function ResetUsageStatsCard({ onSuccess }: ResetUsageStatsCardProps) {
           <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{s.description}</p>
           <div className="flex justify-end">
             <Button variant="danger" onClick={() => setOpen(true)}>
+              <Trash2 className="h-4 w-4" />
               {s.buttonLabel}
             </Button>
           </div>

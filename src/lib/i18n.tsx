@@ -192,6 +192,17 @@ export interface Translations {
       successToast: string;
       errorToast: string;
     };
+    clearAnalysis: {
+      title: string;
+      description: string;
+      buttonLabel: string;
+      confirmTitle: string;
+      confirmDescription: string;
+      cancel: string;
+      confirmButton: string;
+      successToast: string;
+      errorToast: string;
+    };
     resetUsageStats: {
       title: string;
       description: string;
@@ -852,15 +863,28 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Delete All Entities & Merges',
         description:
-          'Permanently delete all entity knowledge (people, topics, organizations, places, events, tags), all entity merges, and all AI merge suggestions. This cannot be undone.',
+          'Permanently delete all extracted entity knowledge (people, topics, organizations, places, events, tags) from your emails, all entity merges, and all AI merge suggestions. This cannot be undone.',
         buttonLabel: 'Delete All Entities & Merges',
         confirmTitle: 'Delete All Entities & Merges?',
         confirmDescription:
-          'This will permanently delete all your entity knowledge, merges, and AI merge suggestions. This action cannot be undone.',
+          'This will permanently delete all extracted entity knowledge from your emails, all merges, and AI merge suggestions. This action cannot be undone.',
         cancel: 'Cancel',
         confirmButton: 'Delete All',
         successToast: 'All entity data deleted.',
         errorToast: 'Failed to delete entity data.',
+      },
+      clearAnalysis: {
+        title: 'Delete All AI Analysis',
+        description:
+          'Remove all AI-generated analysis, processed content, token usage, and cost data from your emails. Only the original messages are kept. This also deletes all entity knowledge, merges, and cached graphs. This cannot be undone.',
+        buttonLabel: 'Delete All AI Analysis',
+        confirmTitle: 'Delete All AI Analysis?',
+        confirmDescription:
+          'This will permanently remove all AI analysis, processed content, token usage, entity knowledge, merges, and cached graphs from your emails. Only the original messages are kept. This action cannot be undone.',
+        cancel: 'Cancel',
+        confirmButton: 'Delete All Analysis',
+        successToast: 'All AI analysis data deleted.',
+        errorToast: 'Failed to delete AI analysis data.',
       },
       resetUsageStats: {
         title: 'Reset Cost & Token Stats',
@@ -1536,15 +1560,28 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Elimina tutte le entità e le unioni',
         description:
-          'Elimina definitivamente tutte le conoscenze sulle entità (persone, argomenti, organizzazioni, luoghi, eventi, tag), tutte le unioni di entità e tutti i suggerimenti di unione AI. Questa azione non può essere annullata.',
+          'Elimina definitivamente tutte le entità estratte (persone, argomenti, organizzazioni, luoghi, eventi, tag) dalle tue email, tutte le unioni di entità e tutti i suggerimenti di unione AI. Questa azione non può essere annullata.',
         buttonLabel: 'Elimina tutte le entità e le unioni',
         confirmTitle: 'Eliminare tutte le entità e le unioni?',
         confirmDescription:
-          'Questa azione eliminerà definitivamente tutte le tue conoscenze sulle entità, le unioni e i suggerimenti di unione AI. Questa azione non può essere annullata.',
+          'Questa azione eliminerà definitivamente tutte le entità estratte dalle tue email, le unioni e i suggerimenti di unione AI. Questa azione non può essere annullata.',
         cancel: 'Annulla',
         confirmButton: 'Elimina tutto',
         successToast: 'Tutti i dati delle entità eliminati.',
         errorToast: 'Eliminazione dei dati delle entità non riuscita.',
+      },
+      clearAnalysis: {
+        title: "Elimina tutta l'analisi AI",
+        description:
+          "Rimuovi tutta l'analisi AI generata, i contenuti elaborati, l'uso di token e i dati di costo dalle tue email. Vengono conservati solo i messaggi originali. Elimina anche tutte le entità, le unioni e i grafi in cache. Questa azione non può essere annullata.",
+        buttonLabel: "Elimina tutta l'analisi AI",
+        confirmTitle: "Eliminare tutta l'analisi AI?",
+        confirmDescription:
+          "Questa azione rimuoverà definitivamente tutta l'analisi AI, i contenuti elaborati, l'uso di token, le entità, le unioni e i grafi in cache dalle tue email. Vengono conservati solo i messaggi originali. Questa azione non può essere annullata.",
+        cancel: 'Annulla',
+        confirmButton: "Elimina tutta l'analisi",
+        successToast: 'Tutti i dati di analisi AI eliminati.',
+        errorToast: 'Eliminazione dei dati di analisi AI non riuscita.',
       },
       resetUsageStats: {
         title: 'Reimposta statistiche costi e token',
@@ -2220,15 +2257,28 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Eliminar todas las entidades y fusiones',
         description:
-          'Elimina permanentemente todo el conocimiento de entidades (personas, temas, organizaciones, lugares, eventos, etiquetas), todas las fusiones de entidades y todas las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
+          'Elimina permanentemente todas las entidades extraídas (personas, temas, organizaciones, lugares, eventos, etiquetas) de tus correos, todas las fusiones de entidades y todas las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
         buttonLabel: 'Eliminar todas las entidades y fusiones',
         confirmTitle: '¿Eliminar todas las entidades y fusiones?',
         confirmDescription:
-          'Esto eliminará permanentemente todo tu conocimiento de entidades, fusiones y sugerencias de fusión de IA. Esta acción no se puede deshacer.',
+          'Esto eliminará permanentemente todas las entidades extraídas de tus correos, las fusiones y las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
         cancel: 'Cancelar',
         confirmButton: 'Eliminar todo',
         successToast: 'Todos los datos de entidades eliminados.',
         errorToast: 'Error al eliminar los datos de entidades.',
+      },
+      clearAnalysis: {
+        title: 'Eliminar todo el análisis de IA',
+        description:
+          'Elimina todo el análisis generado por IA, el contenido procesado, el uso de tokens y los datos de coste de tus correos. Solo se conservan los mensajes originales. También elimina todo el conocimiento de entidades, fusiones y grafos en caché. Esta acción no se puede deshacer.',
+        buttonLabel: 'Eliminar todo el análisis de IA',
+        confirmTitle: '¿Eliminar todo el análisis de IA?',
+        confirmDescription:
+          'Esto eliminará permanentemente todo el análisis de IA, el contenido procesado, el uso de tokens, las entidades, las fusiones y los grafos en caché de tus correos. Solo se conservan los mensajes originales. Esta acción no se puede deshacer.',
+        cancel: 'Cancelar',
+        confirmButton: 'Eliminar todo el análisis',
+        successToast: 'Todos los datos de análisis de IA eliminados.',
+        errorToast: 'Error al eliminar los datos de análisis de IA.',
       },
       resetUsageStats: {
         title: 'Restablecer estadísticas de coste y tokens',
@@ -2904,15 +2954,28 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Supprimer toutes les entités et fusions',
         description:
-          "Supprime définitivement toutes les connaissances sur les entités (personnes, sujets, organisations, lieux, événements, tags), toutes les fusions d'entités et toutes les suggestions de fusion IA. Cette action est irréversible.",
+          "Supprime définitivement toutes les entités extraites (personnes, sujets, organisations, lieux, événements, tags) de vos e-mails, toutes les fusions d'entités et toutes les suggestions de fusion IA. Cette action est irréversible.",
         buttonLabel: 'Supprimer toutes les entités et fusions',
         confirmTitle: 'Supprimer toutes les entités et fusions ?',
         confirmDescription:
-          'Cela supprimera définitivement toutes vos connaissances sur les entités, vos fusions et vos suggestions de fusion IA. Cette action est irréversible.',
+          'Cela supprimera définitivement toutes les entités extraites de vos e-mails, vos fusions et vos suggestions de fusion IA. Cette action est irréversible.',
         cancel: 'Annuler',
         confirmButton: 'Tout supprimer',
         successToast: "Toutes les données d'entités supprimées.",
         errorToast: "Échec de la suppression des données d'entités.",
+      },
+      clearAnalysis: {
+        title: "Supprimer toute l'analyse IA",
+        description:
+          "Supprime toute l'analyse générée par l'IA, le contenu traité, l'utilisation de tokens et les données de coût de vos e-mails. Seuls les messages originaux sont conservés. Supprime également toutes les entités, fusions et graphes mis en cache. Cette action est irréversible.",
+        buttonLabel: "Supprimer toute l'analyse IA",
+        confirmTitle: "Supprimer toute l'analyse IA ?",
+        confirmDescription:
+          "Cela supprimera définitivement toute l'analyse IA, le contenu traité, l'utilisation de tokens, les entités, les fusions et les graphes mis en cache de vos e-mails. Seuls les messages originaux sont conservés. Cette action est irréversible.",
+        cancel: 'Annuler',
+        confirmButton: "Supprimer toute l'analyse",
+        successToast: "Toutes les données d'analyse IA supprimées.",
+        errorToast: "Échec de la suppression des données d'analyse IA.",
       },
       resetUsageStats: {
         title: 'Réinitialiser les statistiques de coût et de tokens',
@@ -3590,15 +3653,28 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Alle Entitäten und Zusammenführungen löschen',
         description:
-          'Löscht dauerhaft alle Entitätskenntnisse (Personen, Themen, Organisationen, Orte, Ereignisse, Tags), alle Entitätszusammenführungen und alle KI-Zusammenführungsvorschläge. Diese Aktion kann nicht rückgängig gemacht werden.',
+          'Löscht dauerhaft alle extrahierten Entitäten (Personen, Themen, Organisationen, Orte, Ereignisse, Tags) aus Ihren E-Mails, alle Entitätszusammenführungen und alle KI-Zusammenführungsvorschläge. Diese Aktion kann nicht rückgängig gemacht werden.',
         buttonLabel: 'Alle Entitäten und Zusammenführungen löschen',
         confirmTitle: 'Alle Entitäten und Zusammenführungen löschen?',
         confirmDescription:
-          'Dadurch werden alle Ihre Entitätskenntnisse, Zusammenführungen und KI-Zusammenführungsvorschläge dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
+          'Dadurch werden alle extrahierten Entitäten aus Ihren E-Mails, alle Zusammenführungen und KI-Zusammenführungsvorschläge dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
         cancel: 'Abbrechen',
         confirmButton: 'Alles löschen',
         successToast: 'Alle Entitätsdaten gelöscht.',
         errorToast: 'Entitätsdaten konnten nicht gelöscht werden.',
+      },
+      clearAnalysis: {
+        title: 'Alle KI-Analysen löschen',
+        description:
+          'Entfernt alle KI-generierten Analysen, verarbeiteten Inhalte, Token-Nutzung und Kostendaten aus Ihren E-Mails. Nur die Originalnachrichten bleiben erhalten. Löscht auch alle Entitäten, Zusammenführungen und gecachten Graphen. Diese Aktion kann nicht rückgängig gemacht werden.',
+        buttonLabel: 'Alle KI-Analysen löschen',
+        confirmTitle: 'Alle KI-Analysen löschen?',
+        confirmDescription:
+          'Dadurch werden alle KI-Analysen, verarbeiteten Inhalte, Token-Nutzung, Entitäten, Zusammenführungen und gecachten Graphen aus Ihren E-Mails dauerhaft gelöscht. Nur die Originalnachrichten bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+        cancel: 'Abbrechen',
+        confirmButton: 'Alle Analysen löschen',
+        successToast: 'Alle KI-Analysedaten gelöscht.',
+        errorToast: 'KI-Analysedaten konnten nicht gelöscht werden.',
       },
       resetUsageStats: {
         title: 'Kosten- und Token-Statistiken zurücksetzen',

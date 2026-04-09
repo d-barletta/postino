@@ -15,6 +15,7 @@ import { ForwardingHeaderCard } from '@/components/dashboard/ForwardingHeaderCar
 import { AnalysisLanguageCard } from '@/components/dashboard/AnalysisLanguageCard';
 import { InstallPwaDrawer } from '@/components/dashboard/InstallPwaDrawer';
 import { DeleteEntitiesCard } from '@/components/dashboard/DeleteEntitiesCard';
+import { ClearAnalysisCard } from '@/components/dashboard/ClearAnalysisCard';
 import { ResetUsageStatsCard } from '@/components/dashboard/ResetUsageStatsCard';
 import { ClearMemoriesCard } from '@/components/dashboard/ClearMemoriesCard';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
@@ -290,7 +291,9 @@ export default function DashboardPage() {
     }
     setLogsLoading(true);
     // Use 'all' on initial load; period changes are handled by handleStatsPeriodChange.
-    Promise.all([fetchLogs(), fetchStats('all'), fetchKnowledge()]).finally(() => setLogsLoading(false));
+    Promise.all([fetchLogs(), fetchStats('all'), fetchKnowledge()]).finally(() =>
+      setLogsLoading(false),
+    );
   }, [firebaseUser]); // fetchLogs, fetchStats, fetchKnowledge are derived from firebaseUser — no separate dep needed
 
   // Re-fetch stats when period changes.
@@ -475,6 +478,7 @@ export default function DashboardPage() {
         />
         <ResetUsageStatsCard onSuccess={handleLogsRefresh} />
         <ClearMemoriesCard />
+        <ClearAnalysisCard />
         <DeleteEntitiesCard />
         {(isPwa || canShowInstallCard) && (
           <Card>
@@ -582,7 +586,9 @@ export default function DashboardPage() {
           </TabsContent>
         )}
         <TabsContent value="explore">
-          {loading ? <DashboardPanelSkeleton /> : (
+          {loading ? (
+            <DashboardPanelSkeleton />
+          ) : (
             <KnowledgeTab
               knowledgeData={knowledgeData}
               knowledgeLoading={knowledgeLoading}

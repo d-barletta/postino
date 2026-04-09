@@ -16,14 +16,10 @@ import {
   DrawerTitle,
 } from '@/components/ui/Drawer';
 
-interface ClearMemoriesCardProps {
-  onSuccess?: () => Promise<void> | void;
-}
-
-export function ClearMemoriesCard({ onSuccess }: ClearMemoriesCardProps) {
+export function ClearAnalysisCard() {
   const { firebaseUser } = useAuth();
   const { t } = useI18n();
-  const s = t.dashboard.clearMemories;
+  const s = t.dashboard.clearAnalysis;
   const [open, setOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
 
@@ -32,12 +28,11 @@ export function ClearMemoriesCard({ onSuccess }: ClearMemoriesCardProps) {
     setClearing(true);
     try {
       const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/user/memories', {
+      const res = await fetch('/api/email/clear-analysis', {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error();
-      await onSuccess?.();
       setOpen(false);
       toast.success(s.successToast);
     } catch {
@@ -47,8 +42,8 @@ export function ClearMemoriesCard({ onSuccess }: ClearMemoriesCardProps) {
     }
   };
 
-  const handleDrawerChange = (nextOpen: boolean) => {
-    if (!clearing) setOpen(nextOpen);
+  const handleDrawerChange = (o: boolean) => {
+    if (!clearing) setOpen(o);
   };
 
   return (
@@ -58,7 +53,7 @@ export function ClearMemoriesCard({ onSuccess }: ClearMemoriesCardProps) {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{s.title}</h2>
         </CardHeader>
         <CardContent>
-          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{s.description}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{s.description}</p>
           <div className="flex justify-end">
             <Button variant="danger" onClick={() => setOpen(true)}>
               <Trash2 className="h-4 w-4" />

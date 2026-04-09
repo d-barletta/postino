@@ -453,7 +453,11 @@ interface EmailSearchTabProps {
   knowledgeData?: KnowledgeData | null;
 }
 
-export function EmailSearchTab({ selectedEmailId, refreshTrigger, knowledgeData }: EmailSearchTabProps) {
+export function EmailSearchTab({
+  selectedEmailId,
+  refreshTrigger,
+  knowledgeData,
+}: EmailSearchTabProps) {
   const { t, locale } = useI18n();
   const { firebaseUser, user } = useAuth();
   const isAdmin = user?.isAdmin === true;
