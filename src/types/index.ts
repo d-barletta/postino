@@ -22,6 +22,8 @@ export interface User {
   isAdmin: boolean;
   isActive: boolean;
   isAddressEnabled?: boolean;
+  /** When true and isAddressEnabled is false, incoming emails are still analysed by AI and saved to memory, but rules and forwarding are skipped. */
+  isAiAnalysisOnlyEnabled?: boolean;
   /** When false, the Postino notification box is not appended to forwarded emails. Defaults to true. */
   isForwardingHeaderEnabled?: boolean;
   displayName?: string;
