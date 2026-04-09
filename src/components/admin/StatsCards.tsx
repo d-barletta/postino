@@ -12,13 +12,6 @@ interface StatsCardsProps {
   onPeriodChange: (period: StatsPeriod) => void;
 }
 
-const PERIOD_LABELS_EN: Record<StatsPeriod, string> = {
-  '24h': 'Last 24h',
-  '7d': 'Last 7 days',
-  '30d': 'Last month',
-  all: 'All time',
-};
-
 export function StatsCards({ stats, period, onPeriodChange }: StatsCardsProps) {
   const { t } = useI18n();
   const s = t.dashboard.stats;
@@ -72,7 +65,7 @@ export function StatsCards({ stats, period, onPeriodChange }: StatsCardsProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 dark:text-gray-400">Period:</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{s.period}:</span>
         <div className="flex overflow-hidden rounded-lg border border-gray-200 text-xs dark:border-gray-700">
           {(['24h', '7d', '30d', 'all'] as StatsPeriod[]).map((p, idx) => (
             <button
@@ -84,7 +77,7 @@ export function StatsCards({ stats, period, onPeriodChange }: StatsCardsProps) {
                   : 'bg-white/60 text-gray-600 hover:bg-yellow-50 dark:bg-gray-900/40 dark:text-gray-400 dark:hover:bg-yellow-900/10'
               } ${idx > 0 ? 'border-l border-gray-200 dark:border-gray-700' : ''}`}
             >
-              {PERIOD_LABELS[p] ?? PERIOD_LABELS_EN[p]}
+              {PERIOD_LABELS[p]}
             </button>
           ))}
         </div>

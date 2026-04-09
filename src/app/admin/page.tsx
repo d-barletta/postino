@@ -59,7 +59,8 @@ export default function AdminPage() {
   );
 
   useEffect(() => {
-    fetchAdminStats(statsPeriod);
+    // Use 'all' on initial load; period changes are handled by handleStatsPeriodChange.
+    fetchAdminStats('all');
   }, [firebaseUser]); // fetchAdminStats is derived from firebaseUser — no separate dep needed
 
   const handleStatsPeriodChange = useCallback(

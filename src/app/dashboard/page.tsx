@@ -261,7 +261,8 @@ export default function DashboardPage() {
       return;
     }
     setLogsLoading(true);
-    Promise.all([fetchLogs(), fetchStats(statsPeriod)]).finally(() => setLogsLoading(false));
+    // Use 'all' on initial load; period changes are handled by handleStatsPeriodChange.
+    Promise.all([fetchLogs(), fetchStats('all')]).finally(() => setLogsLoading(false));
   }, [firebaseUser]); // fetchLogs and fetchStats are derived from firebaseUser — no separate dep needed
 
   // Re-fetch stats when period changes.
