@@ -40,8 +40,7 @@ export default function AdminPage() {
       if (!firebaseUser) return;
       try {
         const token = await firebaseUser.getIdToken();
-        const url =
-          period === 'all' ? '/api/admin/stats' : `/api/admin/stats?period=${period}`;
+        const url = period === 'all' ? '/api/admin/stats' : `/api/admin/stats?period=${period}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });

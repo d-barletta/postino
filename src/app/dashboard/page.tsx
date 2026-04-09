@@ -244,18 +244,21 @@ export default function DashboardPage() {
     }
   }, [firebaseUser]);
 
-  const fetchStats = useCallback(async (period: StatsPeriod = statsPeriod) => {
-    if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
-    const url = period === 'all' ? '/api/user/stats' : `/api/user/stats?period=${period}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.stats) setUserStats(data.stats);
-    } else {
-      toast.error(t.dashboard.toasts.failedToLoadStats);
-    }
-  }, [firebaseUser, statsPeriod]);
+  const fetchStats = useCallback(
+    async (period: StatsPeriod = statsPeriod) => {
+      if (!firebaseUser) return;
+      const token = await firebaseUser.getIdToken();
+      const url = period === 'all' ? '/api/user/stats' : `/api/user/stats?period=${period}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.stats) setUserStats(data.stats);
+      } else {
+        toast.error(t.dashboard.toasts.failedToLoadStats);
+      }
+    },
+    [firebaseUser, statsPeriod],
+  );
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -421,7 +424,11 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         )}
-        <UserStatsCards stats={userStats ?? EMPTY_STATS} period={statsPeriod} onPeriodChange={handleStatsPeriodChange} />
+        <UserStatsCards
+          stats={userStats ?? EMPTY_STATS}
+          period={statsPeriod}
+          onPeriodChange={handleStatsPeriodChange}
+        />
         <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
       </div>
     );

@@ -65,9 +65,8 @@ export function StatsCards({ stats, period, onPeriodChange }: StatsCardsProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 dark:text-gray-400">{s.period}:</span>
         <div className="flex overflow-hidden rounded-lg border border-gray-200 text-xs dark:border-gray-700">
-          {(['24h', '7d', '30d', 'all'] as StatsPeriod[]).map((p, idx) => (
+          {(['all', '30d', '7d', '24h'] as StatsPeriod[]).map((p, idx) => (
             <button
               key={p}
               onClick={() => onPeriodChange(p)}
