@@ -8,8 +8,8 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
  * authentication failures from unexpected internal errors.
  */
 export function isFirebaseAuthError(error: unknown): boolean {
-  const code = (error as { code?: string }).code;
-  if (code?.startsWith('auth/')) return true;
+  const code = (error as { code?: unknown }).code;
+  if (typeof code === 'string' && code.startsWith('auth/')) return true;
   const msg = error instanceof Error ? error.message : '';
   return msg.includes('Firebase ID token');
 }
