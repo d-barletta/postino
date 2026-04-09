@@ -20,13 +20,11 @@ import {
   type EdgeTypes,
 } from '@xyflow/react';
 import type { ElkExtendedEdge, ElkEdgeSection } from 'elkjs';
-import { toast } from 'sonner';
 import { AlertCircle, Eye, EyeOff, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/Button';
 import type { EntityFlowGraph, EntityGraphNodeCategory } from '@/types';
-import { CATEGORY_COLORS } from './RelationGraph';
+import { CATEGORY_COLORS } from './graphCategoryColors';
 
 // ---------------------------------------------------------------------------
 // Node size constants per category shape
@@ -632,7 +630,7 @@ function FlowLegendItem({
 function FlowSkeleton() {
   return (
     <div
-      className="flex h-125 items-center justify-center rounded-2xl animate-pulse"
+      className="flex h-80 items-center justify-center rounded-2xl animate-pulse"
       style={{ backgroundColor: 'var(--surface-muted)' }}
     >
       <Workflow className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
@@ -1134,60 +1132,4 @@ export function RelationFlowChartFullPageContent({
       </div>
     </div>
   );
-}
-
-// ---------------------------------------------------------------------------
-// useFlowGraph hook — dedicated hook for the date-based flow API
-// ---------------------------------------------------------------------------
-export function useFlowGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
-  const { t } = useI18n();
-  const [graph, setGraph] = useState<EntityFlowGraph | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
-
-  useEffect(() => {
-    if (firebaseUser) setHasFetched(false);
-  }, [firebaseUser]);
-
-  const fetchGraph = useCallback(async () => {
-    if (!firebaseUser) return;
-    setLoading(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/entities/flow', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const json = (await res.json()) as { graph: EntityFlowGraph | null };
-      setGraph(json.graph);
-    } catch {
-      toast.error(t.dashboard.knowledge.relations.flowLoadError);
-    } finally {
-      setLoading(false);
-      setHasFetched(true);
-    }
-  }, [firebaseUser, t]);
-
-  const generateGraph = useCallback(async () => {
-    if (!firebaseUser) return;
-    setGenerating(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/entities/flow', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to generate');
-      const json = (await res.json()) as { graph: EntityFlowGraph };
-      setGraph(json.graph);
-      toast.success(t.dashboard.knowledge.relations.flowGenerated);
-    } catch {
-      toast.error(t.dashboard.knowledge.relations.flowError);
-    } finally {
-      setGenerating(false);
-    }
-  }, [firebaseUser, t]);
-
-  return { graph, hasFetched, loading, generating, fetchGraph, generateGraph };
 }

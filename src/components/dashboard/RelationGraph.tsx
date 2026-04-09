@@ -1,26 +1,14 @@
 'use client';
 
-import { toast } from 'sonner';
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useI18n } from '@/lib/i18n';
 import type cytoscape from 'cytoscape';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { Share2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import type { EntityRelationGraph, EntityGraphNodeCategory } from '@/types';
+import { CATEGORY_COLORS } from './graphCategoryColors';
 
-// ---------------------------------------------------------------------------
-// Category colours
-// ---------------------------------------------------------------------------
-export const CATEGORY_COLORS: Record<EntityGraphNodeCategory, string> = {
-  topics: '#818cf8', // indigo-400
-  people: '#4ade80', // green-400
-  organizations: '#fb923c', // orange-400
-  places: '#38bdf8', // sky-400
-  events: '#f9a8d4', // pink-300
-  numbers: '#f87171', // red-400
-  tags: '#c084fc', // purple-400
-};
+export { CATEGORY_COLORS } from './graphCategoryColors';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -69,7 +57,7 @@ type SelectedGraphNode = {
 function GraphSkeleton() {
   return (
     <div
-      className="flex items-center justify-center h-90 rounded-2xl animate-pulse"
+      className="flex items-center justify-center h-80 rounded-2xl animate-pulse"
       style={{ backgroundColor: 'var(--surface-muted)' }}
     >
       <Share2 className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
@@ -710,67 +698,4 @@ export function RelationGraphFullPageContent({
       </div>
     </div>
   );
-}
-
-// ---------------------------------------------------------------------------
-// useRelationGraph hook
-// ---------------------------------------------------------------------------
-export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
-  const { t } = useI18n();
-  const [graph, setGraph] = useState<EntityRelationGraph | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (firebaseUser) {
-      setHasFetched(false);
-    }
-  }, [firebaseUser]);
-
-  const fetchGraph = useCallback(async () => {
-    if (!firebaseUser) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/entities/relations', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const json = (await res.json()) as { graph: EntityRelationGraph | null };
-      setGraph(json.graph);
-    } catch {
-      toast.error(t.dashboard.knowledge.relations.loadError);
-      setError(t.dashboard.knowledge.relations.loadError);
-    } finally {
-      setLoading(false);
-      setHasFetched(true);
-    }
-  }, [firebaseUser]);
-
-  const generateGraph = useCallback(async () => {
-    if (!firebaseUser) return;
-    setGenerating(true);
-    setError(null);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/entities/relations', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to generate');
-      const json = (await res.json()) as { graph: EntityRelationGraph };
-      setGraph(json.graph);
-      toast.success(t.dashboard.knowledge.relations.generated);
-    } catch {
-      toast.error(t.dashboard.knowledge.relations.error);
-      setError(t.dashboard.knowledge.relations.error);
-    } finally {
-      setGenerating(false);
-    }
-  }, [firebaseUser]);
-
-  return { graph, hasFetched, loading, generating, error, fetchGraph, generateGraph };
 }

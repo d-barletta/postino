@@ -1,10 +1,8 @@
 'use client';
 
-import { toast } from 'sonner';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useI18n } from '@/lib/i18n';
 import type { EntityPlaceMap, EntityPlaceMapPin } from '@/types';
 
 const LIGHT_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -51,7 +49,7 @@ async function loadLeafletRuntime(): Promise<LeafletModule> {
 function MapSkeleton() {
   return (
     <div
-      className="flex h-125 items-center justify-center rounded-2xl animate-pulse"
+      className="flex h-80 items-center justify-center rounded-2xl animate-pulse"
       style={{ backgroundColor: 'var(--surface-muted)' }}
     >
       <MapIcon className="h-16 w-16 opacity-10 text-gray-600 dark:text-white" />
@@ -403,57 +401,4 @@ export function RelationMapChartFullPageContent({
       </div>
     </div>
   );
-}
-
-export function usePlaceMapGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
-  const { t } = useI18n();
-  const [graph, setGraph] = useState<EntityPlaceMap | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
-
-  useEffect(() => {
-    if (firebaseUser) setHasFetched(false);
-  }, [firebaseUser]);
-
-  const fetchGraph = useCallback(async () => {
-    if (!firebaseUser) return;
-    setLoading(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/entities/map', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const json = (await res.json()) as { graph: EntityPlaceMap | null };
-      setGraph(json.graph);
-    } catch {
-      toast.error(t.dashboard.knowledge.relations.mapLoadError);
-    } finally {
-      setLoading(false);
-      setHasFetched(true);
-    }
-  }, [firebaseUser, t]);
-
-  const generateGraph = useCallback(async () => {
-    if (!firebaseUser) return;
-    setGenerating(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/entities/map', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to generate');
-      const json = (await res.json()) as { graph: EntityPlaceMap };
-      setGraph(json.graph);
-      toast.success(t.dashboard.knowledge.relations.mapGenerated);
-    } catch {
-      toast.error(t.dashboard.knowledge.relations.mapError);
-    } finally {
-      setGenerating(false);
-    }
-  }, [firebaseUser, t]);
-
-  return { graph, hasFetched, loading, generating, fetchGraph, generateGraph };
 }

@@ -1,27 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
-import {
-  RelationGraph,
-  RelationGraphFullPageContent,
-  useRelationGraph,
-} from '@/components/dashboard/RelationGraph';
-import {
-  RelationFlowChart,
-  RelationFlowChartFullPageContent,
-  useFlowGraph,
-} from '@/components/dashboard/RelationFlowChart';
-import {
-  RelationMapChart,
-  RelationMapChartFullPageContent,
-  usePlaceMapGraph,
-} from '@/components/dashboard/RelationMapChart';
+import { useRelationGraph } from '@/components/dashboard/useRelationGraph';
+import { useFlowGraph } from '@/components/dashboard/useFlowGraph';
+import { usePlaceMapGraph } from '@/components/dashboard/usePlaceMapGraph';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import {
   Dialog,
@@ -34,6 +23,46 @@ import { Button } from '@/components/ui/Button';
 import { Map as MapIcon, Maximize2, RefreshCw, Share2, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EntityGraphNodeCategory } from '@/types';
+
+const RelationGraph = dynamic(
+  () => import('@/components/dashboard/RelationGraph').then((m) => ({ default: m.RelationGraph })),
+  { ssr: false },
+);
+const RelationGraphFullPageContent = dynamic(
+  () =>
+    import('@/components/dashboard/RelationGraph').then((m) => ({
+      default: m.RelationGraphFullPageContent,
+    })),
+  { ssr: false },
+);
+const RelationFlowChart = dynamic(
+  () =>
+    import('@/components/dashboard/RelationFlowChart').then((m) => ({
+      default: m.RelationFlowChart,
+    })),
+  { ssr: false },
+);
+const RelationFlowChartFullPageContent = dynamic(
+  () =>
+    import('@/components/dashboard/RelationFlowChart').then((m) => ({
+      default: m.RelationFlowChartFullPageContent,
+    })),
+  { ssr: false },
+);
+const RelationMapChart = dynamic(
+  () =>
+    import('@/components/dashboard/RelationMapChart').then((m) => ({
+      default: m.RelationMapChart,
+    })),
+  { ssr: false },
+);
+const RelationMapChartFullPageContent = dynamic(
+  () =>
+    import('@/components/dashboard/RelationMapChart').then((m) => ({
+      default: m.RelationMapChartFullPageContent,
+    })),
+  { ssr: false },
+);
 
 export function RelationsTab() {
   const { t } = useI18n();
