@@ -80,12 +80,29 @@ export async function POST(request: NextRequest) {
             .join('\n\n')
         : '';
 
+    // Extract email IDs from relevant chunks for source-email links in the UI.
+    const emailIdPattern = /^Email ID:\s*(\S+)$/m;
+    const sourceEmailIds = [
+      ...new Set(
+        memories
+          .flatMap((r) =>
+            r.chunks
+              .filter((c) => c.isRelevant)
+              .map((c) => {
+                const m = c.content.match(emailIdPattern);
+                return m ? m[1] : null;
+              }),
+          )
+          .filter((id): id is string => id !== null),
+      ),
+    ];
+
     const systemPrompt = memoryContext
-      ? "You are a helpful assistant answering questions about the user's email memories. " +
+      ? "Your name is Postino, you are a helpful assistant answering questions about the user's email memories. " +
         'Use only the memory context provided below to answer. ' +
         'Be concise and helpful. If the context does not contain relevant information, say so clearly.\n\n' +
         `<memory_context>\n${memoryContext}\n</memory_context>`
-      : 'You are a helpful assistant. The user asked a question about their email memories, ' +
+      : 'Your name is Postino, you are a helpful assistant. The user asked a question about their email memories, ' +
         'but no relevant memories were found. Let them know politely.';
 
     const openrouter = createOpenAI({
@@ -99,7 +116,7 @@ export async function POST(request: NextRequest) {
       messages: [{ role: 'user', content: query }],
     });
 
-    return NextResponse.json({ answer: result.text });
+    return NextResponse.json({ answer: result.text, sourceEmailIds });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
     const status = msg === 'Unauthorized' ? 401 : 500;

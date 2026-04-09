@@ -30,11 +30,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { cn } from '@/lib/utils';
-import { Send, User, Trash2, Maximize2 } from 'lucide-react';
+import { Send, User, Trash2, Maximize2, Mail } from 'lucide-react';
+import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
+import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  sourceEmailIds?: string[];
 }
 
 // Module-level — survives tab switches within the same page session
@@ -52,6 +55,7 @@ interface ChatContentProps {
   a: ReturnType<typeof useI18n>['t']['dashboard']['agent'];
   heightClass?: string;
   wrapperClass?: string;
+  onOpenSourceEmails?: (ids: string[]) => void;
 }
 
 function ChatContent({
@@ -66,6 +70,7 @@ function ChatContent({
   a,
   heightClass = 'h-80 sm:h-105 lg:h-130',
   wrapperClass = '',
+  onOpenSourceEmails,
 }: ChatContentProps) {
   return (
     <div className={cn('flex flex-col gap-3', wrapperClass)}>
@@ -108,22 +113,37 @@ function ChatContent({
                 )}
               </div>
               {/* Bubble */}
-              <div
-                className={cn(
-                  'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
-                  msg.role === 'user'
-                    ? 'rounded-tr-sm bg-[#efd957] whitespace-pre-wrap'
-                    : 'rounded-tl-sm border border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100',
-                )}
-                style={msg.role === 'user' ? { color: '#171717' } : undefined}
-              >
-                {msg.role === 'assistant' ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-1 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-xs">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
-                ) : (
-                  msg.content
-                )}
+              <div className={cn('max-w-[85%] flex flex-col gap-1.5')}>
+                <div
+                  className={cn(
+                    'rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
+                    msg.role === 'user'
+                      ? 'rounded-tr-sm bg-[#efd957] whitespace-pre-wrap'
+                      : 'rounded-tl-sm border border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100',
+                  )}
+                  style={msg.role === 'user' ? { color: '#171717' } : undefined}
+                >
+                  {msg.role === 'assistant' ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-1 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-xs">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+                {/* Source emails link */}
+                {msg.role === 'assistant' &&
+                  msg.sourceEmailIds &&
+                  msg.sourceEmailIds.length > 0 &&
+                  onOpenSourceEmails && (
+                    <button
+                      onClick={() => onOpenSourceEmails(msg.sourceEmailIds!)}
+                      className="flex items-center gap-1.5 self-start text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors px-1"
+                    >
+                      <Mail className="h-3 w-3 shrink-0" />
+                      {a.sourceEmails}
+                    </button>
+                  )}
               </div>
             </div>
           ))
@@ -195,6 +215,15 @@ export function AgentTab() {
   const [loading, setLoading] = useState(false);
   const [clearDrawerOpen, setClearDrawerOpen] = useState(false);
   const [fullPageOpen, setFullPageOpen] = useState(false);
+  const [sourceEmailsLogIds, setSourceEmailsLogIds] = useState<string[] | null>(null);
+  const [singleEmailOpen, setSingleEmailOpen] = useState(false);
+  const [singleEmailSubject, setSingleEmailSubject] = useState('');
+  const [singleEmailBody, setSingleEmailBody] = useState<string | null>(null);
+  const [singleEmailLoading, setSingleEmailLoading] = useState(false);
+  const [exploreFullscreenEmail, setExploreFullscreenEmail] = useState<{
+    subject: string;
+    body: string;
+  } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fullPageBottomRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -244,6 +273,10 @@ export function AgentTab() {
           content: res.ok
             ? data.answer || t.dashboard.agent.noAnswer
             : data.error || t.dashboard.agent.errorFallback,
+          sourceEmailIds:
+            res.ok && Array.isArray(data.sourceEmailIds) && data.sourceEmailIds.length > 0
+              ? (data.sourceEmailIds as string[])
+              : undefined,
         },
       ]);
     } catch {
@@ -268,6 +301,31 @@ export function AgentTab() {
     _persistedMessages = [];
     setMessages([]);
     setClearDrawerOpen(false);
+  };
+
+  const handleOpenSourceEmails = async (ids: string[]) => {
+    if (!firebaseUser) return;
+    if (ids.length === 1) {
+      setSingleEmailSubject('');
+      setSingleEmailBody(null);
+      setSingleEmailLoading(true);
+      setSingleEmailOpen(true);
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch(`/api/email/original/${ids[0]}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSingleEmailSubject(data.subject || '');
+          setSingleEmailBody(data.originalBody ?? null);
+        }
+      } finally {
+        setSingleEmailLoading(false);
+      }
+    } else {
+      setSourceEmailsLogIds(ids);
+    }
   };
 
   const a = t.dashboard.agent;
@@ -315,6 +373,7 @@ export function AgentTab() {
             bottomRef={bottomRef}
             chatContainerRef={chatContainerRef}
             a={a}
+            onOpenSourceEmails={handleOpenSourceEmails}
           />
         </CardContent>
       </Card>
@@ -345,6 +404,7 @@ export function AgentTab() {
               a={a}
               heightClass="flex-1 min-h-0"
               wrapperClass="flex-1 min-h-0 overflow-hidden"
+              onOpenSourceEmails={handleOpenSourceEmails}
             />
           </div>
           <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
@@ -377,6 +437,38 @@ export function AgentTab() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Source emails modal — multiple emails from a single agent response */}
+      {sourceEmailsLogIds && sourceEmailsLogIds.length > 0 && (
+        <ExploreEmailsModal
+          term={null}
+          category=""
+          categoryLabel=""
+          logIds={sourceEmailsLogIds}
+          sourceTitle={a.sourceEmails}
+          onClose={() => setSourceEmailsLogIds(null)}
+          onRequestFullscreen={setExploreFullscreenEmail}
+        />
+      )}
+
+      {/* Full-page view stacked above ExploreEmailsModal */}
+      <FullPageEmailDialog
+        open={!!exploreFullscreenEmail}
+        onClose={() => setExploreFullscreenEmail(null)}
+        subject={exploreFullscreenEmail?.subject ?? ''}
+        body={exploreFullscreenEmail?.body ?? null}
+        overlayClassName="z-[100]"
+        contentClassName="z-[100]"
+      />
+
+      {/* Single-email full-page dialog */}
+      <FullPageEmailDialog
+        open={singleEmailOpen}
+        onClose={() => setSingleEmailOpen(false)}
+        subject={singleEmailSubject}
+        body={singleEmailBody}
+        loading={singleEmailLoading}
+      />
     </div>
   );
 }

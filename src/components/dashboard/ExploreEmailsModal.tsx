@@ -71,7 +71,7 @@ interface LogsResponse {
 }
 
 export interface ExploreEmailsModalProps {
-  /** The term to search for (chip value). Null means the modal is closed. */
+  /** The term to search for (chip value). Null means the modal is closed (in term mode). */
   term: string | null;
   /** Category key: 'tags' | 'topics' | 'people' | 'organizations' | 'places' | 'events' */
   category: string;
@@ -85,6 +85,13 @@ export interface ExploreEmailsModalProps {
    * When provided, the search will match any of these aliases instead of the term alone.
    */
   aliases?: string[];
+  /**
+   * When provided, the modal shows these specific emails by ID instead of
+   * searching by term. The modal is open when this array is non-empty and term is null.
+   */
+  logIds?: string[];
+  /** Title shown in the modal header when in logIds mode. */
+  sourceTitle?: string;
 }
 
 function EmailRowSkeleton() {
@@ -116,6 +123,8 @@ export function ExploreEmailsModal({
   onClose,
   onRequestFullscreen,
   aliases,
+  logIds,
+  sourceTitle,
 }: ExploreEmailsModalProps) {
   const { t, locale } = useI18n();
   const { firebaseUser, user } = useAuth();
@@ -123,8 +132,11 @@ export function ExploreEmailsModal({
   const ts = t.dashboard.search;
   const tk = t.dashboard.knowledge;
 
+  const isLogIdsMode = !term && !!logIds && logIds.length > 0;
+  const isOpen = !!term || isLogIdsMode;
+
   // Integrate with browser history so the Back button closes this modal.
-  useModalHistory(!!term, onClose);
+  useModalHistory(isOpen, onClose);
 
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -223,6 +235,37 @@ export function ExploreEmailsModal({
     [firebaseUser, term, category, aliases],
   );
 
+  const fetchLogsByIds = useCallback(
+    async (ids: string[]) => {
+      if (!firebaseUser || ids.length === 0) return;
+      setLoading(true);
+      setTotalCount(undefined);
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch('/api/email/by-ids', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids }),
+        });
+        if (res.ok) {
+          const data: { logs: EmailLog[] } = await res.json();
+          setLogs(data.logs ?? []);
+          setHasNextPage(false);
+          setTotalPages(1);
+          setTotalCount(data.logs?.length ?? 0);
+        } else {
+          toast.error(t.dashboard.emailHistory.failedToLoad);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [firebaseUser],
+  );
+
   // Reset + fetch when modal opens (term changes)
   useEffect(() => {
     if (!term) return;
@@ -233,6 +276,17 @@ export function ExploreEmailsModal({
     fetchedExpandedIds.current = new Set();
     fetchLogs(1);
   }, [term, fetchLogs]);
+
+  // Reset + fetch when logIds mode opens
+  useEffect(() => {
+    if (!isLogIdsMode || !logIds) return;
+    setLogs([]);
+    setPage(1);
+    setSelectedId(null);
+    setExpandedData({});
+    fetchedExpandedIds.current = new Set();
+    fetchLogsByIds(logIds);
+  }, [isLogIdsMode, logIds, fetchLogsByIds]);
 
   const fetchExpandedEmail = useCallback(
     async (logId: string) => {
@@ -323,7 +377,7 @@ export function ExploreEmailsModal({
   return (
     <>
       <Dialog
-        open={!!term}
+        open={isOpen}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
@@ -337,13 +391,21 @@ export function ExploreEmailsModal({
           {/* Header with tag/category info */}
           <DialogHeader className="shrink-0 px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5 flex-wrap">
-              {tk.relatedEmailsDesc}
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
-                {categoryLabel}: {term}
-              </span>
+              {isLogIdsMode ? (
+                (sourceTitle ?? tk.relatedEmailsDesc)
+              ) : (
+                <>
+                  {tk.relatedEmailsDesc}
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]">
+                    {categoryLabel}: {term}
+                  </span>
+                </>
+              )}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              {tk.relatedEmailsDesc} {categoryLabel}: {term}
+              {isLogIdsMode
+                ? (sourceTitle ?? tk.relatedEmailsDesc)
+                : `${tk.relatedEmailsDesc} ${categoryLabel}: ${term}`}
             </DialogDescription>
           </DialogHeader>
 

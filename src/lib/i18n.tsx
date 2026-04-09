@@ -583,6 +583,7 @@ export interface Translations {
       cancelClear: string;
       expandFullPage: string;
       closeFullPage: string;
+      sourceEmails: string;
       cta: {
         title: string;
         description: string;
@@ -1276,6 +1277,7 @@ const translations: Record<Locale, Translations> = {
         cancelClear: 'Cancel',
         expandFullPage: 'Full page',
         closeFullPage: 'Close',
+        sourceEmails: 'Source emails',
         cta: {
           title: 'Your AI email agent is ready',
           description: 'Ask me about your emails.',
@@ -1976,6 +1978,7 @@ const translations: Record<Locale, Translations> = {
         cancelClear: 'Annulla',
         expandFullPage: 'Pagina intera',
         closeFullPage: 'Chiudi',
+        sourceEmails: 'Email di riferimento',
         cta: {
           title: 'Il tuo agente AI è pronto',
           description: 'Chiedimi delle tue email.',
@@ -2673,6 +2676,7 @@ const translations: Record<Locale, Translations> = {
         cancelClear: 'Cancelar',
         expandFullPage: 'Página completa',
         closeFullPage: 'Cerrar',
+        sourceEmails: 'Correos de referencia',
         cta: {
           title: 'Tu agente de IA está listo',
           description: 'Pregúntame sobre tus correos.',
@@ -3371,6 +3375,7 @@ const translations: Record<Locale, Translations> = {
         cancelClear: 'Annuler',
         expandFullPage: 'Pleine page',
         closeFullPage: 'Fermer',
+        sourceEmails: 'E-mails sources',
         cta: {
           title: 'Votre agent IA est prêt',
           description: 'Demandez-moi à propos de vos e-mails.',
@@ -4071,6 +4076,7 @@ const translations: Record<Locale, Translations> = {
         cancelClear: 'Abbrechen',
         expandFullPage: 'Vollbild',
         closeFullPage: 'Schließen',
+        sourceEmails: 'Quell-E-Mails',
         cta: {
           title: 'Ihr KI-E-Mail-Agent ist bereit',
           description: 'Fragen Sie mich zu Ihren E-Mails.',

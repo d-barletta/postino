@@ -217,15 +217,24 @@ export async function saveToSupermemory(
     `Subject: ${entry.subject}`,
     `Date: ${entry.date}`,
   ];
+  if (entry.logId) parts.push(`Email ID: ${entry.logId}`);
   if (entry.summary) parts.push(`Summary: ${entry.summary}`);
   if (entry.emailType) parts.push(`Type: ${entry.emailType}`);
+  if (entry.language) parts.push(`Language: ${entry.language}`);
   if (entry.sentiment) parts.push(`Sentiment: ${entry.sentiment}`);
+  if (entry.priority) parts.push(`Priority: ${entry.priority}`);
   if (entry.intent) parts.push(`Intent: ${entry.intent}`);
+  if (entry.senderType) parts.push(`Sender type: ${entry.senderType}`);
   if (entry.tags?.length) parts.push(`Tags: ${entry.tags.join(', ')}`);
   if (entry.ruleApplied) parts.push(`Rule applied: ${entry.ruleApplied}`);
+  if (entry.wasSummarized) parts.push(`Was summarized: yes`);
+  if (entry.requiresResponse) parts.push(`Requires response: yes`);
   if (entry.entities?.people?.length) parts.push(`People: ${entry.entities.people.join(', ')}`);
   if (entry.entities?.organizations?.length)
     parts.push(`Organizations: ${entry.entities.organizations.join(', ')}`);
+  if (entry.entities?.places?.length) parts.push(`Places: ${entry.entities.places.join(', ')}`);
+  if (entry.entities?.events?.length) parts.push(`Events: ${entry.entities.events.join(', ')}`);
+  if (entry.entities?.dates?.length) parts.push(`Dates: ${entry.entities.dates.join(', ')}`);
   if (entry.entities?.numbers?.length)
     parts.push(`Numbers/codes: ${entry.entities.numbers.join(', ')}`);
 
