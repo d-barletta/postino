@@ -265,19 +265,27 @@ export function RulesManager({
       {/* Header card with Add Rule button */}
       <Card>
         <CardContent className="py-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {t.dashboard.rules.yourRules}{' '}
-            {loading ? (
-              <span className="inline-block h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded align-middle animate-pulse" />
-            ) : (
-              <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                ({rules.filter((r) => r.isActive).length} {t.dashboard.rules.active.toLowerCase()})
-              </span>
-            )}
-          </h2>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {t.dashboard.rules.yourRules}
+              </h2>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {loading ? (
+                <span className="inline-block h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded align-middle animate-pulse" />
+              ) : (
+                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                  ({rules.filter((r) => r.isActive).length} {t.dashboard.rules.active.toLowerCase()}
+                  )
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {t.dashboard.rules.appliedTopToBottom} {t.dashboard.rules.useArrows}
           </p>
+
           {!showAddForm && (
             <div className="flex items-center gap-2 mt-3">
               <div className="relative flex-1 min-w-0">

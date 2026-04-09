@@ -158,9 +158,6 @@ export function RelationsTab() {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {k.relations.title}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {k.relations.subtitle}
-              </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               {activeSubTab === 'graph' && graph && !isEmpty && (
@@ -228,6 +225,7 @@ export function RelationsTab() {
               )}
             </div>
           </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{k.relations.subtitle}</p>
         </CardHeader>
 
         <CardContent className="space-y-0 p-2">

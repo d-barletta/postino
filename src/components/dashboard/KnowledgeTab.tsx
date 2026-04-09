@@ -598,7 +598,6 @@ export function KnowledgeTab() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{k.title}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{k.subtitle}</p>
             {/* {data && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 {k.emailsAnalyzed.replace('{count}', String(data.totalEmails))}
@@ -630,6 +629,7 @@ export function KnowledgeTab() {
             </Button>
           </div>
         </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{k.subtitle}</p>
       </CardHeader>
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}

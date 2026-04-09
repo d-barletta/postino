@@ -395,14 +395,12 @@ export default function DashboardPage() {
                 onAiAnalysisOnlyToggle={handleAiAnalysisOnlyToggle}
               />
             )}
-            <UserStatsCards stats={userStats ?? EMPTY_STATS} />
-            <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
             {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
-              <Card className="border-[#efd957]/60 bg-gradient-to-br from-[#efd957]/10 to-transparent">
+              <Card className="">
                 <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#efd957]">
-                      <Bot className="h-5 w-5 text-[#171717]" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#efd957]/40 dark:bg-white">
+                      <PostinoLogo className="h-5 w-5" title={t.dashboard.agent.cta.title} />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-gray-100">
@@ -417,12 +415,13 @@ export default function DashboardPage() {
                     onClick={() => handleTabChange('agent')}
                     className="shrink-0 bg-[#efd957] text-[#171717] hover:bg-[#d6c043]"
                   >
-                    <Bot className="h-4 w-4" />
                     {t.dashboard.agent.cta.button}
                   </Button>
                 </CardContent>
               </Card>
             )}
+            <UserStatsCards stats={userStats ?? EMPTY_STATS} />
+            <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
           </div>
         </TabsContent>
         <TabsContent value="rules">

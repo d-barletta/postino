@@ -157,7 +157,7 @@ function ChatContent({
       </div>
 
       {/* Composer */}
-      <InputGroup>
+      <InputGroup className="mb-2">
         <InputGroupTextarea
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -168,7 +168,7 @@ function ChatContent({
           aria-multiline="true"
           className="leading-normal"
         />
-        <InputGroupAddon align="block-end" className="bg-[var(--surface,#ffffff)]">
+        <InputGroupAddon align="block-end" className="bg-(--surface,#ffffff)">
           <InputGroupButton
             className="ml-auto"
             onClick={handleSubmit}
@@ -182,7 +182,6 @@ function ChatContent({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      <p className="text-center text-xs text-gray-400 dark:text-gray-500">{a.sendHint}</p>
     </div>
   );
 }
@@ -280,7 +279,6 @@ export function AgentTab() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{a.title}</h2>
-              <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{a.subtitle}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <Button
@@ -302,6 +300,7 @@ export function AgentTab() {
               </Button>
             </div>
           </div>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{a.subtitle} {a.sendHint}</p>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-3 px-3 py-3 sm:px-4">
@@ -349,7 +348,7 @@ export function AgentTab() {
           </div>
           <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-              {a.title}
+              {a.sendHint}
             </DialogTitle>
             <DialogClose asChild>
               <Button size="sm" className="shrink-0">
