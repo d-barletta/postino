@@ -55,6 +55,71 @@ const DASHBOARD_TABS = [
 ] as const;
 type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
+function DashboardOverviewSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="py-6 animate-pulse">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-2">
+              <div className="h-5 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="h-4 w-72 rounded bg-gray-100 dark:bg-gray-800" />
+            </div>
+            <div className="h-10 w-28 rounded-lg bg-gray-200 dark:bg-gray-700" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="py-4 animate-pulse">
+              <div className="mb-2 h-3 w-20 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="h-6 w-12 rounded bg-gray-200 dark:bg-gray-700" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardContent className="px-6 py-4 animate-pulse">
+          <div className="mb-6 h-4 w-36 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="flex h-48 items-end gap-1.5 pb-2">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-t bg-gray-200 dark:bg-gray-700"
+                style={{ height: `${25 + ((i * 19) % 65)}%` }}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function DashboardPanelSkeleton({ cards = 3 }: { cards?: number }) {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: cards }).map((_, i) => (
+        <Card key={i}>
+          <CardContent className="py-5 animate-pulse">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="h-5 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-6 w-16 rounded-full bg-gray-200 dark:bg-gray-700" />
+              </div>
+              <div className="h-4 w-3/4 rounded bg-gray-100 dark:bg-gray-800" />
+              <div className="h-10 w-full rounded-lg bg-gray-200 dark:bg-gray-700" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, loading, firebaseUser, refreshUser } = useAuth();
   const { t } = useI18n();
@@ -300,48 +365,110 @@ export default function DashboardPage() {
     [firebaseUser, refreshUser],
   );
 
-  if (loading || logsLoading) {
+  const renderOverviewContent = () => {
+    if (loading || logsLoading) {
+      return <DashboardOverviewSkeleton />;
+    }
+
     return (
-      <div className="space-y-6 ui-fade-up">
-        <div>
-          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
-          <div className="h-4 w-64 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
-        </div>
-        <div className="flex gap-1 overflow-x-auto pb-1">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-9 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse shrink-0"
-            />
-          ))}
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="py-4 animate-pulse">
-                <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-                <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <Card>
-          <CardContent className="px-6 py-4 animate-pulse">
-            <div className="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded mb-6" />
-            <div className="h-48 flex items-end gap-1.5 pb-2">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-t"
-                  style={{ height: `${25 + ((i * 19) % 65)}%` }}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-6">
+        {user?.assignedEmail && (
+          <AssignedEmailCard
+            assignedEmail={user.assignedEmail}
+            userEmail={user.email}
+            isAddressEnabled={user.isAddressEnabled !== false}
+            onToggle={handleAddressToggle}
+            isAiAnalysisOnlyEnabled={user.isAiAnalysisOnlyEnabled === true}
+            onAiAnalysisOnlyToggle={handleAiAnalysisOnlyToggle}
+          />
+        )}
+        {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
+          <Card className="">
+            <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#efd957]/40 dark:bg-white">
+                  <PostinoLogo className="h-5 w-5" title={t.dashboard.agent.cta.title} />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    {t.dashboard.agent.cta.title}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t.dashboard.agent.cta.description}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => handleTabChange('agent')}
+                className="shrink-0 bg-[#efd957] text-[#171717] hover:bg-[#d6c043]"
+              >
+                {t.dashboard.agent.cta.button}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+        <UserStatsCards stats={userStats ?? EMPTY_STATS} />
+        <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
       </div>
     );
-  }
+  };
+
+  const renderSettingsContent = () => {
+    if (loading) {
+      return <DashboardPanelSkeleton cards={4} />;
+    }
+
+    return (
+      <div className="space-y-6">
+        <PushNotificationButton />
+        <ForwardingHeaderCard
+          isEnabled={user?.isForwardingHeaderEnabled !== false}
+          onToggle={handleForwardingHeaderToggle}
+        />
+        <AnalysisLanguageCard
+          currentLanguage={user?.analysisOutputLanguage}
+          onSave={handleAnalysisLanguageChange}
+        />
+        <DeleteEntitiesCard />
+        {(isPwa || canShowInstallCard) && (
+          <Card>
+            <CardHeader>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {t.dashboard.installApp.title}
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start gap-4">
+                <div
+                  className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5 shrink-0 bg-white dark:bg-white"
+                  style={{ backgroundColor: '#ffffff' }}
+                >
+                  <PostinoLogo className="h-11 w-11" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    {t.dashboard.installApp.description}
+                  </p>
+                  <div className="flex justify-end">
+                    <Button onClick={() => setInstallPwaTrigger((n) => n + 1)} disabled={isPwa}>
+                      {isPwa ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      {isPwa
+                        ? t.dashboard.installApp.alreadyInstalled
+                        : t.dashboard.installApp.buttonLabel}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 ui-fade-up">
@@ -384,116 +511,39 @@ export default function DashboardPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
-          <div className="space-y-6">
-            {user?.assignedEmail && (
-              <AssignedEmailCard
-                assignedEmail={user.assignedEmail}
-                userEmail={user.email}
-                isAddressEnabled={user.isAddressEnabled !== false}
-                onToggle={handleAddressToggle}
-                isAiAnalysisOnlyEnabled={user.isAiAnalysisOnlyEnabled === true}
-                onAiAnalysisOnlyToggle={handleAiAnalysisOnlyToggle}
-              />
-            )}
-            {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
-              <Card className="">
-                <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#efd957]/40 dark:bg-white">
-                      <PostinoLogo className="h-5 w-5" title={t.dashboard.agent.cta.title} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {t.dashboard.agent.cta.title}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {t.dashboard.agent.cta.description}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => handleTabChange('agent')}
-                    className="shrink-0 bg-[#efd957] text-[#171717] hover:bg-[#d6c043]"
-                  >
-                    {t.dashboard.agent.cta.button}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-            <UserStatsCards stats={userStats ?? EMPTY_STATS} />
-            <UserOverviewCharts stats={userStats ?? EMPTY_STATS} logs={logs} />
-          </div>
+          {renderOverviewContent()}
         </TabsContent>
         <TabsContent value="rules">
-          <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
+          {loading ? (
+            <DashboardPanelSkeleton />
+          ) : (
+            <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
+          )}
         </TabsContent>
         <TabsContent value="inbox">
-          <EmailSearchTab
-            key={selectedEmailId ?? 'inbox'}
-            selectedEmailId={selectedEmailId ?? undefined}
-            refreshTrigger={emailListRefreshTrigger}
-          />
+          {loading ? (
+            <DashboardPanelSkeleton />
+          ) : (
+            <EmailSearchTab
+              key={selectedEmailId ?? 'inbox'}
+              selectedEmailId={selectedEmailId ?? undefined}
+              refreshTrigger={emailListRefreshTrigger}
+            />
+          )}
         </TabsContent>
         {memoryEnabled && (
           <TabsContent value="agent">
-            <AgentTab />
+            {loading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab />}
           </TabsContent>
         )}
         <TabsContent value="explore">
-          <KnowledgeTab />
+          {loading ? <DashboardPanelSkeleton /> : <KnowledgeTab />}
         </TabsContent>
         <TabsContent value="relations">
-          <RelationsTab />
+          {loading ? <DashboardPanelSkeleton /> : <RelationsTab />}
         </TabsContent>
         <TabsContent value="settings">
-          <div className="space-y-6">
-            <PushNotificationButton />
-            <ForwardingHeaderCard
-              isEnabled={user?.isForwardingHeaderEnabled !== false}
-              onToggle={handleForwardingHeaderToggle}
-            />
-            <AnalysisLanguageCard
-              currentLanguage={user?.analysisOutputLanguage}
-              onSave={handleAnalysisLanguageChange}
-            />
-            <DeleteEntitiesCard />
-            {(isPwa || canShowInstallCard) && (
-              <Card>
-                <CardHeader>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {t.dashboard.installApp.title}
-                  </h2>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="w-16 h-16 rounded-2xl shadow-md overflow-hidden flex items-center justify-center p-2.5 shrink-0 bg-white dark:bg-white"
-                      style={{ backgroundColor: '#ffffff' }}
-                    >
-                      <PostinoLogo className="h-11 w-11" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        {t.dashboard.installApp.description}
-                      </p>
-                      <div className="flex justify-end">
-                        <Button onClick={() => setInstallPwaTrigger((n) => n + 1)} disabled={isPwa}>
-                          {isPwa ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                          {isPwa
-                            ? t.dashboard.installApp.alreadyInstalled
-                            : t.dashboard.installApp.buttonLabel}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          {renderSettingsContent()}
         </TabsContent>
       </Tabs>
       <InstallPwaDrawer forceOpenTrigger={installPwaTrigger} />
