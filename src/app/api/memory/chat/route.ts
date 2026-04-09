@@ -58,6 +58,8 @@ export async function POST(request: NextRequest) {
     type ChatMessage = { role: 'user' | 'assistant'; content: string };
     const rawHistory = Array.isArray(body.history) ? body.history : [];
     const MAX_HISTORY = 20;
+    const MAX_MESSAGE_LENGTH = 2000;
+    const MAX_SEARCH_QUERY_LENGTH = 500;
     const history: ChatMessage[] = rawHistory
       .slice(-MAX_HISTORY)
       .filter(
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
           ((m as ChatMessage).role === 'user' || (m as ChatMessage).role === 'assistant') &&
           typeof (m as ChatMessage).content === 'string',
       )
-      .map((m: ChatMessage) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
+      .map((m: ChatMessage) => ({ role: m.role, content: String(m.content).slice(0, MAX_MESSAGE_LENGTH) }));
 
     // uid comes from server-side Firebase token verification and cannot be
     // spoofed by the client. The containerTag ensures each search query is
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
       .slice(-3)
       .map((m) => m.content)
       .join(' ');
-    const searchQuery = recentUserMessages ? `${recentUserMessages} ${query}`.slice(0, 500) : query;
+    const searchQuery = recentUserMessages ? `${recentUserMessages} ${query}`.slice(0, MAX_SEARCH_QUERY_LENGTH) : query;
 
     const searchResult = await client.search.memories({
       q: searchQuery,
