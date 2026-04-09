@@ -11,6 +11,7 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'places',
   'events',
   'tags',
+  'numbers',
 ];
 
 export async function GET(request: NextRequest) {
