@@ -41,12 +41,12 @@ import { EntityMergeDialog } from '@/components/dashboard/EntityMergeDialog';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import type { EntityMerge, EntityMergeSuggestion, EntityCategory } from '@/types';
 
-interface KnowledgeItem {
+export interface KnowledgeItem {
   value: string;
   count: number;
 }
 
-interface KnowledgeData {
+export interface KnowledgeData {
   people: KnowledgeItem[];
   organizations: KnowledgeItem[];
   places: KnowledgeItem[];
@@ -54,6 +54,7 @@ interface KnowledgeData {
   topics: KnowledgeItem[];
   tags: KnowledgeItem[];
   numbers: KnowledgeItem[];
+  languages?: KnowledgeItem[];
   totalEmails: number;
 }
 
@@ -250,13 +251,22 @@ interface SelectedChip {
   category: EntityCategory;
 }
 
-export function KnowledgeTab() {
+interface KnowledgeTabProps {
+  knowledgeData: KnowledgeData | null;
+  knowledgeLoading: boolean;
+  knowledgeError: string | null;
+  onRefreshKnowledge: () => Promise<void>;
+}
+
+export function KnowledgeTab({
+  knowledgeData: data,
+  knowledgeLoading: loading,
+  knowledgeError: error,
+  onRefreshKnowledge,
+}: KnowledgeTabProps) {
   const { t } = useI18n();
   const { firebaseUser } = useAuth();
   const k = t.dashboard.knowledge;
-  const [data, setData] = useState<KnowledgeData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [modalChip, setModalChip] = useState<{
@@ -289,26 +299,6 @@ export function KnowledgeTab() {
 
   // Integrate the fullscreen email dialog with browser history.
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
-
-  const fetchKnowledge = useCallback(async () => {
-    if (!firebaseUser) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch('/api/email/knowledge', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const json = (await res.json()) as KnowledgeData;
-      setData(json);
-    } catch {
-      toast.error(k.failedToLoad);
-      setError('Failed to load knowledge data');
-    } finally {
-      setLoading(false);
-    }
-  }, [firebaseUser]);
 
   const fetchMerges = useCallback(async () => {
     if (!firebaseUser) return;
@@ -453,17 +443,16 @@ export function KnowledgeTab() {
         // silently ignore
       }
 
-      await Promise.all([fetchKnowledge(), fetchMerges()]);
+      await Promise.all([onRefreshKnowledge(), fetchMerges()]);
       toast.success(k.mergeCreated);
     },
-    [firebaseUser, merges, pendingAcceptSuggestion, fetchKnowledge, fetchMerges, k],
+    [firebaseUser, merges, pendingAcceptSuggestion, onRefreshKnowledge, fetchMerges, k],
   );
 
   useEffect(() => {
-    fetchKnowledge();
     fetchMerges();
     fetchSuggestions();
-  }, [fetchKnowledge, fetchMerges, fetchSuggestions]);
+  }, [fetchMerges, fetchSuggestions]);
 
   /** Set of "category:canonical" for merged entities (to show the merge icon). */
   const mergedCanonicals = useMemo(
@@ -550,7 +539,7 @@ export function KnowledgeTab() {
           const patchJson = (await patchRes.json()) as { error?: string };
           throw new Error(patchJson.error ?? 'Failed to update merge');
         }
-        await Promise.all([fetchKnowledge(), fetchMerges()]);
+        await Promise.all([onRefreshKnowledge(), fetchMerges()]);
         setMergeMode(false);
         setSelectedChips([]);
         toast.success(k.mergeCreated);
@@ -561,12 +550,12 @@ export function KnowledgeTab() {
         const json = (await res.json()) as { error?: string };
         throw new Error(json.error ?? 'Failed to create merge');
       }
-      await Promise.all([fetchKnowledge(), fetchMerges()]);
+      await Promise.all([onRefreshKnowledge(), fetchMerges()]);
       setMergeMode(false);
       setSelectedChips([]);
       toast.success(k.mergeCreated);
     },
-    [firebaseUser, fetchKnowledge, fetchMerges, merges, k],
+    [firebaseUser, onRefreshKnowledge, fetchMerges, merges, k],
   );
 
   const handleDeleteMerge = useCallback(async () => {
@@ -578,13 +567,13 @@ export function KnowledgeTab() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      await Promise.all([fetchKnowledge(), fetchMerges()]);
+      await Promise.all([onRefreshKnowledge(), fetchMerges()]);
       toast.success(k.mergeDeleted);
     } finally {
       setDeletingMerge(false);
       setPendingDeleteMerge(null);
     }
-  }, [firebaseUser, pendingDeleteMerge, fetchKnowledge, fetchMerges, k]);
+  }, [firebaseUser, pendingDeleteMerge, onRefreshKnowledge, fetchMerges, k]);
 
   const hasAnyData =
     data &&
@@ -632,7 +621,7 @@ export function KnowledgeTab() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                fetchKnowledge();
+                onRefreshKnowledge();
                 fetchMerges();
               }}
               disabled={loading}

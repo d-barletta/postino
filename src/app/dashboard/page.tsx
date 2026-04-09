@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailSearchTab } from '@/components/dashboard/EmailSearchTab';
-import { KnowledgeTab } from '@/components/dashboard/KnowledgeTab';
+import { KnowledgeTab, type KnowledgeData } from '@/components/dashboard/KnowledgeTab';
 import { RelationsTab } from '@/components/dashboard/RelationsTab';
 import { AgentTab } from '@/components/dashboard/AgentTab';
 import { UserStatsCards, type StatsPeriod } from '@/components/dashboard/UserStatsCards';
@@ -132,6 +132,9 @@ export default function DashboardPage() {
   const [logsLoading, setLogsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>('all');
+  const [knowledgeData, setKnowledgeData] = useState<KnowledgeData | null>(null);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeError, setKnowledgeError] = useState<string | null>(null);
   const [emailListRefreshTrigger, setEmailListRefreshTrigger] = useState(0);
   const [installPwaTrigger, setInstallPwaTrigger] = useState(0);
   const [isPwa, setIsPwa] = useState(false);
@@ -260,6 +263,26 @@ export default function DashboardPage() {
     [firebaseUser, statsPeriod],
   );
 
+  const fetchKnowledge = useCallback(async () => {
+    if (!firebaseUser) return;
+    setKnowledgeLoading(true);
+    setKnowledgeError(null);
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch('/api/email/knowledge', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
+      const json = (await res.json()) as KnowledgeData;
+      setKnowledgeData(json);
+    } catch {
+      toast.error(t.dashboard.knowledge.failedToLoad);
+      setKnowledgeError('Failed to load knowledge data');
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  }, [firebaseUser]);
+
   useEffect(() => {
     if (!firebaseUser) {
       setLogsLoading(false);
@@ -267,8 +290,8 @@ export default function DashboardPage() {
     }
     setLogsLoading(true);
     // Use 'all' on initial load; period changes are handled by handleStatsPeriodChange.
-    Promise.all([fetchLogs(), fetchStats('all')]).finally(() => setLogsLoading(false));
-  }, [firebaseUser]); // fetchLogs and fetchStats are derived from firebaseUser — no separate dep needed
+    Promise.all([fetchLogs(), fetchStats('all'), fetchKnowledge()]).finally(() => setLogsLoading(false));
+  }, [firebaseUser]); // fetchLogs, fetchStats, fetchKnowledge are derived from firebaseUser — no separate dep needed
 
   // Re-fetch stats when period changes.
   const handleStatsPeriodChange = useCallback(
@@ -534,14 +557,14 @@ export default function DashboardPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview">{renderOverviewContent()}</TabsContent>
-        <TabsContent value="rules">
+        <TabsContent value="rules" forceMount className="data-[state=inactive]:hidden">
           {loading ? (
             <DashboardPanelSkeleton />
           ) : (
             <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
           )}
         </TabsContent>
-        <TabsContent value="inbox">
+        <TabsContent value="inbox" forceMount className="data-[state=inactive]:hidden">
           {loading ? (
             <DashboardPanelSkeleton />
           ) : (
@@ -549,6 +572,7 @@ export default function DashboardPage() {
               key={selectedEmailId ?? 'inbox'}
               selectedEmailId={selectedEmailId ?? undefined}
               refreshTrigger={emailListRefreshTrigger}
+              knowledgeData={knowledgeData}
             />
           )}
         </TabsContent>
@@ -558,7 +582,14 @@ export default function DashboardPage() {
           </TabsContent>
         )}
         <TabsContent value="explore">
-          {loading ? <DashboardPanelSkeleton /> : <KnowledgeTab />}
+          {loading ? <DashboardPanelSkeleton /> : (
+            <KnowledgeTab
+              knowledgeData={knowledgeData}
+              knowledgeLoading={knowledgeLoading}
+              knowledgeError={knowledgeError}
+              onRefreshKnowledge={fetchKnowledge}
+            />
+          )}
         </TabsContent>
         <TabsContent value="relations">
           {loading ? <DashboardPanelSkeleton /> : <RelationsTab />}

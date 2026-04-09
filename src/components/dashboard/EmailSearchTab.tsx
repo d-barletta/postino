@@ -52,6 +52,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import type { EmailAnalysis, EmailLog } from '@/types';
+import type { KnowledgeData } from '@/components/dashboard/KnowledgeTab';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
 import { useModalHistory } from '@/hooks/useModalHistory';
@@ -449,9 +450,10 @@ function SwipeableEmailRow({
 interface EmailSearchTabProps {
   selectedEmailId?: string;
   refreshTrigger?: number;
+  knowledgeData?: KnowledgeData | null;
 }
 
-export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchTabProps) {
+export function EmailSearchTab({ selectedEmailId, refreshTrigger, knowledgeData }: EmailSearchTabProps) {
   const { t, locale } = useI18n();
   const { firebaseUser, user } = useAuth();
   const isAdmin = user?.isAdmin === true;
@@ -508,6 +510,21 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
   const suggestionsFetched = useRef(false);
 
   const fetchSuggestions = useCallback(async () => {
+    // Use data already fetched by the parent to avoid a duplicate API call.
+    if (knowledgeData !== undefined) {
+      if (knowledgeData) {
+        setSuggestions({
+          tags: knowledgeData.tags ?? [],
+          people: knowledgeData.people ?? [],
+          organizations: knowledgeData.organizations ?? [],
+          places: knowledgeData.places ?? [],
+          events: knowledgeData.events ?? [],
+          numbers: knowledgeData.numbers ?? [],
+          languages: knowledgeData.languages ?? [],
+        });
+      }
+      return;
+    }
     if (!firebaseUser || suggestionsFetched.current) return;
     suggestionsFetched.current = true;
     setSuggestionsLoading(true);
@@ -531,7 +548,7 @@ export function EmailSearchTab({ selectedEmailId, refreshTrigger }: EmailSearchT
     } finally {
       setSuggestionsLoading(false);
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, knowledgeData]);
 
   // Fetch suggestions when advanced section is first opened
   useEffect(() => {
