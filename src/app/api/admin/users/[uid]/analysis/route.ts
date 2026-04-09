@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { verifyAdminRequest } from '@/lib/api-auth';
 import { adminDb } from '@/lib/firebase-admin';
-import { analyzeStoredEmailLog } from '@/lib/email-analysis';
+import { analyzeStoredEmailLogWithDebug } from '@/lib/email-analysis';
 import { saveToSupermemory } from '@/agents/email-agent';
 import type { EmailAnalysis, EmailMemoryEntry } from '@/types';
 
@@ -178,19 +178,27 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         try {
-          const safeAnalysis = await analyzeStoredEmailLog({
+          const debugResult = await analyzeStoredEmailLogWithDebug({
             fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
             subject: typeof data.subject === 'string' ? data.subject : '',
             originalBody,
             analysisOutputLanguage,
           });
 
-          await logDoc.ref.update({ emailAnalysis: safeAnalysis });
+          if (!debugResult.analysis) {
+            throw new Error('Analysis unavailable');
+          }
+
+          await logDoc.ref.update({
+            emailAnalysis: debugResult.analysis,
+            tokensUsed: debugResult.tokensUsed,
+            estimatedCost: debugResult.estimatedCost,
+          });
           reanalyzedCount += 1;
 
           // Optionally persist the updated analysis to Supermemory (fire-and-forget)
           if (memoryEnabled && supermemoryApiKey) {
-            const entry = buildMemoryEntry(emailId, data, safeAnalysis);
+            const entry = buildMemoryEntry(emailId, data, debugResult.analysis);
             saveToSupermemory(supermemoryApiKey, uid, entry).catch((err) =>
               console.error(
                 `[admin/users/${uid}/analysis] failed to save log ${emailId} to Supermemory:`,

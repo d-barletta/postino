@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyUserRequest } from '@/lib/api-auth';
+import { getModelPricing, calculateCost } from '@/lib/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import Supermemory from 'supermemory';
@@ -115,6 +117,19 @@ export async function POST(request: NextRequest) {
       system: systemPrompt,
       messages: [{ role: 'user', content: query }],
     });
+
+    // Track token usage on the user document (fire-and-forget).
+    const inputTokens = result.usage.inputTokens ?? 0;
+    const outputTokens = result.usage.outputTokens ?? 0;
+    const pricing = await getModelPricing(llmModel, llmApiKey).catch(() => null);
+    const cost = calculateCost(inputTokens, outputTokens, pricing);
+    db.collection('users')
+      .doc(uid)
+      .update({
+        memoryTokensUsed: FieldValue.increment(inputTokens + outputTokens),
+        memoryEstimatedCost: FieldValue.increment(cost),
+      })
+      .catch((err) => console.error('[memory/chat] Failed to update memory token stats:', err));
 
     return NextResponse.json({ answer: result.text, sourceEmailIds });
   } catch (error) {

@@ -29,19 +29,33 @@ export async function GET(request: NextRequest) {
     }
 
     // Use server-side aggregation queries to avoid reading every document.
-    const [totalResult, forwardedResult, errorResult, skippedResult, aggregateResult] =
-      await Promise.all([
-        base.count().get(),
-        base.where('status', '==', 'forwarded').count().get(),
-        base.where('status', '==', 'error').count().get(),
-        base.where('status', '==', 'skipped').count().get(),
-        base
-          .aggregate({
-            totalTokensUsed: AggregateField.sum('tokensUsed'),
-            totalEstimatedCost: AggregateField.sum('estimatedCost'),
-          })
-          .get(),
-      ]);
+    // For the 'all' period we also fetch the user doc to include memory chat token usage.
+    const [
+      totalResult,
+      forwardedResult,
+      errorResult,
+      skippedResult,
+      aggregateResult,
+      userDocResult,
+    ] = await Promise.all([
+      base.count().get(),
+      base.where('status', '==', 'forwarded').count().get(),
+      base.where('status', '==', 'error').count().get(),
+      base.where('status', '==', 'skipped').count().get(),
+      base
+        .aggregate({
+          totalTokensUsed: AggregateField.sum('tokensUsed'),
+          totalEstimatedCost: AggregateField.sum('estimatedCost'),
+        })
+        .get(),
+      period === 'all' ? db.collection('users').doc(decoded.uid).get() : Promise.resolve(null),
+    ]);
+
+    const userData = userDocResult?.data?.() ?? null;
+    const memoryTokensUsed =
+      typeof userData?.memoryTokensUsed === 'number' ? userData.memoryTokensUsed : 0;
+    const memoryEstimatedCost =
+      typeof userData?.memoryEstimatedCost === 'number' ? userData.memoryEstimatedCost : 0;
 
     const stats = {
       totalEmailsReceived: totalResult.data().count,
@@ -49,8 +63,9 @@ export async function GET(request: NextRequest) {
       totalEmailsError: errorResult.data().count,
       totalEmailsSkipped: skippedResult.data().count,
       // Firestore sum() returns null when no documents match; treat as 0.
-      totalTokensUsed: aggregateResult.data().totalTokensUsed ?? 0,
-      totalEstimatedCost: aggregateResult.data().totalEstimatedCost ?? 0,
+      // Memory chat token usage (only included in 'all' period since it is not time-bucketed).
+      totalTokensUsed: (aggregateResult.data().totalTokensUsed ?? 0) + memoryTokensUsed,
+      totalEstimatedCost: (aggregateResult.data().totalEstimatedCost ?? 0) + memoryEstimatedCost,
     };
 
     return NextResponse.json({ stats });
