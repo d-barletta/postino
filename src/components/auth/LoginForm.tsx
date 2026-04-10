@@ -30,6 +30,12 @@ export function LoginForm() {
     setLoading(true);
     try {
       const fbUser = await loginUser(email, password);
+      if (!fbUser.emailVerified) {
+        await signOut();
+        setError(tr.errors.emailNotVerified);
+        setLoading(false);
+        return;
+      }
       // Set redirecting immediately so the "already signed in" view renders
       // with the loading spinner straight away — before the /api/auth/me round-trip.
       setLoading(false);
