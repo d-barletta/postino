@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     // back to parsing the memory/chunk text for entries stored before metadata was
     // introduced. Chunks (from hybrid search) contain the original stored text and
     // are the most reliable text-based fallback.
-    const emailIdPattern = /^Email ID:\s*(\S+)$/m;
+    const emailIdPattern = /\bEmail ID:\s*(\S+)/;
     const sourceEmailIds = [
       ...new Set(
         memories
