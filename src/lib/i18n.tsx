@@ -75,6 +75,7 @@ export interface Translations {
         tooManyRequests: string;
         failed: string;
         suspended: string;
+        emailNotVerified: string;
       };
     };
     register: {
@@ -746,6 +747,7 @@ const translations: Record<Locale, Translations> = {
           tooManyRequests: 'Too many failed attempts. Please try again later.',
           failed: 'Failed to sign in. Please try again.',
           suspended: 'Your account has been suspended. Please contact support.',
+          emailNotVerified: 'Please verify your email address before signing in.',
         },
       },
       register: {
@@ -1444,10 +1446,8 @@ const translations: Record<Locale, Translations> = {
           tooManyRequests: 'Troppi tentativi falliti. Riprova più tardi.',
           failed: 'Accesso non riuscito. Riprova.',
           suspended: 'Il tuo account è stato sospeso. Contatta il supporto.',
+          emailNotVerified: "Verifica il tuo indirizzo email prima di accedere.",
         },
-      },
-      register: {
-        createAccount: 'Crea il tuo account',
         getYourAddress: 'Ottieni il tuo indirizzo Postino personale',
         emailAddress: 'Indirizzo email',
         password: 'Password',
@@ -2144,10 +2144,8 @@ const translations: Record<Locale, Translations> = {
           tooManyRequests: 'Demasiados intentos fallidos. Por favor, inténtalo más tarde.',
           failed: 'Error al iniciar sesión. Por favor, inténtalo de nuevo.',
           suspended: 'Tu cuenta ha sido suspendida. Por favor, contacta con el soporte.',
+          emailNotVerified: 'Por favor, verifica tu dirección de correo electrónico antes de iniciar sesión.',
         },
-      },
-      register: {
-        createAccount: 'Crea tu cuenta',
         getYourAddress: 'Obtén tu dirección personal de Postino',
         emailAddress: 'Correo electrónico',
         password: 'Contraseña',
@@ -2844,10 +2842,8 @@ const translations: Record<Locale, Translations> = {
           tooManyRequests: 'Trop de tentatives échouées. Veuillez réessayer plus tard.',
           failed: 'Échec de la connexion. Veuillez réessayer.',
           suspended: 'Votre compte a été suspendu. Veuillez contacter le support.',
+          emailNotVerified: 'Veuillez vérifier votre adresse e-mail avant de vous connecter.',
         },
-      },
-      register: {
-        createAccount: 'Créez votre compte',
         getYourAddress: 'Obtenez votre adresse Postino personnelle',
         emailAddress: 'Adresse e-mail',
         password: 'Mot de passe',
@@ -3546,10 +3542,8 @@ const translations: Record<Locale, Translations> = {
             'Zu viele fehlgeschlagene Versuche. Bitte versuchen Sie es später erneut.',
           failed: 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
           suspended: 'Ihr Konto wurde gesperrt. Bitte kontaktieren Sie den Support.',
+          emailNotVerified: 'Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.',
         },
-      },
-      register: {
-        createAccount: 'Konto erstellen',
         getYourAddress: 'Erhalten Sie Ihre persönliche Postino-Adresse',
         emailAddress: 'E-Mail-Adresse',
         password: 'Passwort',
