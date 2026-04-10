@@ -262,7 +262,7 @@ export async function saveToSupermemory(
     `Subject: ${entry.subject}`,
     `Date: ${entry.date}`,
   ];
-  if (entry.logId) parts.push(`Email ID: ${entry.logId}`);
+  if (entry.logId) parts.push(`PostinoEmailID: ${entry.logId}`);
   if (entry.summary) parts.push(`Summary: ${entry.summary}`);
   if (entry.emailType) parts.push(`Type: ${entry.emailType}`);
   if (entry.language) parts.push(`Language: ${entry.language}`);
@@ -287,6 +287,7 @@ export async function saveToSupermemory(
 
   await client.add({
     content: parts.join('\n'),
+    metadata: { logId: entry.logId, date: entry.date }, // <-- add metadata here
     containerTag,
     ...(entry.logId ? { metadata: { logId: entry.logId } } : {}),
   });

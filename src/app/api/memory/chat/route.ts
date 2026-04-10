@@ -94,17 +94,19 @@ export async function POST(request: NextRequest) {
 
     // Use hybrid search mode to retrieve both AI-extracted memory summaries and raw
     // document chunks. Memories provide compact, high-quality context for the LLM;
-    // chunks contain the original stored text (including "Email ID: <id>") which is
+    // chunks contain the original stored text (including "PostinoEmailID: <id>") which is
     // the most reliable source for extracting email log references.
     const searchResult = await client.search.memories({
       q: searchQuery,
       containerTag,
       limit: 10,
-      include: { documents: true },
+      // include: { documents: true },
       searchMode: 'hybrid',
     });
 
     const memories = searchResult.results ?? [];
+
+    console.log(memories);
 
     // Diagnostic: log the raw Supermemory response so missing metadata can be investigated
     console.warn(
@@ -115,6 +117,7 @@ export async function POST(request: NextRequest) {
           chunk: r.chunk,
           metadata: r.metadata,
           documents: r.documents,
+          similarity: r.similarity,
         })),
         null,
         2,
@@ -138,33 +141,57 @@ export async function POST(request: NextRequest) {
     // back to parsing the memory/chunk text for entries stored before metadata was
     // introduced. Chunks (from hybrid search) contain the original stored text and
     // are the most reliable text-based fallback.
-    const emailIdPattern = /\bEmail ID:\s*(\S+)/;
-    const sourceEmailIds = [
-      ...new Set(
-        memories
-          .map((r) => {
-            // 1. Memory-level metadata
-            if (r.metadata && typeof r.metadata.logId === 'string' && r.metadata.logId) {
-              return r.metadata.logId;
-            }
-            // 2. Source document metadata (available when include.documents=true)
-            if (Array.isArray(r.documents) && r.documents.length > 0) {
-              for (const doc of r.documents) {
-                if (doc.metadata && typeof doc.metadata.logId === 'string' && doc.metadata.logId) {
-                  return doc.metadata.logId as string;
-                }
-              }
-            }
-            // 3. Text-based fallback: check raw chunk first (preserves original format),
-            //    then AI-extracted memory summary
-            const textToSearch = r.chunk ?? r.memory ?? '';
-            if (!textToSearch) return null;
-            const m = textToSearch.match(emailIdPattern);
-            return m ? m[1] : null;
-          })
-          .filter((id): id is string => id !== null),
+    const emailIdPattern = /\bPostinoEmailID:\s*(\S+)/;
+    const extractSourceEmailId = (result: (typeof memories)[number]): string | null => {
+      // 1. Memory-level metadata
+      if (result.metadata && typeof result.metadata.logId === 'string' && result.metadata.logId) {
+        return result.metadata.logId;
+      }
+      // 2. Source document metadata (available when include.documents=true)
+      if (Array.isArray(result.documents) && result.documents.length > 0) {
+        for (const doc of result.documents) {
+          if (doc.metadata && typeof doc.metadata.logId === 'string' && doc.metadata.logId) {
+            return doc.metadata.logId as string;
+          }
+        }
+      }
+      // 3. Text-based fallback: check raw chunk first (preserves original format),
+      //    then AI-extracted memory summary
+      const textToSearch = result.chunk ?? result.memory ?? '';
+      if (!textToSearch) return null;
+      const match = textToSearch.match(emailIdPattern);
+      return match ? match[1] : null;
+    };
+
+    const sourceEmailIds = Array.from(
+      memories.reduce(
+        (emailScores, result, index) => {
+          const emailId = extractSourceEmailId(result);
+          if (!emailId) {
+            return emailScores;
+          }
+
+          const similarity =
+            typeof result.similarity === 'number' && Number.isFinite(result.similarity)
+              ? result.similarity
+              : Number.NEGATIVE_INFINITY;
+          const existing = emailScores.get(emailId);
+
+          if (
+            !existing ||
+            similarity > existing.similarity ||
+            (similarity === existing.similarity && index < existing.index)
+          ) {
+            emailScores.set(emailId, { similarity, index });
+          }
+
+          return emailScores;
+        },
+        new Map<string, { similarity: number; index: number }>(),
       ),
-    ];
+    )
+      .sort(([, left], [, right]) => right.similarity - left.similarity || left.index - right.index)
+      .map(([emailId]) => emailId);
 
     if (sourceEmailIds.length === 0 && memories.length > 0) {
       console.warn(

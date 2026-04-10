@@ -243,10 +243,16 @@ export function ExploreEmailsModal({
         });
         if (res.ok) {
           const data: { logs: EmailLog[] } = await res.json();
-          setLogs(data.logs ?? []);
+          const logOrder = new Map(ids.map((id, index) => [id, index]));
+          const orderedLogs = [...(data.logs ?? [])].sort(
+            (left, right) =>
+              (logOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+              (logOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+          );
+          setLogs(orderedLogs);
           setHasNextPage(false);
           setTotalPages(1);
-          setTotalCount(data.logs?.length ?? 0);
+          setTotalCount(orderedLogs.length);
         } else {
           toast.error(t.dashboard.emailHistory.failedToLoad);
         }
