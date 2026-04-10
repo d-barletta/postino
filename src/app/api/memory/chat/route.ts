@@ -87,11 +87,16 @@ export async function POST(request: NextRequest) {
       .join(' ');
     const searchQuery = recentUserMessages ? `${recentUserMessages} ${query}`.slice(0, MAX_SEARCH_QUERY_LENGTH) : query;
 
+    // Use hybrid search mode to retrieve both AI-extracted memory summaries and raw
+    // document chunks. Memories provide compact, high-quality context for the LLM;
+    // chunks contain the original stored text (including "Email ID: <id>") which is
+    // the most reliable source for extracting email log references.
     const searchResult = await client.search.memories({
       q: searchQuery,
       containerTag,
       limit: 10,
       include: { documents: true },
+      searchMode: 'hybrid',
     });
 
     const memories = searchResult.results ?? [];
@@ -99,7 +104,8 @@ export async function POST(request: NextRequest) {
       memories.length > 0
         ? memories
             .map((r, i) => {
-              const text = r.memory;
+              // Prefer AI-summarised memory for quality; fall back to raw chunk text
+              const text = r.memory ?? r.chunk;
               return text ? `[${i + 1}] ${text}` : null;
             })
             .filter(Boolean)
@@ -108,7 +114,9 @@ export async function POST(request: NextRequest) {
 
     // Extract email IDs from memory metadata (set during add()) or from the
     // associated source documents (returned when include.documents=true), or fall
-    // back to parsing the memory text for entries stored before metadata was introduced.
+    // back to parsing the memory/chunk text for entries stored before metadata was
+    // introduced. Chunks (from hybrid search) contain the original stored text and
+    // are the most reliable text-based fallback.
     const emailIdPattern = /^Email ID:\s*(\S+)$/m;
     const sourceEmailIds = [
       ...new Set(
@@ -130,9 +138,11 @@ export async function POST(request: NextRequest) {
                 }
               }
             }
-            // 3. Text-based fallback for older entries
-            if (!r.memory) return null;
-            const m = r.memory.match(emailIdPattern);
+            // 3. Text-based fallback: check raw chunk first (preserves original format),
+            //    then AI-extracted memory summary
+            const textToSearch = r.chunk ?? r.memory ?? '';
+            if (!textToSearch) return null;
+            const m = textToSearch.match(emailIdPattern);
             return m ? m[1] : null;
           })
           .filter((id): id is string => id !== null),
@@ -141,11 +151,13 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = memoryContext
       ? "Your name is Postino, you are a helpful assistant answering questions about the user's email memories. " +
-        'Use only the memory context provided below to answer. ' +
-        'Be concise and helpful. If the context does not contain relevant information, say so clearly.\n\n' +
+        'Use the memory context provided below together with the conversation history to answer. ' +
+        'For follow-up questions, refer to both the memory context and previous exchanges to give accurate, contextual replies. ' +
+        'Be concise and helpful. If neither the memory context nor the conversation history contains relevant information, say so clearly.\n\n' +
         `<memory_context>\n${memoryContext}\n</memory_context>`
       : 'Your name is Postino, you are a helpful assistant. The user asked a question about their email memories, ' +
-        'but no relevant memories were found. Let them know politely.';
+        'but no relevant memories were found. Use the conversation history to answer follow-up questions if applicable, ' +
+        'otherwise let them know politely that no relevant memories were found.';
 
     const openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
