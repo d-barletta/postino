@@ -1168,20 +1168,28 @@ export async function POST(request: NextRequest) {
       for (let i = 1; i <= attachmentCount; i++) {
         const rawFile = formData.get(`attachment-${i}`);
         if (!rawFile) continue;
-        if (!(rawFile instanceof File)) {
-          console.warn(`attachment-${i}: expected a File but received ${typeof rawFile}; skipping`);
+        // FormDataEntryValue is string | File. Use typeof check instead of
+        // instanceof File/Blob — the File class returned by the runtime's
+        // internal FormData (undici) may differ from globalThis.File, causing
+        // instanceof to fail. This mirrors snapshotWebhookFormData's approach.
+        if (typeof rawFile === 'string') {
+          console.warn(
+            `attachment-${i}: expected a file but received a string field; skipping`,
+          );
           continue;
         }
         const file = rawFile;
+        const fileName = file.name || '';
 
         if (file.size > MAX_ATTACHMENT_BYTES) {
+          const attachmentLabel = fileName || `attachment-${i}`;
           await updateWebhookLog({
             status: 'rejected',
             result: 'attachment-too-large',
-            reason: `Attachment too large: ${file.name}`,
+            reason: `Attachment too large: ${attachmentLabel}`,
           });
           return NextResponse.json(
-            { error: `Attachment too large: ${file.name}` },
+            { error: `Attachment too large: ${attachmentLabel}` },
             { status: 413 },
           );
         }
@@ -1203,7 +1211,7 @@ export async function POST(request: NextRequest) {
         const contentId = contentIdFieldMap.get(fieldName);
         const fileContentType = file.type || 'application/octet-stream';
         attachments.push({
-          filename: ensureFilenameExtension(file.name, fileContentType),
+          filename: ensureFilenameExtension(fileName || `attachment-${i}`, fileContentType),
           content: await file.arrayBuffer(),
           contentType: fileContentType,
           ...(contentId ? { contentId } : {}),
