@@ -127,7 +127,7 @@ function ChatContent({
                     <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-1 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-xs">
                       <ReactMarkdown
                         components={{
-                          a: ({ href, children }) => {
+                          a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
                             if (href?.startsWith('email-ref:') && onOpenSourceEmails) {
                               const logId = href.slice('email-ref:'.length);
                               return (
