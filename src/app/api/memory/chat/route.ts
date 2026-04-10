@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await generateText({
-      model: openrouter(llmModel),
+      model: openrouter.chat(llmModel),
       system: systemPrompt,
       messages: [...history, { role: 'user', content: query }],
     });
