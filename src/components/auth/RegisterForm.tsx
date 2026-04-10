@@ -7,6 +7,7 @@ import { registerUser } from '@/lib/auth';
 import { isEmailUsingDomain } from '@/lib/email-utils';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { AlertCircle } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -104,9 +105,8 @@ export function RegisterForm() {
         placeholder="you@example.com"
         disabled={signupMaintenance}
       />
-      <Input
+      <PasswordInput
         label={tr.password}
-        type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
@@ -114,9 +114,8 @@ export function RegisterForm() {
         placeholder={tr.minChars}
         disabled={signupMaintenance}
       />
-      <Input
+      <PasswordInput
         label={tr.confirmPassword}
-        type="password"
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         required

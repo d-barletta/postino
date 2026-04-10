@@ -7,6 +7,7 @@ import { loginUser, signOut } from '@/lib/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { AlertCircle, LayoutDashboard, LogOut } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
@@ -115,9 +116,8 @@ export function LoginForm() {
         autoComplete="email"
         placeholder="you@example.com"
       />
-      <Input
+      <PasswordInput
         label={tr.password}
-        type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
