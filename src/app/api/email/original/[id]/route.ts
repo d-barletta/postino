@@ -44,7 +44,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: String(index + 1),
         filename: attachment.filename,
         contentType: attachment.contentType,
-        canDownload: canDownloadAttachments && Boolean(attachment.storagePath || attachment.contentBase64),
+        canDownload:
+          canDownloadAttachments && Boolean(attachment.storagePath || attachment.contentBase64),
       })),
       emailAnalysis: data.emailAnalysis ?? null,
     });

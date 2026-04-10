@@ -50,8 +50,8 @@ export interface QueuedInboundPayload {
   bccAddress?: string;
   /**
    * Attachments for Firestore queue storage.
-    * New jobs store all attachments in Firebase Storage and reference them by `storagePath`.
-    * `contentBase64` is still supported for older jobs already in the queue.
+   * New jobs store all attachments in Firebase Storage and reference them by `storagePath`.
+   * `contentBase64` is still supported for older jobs already in the queue.
    */
   attachments?: SerializedAttachment[];
   /**

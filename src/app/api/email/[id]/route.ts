@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-import {
-  deleteAttachmentFromStorage,
-  type SerializedAttachment,
-} from '@/lib/inbound-processing';
+import { deleteAttachmentFromStorage, type SerializedAttachment } from '@/lib/inbound-processing';
 
 export async function DELETE(
   request: NextRequest,

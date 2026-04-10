@@ -164,31 +164,28 @@ export async function POST(request: NextRequest) {
     };
 
     const sourceEmailIds = Array.from(
-      memories.reduce(
-        (emailScores, result, index) => {
-          const emailId = extractSourceEmailId(result);
-          if (!emailId) {
-            return emailScores;
-          }
-
-          const similarity =
-            typeof result.similarity === 'number' && Number.isFinite(result.similarity)
-              ? result.similarity
-              : Number.NEGATIVE_INFINITY;
-          const existing = emailScores.get(emailId);
-
-          if (
-            !existing ||
-            similarity > existing.similarity ||
-            (similarity === existing.similarity && index < existing.index)
-          ) {
-            emailScores.set(emailId, { similarity, index });
-          }
-
+      memories.reduce((emailScores, result, index) => {
+        const emailId = extractSourceEmailId(result);
+        if (!emailId) {
           return emailScores;
-        },
-        new Map<string, { similarity: number; index: number }>(),
-      ),
+        }
+
+        const similarity =
+          typeof result.similarity === 'number' && Number.isFinite(result.similarity)
+            ? result.similarity
+            : Number.NEGATIVE_INFINITY;
+        const existing = emailScores.get(emailId);
+
+        if (
+          !existing ||
+          similarity > existing.similarity ||
+          (similarity === existing.similarity && index < existing.index)
+        ) {
+          emailScores.set(emailId, { similarity, index });
+        }
+
+        return emailScores;
+      }, new Map<string, { similarity: number; index: number }>()),
     )
       .sort(([, left], [, right]) => right.similarity - left.similarity || left.index - right.index)
       .map(([emailId]) => emailId);
