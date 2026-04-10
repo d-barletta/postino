@@ -125,7 +125,31 @@ function ChatContent({
                 >
                   {msg.role === 'assistant' ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-1 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-xs">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
+                            if (href?.startsWith('email-ref:') && onOpenSourceEmails) {
+                              const logId = href.slice('email-ref:'.length);
+                              return (
+                                <button
+                                  onClick={() => onOpenSourceEmails([logId])}
+                                  className="inline-flex items-center gap-1 text-[#b8991a] dark:text-[#efd957] underline underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer not-prose"
+                                >
+                                  <Mail className="inline h-3 w-3 shrink-0" />
+                                  {children}
+                                </button>
+                              );
+                            }
+                            return (
+                              <a href={href} target="_blank" rel="noopener noreferrer">
+                                {children}
+                              </a>
+                            );
+                          },
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
                     </div>
                   ) : (
                     msg.content
