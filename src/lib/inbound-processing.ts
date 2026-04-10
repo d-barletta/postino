@@ -424,6 +424,13 @@ export async function processQueuedInboundPayload(
         tokensUsed: analysisResult.tokensUsed,
         estimatedCost: analysisResult.estimatedCost,
         ...(safeAnalysis ? { emailAnalysis: safeAnalysis } : {}),
+        ...(payload.attachments && payload.attachments.length > 0
+          ? {
+              attachments: sanitizeForFirestore(payload.attachments),
+              attachmentCount: payload.attachments.length,
+              attachmentNames: payload.attachments.map((a) => a.filename),
+            }
+          : {}),
       });
 
       const newEntry = buildMemoryEntryFromAnalysis(

@@ -1350,6 +1350,12 @@ export async function POST(request: NextRequest) {
           originalBody: emailBody,
           processingMode: 'queued',
           ...(messageId ? { messageId } : {}),
+          ...(attachments.length > 0
+            ? {
+                attachmentCount: attachments.length,
+                attachmentNames: attachments.map((a) => a.filename),
+              }
+            : {}),
         });
         logId = logRef.id;
         await updateWebhookLog({
@@ -1357,6 +1363,31 @@ export async function POST(request: NextRequest) {
           result: 'log-created',
           linked: { emailLogId: logRef.id },
         });
+
+        // Upload attachments to Firebase Storage so they are accessible from the dashboard.
+        let aiOnlySerializedAttachments: SerializedAttachment[] | undefined;
+        if (attachments.length > 0) {
+          const uploaded = await Promise.all(
+            attachments.map(async (att, i) => {
+              const storagePath = await uploadAttachmentToStorage(att, userId, logRef.id, i + 1);
+              if (!storagePath) return null;
+              const entry: SerializedAttachment = {
+                filename: att.filename,
+                contentType: att.contentType,
+                storagePath,
+                ...(att.contentId ? { contentId: att.contentId } : {}),
+              };
+              return entry;
+            }),
+          );
+          const valid = uploaded.filter((a): a is SerializedAttachment => a !== null);
+          if (valid.length > 0) {
+            aiOnlySerializedAttachments = valid;
+            await logRef.update({ attachments: aiOnlySerializedAttachments });
+          }
+          uploadedSerializedAttachments = valid;
+        }
+
         const aiOnlyPayload: QueuedInboundPayload = {
           logId: logRef.id,
           userId,
@@ -1371,9 +1402,11 @@ export async function POST(request: NextRequest) {
           bodyPlain,
           messageId,
           aiAnalysisOnly: true,
+          ...(aiOnlySerializedAttachments ? { attachments: aiOnlySerializedAttachments } : {}),
         };
         const queued = await enqueueEmailJob(aiOnlyPayload, nonceId);
         if (!queued) {
+          await cleanupUploadedAttachments(uploadedSerializedAttachments);
           await updateWebhookLog({
             status: 'skipped',
             result: 'duplicate-job',
