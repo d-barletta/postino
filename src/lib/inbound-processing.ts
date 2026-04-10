@@ -474,8 +474,26 @@ export async function processQueuedInboundPayload(
   // New jobs store all attachments in Firebase Storage; inline base64 is supported only
   // for older queued jobs that were created before the storage-only migration.
   let effectiveAttachments: EmailAttachment[] | undefined;
+
+  console.log('[processing] resolving attachments', {
+    logId: payload.logId,
+    directAttachmentsProvided: attachments !== undefined,
+    directAttachmentsCount: attachments?.length ?? null,
+    payloadAttachmentsCount: payload.attachments?.length ?? 0,
+    payloadAttachmentSummary: payload.attachments?.map((a) => ({
+      filename: a.filename,
+      hasStoragePath: Boolean(a.storagePath),
+      storagePath: a.storagePath ?? null,
+      hasBase64: Boolean(a.contentBase64),
+    })) ?? [],
+  });
+
   if (attachments !== undefined) {
     effectiveAttachments = attachments.length > 0 ? attachments : undefined;
+    console.log('[processing] using direct attachments', {
+      logId: payload.logId,
+      count: effectiveAttachments?.length ?? 0,
+    });
   } else if (payload.attachments && payload.attachments.length > 0) {
     const resolved = await Promise.all(
       payload.attachments.map(async (att) => {
@@ -483,6 +501,12 @@ export async function processQueuedInboundPayload(
 
         if (att.storagePath) {
           content = await downloadAttachmentFromStorage(att.storagePath);
+          console.log(`[processing] storage download "${att.filename}"`, {
+            logId: payload.logId,
+            storagePath: att.storagePath,
+            success: content !== null,
+            byteLength: content?.byteLength ?? null,
+          });
           if (!content) {
             console.error(
               `Failed to download attachment "${att.filename}" from Firebase Storage (path: ${att.storagePath}). ` +
@@ -550,6 +574,12 @@ export async function processQueuedInboundPayload(
       );
     }
     effectiveAttachments = validAttachments.length > 0 ? validAttachments : undefined;
+    console.log('[processing] deserialized attachments', {
+      logId: payload.logId,
+      expected: payload.attachments.length,
+      valid: validAttachments.length,
+      effectiveCount: effectiveAttachments?.length ?? 0,
+    });
 
     await logRef.set(
       {
@@ -559,6 +589,8 @@ export async function processQueuedInboundPayload(
       },
       { merge: true },
     );
+  } else {
+    console.log('[processing] no attachments in payload', { logId: payload.logId });
   }
 
   const rulesSnap = await db
@@ -679,6 +711,12 @@ export async function processQueuedInboundPayload(
     );
   }
 
+  console.log('[processing] sendEmail', {
+    logId: payload.logId,
+    to: payload.userEmail,
+    effectiveAttachmentCount: effectiveAttachments?.length ?? 0,
+    effectiveAttachmentNames: effectiveAttachments?.map((a) => a.filename) ?? [],
+  });
   await sendEmail({
     to: payload.userEmail,
     subject: stripCrlf(result.subject),

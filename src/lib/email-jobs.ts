@@ -199,6 +199,16 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
 async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> {
   const db = adminDb();
 
+  console.log('[email-jobs] processClaimedJob start', {
+    jobId: job.id,
+    logId: job.payload.logId,
+    userId: job.payload.userId,
+    attempts: job.attempts,
+    payloadAttachmentCount: job.payload.attachments?.length ?? 0,
+    payloadAttachmentNames: job.payload.attachments?.map((a) => a.filename) ?? [],
+    payloadAttachmentStoragePaths: job.payload.attachments?.map((a) => a.storagePath ?? null) ?? [],
+  });
+
   // Idempotency guard: read the current log status BEFORE overwriting it so we
   // can detect cases where a previous worker already completed this job (e.g. the
   // job lease expired after a successful forward but before markJobDone ran).

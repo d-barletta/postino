@@ -847,6 +847,15 @@ export async function POST(request: NextRequest) {
 
     const attachments: EmailAttachment[] = [];
     let totalAttachmentBytes = 0;
+
+    console.log('[inbound] attachment routing', {
+      rawAttachmentCount,
+      parsedAttachmentCount: attachmentCount,
+      hasStoreAttachments,
+      rawMessageUrl: rawMessageUrl || null,
+      storeAttachmentsCount: storeAttachments.length,
+    });
+
     if (hasStoreAttachments) {
       if (!mailgunApiKey) {
         await updateWebhookLog({
@@ -1165,8 +1174,19 @@ export async function POST(request: NextRequest) {
         });
       }
     } else {
+      console.log('[inbound] multipart attachment mode', {
+        attachmentCount,
+        formDataKeys: [...new Set([...formData.keys()])],
+      });
       for (let i = 1; i <= attachmentCount; i++) {
         const rawFile = formData.get(`attachment-${i}`);
+        console.log(`[inbound] attachment-${i} raw`, {
+          present: rawFile !== null,
+          typeofValue: typeof rawFile,
+          constructorName: rawFile != null ? (rawFile as object).constructor?.name ?? '(no constructor)' : null,
+          isFile: rawFile instanceof File,
+          isBlob: rawFile instanceof Blob,
+        });
         if (!rawFile) continue;
         // FormDataEntryValue is string | File. Use typeof check instead of
         // instanceof File/Blob — the File class returned by the runtime's
@@ -1180,6 +1200,11 @@ export async function POST(request: NextRequest) {
         }
         const file = rawFile;
         const fileName = file.name || '';
+        console.log(`[inbound] attachment-${i} accepted`, {
+          fileName,
+          size: file.size,
+          type: file.type,
+        });
 
         if (file.size > MAX_ATTACHMENT_BYTES) {
           const attachmentLabel = fileName || `attachment-${i}`;
@@ -1210,13 +1235,16 @@ export async function POST(request: NextRequest) {
         const fieldName = `attachment-${i}`;
         const contentId = contentIdFieldMap.get(fieldName);
         const fileContentType = file.type || 'application/octet-stream';
+        const resolvedName = ensureFilenameExtension(fileName || `attachment-${i}`, fileContentType);
         attachments.push({
-          filename: ensureFilenameExtension(fileName || `attachment-${i}`, fileContentType),
+          filename: resolvedName,
           content: await file.arrayBuffer(),
           contentType: fileContentType,
           ...(contentId ? { contentId } : {}),
         });
+        console.log(`[inbound] attachment-${i} pushed`, { resolvedName, fileContentType, contentId: contentId ?? null });
       }
+      console.log('[inbound] multipart attachments collected', { count: attachments.length });
     }
 
     if (normalizedRecipients.length === 0) {
@@ -1421,10 +1449,20 @@ export async function POST(request: NextRequest) {
     });
 
     // Upload all attachments to Firebase Storage now that we have the email log id for the path.
+    console.log('[inbound] pre-upload attachments', {
+      count: attachments.length,
+      names: attachments.map((a) => a.filename),
+    });
     if (attachments.length > 0) {
       const uploaded: Array<SerializedAttachment | null> = await Promise.all(
         attachments.map(async (att, i): Promise<SerializedAttachment | null> => {
           const storagePath = await uploadAttachmentToStorage(att, userId, logRef.id, i + 1);
+          console.log(`[inbound] upload attachment-${i + 1}`, {
+            filename: att.filename,
+            contentType: att.contentType,
+            byteLength: att.content.byteLength,
+            storagePath: storagePath ?? null,
+          });
           if (!storagePath) {
             // Storage upload failed — fall back to synchronous processing so the
             // attachment is not silently dropped.
