@@ -5,6 +5,7 @@ import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import { verifyMailgunSignature, isMailgunTimestampFresh, type EmailAttachment } from '@/lib/email';
 import { enqueueEmailJob } from '@/lib/email-jobs';
 import {
+  deleteAttachmentFromStorage,
   processQueuedInboundPayload,
   sendEmailCompletionPushNotification,
   uploadAttachmentToStorage,
@@ -15,11 +16,6 @@ import {
 const MAX_ATTACHMENTS = 10;
 const MAX_ATTACHMENT_BYTES = 7 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENTS_BYTES = 20 * 1024 * 1024;
-/**
- * Maximum total base64-encoded attachment size storable in a Firestore queue job document.
- * Firestore has a 1 MB per-document limit; ~500 KB leaves room for the rest of the payload.
- */
-const MAX_QUEUE_ATTACHMENT_BYTES = 500 * 1024;
 const LOOP_MARKER_HEADER = 'x-postino-processed';
 const ASYNC_TRIGGER_BATCH_SIZE = 1;
 const WEBHOOK_LOG_FIELD_MAX_CHARS = 20_000;
@@ -566,11 +562,22 @@ function scheduleProcessingTrigger(request: NextRequest): void {
   });
 }
 
+async function cleanupUploadedAttachments(attachments: SerializedAttachment[]): Promise<void> {
+  if (attachments.length === 0) return;
+
+  await Promise.all(
+    attachments
+      .filter((attachment) => attachment.storagePath)
+      .map((attachment) => deleteAttachmentFromStorage(attachment.storagePath!)),
+  );
+}
+
 export async function POST(request: NextRequest) {
   let logId: string | null = null;
   let finalUserId: string | null = null;
   let finalSender = '';
   let finalSubject = '';
+  let uploadedSerializedAttachments: SerializedAttachment[] = [];
   let webhookLogRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData> | null =
     null;
 
@@ -1373,32 +1380,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Address disabled, email skipped' });
     }
 
-    // Determine whether attachments can be serialized into the Firestore job document.
-    // Firestore has a 1 MB per-document limit; we reserve ~500 KB for attachment base64 data.
-    // Attachments exceeding this threshold are uploaded to Firebase Storage instead.
-    const totalBase64Size = attachments.reduce(
-      (sum, att) => sum + Math.ceil((att.content.byteLength * 4) / 3),
-      0,
-    );
-    const attachmentsTooLargeForQueue =
-      attachments.length > 0 && totalBase64Size > MAX_QUEUE_ATTACHMENT_BYTES;
-
     // Serialize attachments for queue storage.
-    // Small attachments (≤ MAX_QUEUE_ATTACHMENT_BYTES total) are stored inline as base64.
-    // Large attachments are uploaded to Firebase Storage and referenced by path.
+    // All attachments, including inline CID-backed parts, are uploaded to Firebase Storage.
     let serializedAttachments: SerializedAttachment[] | undefined;
-    if (attachments.length > 0) {
-      if (!attachmentsTooLargeForQueue) {
-        // All attachments fit in Firestore — inline base64.
-        serializedAttachments = attachments.map((att) => ({
-          filename: att.filename,
-          contentBase64: Buffer.from(att.content).toString('base64'),
-          contentType: att.contentType,
-          ...(att.contentId ? { contentId: att.contentId } : {}),
-        }));
-      }
-      // (Large attachments are handled below after the log record is created.)
-    }
 
     const processingMode = 'queued';
 
@@ -1428,14 +1412,23 @@ export async function POST(request: NextRequest) {
       linked: { emailLogId: logRef.id },
     });
 
-    // Upload large attachments to Firebase Storage now that we have the logId for the path.
-    if (attachmentsTooLargeForQueue) {
+    // Upload all attachments to Firebase Storage now that we have the email log id for the path.
+    if (attachments.length > 0) {
       const uploaded: Array<SerializedAttachment | null> = await Promise.all(
         attachments.map(async (att, i): Promise<SerializedAttachment | null> => {
-          const storagePath = await uploadAttachmentToStorage(att, logRef.id, i);
+          const storagePath = await uploadAttachmentToStorage(att, userId, logRef.id, i + 1);
           if (!storagePath) {
             // Storage upload failed — fall back to synchronous processing so the
             // attachment is not silently dropped.
+            console.error('Attachment upload returned no storage path; falling back to sync', {
+              userId,
+              emailId: logRef.id,
+              attachmentNumber: i + 1,
+              filename: att.filename,
+              contentType: att.contentType,
+              byteLength: att.content.byteLength,
+              isInline: Boolean(att.contentId),
+            });
             return null;
           }
           return {
@@ -1447,9 +1440,25 @@ export async function POST(request: NextRequest) {
         }),
       );
 
-      const allUploaded = uploaded.every((r) => r !== null);
+      uploadedSerializedAttachments = uploaded.filter(
+        (att): att is SerializedAttachment => att !== null,
+      );
+
+      const allUploaded = uploadedSerializedAttachments.length === attachments.length;
       if (!allUploaded) {
         // One or more uploads failed — process synchronously to avoid data loss.
+        const failedAttachmentNumbers = uploaded
+          .map((attachment, index) => (attachment === null ? index + 1 : null))
+          .filter((attachmentNumber): attachmentNumber is number => attachmentNumber !== null);
+
+        console.error('One or more attachments failed to upload to Firebase Storage', {
+          userId,
+          emailId: logRef.id,
+          expectedAttachments: attachments.length,
+          uploadedAttachments: uploadedSerializedAttachments.length,
+          failedAttachmentNumbers,
+        });
+
         await logRef.update({ status: 'processing', processingStartedAt: Timestamp.now() });
         const syncPayload: QueuedInboundPayload = {
           logId: logRef.id,
@@ -1466,18 +1475,21 @@ export async function POST(request: NextRequest) {
           messageId,
           ...(ccHeader ? { ccAddress: ccHeader } : {}),
           ...(bccHeader ? { bccAddress: bccHeader } : {}),
+          ...(uploadedSerializedAttachments.length > 0
+            ? { attachments: uploadedSerializedAttachments }
+            : {}),
         };
         await processQueuedInboundPayload(syncPayload, attachments);
         await updateWebhookLog({
           status: 'processed',
           result: 'sync-attachments-fallback',
-          reason: 'Large attachment storage upload failed; processed synchronously',
+          reason: 'Attachment storage upload failed; processed synchronously',
           linked: { emailLogId: logRef.id },
         });
         return NextResponse.json({ success: true, mode: 'sync-attachments' });
       }
 
-      serializedAttachments = uploaded.filter((att): att is SerializedAttachment => att !== null);
+      serializedAttachments = uploadedSerializedAttachments;
     }
 
     const payload: QueuedInboundPayload = {
@@ -1501,6 +1513,7 @@ export async function POST(request: NextRequest) {
     const queued = await enqueueEmailJob(payload, nonceId);
     if (!queued) {
       // Queue insertion conflict should be rare (nonce already unique), but keep deterministic behavior.
+      await cleanupUploadedAttachments(uploadedSerializedAttachments);
       await updateWebhookLog({
         status: 'skipped',
         result: 'duplicate-job',
@@ -1508,6 +1521,10 @@ export async function POST(request: NextRequest) {
         linked: { emailLogId: logRef.id, jobId: nonceId },
       });
       return NextResponse.json({ message: 'Duplicate job, already queued' });
+    }
+
+    if (serializedAttachments && serializedAttachments.length > 0) {
+      await logRef.update({ attachments: serializedAttachments });
     }
 
     await updateWebhookLog({
@@ -1523,6 +1540,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, queued: true });
   } catch (error) {
     console.error('Inbound email enqueue error:', error);
+    await cleanupUploadedAttachments(uploadedSerializedAttachments);
     await updateWebhookLog({
       status: 'error',
       result: 'internal-error',

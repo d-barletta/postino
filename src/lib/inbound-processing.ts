@@ -12,20 +12,20 @@ import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
 
 /**
- * Attachment serialized for Firestore storage (base64-encoded content or Firebase Storage ref).
- * Small attachments are stored inline as base64; large attachments are uploaded to Firebase
- * Storage and referenced here by `storagePath`.
+ * Attachment serialized for Firestore queue storage.
+ * New jobs store all attachments in Firebase Storage and reference them by `storagePath`.
+ * `contentBase64` remains supported only so older queued jobs can still be processed.
  */
 export interface SerializedAttachment {
   filename: string;
   contentType: string;
   /** Content-ID for inline attachments referenced via `cid:` in the HTML body. */
   contentId?: string;
-  /** Base64-encoded content for small attachments stored directly in Firestore. */
+  /** Legacy base64 content kept for backward compatibility with older queued jobs. */
   contentBase64?: string;
   /**
-   * Firebase Storage path for large attachments that cannot fit in a Firestore document.
-   * The file is uploaded on inbound and deleted after forwarding.
+   * Firebase Storage path for queued attachments.
+   * All new queued attachments, including inline CID-backed parts, use this field.
    */
   storagePath?: string;
 }
@@ -50,8 +50,8 @@ export interface QueuedInboundPayload {
   bccAddress?: string;
   /**
    * Attachments for Firestore queue storage.
-   * Small attachments are stored inline as base64 (`contentBase64`).
-   * Large attachments are stored in Firebase Storage and referenced by `storagePath`.
+    * New jobs store all attachments in Firebase Storage and reference them by `storagePath`.
+    * `contentBase64` is still supported for older jobs already in the queue.
    */
   attachments?: SerializedAttachment[];
   /**
@@ -174,28 +174,100 @@ function sanitizeForFirestore<T>(value: T): T {
   return value;
 }
 
+function sanitizeStorageFilename(filename: string, fallback: string): string {
+  const basename = filename.split(/[\\/]/).pop()?.trim() ?? '';
+  const sanitized = basename.replace(/[\u0000-\u001f\u007f]/g, '').trim();
+
+  if (!sanitized || sanitized === '.' || sanitized === '..') {
+    return fallback;
+  }
+
+  return sanitized;
+}
+
+function buildAttachmentStoragePath(
+  userId: string,
+  emailId: string,
+  attachmentNumber: number,
+  filename: string,
+): string {
+  const safeFilename = sanitizeStorageFilename(filename, `attachment_${attachmentNumber}`);
+  return `${userId}/${emailId}/attach_${attachmentNumber}/${safeFilename}`;
+}
+
 /**
- * Upload an attachment to Firebase Storage for temporary queue storage.
+ * Upload an attachment to Firebase Storage for queued email processing.
  * Returns the storage path that can later be used to retrieve the file.
  * Falls back gracefully (returns null) when Storage is not configured.
  */
 export async function uploadAttachmentToStorage(
   attachment: EmailAttachment,
-  logId: string,
-  index: number,
+  userId: string,
+  emailId: string,
+  attachmentNumber: number,
 ): Promise<string | null> {
+  const attachmentDetails = {
+    userId,
+    emailId,
+    attachmentNumber,
+    filename: attachment.filename,
+    contentType: attachment.contentType,
+    byteLength: attachment.content.byteLength,
+    isInline: Boolean(attachment.contentId),
+  };
+
   try {
     const storage = adminStorage();
     const bucket = storage.bucket();
-    const storagePath = `email-attachments/${logId}/${index}-${attachment.filename}`;
+    const storagePath = buildAttachmentStoragePath(
+      userId,
+      emailId,
+      attachmentNumber,
+      attachment.filename,
+    );
     const file = bucket.file(storagePath);
-    await file.save(Buffer.from(attachment.content), {
+    const contentBuffer = Buffer.from(attachment.content);
+
+    await file.save(contentBuffer, {
       contentType: attachment.contentType,
-      metadata: { cacheControl: 'no-cache' },
+      metadata: {
+        cacheControl: 'no-cache',
+        metadata: {
+          userId,
+          emailId,
+          attachmentNumber: String(attachmentNumber),
+          isInline: attachment.contentId ? 'true' : 'false',
+          originalFilename: attachment.filename,
+        },
+      },
     });
+
+    const [metadata] = await file.getMetadata();
+    const storedBytes = Number.parseInt(String(metadata.size ?? ''), 10);
+    if (!Number.isFinite(storedBytes) || storedBytes !== contentBuffer.byteLength) {
+      console.error('Attachment storage verification failed after upload', {
+        ...attachmentDetails,
+        storagePath,
+        storedBytes,
+      });
+      try {
+        await file.delete({ ignoreNotFound: true });
+      } catch (cleanupError) {
+        console.error('Failed to delete attachment after storage verification failure', {
+          ...attachmentDetails,
+          storagePath,
+          error: cleanupError,
+        });
+      }
+      return null;
+    }
+
     return storagePath;
   } catch (err) {
-    console.error('Failed to upload attachment to Firebase Storage:', err);
+    console.error('Failed to upload attachment to Firebase Storage', {
+      ...attachmentDetails,
+      error: err,
+    });
     return null;
   }
 }
@@ -222,7 +294,7 @@ async function downloadAttachmentFromStorage(storagePath: string): Promise<Array
  * Delete an attachment from Firebase Storage after it has been forwarded.
  * Errors are logged but not re-thrown.
  */
-async function deleteAttachmentFromStorage(storagePath: string): Promise<void> {
+export async function deleteAttachmentFromStorage(storagePath: string): Promise<void> {
   try {
     const storage = adminStorage();
     const bucket = storage.bucket();
@@ -399,7 +471,8 @@ export async function processQueuedInboundPayload(
   }
 
   // If no attachments were provided directly (queue path), deserialize from payload.
-  // Attachments may be stored as inline base64 (small) or in Firebase Storage (large).
+  // New jobs store all attachments in Firebase Storage; inline base64 is supported only
+  // for older queued jobs that were created before the storage-only migration.
   let effectiveAttachments: EmailAttachment[] | undefined;
   if (attachments !== undefined) {
     effectiveAttachments = attachments.length > 0 ? attachments : undefined;
@@ -433,13 +506,13 @@ export async function processQueuedInboundPayload(
             );
           }
         } else {
-          console.warn(
+          console.error(
             `Attachment "${att.filename}" has neither storagePath nor contentBase64; skipping`,
           );
         }
 
         if (!content) {
-          console.warn(`Skipping attachment "${att.filename}": content unavailable`);
+          console.error(`Skipping attachment "${att.filename}": content unavailable`);
           return null;
         }
 
@@ -453,12 +526,39 @@ export async function processQueuedInboundPayload(
     );
     const validAttachments = resolved.filter((a): a is EmailAttachment => a !== null);
     if (validAttachments.length < payload.attachments.length) {
+      const missingAttachments = payload.attachments
+        .filter((_, index) => resolved[index] === null)
+        .map((att) => ({
+          filename: att.filename,
+          storagePath: att.storagePath ?? null,
+          hasLegacyBase64: Boolean(att.contentBase64),
+          contentId: att.contentId ?? null,
+        }));
+
       console.error(
         `${payload.attachments.length - validAttachments.length} of ${payload.attachments.length} ` +
           `attachment(s) could not be deserialized for log ${payload.logId}`,
+        {
+          logId: payload.logId,
+          userId: payload.userId,
+          missingAttachments,
+        },
+      );
+
+      throw new Error(
+        `Attachment deserialization failed for log ${payload.logId}; refusing to forward incomplete attachments`,
       );
     }
     effectiveAttachments = validAttachments.length > 0 ? validAttachments : undefined;
+
+    await logRef.set(
+      {
+        attachments: sanitizeForFirestore(payload.attachments),
+        attachmentCount: payload.attachments.length,
+        attachmentNames: payload.attachments.map((att) => att.filename),
+      },
+      { merge: true },
+    );
   }
 
   const rulesSnap = await db
@@ -613,18 +713,7 @@ export async function processQueuedInboundPayload(
     ...(result.parseError ? { errorMessage: result.parseError } : {}),
   });
 
-  // Clean up any attachments stored in Firebase Storage now that they have been forwarded
-  // and the log has been successfully updated. Deleting only after the log update ensures
-  // that if the update fails and the job is retried, the attachments are still available.
-  if (payload.attachments) {
-    await Promise.all(
-      payload.attachments
-        .filter((att) => att.storagePath)
-        .map((att) => deleteAttachmentFromStorage(att.storagePath!)),
-    );
-  }
-
-  // Fire-and-forget push notification — runs after the log update and storage cleanup
+  // Fire-and-forget push notification — runs after the log update
   // so that a notification failure never blocks or rolls back the email-processing result.
   await sendEmailPushNotification(
     payload.userId,

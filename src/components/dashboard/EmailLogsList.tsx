@@ -27,7 +27,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import { RefreshCw, Mail, Paperclip, ExternalLink, Search, MousePointerClick } from 'lucide-react';
-import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
+import type { EmailAnalysis, EmailAttachmentInfo, EmailLog, LogsResponse } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
@@ -48,6 +48,7 @@ interface ExpandedEmailData {
   bccAddress?: string | null;
   attachmentCount: number;
   attachmentNames: string[];
+  attachments: EmailAttachmentInfo[];
   loading: boolean;
   error?: string;
 }
@@ -119,7 +120,11 @@ function EmailDetailTabs({
             {emailData?.loading ? (
               <span className="text-gray-400">…</span>
             ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-              <AttachmentList names={emailData?.attachmentNames ?? log.attachmentNames ?? []} />
+              <AttachmentList
+                emailId={log.id}
+                names={emailData?.attachmentNames ?? log.attachmentNames ?? []}
+                attachments={emailData?.attachments}
+              />
             ) : (
               <span className="text-gray-400">{t.dashboard.emailHistory.noAttachmentsShort}</span>
             )}
@@ -394,6 +399,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
           bccAddress: null,
           attachmentCount: 0,
           attachmentNames: [],
+          attachments: [],
           loading: true,
         },
       }));
@@ -413,6 +419,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
               bccAddress: data.bccAddress ?? null,
               attachmentCount: data.attachmentCount ?? 0,
               attachmentNames: data.attachmentNames ?? [],
+              attachments: data.attachments ?? [],
               loading: false,
             },
           }));
@@ -426,6 +433,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
               bccAddress: null,
               attachmentCount: 0,
               attachmentNames: [],
+              attachments: [],
               loading: false,
               error: 'Failed to load',
             },
@@ -441,6 +449,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
             bccAddress: null,
             attachmentCount: 0,
             attachmentNames: [],
+            attachments: [],
             loading: false,
             error: 'Failed to load',
           },

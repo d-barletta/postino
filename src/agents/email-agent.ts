@@ -289,7 +289,6 @@ export async function saveToSupermemory(
     content: parts.join('\n'),
     metadata: { logId: entry.logId, date: entry.date }, // <-- add metadata here
     containerTag,
-    ...(entry.logId ? { metadata: { logId: entry.logId } } : {}),
   });
 }
 

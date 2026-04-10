@@ -88,6 +88,7 @@ npm run dev
 npm run lint
 npm run build
 npm run deploy:indexes
+npm run deploy:storage
 npm run deploy:preview
 npm run deploy:prod
 ```
@@ -114,7 +115,8 @@ This section is designed to let you deploy the app from zero with no missing ste
 2. Enable Authentication.
 3. Enable at least one sign-in method you want to use (for example Google and/or Email/Password).
 4. Enable Firestore database in production mode.
-5. In Firebase console, generate a Web App config and collect:
+5. Enable Firebase Storage and create the default bucket.
+6. In Firebase console, generate a Web App config and collect:
 
 - NEXT_PUBLIC_FIREBASE_API_KEY
 - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -128,12 +130,24 @@ This section is designed to let you deploy the app from zero with no missing ste
 - FIREBASE_PROJECT_ID
 - FIREBASE_CLIENT_EMAIL
 - FIREBASE_PRIVATE_KEY
+- FIREBASE_STORAGE_BUCKET (recommended to set explicitly; usually the same as `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`)
 
 1. Enable Cloud Messaging and generate a VAPID key pair for web push:
 
 - Go to Firebase Console → Project Settings → Cloud Messaging → Web configuration.
 - Click **Generate key pair** (or use an existing pair).
 - Copy the **Key pair** value — this is your `NEXT_PUBLIC_FIREBASE_VAPID_KEY`.
+
+1. Grant the required IAM roles to the service account:
+
+- Go to [Google Cloud IAM](https://console.cloud.google.com/iam-admin/iam) → select your project.
+- Find the service account (`firebase-adminsdk-xxxxx@your_project.iam.gserviceaccount.com`) and click the edit (pencil) icon.
+- Add the following roles:
+  - **Firebase Admin SDK Administrator Service Agent**
+  - **Firebase Authentication Admin**
+  - **Service Account Token Creator**
+  - **Storage Admin**
+- Save.
 
 #### OpenRouter
 
@@ -180,6 +194,13 @@ This section is designed to let you deploy the app from zero with no missing ste
 npm install
 ```
 
+1. Deploy Firebase indexes and Storage rules for the project:
+
+```bash
+npm run deploy:indexes
+npm run deploy:storage
+```
+
 1. Optionally run local checks:
 
 ```bash
@@ -210,6 +231,7 @@ Core app variables:
 - FIREBASE_PROJECT_ID
 - FIREBASE_CLIENT_EMAIL
 - FIREBASE_PRIVATE_KEY
+- FIREBASE_STORAGE_BUCKET
 - OPEN_ROUTER_API_KEY
 - LLM_MODEL
 - SUPERMEMORY_API_KEY (optional, required when memory is enabled unless the key is stored in admin settings)
@@ -349,6 +371,7 @@ If you plan to use the Dashboard Memory tab or Supermemory persistence in produc
 3. Keep production and preview secrets separated in Vercel.
 4. Restrict Firebase service account key access.
 5. Monitor failed jobs from the Admin Jobs tab and logs.
+6. Firebase Storage is required for inbound attachment queueing; if the bucket is missing, disabled, or misconfigured, attachment uploads will fail before jobs are queued.
 
 ## Local Development
 
@@ -373,6 +396,7 @@ Required at minimum:
 - `FIREBASE_PROJECT_ID`
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_PRIVATE_KEY`
+- `FIREBASE_STORAGE_BUCKET`
 - `OPEN_ROUTER_API_KEY`
 - `LLM_MODEL`
 - `SMTP_HOST`

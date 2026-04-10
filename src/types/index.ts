@@ -115,6 +115,13 @@ export interface EmailAnalysis {
   prices?: string[];
 }
 
+export interface EmailAttachmentInfo {
+  id: string;
+  filename: string;
+  contentType: string;
+  canDownload: boolean;
+}
+
 export interface EmailLog {
   id: string;
   toAddress: string;
@@ -138,6 +145,8 @@ export interface EmailLog {
   attachmentCount?: number;
   /** Original filenames of attachments in the email. */
   attachmentNames?: string[];
+  /** Download metadata for attachments when loaded in a detail view. */
+  attachments?: EmailAttachmentInfo[];
   /** Structured AI pre-analysis of the email stored at processing time. */
   emailAnalysis?: EmailAnalysis;
 }

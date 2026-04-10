@@ -13,9 +13,10 @@ import {
   AccordionTrigger,
 } from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
+import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
-import type { EmailAnalysis } from '@/types';
+import type { EmailAnalysis, EmailAttachmentInfo } from '@/types';
 
 interface OriginalEmail {
   id: string;
@@ -28,6 +29,7 @@ interface OriginalEmail {
   receivedAt: string | null;
   attachmentCount: number;
   attachmentNames: string[];
+  attachments: EmailAttachmentInfo[];
 }
 
 interface ReprocessResult {
@@ -309,17 +311,11 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                     </dt>
                     <dd className="text-gray-800 dark:text-gray-200">
                       {email.attachmentCount > 0 ? (
-                        <ul className="list-none space-y-0.5">
-                          {email.attachmentNames.map((name, i) => (
-                            <li key={i} className="flex items-center gap-1.5 min-w-0">
-                              <i
-                                className="bi bi-paperclip shrink-0 text-gray-400"
-                                aria-hidden="true"
-                              />
-                              <span className="truncate">{name}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <AttachmentList
+                          emailId={email.id}
+                          names={email.attachmentNames}
+                          attachments={email.attachments}
+                        />
                       ) : (
                         <span className="text-gray-400 dark:text-gray-500">
                           {t.emailOriginal.noAttachments}

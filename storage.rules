@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Attachments are currently handled only by the server-side Admin SDK.
+    // Admin SDK bypasses Storage Rules, so deny direct client access by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

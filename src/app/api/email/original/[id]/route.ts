@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import type { SerializedAttachment } from '@/lib/inbound-processing';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,6 +16,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const data = logSnap.data()!;
+    const canDownloadAttachments = data.userId === decoded.uid;
+    const attachments = Array.isArray(data.attachments)
+      ? (data.attachments as SerializedAttachment[])
+      : [];
 
     // Check ownership: must be the owner or an admin
     if (data.userId !== decoded.uid) {
@@ -35,6 +40,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
       attachmentCount: data.attachmentCount ?? 0,
       attachmentNames: data.attachmentNames ?? [],
+      attachments: attachments.map((attachment, index) => ({
+        id: String(index + 1),
+        filename: attachment.filename,
+        contentType: attachment.contentType,
+        canDownload: canDownloadAttachments && Boolean(attachment.storagePath || attachment.contentBase64),
+      })),
       emailAnalysis: data.emailAnalysis ?? null,
     });
   } catch (error) {

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import {
+  deleteAttachmentFromStorage,
+  type SerializedAttachment,
+} from '@/lib/inbound-processing';
 
 export async function DELETE(
   request: NextRequest,
@@ -26,6 +30,16 @@ export async function DELETE(
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
+
+    const attachments = Array.isArray(data.attachments)
+      ? (data.attachments as SerializedAttachment[])
+      : [];
+
+    await Promise.all(
+      attachments
+        .filter((attachment) => attachment.storagePath)
+        .map((attachment) => deleteAttachmentFromStorage(attachment.storagePath!)),
+    );
 
     await db.collection('emailLogs').doc(id).delete();
 

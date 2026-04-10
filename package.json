@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint --fix",
     "format": "prettier --write .",
+    "deploy:firestore": "firebase deploy --only firestore:rules",
     "deploy:indexes": "firebase deploy --only firestore:indexes",
+    "deploy:storage": "firebase deploy --only storage",
     "deploy:preview": "vercel",
     "deploy:prod": "vercel --prod"
   },

@@ -257,6 +257,7 @@ export interface Translations {
       cc: string;
       bcc: string;
       attachments: string;
+      downloadAttachment: string;
       noAttachmentsShort: string;
       ruleApplied: string;
       tokens: string;
@@ -566,6 +567,7 @@ export interface Translations {
       failedToUpdateAnalysisLanguageSetting: string;
       analysisRefreshed: string;
       analysisRefreshFailed: string;
+      downloadAttachmentFailed: string;
     };
     agent: {
       title: string;
@@ -945,6 +947,7 @@ const translations: Record<Locale, Translations> = {
         cc: 'Cc:',
         bcc: 'Bcc:',
         attachments: 'Attachments:',
+        downloadAttachment: 'Download attachment',
         noAttachmentsShort: 'None',
         ruleApplied: 'Rule applied:',
         tokens: 'Tokens:',
@@ -1259,6 +1262,7 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateAnalysisLanguageSetting: 'Failed to update analysis language setting',
         analysisRefreshed: 'AI analysis refreshed.',
         analysisRefreshFailed: 'Failed to refresh AI analysis.',
+        downloadAttachmentFailed: 'Failed to download attachment.',
       },
       agent: {
         title: 'Memory Agent',
@@ -1643,6 +1647,7 @@ const translations: Record<Locale, Translations> = {
         cc: 'Cc:',
         bcc: 'Bcc:',
         attachments: 'Allegati:',
+        downloadAttachment: 'Scarica allegato',
         noAttachmentsShort: 'Nessuno',
         ruleApplied: 'Regola applicata:',
         tokens: 'Token:',
@@ -1960,6 +1965,7 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateAnalysisLanguageSetting: 'Aggiornamento lingua di analisi non riuscito',
         analysisRefreshed: 'Analisi AI aggiornata.',
         analysisRefreshFailed: "Aggiornamento dell'analisi AI non riuscito.",
+        downloadAttachmentFailed: "Impossibile scaricare l'allegato.",
       },
       agent: {
         title: 'Agente di Memoria',
@@ -2341,6 +2347,7 @@ const translations: Record<Locale, Translations> = {
         cc: 'Cc:',
         bcc: 'Bcc:',
         attachments: 'Adjuntos:',
+        downloadAttachment: 'Descargar adjunto',
         noAttachmentsShort: 'Ninguno',
         ruleApplied: 'Regla aplicada:',
         tokens: 'Tokens:',
@@ -2658,6 +2665,7 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateAnalysisLanguageSetting: 'Error al actualizar el idioma de análisis',
         analysisRefreshed: 'Análisis de IA actualizado.',
         analysisRefreshFailed: 'No se pudo actualizar el análisis de IA.',
+        downloadAttachmentFailed: 'No se pudo descargar el adjunto.',
       },
       agent: {
         title: 'Agente de Memoria',
@@ -3039,6 +3047,7 @@ const translations: Record<Locale, Translations> = {
         cc: 'Cc :',
         bcc: 'Bcc :',
         attachments: 'Pièces jointes :',
+        downloadAttachment: 'Télécharger la pièce jointe',
         noAttachmentsShort: 'Aucune',
         ruleApplied: 'Règle appliquée :',
         tokens: 'Tokens :',
@@ -3357,6 +3366,7 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateAnalysisLanguageSetting: "Échec de la mise à jour de la langue d'analyse",
         analysisRefreshed: 'Analyse IA actualisée.',
         analysisRefreshFailed: "Impossible d'actualiser l'analyse IA.",
+        downloadAttachmentFailed: 'Impossible de télécharger la pièce jointe.',
       },
       agent: {
         title: 'Agent de Mémoire',
@@ -3739,6 +3749,7 @@ const translations: Record<Locale, Translations> = {
         cc: 'Cc:',
         bcc: 'Bcc:',
         attachments: 'Anhänge:',
+        downloadAttachment: 'Anhang herunterladen',
         noAttachmentsShort: 'Keine',
         ruleApplied: 'Angewendete Regel:',
         tokens: 'Tokens:',
@@ -4058,6 +4069,7 @@ const translations: Record<Locale, Translations> = {
         failedToUpdateAnalysisLanguageSetting: 'Analysesprache konnte nicht aktualisiert werden',
         analysisRefreshed: 'KI-Analyse aktualisiert.',
         analysisRefreshFailed: 'KI-Analyse konnte nicht aktualisiert werden.',
+        downloadAttachmentFailed: 'Anhang konnte nicht heruntergeladen werden.',
       },
       agent: {
         title: 'Gedächtnis-Agent',

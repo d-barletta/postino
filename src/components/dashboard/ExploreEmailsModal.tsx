@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import { Mail, Paperclip, ExternalLink, AlignLeft, Brain, RefreshCw } from 'lucide-react';
-import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
+import type { EmailAnalysis, EmailAttachmentInfo, EmailLog, LogsResponse } from '@/types';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
@@ -57,6 +57,7 @@ interface ExpandedEmailData {
   bccAddress?: string | null;
   attachmentCount: number;
   attachmentNames: string[];
+  attachments: EmailAttachmentInfo[];
   loading: boolean;
   error?: string;
 }
@@ -299,6 +300,7 @@ export function ExploreEmailsModal({
           bccAddress: null,
           attachmentCount: 0,
           attachmentNames: [],
+          attachments: [],
           loading: true,
         },
       }));
@@ -318,6 +320,7 @@ export function ExploreEmailsModal({
               bccAddress: data.bccAddress ?? null,
               attachmentCount: data.attachmentCount ?? 0,
               attachmentNames: data.attachmentNames ?? [],
+              attachments: data.attachments ?? [],
               loading: false,
             },
           }));
@@ -331,6 +334,7 @@ export function ExploreEmailsModal({
               bccAddress: null,
               attachmentCount: 0,
               attachmentNames: [],
+              attachments: [],
               loading: false,
               error: 'Failed to load',
             },
@@ -346,6 +350,7 @@ export function ExploreEmailsModal({
             bccAddress: null,
             attachmentCount: 0,
             attachmentNames: [],
+            attachments: [],
             loading: false,
             error: 'Failed to load',
           },
@@ -590,9 +595,11 @@ export function ExploreEmailsModal({
                                   ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) >
                                     0 ? (
                                     <AttachmentList
+                                      emailId={log.id}
                                       names={
                                         emailData?.attachmentNames ?? log.attachmentNames ?? []
                                       }
+                                      attachments={emailData?.attachments}
                                     />
                                   ) : (
                                     <span className="text-gray-400">
