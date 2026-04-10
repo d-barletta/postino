@@ -162,11 +162,10 @@ export async function POST(request: NextRequest) {
     const openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: llmApiKey,
-      compatibility: 'compatible',
     });
 
     const result = await generateText({
-      model: openrouter(llmModel),
+      model: openrouter.chat(llmModel),
       system: systemPrompt,
       messages: [...history, { role: 'user', content: query }],
     });
