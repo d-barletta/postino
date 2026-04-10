@@ -1183,7 +1183,8 @@ export async function POST(request: NextRequest) {
         console.log(`[inbound] attachment-${i} raw`, {
           present: rawFile !== null,
           typeofValue: typeof rawFile,
-          constructorName: rawFile != null ? (rawFile as object).constructor?.name ?? '(no constructor)' : null,
+          constructorName:
+            rawFile != null ? ((rawFile as object).constructor?.name ?? '(no constructor)') : null,
           isFile: rawFile instanceof File,
           isBlob: rawFile instanceof Blob,
         });
@@ -1193,9 +1194,7 @@ export async function POST(request: NextRequest) {
         // internal FormData (undici) may differ from globalThis.File, causing
         // instanceof to fail. This mirrors snapshotWebhookFormData's approach.
         if (typeof rawFile === 'string') {
-          console.warn(
-            `attachment-${i}: expected a file but received a string field; skipping`,
-          );
+          console.warn(`attachment-${i}: expected a file but received a string field; skipping`);
           continue;
         }
         const file = rawFile;
@@ -1235,14 +1234,21 @@ export async function POST(request: NextRequest) {
         const fieldName = `attachment-${i}`;
         const contentId = contentIdFieldMap.get(fieldName);
         const fileContentType = file.type || 'application/octet-stream';
-        const resolvedName = ensureFilenameExtension(fileName || `attachment-${i}`, fileContentType);
+        const resolvedName = ensureFilenameExtension(
+          fileName || `attachment-${i}`,
+          fileContentType,
+        );
         attachments.push({
           filename: resolvedName,
           content: await file.arrayBuffer(),
           contentType: fileContentType,
           ...(contentId ? { contentId } : {}),
         });
-        console.log(`[inbound] attachment-${i} pushed`, { resolvedName, fileContentType, contentId: contentId ?? null });
+        console.log(`[inbound] attachment-${i} pushed`, {
+          resolvedName,
+          fileContentType,
+          contentId: contentId ?? null,
+        });
       }
       console.log('[inbound] multipart attachments collected', { count: attachments.length });
     }

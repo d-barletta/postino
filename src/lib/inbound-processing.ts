@@ -6,6 +6,7 @@ import {
   getUserMemory,
   saveUserMemory,
   saveToSupermemory,
+  saveAttachmentFilesToSupermemory,
   buildMemoryEntryFromAnalysis,
 } from '@/agents/email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
@@ -441,6 +442,9 @@ export async function processQueuedInboundPayload(
           fromAddress: payload.sender,
           subject: payload.subject,
           wasSummarized: false,
+          ...(payload.attachments && payload.attachments.length > 0
+            ? { attachmentNames: payload.attachments.map((a) => a.filename) }
+            : {}),
         },
         analysisResult.analysis,
       );
@@ -461,6 +465,35 @@ export async function processQueuedInboundPayload(
           saveToSupermemory(supermemoryApiKey, payload.userId, newEntry).catch((err) =>
             console.error('Failed to save to Supermemory (AI-only):', err),
           );
+          if (payload.attachments && payload.attachments.length > 0) {
+            const date = new Date().toISOString().slice(0, 10);
+            Promise.allSettled(
+              payload.attachments.map(async (att) => {
+                if (!att.storagePath) return null;
+                const content = await downloadAttachmentFromStorage(att.storagePath);
+                if (!content) return null;
+                return { filename: att.filename, content, contentType: att.contentType };
+              }),
+            ).then((results) => {
+              const files = results
+                .filter(
+                  (r): r is PromiseFulfilledResult<EmailAttachment> =>
+                    r.status === 'fulfilled' && r.value !== null,
+                )
+                .map((r) => r.value);
+              if (files.length > 0) {
+                saveAttachmentFilesToSupermemory(
+                  supermemoryApiKey,
+                  payload.userId,
+                  payload.logId,
+                  date,
+                  files,
+                ).catch((err) =>
+                  console.error('Failed to upload attachments to Supermemory (AI-only):', err),
+                );
+              }
+            });
+          }
         }
       }
     } catch (err) {
@@ -487,12 +520,13 @@ export async function processQueuedInboundPayload(
     directAttachmentsProvided: attachments !== undefined,
     directAttachmentsCount: attachments?.length ?? null,
     payloadAttachmentsCount: payload.attachments?.length ?? 0,
-    payloadAttachmentSummary: payload.attachments?.map((a) => ({
-      filename: a.filename,
-      hasStoragePath: Boolean(a.storagePath),
-      storagePath: a.storagePath ?? null,
-      hasBase64: Boolean(a.contentBase64),
-    })) ?? [],
+    payloadAttachmentSummary:
+      payload.attachments?.map((a) => ({
+        filename: a.filename,
+        hasStoragePath: Boolean(a.storagePath),
+        storagePath: a.storagePath ?? null,
+        hasBase64: Boolean(a.contentBase64),
+      })) ?? [],
   });
 
   if (attachments !== undefined) {
@@ -657,6 +691,7 @@ export async function processQueuedInboundPayload(
     undefined,
     attachmentNames?.length ? attachmentNames : undefined,
     analysisOutputLanguage,
+    effectiveAttachments?.length ? effectiveAttachments : undefined,
   );
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');

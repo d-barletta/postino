@@ -277,6 +277,8 @@ export interface EmailMemoryEntry {
   requiresResponse?: boolean;
   /** Prices, costs, or monetary amounts mentioned in the email. */
   prices?: string[];
+  /** Names of files attached to the email. */
+  attachmentNames?: string[];
   /** Named entities extracted from the email body. */
   entities?: {
     places: string[];

@@ -41,7 +41,8 @@ import {
   normalizeUniqueNumberStrings,
 } from '@/lib/place-utils';
 import * as cheerio from 'cheerio';
-import Supermemory from 'supermemory';
+import Supermemory, { toFile } from 'supermemory';
+import type { EmailAttachment } from '@/lib/email';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -210,6 +211,7 @@ export function buildMemoryEntryFromAnalysis(
     subject: string;
     ruleApplied?: string;
     wasSummarized: boolean;
+    attachmentNames?: string[];
   },
   analysis?: EmailAnalysis | null,
 ): EmailMemoryEntry {
@@ -284,12 +286,56 @@ export async function saveToSupermemory(
   if (entry.entities?.numbers?.length)
     parts.push(`Numbers/codes: ${entry.entities.numbers.join(', ')}`);
   if (entry.prices?.length) parts.push(`Prices: ${entry.prices.join(', ')}`);
+  if (entry.attachmentNames?.length) parts.push(`Attachments: ${entry.attachmentNames.join(', ')}`);
 
   await client.add({
     content: parts.join('\n'),
     metadata: { logId: entry.logId, date: entry.date }, // <-- add metadata here
     containerTag,
   });
+}
+
+/**
+ * Upload attachment files to Supermemory.ai as documents, scoped to the given user.
+ * Each file is uploaded with the logId and date as metadata for traceability.
+ * Errors are logged and swallowed so a failed upload never blocks email processing.
+ */
+export async function saveAttachmentFilesToSupermemory(
+  apiKey: string,
+  userId: string,
+  logId: string,
+  date: string,
+  attachments: EmailAttachment[],
+): Promise<void> {
+  const client = new Supermemory({ apiKey });
+  const containerTag = `user_${userId}`;
+  const metadata = JSON.stringify({ logId, date });
+
+  await Promise.allSettled(
+    attachments.map(async (att) => {
+      try {
+        const file = await toFile(att.content, att.filename, { type: att.contentType });
+        const uploadParams: Parameters<typeof client.documents.uploadFile>[0] = {
+          file,
+          containerTags: JSON.stringify([containerTag]),
+          metadata,
+        };
+        if (att.contentType === 'application/pdf') {
+          uploadParams.fileType = 'pdf';
+        } else if (att.contentType.startsWith('image/')) {
+          uploadParams.fileType = 'image';
+          uploadParams.mimeType = att.contentType;
+        }
+        await client.documents.uploadFile(uploadParams);
+        console.log(`[supermemory] uploaded attachment "${att.filename}" for logId ${logId}`);
+      } catch (err) {
+        console.error(
+          `[supermemory] failed to upload attachment "${att.filename}" for logId ${logId}:`,
+          err,
+        );
+      }
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1931,6 +1977,7 @@ export async function processEmailWithAgent(
   modelOverride?: string,
   attachmentNames?: string[],
   analysisOutputLanguage?: string,
+  attachmentFiles?: EmailAttachment[],
 ): Promise<ProcessEmailResult> {
   const traceStartedAt = new Date().toISOString();
   const traceSteps: AgentTraceStep[] = [];
@@ -2206,6 +2253,7 @@ export async function processEmailWithAgent(
       subject: emailSubject,
       ruleApplied: activeRules.length > 0 ? ruleApplied : undefined,
       wasSummarized: !lastParseError && activeRules.length > 0,
+      ...(attachmentNames?.length ? { attachmentNames } : {}),
     },
     analysis,
   );
@@ -2227,6 +2275,16 @@ export async function processEmailWithAgent(
       saveToSupermemory(supermemoryApiKey, userId, newEntry).catch((err) =>
         console.error('Failed to save to Supermemory:', err),
       );
+      if (attachmentFiles?.length) {
+        const date = new Date().toISOString().slice(0, 10);
+        saveAttachmentFilesToSupermemory(
+          supermemoryApiKey,
+          userId,
+          logId,
+          date,
+          attachmentFiles,
+        ).catch((err) => console.error('Failed to upload attachments to Supermemory:', err));
+      }
     }
   }
 
