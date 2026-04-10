@@ -13,6 +13,7 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'organizations',
   'places',
   'events',
+  'dates',
   'tags',
   'numbers',
 ];
@@ -145,6 +146,7 @@ export async function POST(request: NextRequest) {
     const organizations: CountMap = {};
     const places: CountMap = {};
     const events: CountMap = {};
+    const dates: CountMap = {};
     const numbers: CountMap = {};
 
     for (const doc of snap.docs) {
@@ -158,6 +160,7 @@ export async function POST(request: NextRequest) {
         incrementAll(organizations, entities.organizations);
         incrementAll(places, extractStoredPlaceNames(entities.places, entities.placeNames));
         incrementAll(events, entities.events);
+        incrementAll(dates, entities.dates);
         incrementAll(numbers, entities.numbers);
       }
     }
@@ -181,6 +184,7 @@ export async function POST(request: NextRequest) {
       organizations: toTopN(organizations),
       places: toTopN(places),
       events: toTopN(events),
+      dates: toTopN(dates),
       numbers: toTopN(numbers),
     };
 

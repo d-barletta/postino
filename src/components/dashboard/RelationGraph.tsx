@@ -40,6 +40,7 @@ interface RelationGraphProps {
     organizations: string;
     places: string;
     events: string;
+    dates: string;
     tags: string;
     numbers: string;
   };
@@ -642,6 +643,7 @@ export function RelationGraphFullPageContent({
     | 'organizations'
     | 'places'
     | 'events'
+    | 'dates'
     | 'tags'
     | 'numbers'
   >;

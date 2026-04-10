@@ -34,6 +34,7 @@ const NODE_DIMS: Record<EntityGraphNodeCategory, { w: number; h: number }> = {
   organizations: { w: 130, h: 44 },
   places: { w: 92, h: 80 },
   events: { w: 88, h: 64 },
+  dates: { w: 96, h: 36 },
   topics: { w: 110, h: 38 },
   tags: { w: 90, h: 32 },
   numbers: { w: 120, h: 36 },
@@ -67,6 +68,7 @@ const FLOW_CATEGORY_ORDER: EntityGraphNodeCategory[] = [
   'people',
   'organizations',
   'events',
+  'dates',
   'places',
   'topics',
   'tags',
@@ -398,11 +400,40 @@ function NumberNode({ data }: NodeProps & { data: FlowNodeData }) {
   );
 }
 
+function DateNode({ data }: NodeProps & { data: FlowNodeData }) {
+  const color = CATEGORY_COLORS['dates'];
+  const { w, h } = NODE_DIMS['dates'];
+  return (
+    <div
+      title={`${data.bucketLabel} (${data.count})`}
+      style={{
+        ...getNodeFrameStyle(data),
+        width: w,
+        height: h,
+        borderRadius: 6,
+        background: `${color}26`,
+        border: `1.5px solid ${color}`,
+        boxShadow: getNodeBoxShadow(color, data, 6),
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 12px',
+        cursor: 'pointer',
+      }}
+    >
+      <Handle type="target" position={TARGET_HANDLE_POSITION} style={HANDLE_STYLE} />
+      <LabelText label={data.label} color={color} style={{ fontSize: 9, WebkitLineClamp: 1 }} />
+      <Handle type="source" position={SOURCE_HANDLE_POSITION} style={HANDLE_STYLE} />
+    </div>
+  );
+}
+
 const NODE_TYPES: NodeTypes = {
   people: PeopleNode as unknown as NodeTypes[string],
   organizations: OrgNode as unknown as NodeTypes[string],
   places: PlaceNode as unknown as NodeTypes[string],
   events: EventNode as unknown as NodeTypes[string],
+  dates: DateNode as unknown as NodeTypes[string],
   topics: TopicNode as unknown as NodeTypes[string],
   tags: TagNode as unknown as NodeTypes[string],
   numbers: NumberNode as unknown as NodeTypes[string],
@@ -923,6 +954,7 @@ export interface RelationFlowChartProps {
     organizations: string;
     places: string;
     events: string;
+    dates: string;
     tags: string;
     numbers: string;
     flowNodeClick: string;
@@ -1075,6 +1107,7 @@ export function RelationFlowChartFullPageContent({
     | 'organizations'
     | 'places'
     | 'events'
+    | 'dates'
     | 'tags'
     | 'numbers'
   >;

@@ -319,6 +319,7 @@ export interface Translations {
       filterOrgs: string;
       filterPlaces: string;
       filterEvents: string;
+      filterDates: string;
       filterNumbers: string;
       languagePlaceholder: string;
       tagsPlaceholder: string;
@@ -326,6 +327,7 @@ export interface Translations {
       orgsPlaceholder: string;
       placesPlaceholder: string;
       eventsPlaceholder: string;
+      datesPlaceholder: string;
       numbersPlaceholder: string;
       advancedFilters: string;
       withAttachments: string;
@@ -364,6 +366,7 @@ export interface Translations {
       organizations: string;
       places: string;
       events: string;
+      dates: string;
       tags: string;
       numbers: string;
       emailsAnalyzed: string;
@@ -866,7 +869,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Delete All Entities & Merges',
         description:
-          'Permanently delete all extracted entity knowledge (people, topics, organizations, places, events, tags) from your emails, all entity merges, and all AI merge suggestions. This cannot be undone.',
+          'Permanently delete all extracted entity knowledge (people, topics, organizations, places, events, dates, tags) from your emails, all entity merges, and all AI merge suggestions. This cannot be undone.',
         buttonLabel: 'Delete All Entities & Merges',
         confirmTitle: 'Delete All Entities & Merges?',
         confirmDescription:
@@ -1010,6 +1013,7 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organizations',
         filterPlaces: 'Places',
         filterEvents: 'Events',
+        filterDates: 'Dates',
         filterNumbers: 'Numbers & codes',
         languagePlaceholder: 'Select language…',
         tagsPlaceholder: 'Select tags…',
@@ -1017,6 +1021,7 @@ const translations: Record<Locale, Translations> = {
         orgsPlaceholder: 'Select organizations…',
         placesPlaceholder: 'Select places…',
         eventsPlaceholder: 'Select events…',
+        datesPlaceholder: 'Select dates…',
         numbersPlaceholder: 'Select numbers/codes…',
         advancedFilters: 'Advanced filters',
         withAttachments: 'With attachments',
@@ -1055,6 +1060,7 @@ const translations: Record<Locale, Translations> = {
         organizations: 'Organizations',
         places: 'Places',
         events: 'Events',
+        dates: 'Dates',
         tags: 'Tags',
         numbers: 'Numbers & codes',
         emailsAnalyzed: '{count} emails analyzed',
@@ -1566,7 +1572,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Elimina tutte le entità e le unioni',
         description:
-          'Elimina definitivamente tutte le entità estratte (persone, argomenti, organizzazioni, luoghi, eventi, tag) dalle tue email, tutte le unioni di entità e tutti i suggerimenti di unione AI. Questa azione non può essere annullata.',
+          'Elimina definitivamente tutte le entità estratte (persone, argomenti, organizzazioni, luoghi, eventi, date, tag) dalle tue email, tutte le unioni di entità e tutti i suggerimenti di unione AI. Questa azione non può essere annullata.',
         buttonLabel: 'Elimina tutte le entità e le unioni',
         confirmTitle: 'Eliminare tutte le entità e le unioni?',
         confirmDescription:
@@ -1710,6 +1716,7 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organizzazioni',
         filterPlaces: 'Luoghi',
         filterEvents: 'Eventi',
+        filterDates: 'Date',
         filterNumbers: 'Numeri e codici',
         languagePlaceholder: 'Seleziona lingua…',
         tagsPlaceholder: 'Seleziona tag…',
@@ -1717,6 +1724,7 @@ const translations: Record<Locale, Translations> = {
         orgsPlaceholder: 'Seleziona organizzazioni…',
         placesPlaceholder: 'Seleziona luoghi…',
         eventsPlaceholder: 'Seleziona eventi…',
+        datesPlaceholder: 'Seleziona date…',
         numbersPlaceholder: 'Seleziona numeri/codici…',
         advancedFilters: 'Filtri avanzati',
         withAttachments: 'Con allegati',
@@ -1755,6 +1763,7 @@ const translations: Record<Locale, Translations> = {
         organizations: 'Organizzazioni',
         places: 'Luoghi',
         events: 'Eventi',
+        dates: 'Date',
         tags: 'Tag',
         numbers: 'Numeri e codici',
         emailsAnalyzed: '{count} email analizzate',
@@ -2266,7 +2275,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Eliminar todas las entidades y fusiones',
         description:
-          'Elimina permanentemente todas las entidades extraídas (personas, temas, organizaciones, lugares, eventos, etiquetas) de tus correos, todas las fusiones de entidades y todas las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
+          'Elimina permanentemente todas las entidades extraídas (personas, temas, organizaciones, lugares, eventos, fechas, etiquetas) de tus correos, todas las fusiones de entidades y todas las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
         buttonLabel: 'Eliminar todas las entidades y fusiones',
         confirmTitle: '¿Eliminar todas las entidades y fusiones?',
         confirmDescription:
@@ -2410,6 +2419,7 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organizaciones',
         filterPlaces: 'Lugares',
         filterEvents: 'Eventos',
+        filterDates: 'Fechas',
         filterNumbers: 'Números y códigos',
         languagePlaceholder: 'Seleccionar idioma…',
         tagsPlaceholder: 'Seleccionar etiquetas…',
@@ -2417,6 +2427,7 @@ const translations: Record<Locale, Translations> = {
         orgsPlaceholder: 'Seleccionar organizaciones…',
         placesPlaceholder: 'Seleccionar lugares…',
         eventsPlaceholder: 'Seleccionar eventos…',
+        datesPlaceholder: 'Seleccionar fechas…',
         numbersPlaceholder: 'Seleccionar números/códigos…',
         advancedFilters: 'Filtros avanzados',
         withAttachments: 'Con adjuntos',
@@ -2455,6 +2466,7 @@ const translations: Record<Locale, Translations> = {
         organizations: 'Organizaciones',
         places: 'Lugares',
         events: 'Eventos',
+        dates: 'Fechas',
         tags: 'Etiquetas',
         numbers: 'Números y códigos',
         emailsAnalyzed: '{count} correos analizados',
@@ -2966,7 +2978,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Supprimer toutes les entités et fusions',
         description:
-          "Supprime définitivement toutes les entités extraites (personnes, sujets, organisations, lieux, événements, tags) de vos e-mails, toutes les fusions d'entités et toutes les suggestions de fusion IA. Cette action est irréversible.",
+          "Supprime définitivement toutes les entités extraites (personnes, sujets, organisations, lieux, événements, dates, tags) de vos e-mails, toutes les fusions d'entités et toutes les suggestions de fusion IA. Cette action est irréversible.",
         buttonLabel: 'Supprimer toutes les entités et fusions',
         confirmTitle: 'Supprimer toutes les entités et fusions ?',
         confirmDescription:
@@ -3110,6 +3122,7 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organisations',
         filterPlaces: 'Lieux',
         filterEvents: 'Événements',
+        filterDates: 'Dates',
         filterNumbers: 'Numéros et codes',
         languagePlaceholder: 'Sélectionner une langue…',
         tagsPlaceholder: 'Sélectionner des tags…',
@@ -3117,6 +3130,7 @@ const translations: Record<Locale, Translations> = {
         orgsPlaceholder: 'Sélectionner des organisations…',
         placesPlaceholder: 'Sélectionner des lieux…',
         eventsPlaceholder: 'Sélectionner des événements…',
+        datesPlaceholder: 'Sélectionner des dates…',
         numbersPlaceholder: 'Sélectionner des numéros/codes…',
         advancedFilters: 'Filtres avancés',
         withAttachments: 'Avec pièces jointes',
@@ -3155,6 +3169,7 @@ const translations: Record<Locale, Translations> = {
         organizations: 'Organisations',
         places: 'Lieux',
         events: 'Événements',
+        dates: 'Dates',
         tags: 'Étiquettes',
         numbers: 'Numéros et codes',
         emailsAnalyzed: '{count} emails analysés',
@@ -3668,7 +3683,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Alle Entitäten und Zusammenführungen löschen',
         description:
-          'Löscht dauerhaft alle extrahierten Entitäten (Personen, Themen, Organisationen, Orte, Ereignisse, Tags) aus Ihren E-Mails, alle Entitätszusammenführungen und alle KI-Zusammenführungsvorschläge. Diese Aktion kann nicht rückgängig gemacht werden.',
+          'Löscht dauerhaft alle extrahierten Entitäten (Personen, Themen, Organisationen, Orte, Ereignisse, Datumsangaben, Tags) aus Ihren E-Mails, alle Entitätszusammenführungen und alle KI-Zusammenführungsvorschläge. Diese Aktion kann nicht rückgängig gemacht werden.',
         buttonLabel: 'Alle Entitäten und Zusammenführungen löschen',
         confirmTitle: 'Alle Entitäten und Zusammenführungen löschen?',
         confirmDescription:
@@ -3783,7 +3798,7 @@ const translations: Record<Locale, Translations> = {
         analysisEntitiesOrganizations: 'Organisationen:',
         analysisEntitiesPlaces: 'Orte:',
         analysisEntitiesEvents: 'Ereignisse:',
-        analysisEntitiesDates: 'Daten:',
+        analysisEntitiesDates: 'Datumsangaben:',
         analysisEntitiesPrices: 'Preise:',
         rerunAnalysis: 'Analyse wiederholen',
         rerunningAnalysis: 'Analyse wird wiederholt...',
@@ -3812,6 +3827,7 @@ const translations: Record<Locale, Translations> = {
         filterOrgs: 'Organisationen',
         filterPlaces: 'Orte',
         filterEvents: 'Ereignisse',
+        filterDates: 'Datumsangaben',
         filterNumbers: 'Nummern & Codes',
         languagePlaceholder: 'Sprache auswählen…',
         tagsPlaceholder: 'Tags auswählen…',
@@ -3819,6 +3835,7 @@ const translations: Record<Locale, Translations> = {
         orgsPlaceholder: 'Organisationen auswählen…',
         placesPlaceholder: 'Orte auswählen…',
         eventsPlaceholder: 'Ereignisse auswählen…',
+        datesPlaceholder: 'Datumsangaben auswählen…',
         numbersPlaceholder: 'Nummern/Codes auswählen…',
         advancedFilters: 'Erweiterte Filter',
         withAttachments: 'Mit Anhängen',
@@ -3857,6 +3874,7 @@ const translations: Record<Locale, Translations> = {
         organizations: 'Organisationen',
         places: 'Orte',
         events: 'Ereignisse',
+        dates: 'Datumsangaben',
         tags: 'Tags',
         numbers: 'Nummern & Codes',
         emailsAnalyzed: '{count} E-Mails analysiert',

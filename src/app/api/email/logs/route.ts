@@ -64,6 +64,10 @@ export async function GET(request: NextRequest) {
       .getAll('numbers')
       .map((v) => v.trim())
       .filter(Boolean);
+    const datesFilter = searchParams
+      .getAll('dates')
+      .map((v) => v.trim())
+      .filter(Boolean);
     // cursor-based pagination: pass the last document ID from the previous page
     const cursor = searchParams.get('cursor');
 
@@ -79,8 +83,15 @@ export async function GET(request: NextRequest) {
 
     // Track which array filter was pushed to Firestore.
     // Firestore allows only ONE array-contains / array-contains-any per query.
-    let pushedArrayField: 'tags' | 'people' | 'orgs' | 'places' | 'events' | 'numbers' | null =
-      null;
+    let pushedArrayField:
+      | 'tags'
+      | 'people'
+      | 'orgs'
+      | 'places'
+      | 'events'
+      | 'numbers'
+      | 'dates'
+      | null = null;
 
     // ---------------------------------------------------------------------------
     // Build Firestore query – push all structured filters to the database.
@@ -110,7 +121,8 @@ export async function GET(request: NextRequest) {
       orgsFilter.length > 0 ||
       placesFilter.length > 0 ||
       eventsFilter.length > 0 ||
-      numbersFilter.length > 0
+      numbersFilter.length > 0 ||
+      datesFilter.length > 0
     );
 
     if (structuredFiltersActive) {
@@ -175,6 +187,13 @@ export async function GET(request: NextRequest) {
           numbersFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
         );
         pushedArrayField = 'numbers';
+      } else if (datesFilter.length > 0) {
+        firestoreQuery = firestoreQuery.where(
+          'emailAnalysis.entities.dates',
+          'array-contains-any',
+          datesFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
+        );
+        pushedArrayField = 'dates';
       }
     }
 
@@ -367,6 +386,21 @@ export async function GET(request: NextRequest) {
           Array.isArray(list) &&
           numbersFilter.some((n) =>
             list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === n.toLowerCase()),
+          )
+        );
+      });
+    }
+
+    if (datesFilter.length > 0 && pushedArrayField !== 'dates') {
+      docs = docs.filter((d) => {
+        const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
+        const list = entities?.dates;
+        return (
+          Array.isArray(list) &&
+          datesFilter.some((dt) =>
+            list.some(
+              (v: unknown) => typeof v === 'string' && v.toLowerCase() === dt.toLowerCase(),
+            ),
           )
         );
       });

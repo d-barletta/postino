@@ -103,6 +103,7 @@ interface FilterState {
   orgs: string[];
   places: string[];
   events: string[];
+  dates: string[];
   numbers: string[];
   attachments: boolean;
   requiresResponse: boolean;
@@ -123,6 +124,7 @@ const EMPTY_FILTERS: FilterState = {
   orgs: [],
   places: [],
   events: [],
+  dates: [],
   numbers: [],
   attachments: false,
   requiresResponse: false,
@@ -151,6 +153,7 @@ function filtersEqual(a: FilterState, b: FilterState): boolean {
     setEq(a.orgs, b.orgs) &&
     setEq(a.places, b.places) &&
     setEq(a.events, b.events) &&
+    setEq(a.dates, b.dates) &&
     setEq(a.numbers, b.numbers) &&
     a.attachments === b.attachments &&
     a.requiresResponse === b.requiresResponse &&
@@ -173,6 +176,7 @@ function hasActiveFilter(f: FilterState): boolean {
     f.orgs.length > 0 ||
     f.places.length > 0 ||
     f.events.length > 0 ||
+    f.dates.length > 0 ||
     f.numbers.length > 0 ||
     f.attachments ||
     f.requiresResponse ||
@@ -498,6 +502,7 @@ export function EmailSearchTab({
     organizations: SuggestionItem[];
     places: SuggestionItem[];
     events: SuggestionItem[];
+    dates: SuggestionItem[];
     numbers: SuggestionItem[];
     languages: SuggestionItem[];
   }
@@ -515,6 +520,7 @@ export function EmailSearchTab({
           organizations: knowledgeData.organizations ?? [],
           places: knowledgeData.places ?? [],
           events: knowledgeData.events ?? [],
+          dates: knowledgeData.dates ?? [],
           numbers: knowledgeData.numbers ?? [],
           languages: knowledgeData.languages ?? [],
         });
@@ -537,6 +543,7 @@ export function EmailSearchTab({
           organizations: data.organizations ?? [],
           places: data.places ?? [],
           events: data.events ?? [],
+          dates: data.dates ?? [],
           numbers: data.numbers ?? [],
           languages: data.languages ?? [],
         });
@@ -655,6 +662,7 @@ export function EmailSearchTab({
         applied.orgs.forEach((o) => params.append('orgs', o));
         applied.places.forEach((p) => params.append('places', p));
         applied.events.forEach((e) => params.append('events', e));
+        applied.dates.forEach((d) => params.append('dates', d));
         applied.numbers.forEach((n) => params.append('numbers', n));
         if (applied.attachments) params.set('hasAttachments', 'true');
         if (applied.requiresResponse) params.set('requiresResponse', 'true');
@@ -1158,6 +1166,20 @@ export function EmailSearchTab({
 
                         <div className="space-y-1">
                           <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterDates}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.dates) : []}
+                            values={pending.dates}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, dates: v }))}
+                            placeholder={ts.datesPlaceholder}
+                            searchPlaceholder={ts.datesPlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             {ts.filterNumbers}
                           </label>
                           <ComboboxChips
@@ -1412,6 +1434,22 @@ export function EmailSearchTab({
                 onClick={() => {
                   setPending((p) => ({ ...p, events: p.events.filter((v) => v !== event) }));
                   setApplied((a) => ({ ...a, events: a.events.filter((v) => v !== event) }));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {applied.dates.map((date) => (
+            <span
+              key={date}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+            >
+              {ts.filterDates}: {date}
+              <button
+                onClick={() => {
+                  setPending((p) => ({ ...p, dates: p.dates.filter((v) => v !== date) }));
+                  setApplied((a) => ({ ...a, dates: a.dates.filter((v) => v !== date) }));
                 }}
               >
                 <X className="h-3 w-3" />

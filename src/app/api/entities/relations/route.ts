@@ -26,6 +26,7 @@ const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'organizations',
   'places',
   'events',
+  'dates',
   'numbers',
 ];
 
@@ -153,6 +154,7 @@ export async function POST(request: NextRequest) {
       organizations: {},
       places: {},
       events: {},
+      dates: {},
       numbers: {},
     };
 
@@ -173,6 +175,7 @@ export async function POST(request: NextRequest) {
         organizations: [],
         places: [],
         events: [],
+        dates: [],
         numbers: [],
       };
 
@@ -195,6 +198,7 @@ export async function POST(request: NextRequest) {
         collectRaw('organizations', entities.organizations);
         collectRaw('places', extractStoredPlaceNames(entities.places, entities.placeNames));
         collectRaw('events', entities.events);
+        collectRaw('dates', entities.dates);
         collectRaw('numbers', entities.numbers);
       }
 

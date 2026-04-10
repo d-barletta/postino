@@ -305,6 +305,7 @@ export type EntityCategory =
   | 'organizations'
   | 'places'
   | 'events'
+  | 'dates'
   | 'tags'
   | 'numbers';
 
