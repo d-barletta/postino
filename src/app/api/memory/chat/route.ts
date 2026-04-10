@@ -100,6 +100,19 @@ export async function POST(request: NextRequest) {
     });
 
     const memories = searchResult.results ?? [];
+
+    // Diagnostic: log the raw Supermemory response so missing metadata can be investigated
+    console.warn('[memory/chat] supermemory raw results:', JSON.stringify(
+      memories.map((r) => ({
+        memory: r.memory,
+        chunk: r.chunk,
+        metadata: r.metadata,
+        documents: r.documents,
+      })),
+      null,
+      2,
+    ));
+
     const memoryContext =
       memories.length > 0
         ? memories
@@ -148,6 +161,12 @@ export async function POST(request: NextRequest) {
           .filter((id): id is string => id !== null),
       ),
     ];
+
+    if (sourceEmailIds.length === 0 && memories.length > 0) {
+      console.warn('[memory/chat] no sourceEmailIds resolved — metadata/chunk may be missing logId');
+    } else {
+      console.warn('[memory/chat] resolved sourceEmailIds:', sourceEmailIds);
+    }
 
     const systemPrompt = memoryContext
       ? "Your name is Postino, you are a helpful assistant answering questions about the user's email memories. " +
