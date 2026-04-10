@@ -69,7 +69,10 @@ export async function POST(request: NextRequest) {
           ((m as ChatMessage).role === 'user' || (m as ChatMessage).role === 'assistant') &&
           typeof (m as ChatMessage).content === 'string',
       )
-      .map((m: ChatMessage) => ({ role: m.role, content: String(m.content).slice(0, MAX_MESSAGE_LENGTH) }));
+      .map((m: ChatMessage) => ({
+        role: m.role,
+        content: String(m.content).slice(0, MAX_MESSAGE_LENGTH),
+      }));
 
     // uid comes from server-side Firebase token verification and cannot be
     // spoofed by the client. The containerTag ensures each search query is
@@ -85,7 +88,9 @@ export async function POST(request: NextRequest) {
       .slice(-3)
       .map((m) => m.content)
       .join(' ');
-    const searchQuery = recentUserMessages ? `${recentUserMessages} ${query}`.slice(0, MAX_SEARCH_QUERY_LENGTH) : query;
+    const searchQuery = recentUserMessages
+      ? `${recentUserMessages} ${query}`.slice(0, MAX_SEARCH_QUERY_LENGTH)
+      : query;
 
     // Use hybrid search mode to retrieve both AI-extracted memory summaries and raw
     // document chunks. Memories provide compact, high-quality context for the LLM;
@@ -102,16 +107,19 @@ export async function POST(request: NextRequest) {
     const memories = searchResult.results ?? [];
 
     // Diagnostic: log the raw Supermemory response so missing metadata can be investigated
-    console.warn('[memory/chat] supermemory raw results:', JSON.stringify(
-      memories.map((r) => ({
-        memory: r.memory,
-        chunk: r.chunk,
-        metadata: r.metadata,
-        documents: r.documents,
-      })),
-      null,
-      2,
-    ));
+    console.warn(
+      '[memory/chat] supermemory raw results:',
+      JSON.stringify(
+        memories.map((r) => ({
+          memory: r.memory,
+          chunk: r.chunk,
+          metadata: r.metadata,
+          documents: r.documents,
+        })),
+        null,
+        2,
+      ),
+    );
 
     const memoryContext =
       memories.length > 0
@@ -142,11 +150,7 @@ export async function POST(request: NextRequest) {
             // 2. Source document metadata (available when include.documents=true)
             if (Array.isArray(r.documents) && r.documents.length > 0) {
               for (const doc of r.documents) {
-                if (
-                  doc.metadata &&
-                  typeof doc.metadata.logId === 'string' &&
-                  doc.metadata.logId
-                ) {
+                if (doc.metadata && typeof doc.metadata.logId === 'string' && doc.metadata.logId) {
                   return doc.metadata.logId as string;
                 }
               }
@@ -163,7 +167,9 @@ export async function POST(request: NextRequest) {
     ];
 
     if (sourceEmailIds.length === 0 && memories.length > 0) {
-      console.warn('[memory/chat] no sourceEmailIds resolved — metadata/chunk may be missing logId');
+      console.warn(
+        '[memory/chat] no sourceEmailIds resolved — metadata/chunk may be missing logId',
+      );
     } else {
       console.warn('[memory/chat] resolved sourceEmailIds:', sourceEmailIds);
     }
