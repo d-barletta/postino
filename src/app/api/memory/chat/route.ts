@@ -153,7 +153,8 @@ export async function POST(request: NextRequest) {
       ? "Your name is Postino, you are a helpful assistant answering questions about the user's email memories. " +
         'Use the memory context provided below together with the conversation history to answer. ' +
         'For follow-up questions, refer to both the memory context and previous exchanges to give accurate, contextual replies. ' +
-        'Be concise and helpful. If neither the memory context nor the conversation history contains relevant information, say so clearly.\n\n' +
+        'Be concise and helpful. If neither the memory context nor the conversation history contains relevant information, say so clearly.\n' +
+        'When you reference a specific email by its ID, format it as a markdown link using this exact syntax: [open email](email-ref:LOGID) where LOGID is the exact Email ID from the memory context. Do not display raw email IDs as plain text.\n\n' +
         `<memory_context>\n${memoryContext}\n</memory_context>`
       : 'Your name is Postino, you are a helpful assistant. The user asked a question about their email memories, ' +
         'but no relevant memories were found. Use the conversation history to answer follow-up questions if applicable, ' +
