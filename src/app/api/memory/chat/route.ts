@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     const memories = searchResult.results ?? [];
 
-    console.log(memories);
+    // console.log(memories);
 
     // Diagnostic: log the raw Supermemory response so missing metadata can be investigated
     console.warn(
