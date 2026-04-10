@@ -128,6 +128,7 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -231,7 +232,8 @@ export default function DashboardPage() {
         if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength);
         setMemoryEnabled(d.memoryEnabled === true);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setSettingsLoading(false));
   }, []);
 
   const fetchLogs = useCallback(async () => {
@@ -550,7 +552,7 @@ export default function DashboardPage() {
             <Inbox className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.inbox}</span>
           </TabsTrigger>
-          {memoryEnabled && (
+          {(memoryEnabled || loading || settingsLoading) && (
             <TabsTrigger value="agent">
               <Bot className="h-4 w-4 shrink-0" />
               <span>{t.dashboard.tabs.agent}</span>
@@ -589,9 +591,9 @@ export default function DashboardPage() {
             />
           )}
         </TabsContent>
-        {memoryEnabled && (
+        {(memoryEnabled || loading || settingsLoading) && (
           <TabsContent value="agent">
-            {loading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab />}
+            {loading || settingsLoading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab />}
           </TabsContent>
         )}
         <TabsContent value="explore">
