@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
     const organizations: CountMap = {};
     const places: CountMap = {};
     const events: CountMap = {};
+    const dates: CountMap = {};
     const numbers: CountMap = {};
     const languages: CountMap = {};
 
@@ -102,6 +103,7 @@ export async function GET(request: NextRequest) {
         incrementAll(organizations, entities.organizations);
         incrementAll(places, extractStoredPlaceNames(entities.places, entities.placeNames));
         incrementAll(events, entities.events);
+        incrementAll(dates, entities.dates);
         incrementAll(numbers, entities.numbers);
       }
     }
@@ -113,6 +115,7 @@ export async function GET(request: NextRequest) {
     if (mergesByCategory.organizations) applyMerges(organizations, mergesByCategory.organizations);
     if (mergesByCategory.places) applyMerges(places, mergesByCategory.places);
     if (mergesByCategory.events) applyMerges(events, mergesByCategory.events);
+    if (mergesByCategory.dates) applyMerges(dates, mergesByCategory.dates);
     if (mergesByCategory.numbers) applyMerges(numbers, mergesByCategory.numbers);
 
     return NextResponse.json({
@@ -122,6 +125,7 @@ export async function GET(request: NextRequest) {
       organizations: toSortedArray(organizations),
       places: toSortedArray(places),
       events: toSortedArray(events),
+      dates: toSortedArray(dates),
       numbers: toSortedArray(numbers),
       languages: toSortedArray(languages),
       totalEmails,

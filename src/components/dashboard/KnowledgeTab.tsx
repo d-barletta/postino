@@ -17,6 +17,7 @@ import {
   Building2,
   MapPin,
   Calendar,
+  Clock,
   Tag,
   Search,
   X,
@@ -51,6 +52,7 @@ export interface KnowledgeData {
   organizations: KnowledgeItem[];
   places: KnowledgeItem[];
   events: KnowledgeItem[];
+  dates: KnowledgeItem[];
   topics: KnowledgeItem[];
   tags: KnowledgeItem[];
   numbers: KnowledgeItem[];
@@ -64,6 +66,7 @@ type CategoryKey =
   | 'organizations'
   | 'places'
   | 'events'
+  | 'dates'
   | 'topics'
   | 'tags'
   | 'numbers';
@@ -80,6 +83,7 @@ const CATEGORIES: CategoryConfig[] = [
   { key: 'organizations', icon: <Building2 className="h-3.5 w-3.5" />, dataKey: 'organizations' },
   { key: 'places', icon: <MapPin className="h-3.5 w-3.5" />, dataKey: 'places' },
   { key: 'events', icon: <Calendar className="h-3.5 w-3.5" />, dataKey: 'events' },
+  { key: 'dates', icon: <Clock className="h-3.5 w-3.5" />, dataKey: 'dates' },
   { key: 'numbers', icon: <Binary className="h-3.5 w-3.5" />, dataKey: 'numbers' },
   { key: 'topics', icon: <Hash className="h-3.5 w-3.5" />, dataKey: 'topics' },
   { key: 'tags', icon: <Tag className="h-3.5 w-3.5" />, dataKey: 'tags' },
@@ -90,6 +94,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   organizations: <Building2 className="h-4 w-4" />,
   places: <MapPin className="h-4 w-4" />,
   events: <Calendar className="h-4 w-4" />,
+  dates: <Clock className="h-4 w-4" />,
   topics: <Hash className="h-4 w-4" />,
   tags: <Tag className="h-4 w-4" />,
   numbers: <Binary className="h-4 w-4" />,
@@ -583,6 +588,7 @@ export function KnowledgeTab({
       data.organizations.length > 0 ||
       data.places.length > 0 ||
       data.events.length > 0 ||
+      data.dates.length > 0 ||
       data.numbers.length > 0);
 
   const activeCategoryConfig = CATEGORIES.find((c) => c.key === activeCategory);
@@ -772,6 +778,7 @@ export function KnowledgeTab({
                     'organizations',
                     'places',
                     'events',
+                    'dates',
                     'numbers',
                     'topics',
                     'tags',

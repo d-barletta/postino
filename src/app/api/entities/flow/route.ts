@@ -21,12 +21,13 @@ const MIN_EDGE_WEIGHT = 1;
 /** Maximum number of monthly buckets with data to include. */
 const NUM_BUCKETS = 8;
 /** Bump when the stored flow graph shape or semantics change. */
-const FLOW_GRAPH_VERSION = 3;
+const FLOW_GRAPH_VERSION = 4;
 
 const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'people',
   'organizations',
   'events',
+  'dates',
   'places',
   'topics',
   'tags',
@@ -227,6 +228,7 @@ export async function POST(request: NextRequest) {
         organizations: [],
         places: [],
         events: [],
+        dates: [],
         numbers: [],
       };
 
@@ -257,6 +259,7 @@ export async function POST(request: NextRequest) {
         collectRaw('organizations', entities.organizations);
         collectRaw('places', extractStoredPlaceNames(entities.places, entities.placeNames));
         collectRaw('events', entities.events);
+        collectRaw('dates', entities.dates);
         collectRaw('numbers', entities.numbers);
       }
 

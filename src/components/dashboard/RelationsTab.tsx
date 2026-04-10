@@ -141,6 +141,7 @@ export function RelationsTab() {
     organizations: k.organizations,
     places: k.places,
     events: k.events,
+    dates: k.dates,
     tags: k.tags,
     numbers: k.numbers,
   };
@@ -152,6 +153,7 @@ export function RelationsTab() {
     organizations: k.organizations,
     places: k.places,
     events: k.events,
+    dates: k.dates,
     tags: k.tags,
     numbers: k.numbers,
     flowNodeClick: k.relations.flowNodeClick,

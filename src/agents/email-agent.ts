@@ -788,7 +788,7 @@ const emailAnalysisSchema = z.object({
       dates: z
         .array(z.string())
         .describe(
-          'Specific dates, times, or time references mentioned in the email (e.g. "March 15", "next Monday", "3pm CET")',
+          'Specific dates, times, or time references mentioned in the email (e.g. "12 Nov 2025", "13 May", "Friday Jan 30, 2026", "3pm CET", "12pm – 12:30pm Central European Time - Rome"). Include timezone references like "CET", "Central European Time" or "UTC+1" as part of the date/time entry rather than as a separate place. Use a consistent format: prefer "Day Mon Year" for dates (e.g. "12 Nov 2025") and include time and timezone in the same entry when present (e.g. "30 Jan 2026 12:00–12:30 CET"). Deduplicate entries that refer to the same date/time.',
         ),
       people: z
         .array(z.string())
@@ -1085,7 +1085,7 @@ async function preAnalyzeEmail(
     const { object, usage } = await generateObject({
       model: openrouterProvider(model),
       schema: emailAnalysisSchema,
-      system: `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values. Be conservative with named-entity extraction: only include entities when they are explicitly supported by the email content, and prefer omitting uncertain entities instead of guessing. For the places field in particular, include a value only when you are confident it refers to a real physical/geographic location, not a browser, timezone, product, acronym, postal code, or other ambiguous term. For the numbers field, only extract numeric codes that appear in the visible human-readable text (e.g. order numbers shown to the user); never extract numbers from URLs, query-string parameters, path segments, or link hrefs — treat URLs as atomic and ignore their internal numeric content.${languageInstruction}`,
+      system: `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values. Be conservative with named-entity extraction: only include entities when they are explicitly supported by the email content, and prefer omitting uncertain entities instead of guessing. For the places field in particular, include a value only when you are confident it refers to a real physical/geographic location, not a browser, timezone, product, acronym, postal code, or other ambiguous term — timezones such as "CET", "Central European Time - Rome", "UTC+1" must never be extracted as places and should instead be captured inside the dates field as part of the date/time entry. For the numbers field, only extract numeric codes that appear in the visible human-readable text (e.g. order numbers shown to the user); never extract numbers from URLs, query-string parameters, path segments, or link hrefs — treat URLs as atomic and ignore their internal numeric content.${languageInstruction}`,
       prompt: `Analyze and classify this email in detail:
 
 FROM: ${sanitizeEmailField(emailFrom)}
