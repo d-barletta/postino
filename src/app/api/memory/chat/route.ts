@@ -153,10 +153,7 @@ export async function POST(request: NextRequest) {
       ? "Your name is Postino, you are a helpful assistant answering questions about the user's email memories. " +
         'Use the memory context provided below together with the conversation history to answer. ' +
         'For follow-up questions, refer to both the memory context and previous exchanges to give accurate, contextual replies. ' +
-        'Be concise and helpful. If neither the memory context nor the conversation history contains relevant information, say so clearly.\n' +
-        'IMPORTANT — Source links: Every time your answer is based on one or more emails from the memory context, you MUST list the source emails at the end of your reply under a "Sources" heading. ' +
-        'Format each source as a markdown link: [open email](email-ref:LOGID) where LOGID is the exact Email ID from the memory context. ' +
-        'Never display raw email IDs as plain text. Always include these source links even if the user did not ask for them, similar to how a web search always shows its sources.\n\n' +
+        'Be concise and helpful. If neither the memory context nor the conversation history contains relevant information, say so clearly.\n\n' +
         `<memory_context>\n${memoryContext}\n</memory_context>`
       : 'Your name is Postino, you are a helpful assistant. The user asked a question about their email memories, ' +
         'but no relevant memories were found. Use the conversation history to answer follow-up questions if applicable, ' +
