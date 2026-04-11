@@ -12,10 +12,16 @@ export async function POST(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', uid);
 
-    await supabase
-      .from('email_logs')
-      .update({ tokens_used: 0, estimated_cost: 0 })
-      .eq('user_id', uid);
+    await Promise.all([
+      supabase
+        .from('email_logs')
+        .update({ tokens_used: 0, estimated_cost: 0 })
+        .eq('user_id', uid),
+      supabase
+        .from('users')
+        .update({ memory_tokens_used: 0, memory_estimated_cost: 0 })
+        .eq('id', uid),
+    ]);
 
     return NextResponse.json({ success: true, updatedCount: logCount ?? 0 });
   } catch (err) {
