@@ -56,7 +56,8 @@ export function PushNotificationButton() {
       if (!success) {
         setSubscribed(true);
       }
-    } catch {
+    } catch (err) {
+      console.error('[Push] handleDisable: unsubscribe threw unexpectedly:', err);
       setSubscribed(true);
     } finally {
       setLoading(false);
