@@ -62,6 +62,7 @@ export function MinimalTiptapEditor({
   className,
 }: MinimalTiptapEditorProps) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Image.configure({ inline: false }),
