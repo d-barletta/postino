@@ -15,7 +15,7 @@
  */
 
 import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject, generateText } from 'ai';
+import { generateObject, generateText, type RepairTextFunction } from 'ai';
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -1099,6 +1099,7 @@ async function preAnalyzeEmail(
     const { object, usage } = await generateObject({
       model: openrouterProvider(model),
       schema: emailAnalysisSchema,
+      experimental_repairText: repairObjectJsonText,
       system: `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values. Be conservative with named-entity extraction: only include entities when they are explicitly supported by the email content, and prefer omitting uncertain entities instead of guessing. For the places field in particular, include a value only when you are confident it refers to a real physical/geographic location, not a browser, timezone, product, acronym, postal code, or other ambiguous term — timezones such as "CET", "Central European Time - Rome", "UTC+1" must never be extracted as places and should instead be captured inside the dates field as part of the date/time entry. For the numbers field, only extract numeric codes that appear in the visible human-readable text (e.g. order numbers shown to the user); never extract numbers from URLs, query-string parameters, path segments, or link hrefs — treat URLs as atomic and ignore their internal numeric content.${languageInstruction}`,
       prompt: `Analyze and classify this email in detail:
 
@@ -1465,6 +1466,7 @@ ${
             'Only populated when requiresFullBodyReplacement is true. Empty string otherwise.',
         ),
     }),
+    experimental_repairText: repairObjectJsonText,
     system: reduceSystemPrompt,
     prompt: reducePrompt,
     maxOutputTokens,
@@ -1514,6 +1516,15 @@ function excerptForTrace(text: string, maxLen = 500): string {
   return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 }
 
+function stripJsonCodeFence(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+}
+
 function extractFirstJsonObject(raw: string): string | null {
   const start = raw.indexOf('{');
   if (start < 0) return null;
@@ -1553,35 +1564,48 @@ function extractFirstJsonObject(raw: string): string | null {
   return null;
 }
 
-function parseSubjectBodyFromText(raw: string): { subject: string; body: string } | null {
-  const trimmed = raw.trim();
-  const withoutFence = trimmed
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
-
-  const candidates = [withoutFence, extractFirstJsonObject(withoutFence) || ''].filter(Boolean);
+function repairGeneratedObjectText(raw: string): string | null {
+  const withoutFence = stripJsonCodeFence(raw);
+  const extractedObject = extractFirstJsonObject(withoutFence);
+  const candidates = [withoutFence, extractedObject || ''].filter(Boolean);
 
   for (const candidate of candidates) {
     try {
-      const parsed = JSON.parse(candidate) as { subject?: unknown; body?: unknown };
-      if (typeof parsed.subject === 'string' && typeof parsed.body === 'string') {
-        return { subject: parsed.subject, body: parsed.body };
-      }
+      JSON.parse(candidate);
+      return candidate;
     } catch {
-      // Try repaired JSON next
+      // Try repaired JSON next.
     }
 
     try {
       const repaired = jsonrepair(candidate);
-      const parsed = JSON.parse(repaired) as { subject?: unknown; body?: unknown };
-      if (typeof parsed.subject === 'string' && typeof parsed.body === 'string') {
-        return { subject: parsed.subject, body: parsed.body };
-      }
+      JSON.parse(repaired);
+      return repaired;
     } catch {
-      // Continue with next candidate
+      // Continue with the next candidate.
     }
+  }
+
+  return null;
+}
+
+const repairObjectJsonText: RepairTextFunction = async ({ text }) => {
+  return repairGeneratedObjectText(text);
+};
+
+function parseSubjectBodyFromText(raw: string): { subject: string; body: string } | null {
+  const repairedText = repairGeneratedObjectText(raw);
+  if (!repairedText) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(repairedText) as { subject?: unknown; body?: unknown };
+    if (typeof parsed.subject === 'string' && typeof parsed.body === 'string') {
+      return { subject: parsed.subject, body: parsed.body };
+    }
+  } catch {
+    // Fall through to null.
   }
 
   return null;
@@ -1750,6 +1774,7 @@ ${emailBodyForPrompt}`;
               'Full HTML replacement body. Only when requiresFullBodyReplacement is true. Empty string otherwise.',
             ),
         }),
+        experimental_repairText: repairObjectJsonText,
         system: systemPrompt,
         prompt: userPrompt,
         maxOutputTokens: maxTokens,
@@ -1808,6 +1833,7 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
           subject: z.string().describe('The processed email subject line'),
           body: z.string().describe('The processed email body in HTML format'),
         }),
+        experimental_repairText: repairObjectJsonText,
         system: systemPrompt,
         prompt: userPrompt,
         maxOutputTokens: maxTokens,
@@ -1862,6 +1888,7 @@ ${emailBodyForPrompt}`;
           subject: z.string().describe('Processed subject line'),
           body: z.string().describe('Full processed email body as HTML'),
         }),
+        experimental_repairText: repairObjectJsonText,
         system: `${systemPrompt}\n\nFallback mode: keep output simple and deterministic. Return only subject and body.`,
         prompt: fallbackPrompt,
         maxOutputTokens: Math.min(maxTokens, agentRuntimeSettings.fallbackPassMaxTokens),
