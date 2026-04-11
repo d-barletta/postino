@@ -174,6 +174,17 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    await verifyAdminRequest(request);
+    const supabase = createAdminClient();
+    await supabase.from('mailgun_webhook_logs').delete().neq('id', '');
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleAdminError(error, 'admin/email-jobs DELETE');
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
