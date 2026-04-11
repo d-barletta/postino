@@ -305,7 +305,8 @@ export type EntityCategory =
   | 'events'
   | 'dates'
   | 'tags'
-  | 'numbers';
+  | 'numbers'
+  | 'prices';
 
 /** Category used for entity graph nodes (same values as EntityCategory). */
 export type EntityGraphNodeCategory = EntityCategory;

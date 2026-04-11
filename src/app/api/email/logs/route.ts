@@ -65,6 +65,10 @@ export async function GET(request: NextRequest) {
       .getAll('dates')
       .map((v) => v.trim())
       .filter(Boolean);
+    const pricesFilter = searchParams
+      .getAll('prices')
+      .map((v) => v.trim())
+      .filter(Boolean);
     // cursor-based pagination: pass the last document ID from the previous page
     const cursor = searchParams.get('cursor');
 
@@ -86,7 +90,8 @@ export async function GET(request: NextRequest) {
       placesFilter.length > 0 ||
       eventsFilter.length > 0 ||
       numbersFilter.length > 0 ||
-      datesFilter.length > 0
+      datesFilter.length > 0 ||
+      pricesFilter.length > 0
     );
 
     // ---------------------------------------------------------------------------
@@ -329,6 +334,18 @@ export async function GET(request: NextRequest) {
             list.some(
               (v: unknown) => typeof v === 'string' && v.toLowerCase() === dt.toLowerCase(),
             ),
+          )
+        );
+      });
+    }
+
+    if (pricesFilter.length > 0) {
+      docs = docs.filter((d) => {
+        const list = d.emailAnalysis?.prices;
+        return (
+          Array.isArray(list) &&
+          pricesFilter.some((p) =>
+            list.some((v: unknown) => typeof v === 'string' && v.toLowerCase() === p.toLowerCase()),
           )
         );
       });

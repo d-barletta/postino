@@ -143,6 +143,7 @@ export function RelationsTab() {
     dates: k.dates,
     tags: k.tags,
     numbers: k.numbers,
+    prices: k.prices,
   };
 
   const flowTranslations = {
@@ -155,6 +156,7 @@ export function RelationsTab() {
     dates: k.dates,
     tags: k.tags,
     numbers: k.numbers,
+    prices: k.prices,
     flowNodeClick: k.relations.flowNodeClick,
     flowNoGraph: k.relations.flowNoGraph,
     flowNoGraphDesc: k.relations.flowNoGraphDesc,

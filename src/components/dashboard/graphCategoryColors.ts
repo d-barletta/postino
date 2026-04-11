@@ -9,4 +9,5 @@ export const CATEGORY_COLORS: Record<EntityGraphNodeCategory, string> = {
   dates: '#fde047', // yellow-300
   numbers: '#f87171', // red-400
   tags: '#c084fc', // purple-400
+  prices: '#92400e', // brown (amber-800)
 };

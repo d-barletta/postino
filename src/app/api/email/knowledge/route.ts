@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
     const events: CountMap = {};
     const dates: CountMap = {};
     const numbers: CountMap = {};
+    const prices: CountMap = {};
     const languages: CountMap = {};
 
     let totalEmails = 0;
@@ -100,6 +101,7 @@ export async function GET(request: NextRequest) {
       incrementAll(topics, analysis.topics);
       incrementAll(tags, analysis.tags);
       increment(languages, analysis.language);
+      incrementAll(prices, analysis.prices);
       const entities = analysis.entities as Record<string, unknown> | undefined;
       if (entities) {
         incrementAll(people, entities.people);
@@ -120,6 +122,7 @@ export async function GET(request: NextRequest) {
     if (mergesByCategory.events) applyMerges(events, mergesByCategory.events);
     if (mergesByCategory.dates) applyMerges(dates, mergesByCategory.dates);
     if (mergesByCategory.numbers) applyMerges(numbers, mergesByCategory.numbers);
+    if (mergesByCategory.prices) applyMerges(prices, mergesByCategory.prices);
 
     return NextResponse.json({
       topics: toSortedArray(topics),
@@ -130,6 +133,7 @@ export async function GET(request: NextRequest) {
       events: toSortedArray(events),
       dates: toSortedArray(dates),
       numbers: toSortedArray(numbers),
+      prices: toSortedArray(prices),
       languages: toSortedArray(languages),
       totalEmails,
     });

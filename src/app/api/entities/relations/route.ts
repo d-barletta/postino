@@ -28,6 +28,7 @@ const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'events',
   'dates',
   'numbers',
+  'prices',
 ];
 
 interface CountMap {
@@ -165,6 +166,7 @@ export async function POST(request: NextRequest) {
       events: {},
       dates: {},
       numbers: {},
+      prices: {},
     };
 
     type PerEmailEntities = Record<EntityGraphNodeCategory, string[]>;
@@ -186,6 +188,7 @@ export async function POST(request: NextRequest) {
         events: [],
         dates: [],
         numbers: [],
+        prices: [],
       };
 
       const collectRaw = (cat: EntityGraphNodeCategory, values: unknown) => {
@@ -201,6 +204,7 @@ export async function POST(request: NextRequest) {
 
       collectRaw('topics', analysis.topics);
       collectRaw('tags', analysis.tags);
+      collectRaw('prices', analysis.prices);
       const entities = analysis.entities as Record<string, unknown> | undefined;
       if (entities) {
         collectRaw('people', entities.people);

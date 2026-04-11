@@ -21,7 +21,7 @@ const MIN_EDGE_WEIGHT = 1;
 /** Maximum number of monthly buckets with data to include. */
 const NUM_BUCKETS = 8;
 /** Bump when the stored flow graph shape or semantics change. */
-const FLOW_GRAPH_VERSION = 4;
+const FLOW_GRAPH_VERSION = 5;
 
 const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'people',
@@ -32,6 +32,7 @@ const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'topics',
   'tags',
   'numbers',
+  'prices',
 ];
 
 interface CountMap {
@@ -238,6 +239,7 @@ export async function POST(request: NextRequest) {
         events: [],
         dates: [],
         numbers: [],
+        prices: [],
       };
 
       const collectRaw = (cat: EntityGraphNodeCategory, values: unknown) => {
@@ -261,6 +263,7 @@ export async function POST(request: NextRequest) {
 
       collectRaw('topics', analysis.topics);
       collectRaw('tags', analysis.tags);
+      collectRaw('prices', analysis.prices);
       const entities = analysis.entities as Record<string, unknown> | undefined;
       if (entities) {
         collectRaw('people', entities.people);
