@@ -8,9 +8,7 @@ const EMAIL_NOT_VERIFIED_ERROR = 'Email not verified';
 
 export function isAuthError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : '';
-  return (
-    msg === UNAUTHORIZED_ERROR || msg === FORBIDDEN_ERROR || msg === EMAIL_NOT_VERIFIED_ERROR
-  );
+  return msg === UNAUTHORIZED_ERROR || msg === FORBIDDEN_ERROR || msg === EMAIL_NOT_VERIFIED_ERROR;
 }
 
 function assertEmailVerified(user: User) {

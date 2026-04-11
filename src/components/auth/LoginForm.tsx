@@ -37,9 +37,10 @@ export function LoginForm() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 403) {
-        const payload = (await res.json().catch(() => null)) as
-          | { error?: string; code?: string }
-          | null;
+        const payload = (await res.json().catch(() => null)) as {
+          error?: string;
+          code?: string;
+        } | null;
         await signOut();
         setError(
           payload?.code === 'email_not_verified' || payload?.error === 'Email not verified'
