@@ -50,13 +50,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       receivedAt: logRow.received_at ?? null,
       attachmentCount: logRow.attachment_count ?? 0,
       attachmentNames: logRow.attachment_names ?? [],
-      attachments: attachments.map((attachment, index) => ({
-        id: String(index + 1),
-        filename: attachment.filename,
-        contentType: attachment.contentType,
-        canDownload:
-          canDownloadAttachments && Boolean(attachment.storagePath || attachment.contentBase64),
-      })),
+      // Exclude inline attachments (embedded images referenced via cid: in HTML body).
+      // The download endpoint uses 1-based indices into the full attachments array, so
+      // preserve the original index as the id even after filtering.
+      attachments: attachments
+        .map((attachment, index) => ({ attachment, originalIndex: index }))
+        .filter(({ attachment }) => !attachment.contentId)
+        .map(({ attachment, originalIndex }) => ({
+          id: String(originalIndex + 1),
+          filename: attachment.filename,
+          contentType: attachment.contentType,
+          canDownload:
+            canDownloadAttachments && Boolean(attachment.storagePath || attachment.contentBase64),
+        })),
       emailAnalysis: logRow.email_analysis ?? null,
     });
   } catch (error) {
