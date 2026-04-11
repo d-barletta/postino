@@ -4,13 +4,52 @@ function getSupabase() {
   return createClient();
 }
 
+function getAuthOrigin() {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin.replace(/\/$/, '');
+  }
+
+  const configuredOrigin =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.NEXT_PUBLIC_VERCEL_URL
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+      : 'http://localhost:3000');
+
+  return configuredOrigin.replace(/\/$/, '');
+}
+
+function buildAuthRedirectUrl(pathname: string, searchParams?: URLSearchParams) {
+  const url = new URL(pathname, `${getAuthOrigin()}/`);
+
+  if (searchParams) {
+    url.search = searchParams.toString();
+  }
+
+  return url.toString();
+}
+
+export function getEmailConfirmationRedirectUrl() {
+  return buildAuthRedirectUrl('/auth/confirm');
+}
+
+export function getPasswordRecoveryRedirectUrl() {
+  return buildAuthRedirectUrl(
+    '/auth/confirm',
+    new URLSearchParams({
+      type: 'recovery',
+      next: '/reset-password',
+    }),
+  );
+}
+
 export async function registerUser(email: string, password: string) {
   const supabase = getSupabase();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+      emailRedirectTo: getEmailConfirmationRedirectUrl(),
     },
   });
   if (error) {
@@ -48,7 +87,7 @@ export async function loginUser(email: string, password: string) {
 export async function sendPasswordReset(email: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm?type=recovery&next=/reset-password`,
+    redirectTo: getPasswordRecoveryRedirectUrl(),
   });
   if (error) throw new Error(error.message);
 }

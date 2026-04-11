@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getEmailConfirmationRedirectUrl } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +37,13 @@ export default function VerifyEmailPage() {
     if (!user?.email) return;
     setResending(true);
     try {
-      await supabase.auth.resend({ type: 'signup', email: user.email });
+      await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+        options: {
+          emailRedirectTo: getEmailConfirmationRedirectUrl(),
+        },
+      });
       setSent(true);
     } finally {
       setResending(false);

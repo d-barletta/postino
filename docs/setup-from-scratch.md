@@ -26,13 +26,42 @@ npm install
 ## 3. Create A Supabase Project
 
 1. Create a new Supabase project.
-2. Save these values from Project Settings:
+1. Save these values from Project Settings:
 
 - Project URL
 - Publishable key
 - Service role key
 
 1. Keep service role key server-only.
+1. In `Authentication -> URL Configuration`, set:
+
+- Site URL: your real production origin, for example `https://postino.pro`
+- Do not leave Site URL on `http://localhost:3000` in production
+- Redirect URLs:
+  - `http://localhost:3000/auth/confirm`
+  - `http://localhost:3000/auth/confirm?type=recovery&next=/reset-password`
+  - `https://<your-domain>/auth/confirm`
+  - `https://<your-domain>/auth/confirm?type=recovery&next=/reset-password`
+  - Optional Vercel previews: `https://*-<team-or-account-slug>.vercel.app/auth/confirm**`
+
+1. If you customized Supabase auth email templates, make sure they do not hardcode `localhost` and do not rely on `{{ .SiteURL }}` for Postino auth actions.
+
+Use Postino-compatible links instead:
+
+```html
+<!-- Confirm signup -->
+<a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Confirm your email</a>
+
+<!-- Reset password -->
+<a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}">Reset password</a>
+```
+
+1. The app sends `{{ .RedirectTo }}` as the full callback target:
+
+- Signup confirmation: `https://<your-domain>/auth/confirm`
+- Password recovery: `https://<your-domain>/auth/confirm?type=recovery&next=/reset-password`
+
+If you keep the default Supabase templates instead of custom ones, the Site URL and Redirect URLs above still must be correct.
 
 ## 4. Database Schema Setup
 
