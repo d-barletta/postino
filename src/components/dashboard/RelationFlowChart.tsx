@@ -988,6 +988,7 @@ export interface RelationFlowChartProps {
     dates: string;
     tags: string;
     numbers: string;
+    prices: string;
     flowNodeClick: string;
     flowNoGraph: string;
     flowNoGraphDesc: string;
@@ -1141,6 +1142,7 @@ export function RelationFlowChartFullPageContent({
     | 'dates'
     | 'tags'
     | 'numbers'
+    | 'prices'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(

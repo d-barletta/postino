@@ -43,6 +43,7 @@ interface RelationGraphProps {
     dates: string;
     tags: string;
     numbers: string;
+    prices: string;
   };
 }
 
@@ -646,6 +647,7 @@ export function RelationGraphFullPageContent({
     | 'dates'
     | 'tags'
     | 'numbers'
+    | 'prices'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
