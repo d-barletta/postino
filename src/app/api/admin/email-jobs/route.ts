@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
+import { processEmailJobsBatch } from '@/lib/email-jobs';
 
 const STATUSES = ['pending', 'processing', 'retrying', 'done', 'failed'] as const;
 
@@ -174,11 +175,29 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    await verifyAdminRequest(request);
+
+    const body = (await request.json().catch(() => ({}))) as { batchSize?: number };
+    const batchSize =
+      typeof body.batchSize === 'number' ? Math.min(Math.max(Math.floor(body.batchSize), 1), 50) : 10;
+
+    const result = await processEmailJobsBatch(batchSize);
+    return NextResponse.json({ success: true, ...result });
+  } catch (error) {
+    return handleAdminError(error, 'admin/email-jobs POST');
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
     const supabase = createAdminClient();
-    await supabase.from('mailgun_webhook_logs').delete().neq('id', '');
+    await Promise.all([
+      supabase.from('mailgun_webhook_logs').delete().neq('id', ''),
+      supabase.from('email_jobs').delete().in('status', ['done', 'failed']),
+    ]);
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleAdminError(error, 'admin/email-jobs DELETE');
