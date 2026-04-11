@@ -325,7 +325,10 @@ async function sendEmailPushNotification(
         tag: `postino-email-${logId}`,
       },
     };
-    console.log('[Push] sendEmailPushNotification: sending request to OneSignal API, payload:', JSON.stringify(payload));
+    console.log(
+      '[Push] sendEmailPushNotification: sending request to OneSignal API',
+      `userId=${userId} status=${status} logId=${logId} appId=${oneSignalAppId}`,
+    );
 
     const response = await fetch('https://api.onesignal.com/notifications', {
       method: 'POST',
