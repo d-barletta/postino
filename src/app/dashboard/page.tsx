@@ -47,14 +47,7 @@ const EMPTY_STATS: UserStats = {
   totalEstimatedCost: 0,
 };
 
-type DashboardTab =
-  | 'overview'
-  | 'rules'
-  | 'inbox'
-  | 'agent'
-  | 'explore'
-  | 'relations'
-  | 'settings';
+type DashboardTab = 'overview' | 'rules' | 'inbox' | 'agent' | 'explore' | 'relations' | 'settings';
 
 function DashboardOverviewSkeleton() {
   return (
