@@ -318,7 +318,7 @@ async function sendEmailPushNotification(
       chrome_web_icon: iconUrl,
       chrome_web_badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
       data: {
-        url: relativeEmailUrl,
+        emailPath: relativeEmailUrl,
         logId,
         status,
         tag: `postino-email-${logId}`,
