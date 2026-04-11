@@ -3,24 +3,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/hooks/useAuth';
 import type { EntityPlaceMap } from '@/types';
 
-export function usePlaceMapGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
+export function usePlaceMapGraph() {
   const { t } = useI18n();
+  const { authUser, getIdToken } = useAuth();
   const [graph, setGraph] = useState<EntityPlaceMap | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
-    if (firebaseUser) setHasFetched(false);
-  }, [firebaseUser]);
+    if (authUser) setHasFetched(false);
+  }, [authUser]);
 
   const fetchGraph = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/map', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -33,13 +35,13 @@ export function usePlaceMapGraph(firebaseUser: { getIdToken: () => Promise<strin
       setLoading(false);
       setHasFetched(true);
     }
-  }, [firebaseUser, t]);
+  }, [authUser, getIdToken, t]);
 
   const generateGraph = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setGenerating(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/map', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -53,7 +55,7 @@ export function usePlaceMapGraph(firebaseUser: { getIdToken: () => Promise<strin
     } finally {
       setGenerating(false);
     }
-  }, [firebaseUser, t]);
+  }, [authUser, getIdToken, t]);
 
   return { graph, hasFetched, loading, generating, fetchGraph, generateGraph };
 }

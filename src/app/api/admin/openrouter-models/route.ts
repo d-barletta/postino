@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 interface OpenRouterModel {
@@ -17,10 +17,15 @@ export async function GET(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
 
-    const db = adminDb();
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settings = settingsSnap.data();
-    const apiKey = settings?.llmApiKey || process.env.OPEN_ROUTER_API_KEY || '';
+    const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settings = (settingsRow?.data ?? {}) as Record<string, unknown>;
+    const apiKey =
+      (settings.llmApiKey as string | undefined) || process.env.OPEN_ROUTER_API_KEY || '';
     const normalizedApiKey = apiKey.trim();
 
     if (!normalizedApiKey) {

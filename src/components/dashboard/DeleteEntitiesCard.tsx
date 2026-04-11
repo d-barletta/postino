@@ -17,17 +17,17 @@ import {
 } from '@/components/ui/Drawer';
 
 export function DeleteEntitiesCard({ onSuccess }: { onSuccess?: () => Promise<void> | void }) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const s = t.dashboard.deleteEntities;
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setDeleting(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/all', {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

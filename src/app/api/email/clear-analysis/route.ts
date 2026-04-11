@@ -1,68 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-
-const BATCH_SIZE = 500;
 
 // ---------------------------------------------------------------------------
 // DELETE – remove all AI analysis data for the authenticated user's emails:
-//   • emailLogs[].emailAnalysis    – structured AI analysis
-//   • emailLogs[].tokensUsed       – AI token usage
-//   • emailLogs[].estimatedCost    – AI cost estimate
-//   • emailLogs[].processedBody    – AI-generated processed content
-//   • entityMerges                 – user-defined entity merge rules
-//   • entityMergeSuggestions       – AI merge suggestions
-//   • entityRelations/{uid}        – cached relation graph
-//   • entityFlows/{uid}            – cached flow graph
-//   • entityPlaceMaps/{uid}        – cached place map
+//   • email_logs[].email_analysis    – structured AI analysis
+//   • email_logs[].tokens_used       – AI token usage
+//   • email_logs[].estimated_cost    – AI cost estimate
+//   • email_logs[].processed_body    – AI-generated processed content
+//   • entity_merges                  – user-defined entity merge rules
+//   • entity_merge_suggestions       – AI merge suggestions
+//   • entity_relations/{user_id}     – cached relation graph
+//   • entity_flows/{user_id}         – cached flow graph
+//   • entity_place_maps/{user_id}    – cached place map
 // ---------------------------------------------------------------------------
 export async function DELETE(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
-    const uid = decoded.uid;
-
-    const [logsSnap, mergesSnap, suggestionsSnap] = await Promise.all([
-      db.collection('emailLogs').where('userId', '==', uid).get(),
-      db.collection('entityMerges').where('userId', '==', uid).get(),
-      db.collection('entityMergeSuggestions').where('userId', '==', uid).get(),
-    ]);
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
+    const uid = user.id;
 
     // Clear AI fields from all email logs
-    for (let i = 0; i < logsSnap.docs.length; i += BATCH_SIZE) {
-      const batch = db.batch();
-      const chunk = logsSnap.docs.slice(i, i + BATCH_SIZE);
-      for (const doc of chunk) {
-        batch.update(doc.ref, {
-          emailAnalysis: FieldValue.delete(),
-          tokensUsed: FieldValue.delete(),
-          estimatedCost: FieldValue.delete(),
-          processedBody: FieldValue.delete(),
-        });
-      }
-      await batch.commit();
-    }
+    await supabase
+      .from('email_logs')
+      .update({
+        email_analysis: null,
+        tokens_used: null,
+        estimated_cost: null,
+        processed_body: null,
+      })
+      .eq('user_id', uid);
 
     // Delete entity merges and suggestions (derived from analysis)
-    const deleteRefs = [
-      ...mergesSnap.docs.map((d) => d.ref),
-      ...suggestionsSnap.docs.map((d) => d.ref),
-    ];
-
-    for (let i = 0; i < deleteRefs.length; i += BATCH_SIZE) {
-      const batch = db.batch();
-      for (let j = i; j < Math.min(i + BATCH_SIZE, deleteRefs.length); j++) {
-        batch.delete(deleteRefs[j]);
-      }
-      await batch.commit();
-    }
+    await Promise.all([
+      supabase.from('entity_merges').delete().eq('user_id', uid),
+      supabase.from('entity_merge_suggestions').delete().eq('user_id', uid),
+    ]);
 
     // Delete cached graphs
     await Promise.all([
-      db.collection('entityRelations').doc(uid).delete(),
-      db.collection('entityFlows').doc(uid).delete(),
-      db.collection('entityPlaceMaps').doc(uid).delete(),
+      supabase.from('entity_relations').delete().eq('user_id', uid),
+      supabase.from('entity_flows').delete().eq('user_id', uid),
+      supabase.from('entity_place_maps').delete().eq('user_id', uid),
     ]);
 
     return NextResponse.json({ success: true });

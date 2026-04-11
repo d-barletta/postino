@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import { getOpenRouterClient } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     await verifyAdminRequest(request);
     const { id } = await params;
-    const db = adminDb();
+    const supabase = createAdminClient();
     const body = await request.json();
     const { targetLanguage } = body;
 
@@ -38,12 +38,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Fetch the source article
-    const snap = await db.collection('blogArticles').doc(id).get();
-    if (!snap.exists) {
+    const { data: sourceRow } = await supabase
+      .from('blog_articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (!sourceRow) {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 });
     }
-    const sourceData = snap.data()!;
-    const sourceLanguage: string = sourceData.language || 'en';
+
+    const sourceLanguage: string = sourceRow.language || 'en';
+    const sourceTitle: string = sourceRow.title || '';
+    const sourceThumbnailUrl: string = sourceRow.thumbnail_url || '';
+    const sourceTags: string[] = Array.isArray(sourceRow.tags) ? sourceRow.tags : [];
+    const sourceHtmlContent: string = sourceRow.content || '';
 
     if (sourceLanguage === targetLanguage) {
       return NextResponse.json(
@@ -53,28 +61,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Determine the translationGroupId – reuse existing or create new from source id
-    const groupId: string = sourceData.translationGroupId || id;
+    const groupId: string = (sourceRow.translation_group_id as string) || id;
 
     // Check if a translation in the target language already exists in this group
-    const existingSnap = await db
-      .collection('blogArticles')
-      .where('translationGroupId', '==', groupId)
-      .where('language', '==', targetLanguage)
-      .limit(1)
-      .get();
-    if (!existingSnap.empty) {
+    const { data: existingTranslations } = await supabase
+      .from('blog_articles')
+      .select('id')
+      .eq('translation_group_id', groupId)
+      .eq('language', targetLanguage)
+      .limit(1);
+    if (existingTranslations && existingTranslations.length > 0) {
       return NextResponse.json(
         {
           error: 'A translation in this language already exists',
-          existingId: existingSnap.docs[0].id,
+          existingId: existingTranslations[0].id,
         },
         { status: 409 },
       );
     }
 
     // Make sure the source article also has the groupId set
-    if (!sourceData.translationGroupId) {
-      await db.collection('blogArticles').doc(id).update({ translationGroupId: groupId });
+    if (!sourceRow.translation_group_id) {
+      await supabase.from('blog_articles').update({ translation_group_id: groupId }).eq('id', id);
     }
 
     // Call LLM for translation
@@ -84,15 +92,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const systemPrompt = `You are a professional translator and content writer. You translate blog articles accurately and naturally, preserving HTML structure and formatting. Translate from ${sourceLangName} to ${targetLangName}. Return ONLY a JSON object with three fields: "title" (translated title string), "content" (translated HTML content string), and "tags" (array of translated tag strings). Do not add explanations or markdown code blocks.`;
 
-    const sourceTags: string[] = sourceData.tags ?? [];
     const userPrompt = `Translate this blog article from ${sourceLangName} to ${targetLangName}.
 
-TITLE: ${sourceData.title}
+TITLE: ${sourceTitle}
 
 TAGS: ${JSON.stringify(sourceTags)}
 
 CONTENT (HTML):
-${sourceData.content}`;
+${sourceHtmlContent}`;
 
     const response = await client.chat.completions.create({
       model,
@@ -105,9 +112,6 @@ ${sourceData.content}`;
     });
 
     const raw = response.choices[0]?.message?.content ?? '{}';
-    // Strip markdown code fences that some models add despite response_format.
-    // Trim first so that a leading/trailing newline around the fence doesn't
-    // prevent the anchored regexes from matching.
     const cleaned = raw.trim();
 
     let parsed: { title?: string; content?: string; tags?: unknown };
@@ -118,41 +122,51 @@ ${sourceData.content}`;
       return NextResponse.json({ error: 'LLM returned invalid JSON' }, { status: 500 });
     }
 
-    const translatedTitle =
-      typeof parsed.title === 'string' ? parsed.title.trim() : sourceData.title;
+    const translatedTitle = typeof parsed.title === 'string' ? parsed.title.trim() : sourceTitle;
     const translatedContent =
-      typeof parsed.content === 'string' ? parsed.content : sourceData.content;
+      typeof parsed.content === 'string' ? parsed.content : sourceHtmlContent;
     const translatedTags: string[] =
       Array.isArray(parsed.tags) && parsed.tags.every((t) => typeof t === 'string')
         ? (parsed.tags as string[])
-        : (sourceData.tags ?? []);
+        : sourceTags;
 
     // Generate slug for translated article
     const baseSlug = slugify(translatedTitle);
     let slug = `${baseSlug}-${targetLanguage}`;
     let counter = 1;
     while (counter <= 100) {
-      const existing = await db.collection('blogArticles').where('slug', '==', slug).limit(1).get();
-      if (existing.empty) break;
+      const { data: existing } = await supabase
+        .from('blog_articles')
+        .select('id')
+        .eq('slug', slug)
+        .limit(1);
+      if (!existing || existing.length === 0) break;
       slug = `${baseSlug}-${targetLanguage}-${counter++}`;
     }
 
-    const now = new Date();
-    const newDoc = await db.collection('blogArticles').add({
-      title: translatedTitle,
-      slug,
-      content: translatedContent,
-      tags: translatedTags,
-      thumbnailUrl: sourceData.thumbnailUrl ?? '',
-      published: false, // translated articles start as drafts
-      language: targetLanguage,
-      translationGroupId: groupId,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const now = new Date().toISOString();
+    const { data: newRow } = await supabase
+      .from('blog_articles')
+      .insert({
+        slug,
+        title: translatedTitle,
+        thumbnail_url: sourceThumbnailUrl,
+        published: false, // translated articles start as drafts
+        language: targetLanguage,
+        translation_group_id: groupId,
+        created_at: now,
+        updated_at: now,
+        content: translatedContent,
+        tags: translatedTags,
+      })
+      .select('id, slug')
+      .single();
 
     revalidateTag('blog-articles', {});
-    return NextResponse.json({ id: newDoc.id, slug, title: translatedTitle }, { status: 201 });
+    return NextResponse.json(
+      { id: newRow?.id, slug: newRow?.slug ?? slug, title: translatedTitle },
+      { status: 201 },
+    );
   } catch (error) {
     return handleAdminError(error, 'admin/blog/[id]/translate POST');
   }

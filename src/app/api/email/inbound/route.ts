@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
-import { Timestamp } from 'firebase-admin/firestore';
 import crypto from 'crypto';
-import { adminDb, adminStorage } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyMailgunSignature, isMailgunTimestampFresh, type EmailAttachment } from '@/lib/email';
 import { enqueueEmailJob } from '@/lib/email-jobs';
 import {
@@ -504,17 +503,16 @@ async function uploadWebhookPayloadSnapshot(
   payload: unknown,
 ): Promise<string | null> {
   try {
-    const storage = adminStorage();
-    const bucket = storage.bucket();
+    const supabase = createAdminClient();
     const storagePath = `mailgun-webhook-logs/${logId}/payload.json`;
-    const file = bucket.file(storagePath);
-    await file.save(JSON.stringify(payload, null, 2), {
-      contentType: 'application/json',
-      metadata: { cacheControl: 'no-cache' },
-    });
+    const content = Buffer.from(JSON.stringify(payload, null, 2));
+    const { error } = await supabase.storage
+      .from('email-attachments')
+      .upload(storagePath, content, { contentType: 'application/json', upsert: true });
+    if (error) throw error;
     return storagePath;
   } catch (err) {
-    console.error('Failed to upload webhook payload snapshot to Firebase Storage:', err);
+    console.error('Failed to upload webhook payload snapshot to Supabase Storage:', err);
     return null;
   }
 }
@@ -522,7 +520,7 @@ async function uploadWebhookPayloadSnapshot(
 /**
  * Schedule a non-blocking call to the email-jobs process endpoint after a short delay.
  * Uses `after()` so the response is returned immediately; the fetch runs after the
- * request is complete, with a 10-second delay to give Firestore time to persist the job.
+ * request is complete, with a 10-second delay to give the DB time to persist the job.
  */
 function scheduleProcessingTrigger(request: NextRequest): void {
   const workerSecret = process.env.EMAIL_JOBS_WORKER_SECRET || '';
@@ -578,13 +576,52 @@ export async function POST(request: NextRequest) {
   let finalSender = '';
   let finalSubject = '';
   let uploadedSerializedAttachments: SerializedAttachment[] = [];
-  let webhookLogRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData> | null =
-    null;
+  let webhookLogId: string | null = null;
+  // Track accumulated preview/raw/linked state for incremental webhook log updates
+  const webhookPreviewFields: Record<string, unknown> = {};
+  const webhookRawFields: Record<string, unknown> = {};
+  const webhookLinked: Record<string, unknown> = {};
 
   async function updateWebhookLog(update: Record<string, unknown>): Promise<void> {
-    if (!webhookLogRef) return;
+    if (!webhookLogId) return;
     try {
-      await webhookLogRef.update({ ...update, updatedAt: Timestamp.now() });
+      const supabase = createAdminClient();
+      const now = new Date().toISOString();
+      const flat: Record<string, unknown> = { updated_at: now };
+      let previewChanged = false;
+      let rawChanged = false;
+      let linkedChanged = false;
+
+      for (const [key, value] of Object.entries(update)) {
+        if (key === 'status') flat.status = value;
+        else if (key === 'result') flat.result = value;
+        else if (key === 'reason') flat.reason = value;
+        else if (key === 'linked') {
+          Object.assign(webhookLinked, value as Record<string, unknown>);
+          linkedChanged = true;
+        } else if (key.startsWith('linked.')) {
+          webhookLinked[key.slice('linked.'.length)] = value;
+          linkedChanged = true;
+        } else if (key.startsWith('parsed.')) {
+          webhookPreviewFields[key.slice('parsed.'.length)] = value;
+          previewChanged = true;
+        } else if (key.startsWith('request.')) {
+          webhookRawFields[key.slice('request.'.length)] = value;
+          rawChanged = true;
+        }
+        // skip details.* and other unmapped fields
+      }
+
+      if (previewChanged) flat.preview_fields = { ...webhookPreviewFields };
+      if (rawChanged) flat.raw_fields = { ...webhookRawFields };
+      if (linkedChanged) flat.linked = { ...webhookLinked };
+
+      await supabase
+        .from('mailgun_webhook_logs')
+        .update(
+          flat as import('@/types/supabase').Database['public']['Tables']['mailgun_webhook_logs']['Update'],
+        )
+        .eq('id', webhookLogId);
     } catch (err) {
       console.error('Failed to update mailgunWebhookLogs entry:', err);
     }
@@ -593,9 +630,13 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const db = adminDb();
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settings = settingsSnap.data();
+    const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settings = settingsRow?.data as Record<string, unknown> | null;
 
     const webhookLoggingEnabled = settings?.mailgunWebhookLoggingEnabled === true;
     const formSnapshot = snapshotWebhookFormData(formData);
@@ -616,50 +657,57 @@ export async function POST(request: NextRequest) {
           : 0;
 
     if (webhookLoggingEnabled) {
-      webhookLogRef = await db.collection('mailgunWebhookLogs').add({
-        receivedAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        status: 'received',
-        result: 'pending',
-        reason: null,
-        request: {
-          method: request.method,
-          url: request.url,
-          ip: normalizeIpAddress(request),
-          userAgent: request.headers.get('user-agent') || '',
-          host: request.headers.get('host') || '',
-          contentType: request.headers.get('content-type') || '',
-          headers: serializeRequestHeaders(request.headers),
-          payloadStoragePath: null,
-        },
-        parsed: {
-          sender: senderForLog,
-          recipient: recipientForLog,
-          subject: subjectForLog,
-          messageId: messageIdForLog,
-          attachmentCount: attachmentCountForLog,
-        },
-        details: {
-          formFields: formSnapshot.previewFields,
-          files: formSnapshot.files,
-          totalFieldChars: formSnapshot.totalChars,
-          truncatedFields: formSnapshot.truncatedFields,
-        },
-        linked: {},
+      const now = new Date().toISOString();
+      // Initialize local tracking state
+      Object.assign(webhookPreviewFields, {
+        sender: senderForLog,
+        recipient: recipientForLog,
+        subject: subjectForLog,
+        messageId: messageIdForLog,
+        attachmentCount: attachmentCountForLog,
+      });
+      Object.assign(webhookRawFields, {
+        method: request.method,
+        url: request.url,
+        ip: normalizeIpAddress(request),
+        userAgent: request.headers.get('user-agent') || '',
+        host: request.headers.get('host') || '',
+        contentType: request.headers.get('content-type') || '',
+        headers: serializeRequestHeaders(request.headers),
+        payloadStoragePath: null,
       });
 
-      const payloadStoragePath = await uploadWebhookPayloadSnapshot(webhookLogRef.id, {
-        request: {
-          method: request.method,
-          url: request.url,
-          ip: normalizeIpAddress(request),
-          headers: serializeRequestHeaders(request.headers),
-        },
-        formData: {
-          fields: formSnapshot.rawFields,
-          files: formSnapshot.files,
-        },
-      });
+      const { data: newLog } = await supabase
+        .from('mailgun_webhook_logs')
+        .insert({
+          status: 'received',
+          result: 'pending',
+          reason: null,
+          received_at: now,
+          updated_at: now,
+          preview_fields: { ...webhookPreviewFields } as import('@/types/supabase').Json,
+          raw_fields: { ...webhookRawFields } as import('@/types/supabase').Json,
+          files: formSnapshot.files as unknown as import('@/types/supabase').Json,
+          linked: {} as import('@/types/supabase').Json,
+        })
+        .select('id')
+        .single();
+      webhookLogId = newLog?.id ?? null;
+
+      const payloadStoragePath = webhookLogId
+        ? await uploadWebhookPayloadSnapshot(webhookLogId, {
+            request: {
+              method: request.method,
+              url: request.url,
+              ip: normalizeIpAddress(request),
+              headers: serializeRequestHeaders(request.headers),
+            },
+            formData: {
+              fields: formSnapshot.rawFields,
+              files: formSnapshot.files,
+            },
+          })
+        : null;
 
       if (payloadStoragePath) {
         await updateWebhookLog({ 'request.payloadStoragePath': payloadStoragePath });
@@ -690,15 +738,24 @@ export async function POST(request: NextRequest) {
     }
 
     const mailgunWebhookSigningKey =
-      settings?.mailgunWebhookSigningKey || process.env.MAILGUN_WEBHOOK_SIGNING_KEY || '';
+      (typeof settings?.mailgunWebhookSigningKey === 'string'
+        ? settings.mailgunWebhookSigningKey
+        : '') ||
+      process.env.MAILGUN_WEBHOOK_SIGNING_KEY ||
+      '';
     const mailgunDomain =
-      settings?.mailgunSandboxEmail ||
-      settings?.mailgunDomain ||
+      (typeof settings?.mailgunSandboxEmail === 'string' ? settings.mailgunSandboxEmail : '') ||
+      (typeof settings?.mailgunDomain === 'string' ? settings.mailgunDomain : '') ||
       process.env.MAILGUN_SANDBOX_EMAIL ||
       '';
-    const mailgunApiKey = settings?.mailgunApiKey || process.env.MAILGUN_API_KEY || '';
+    const mailgunApiKey =
+      (typeof settings?.mailgunApiKey === 'string' ? settings.mailgunApiKey : '') ||
+      process.env.MAILGUN_API_KEY ||
+      '';
     const mailgunBaseUrl =
-      settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
+      (typeof settings?.mailgunBaseUrl === 'string' ? settings.mailgunBaseUrl : '') ||
+      process.env.MAILGUN_BASE_URL ||
+      'https://api.mailgun.net';
 
     if (!mailgunWebhookSigningKey) {
       console.error('Mailgun webhook signing key is missing; refusing inbound webhook');
@@ -740,15 +797,13 @@ export async function POST(request: NextRequest) {
     const nonceId = crypto.createHash('sha256').update(`${timestamp}:${token}`).digest('hex');
 
     try {
-      const nonceExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await db
-        .collection('mailgunWebhookNonces')
-        .doc(nonceId)
-        .create({
-          timestamp,
-          usedAt: Timestamp.now(),
-          expiresAt: Timestamp.fromDate(nonceExpiry),
-        });
+      const { error: nonceError } = await supabase
+        .from('mailgun_webhook_nonces')
+        .insert({ id: nonceId, created_at: new Date().toISOString() });
+      if (nonceError) {
+        // code 23505 = unique_violation (replay detected)
+        throw nonceError;
+      }
     } catch {
       await updateWebhookLog({
         status: 'rejected',
@@ -1262,29 +1317,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing recipient' }, { status: 400 });
     }
 
-    // Firestore `in` queries support up to 10 values per query.
+    // Supabase doesn't have a native 'in' limit; query in batches of 10 for safety
     const recipientChunks: string[][] = [];
     for (let i = 0; i < normalizedRecipients.length; i += 10) {
       recipientChunks.push(normalizedRecipients.slice(i, i + 10));
     }
 
-    let userDoc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData> | null =
-      null;
+    let userRow: Record<string, unknown> | null = null;
     for (const chunk of recipientChunks) {
-      const usersSnap = await db
-        .collection('users')
-        .where('assignedEmail', 'in', chunk)
-        .where('isActive', '==', true)
-        .limit(1)
-        .get();
+      const { data: rows } = await supabase
+        .from('users')
+        .select(
+          'id, assigned_email, email, is_active, is_address_enabled, is_ai_analysis_only_enabled',
+        )
+        .in('assigned_email', chunk)
+        .eq('is_active', true)
+        .limit(1);
 
-      if (!usersSnap.empty) {
-        userDoc = usersSnap.docs[0];
+      if (rows && rows.length > 0) {
+        userRow = rows[0] as Record<string, unknown>;
         break;
       }
     }
 
-    if (!userDoc) {
+    if (!userRow) {
       const recipientsText = normalizedRecipients.join(',');
       console.log(`No active user found for email(s): ${recipientsText}`);
       await updateWebhookLog({
@@ -1295,87 +1351,90 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: `No active user found for email(s): ${recipientsText}` });
     }
 
-    const userData = userDoc.data();
-    const userId = userDoc.id;
+    const userData = userRow;
+    const userId = userRow.id as string;
     finalUserId = userId;
-    const matchedRecipient = (userData.assignedEmail as string) || normalizedRecipients[0];
+    const matchedRecipient = (userData.assigned_email as string) || normalizedRecipients[0];
 
     if (isLikelyMailLoop(formData, sender, (userData.email as string) || '')) {
-      const skippedRef = await db.collection('emailLogs').add({
-        toAddress: matchedRecipient,
-        fromAddress: sender,
+      const skippedLogId = crypto.randomUUID();
+      await supabase.from('email_logs').insert({
+        id: skippedLogId,
+        to_address: matchedRecipient,
+        from_address: sender,
         subject,
-        receivedAt: Timestamp.now(),
+        received_at: new Date().toISOString(),
         status: 'skipped',
-        userId,
-        originalBody: emailBody,
-        errorMessage: 'Possible mail loop detected; message not forwarded',
-        ...(messageId ? { messageId } : {}),
+        user_id: userId,
+        original_body: emailBody,
+        error_message: 'Possible mail loop detected; message not forwarded',
+        ...(messageId ? { message_id: messageId } : {}),
       });
-      await sendEmailCompletionPushNotification(userId, sender, subject, skippedRef.id, 'skipped');
+      await sendEmailCompletionPushNotification(userId, sender, subject, skippedLogId, 'skipped');
       await updateWebhookLog({
         status: 'skipped',
         result: 'mail-loop-detected',
         reason: 'Possible mail loop detected',
-        linked: { emailLogId: skippedRef.id },
+        linked: { emailLogId: skippedLogId },
       });
       return NextResponse.json({ message: 'Possible mail loop detected, email skipped' });
     }
 
     // Deduplicate: if a log entry already exists for this Message-Id, skip reprocessing
     if (messageId) {
-      const existingLog = await db
-        .collection('emailLogs')
-        .where('messageId', '==', messageId)
-        .where('userId', '==', userId)
-        .limit(1)
-        .get();
-      if (!existingLog.empty) {
+      const { data: existingRows } = await supabase
+        .from('email_logs')
+        .select('id')
+        .eq('message_id', messageId)
+        .eq('user_id', userId)
+        .limit(1);
+      if (existingRows && existingRows.length > 0) {
         console.log(`Duplicate email detected (Message-Id: ${messageId}), skipping`);
         await updateWebhookLog({
           status: 'skipped',
           result: 'duplicate-message-id',
           reason: `Duplicate email detected (Message-Id: ${messageId})`,
-          linked: { emailLogId: existingLog.docs[0].id },
+          linked: { emailLogId: existingRows[0].id as string },
         });
         return NextResponse.json({ message: 'Duplicate email, already processed' });
       }
     }
 
     // If the user has disabled their Postino address, register the email as skipped
-    if (userData.isAddressEnabled === false) {
+    if (userData.is_address_enabled === false) {
       // If AI-analysis-only mode is enabled, queue for analysis + memory but skip rules/forwarding
-      if (userData.isAiAnalysisOnlyEnabled === true) {
-        const logRef = await db.collection('emailLogs').add({
-          toAddress: matchedRecipient,
-          fromAddress: sender,
+      if (userData.is_ai_analysis_only_enabled === true) {
+        const newLogId = crypto.randomUUID();
+        await supabase.from('email_logs').insert({
+          id: newLogId,
+          to_address: matchedRecipient,
+          from_address: sender,
           subject,
-          receivedAt: Timestamp.now(),
+          received_at: new Date().toISOString(),
           status: 'received',
-          userId,
-          originalBody: emailBody,
-          processingMode: 'queued',
-          ...(messageId ? { messageId } : {}),
+          user_id: userId,
+          original_body: emailBody,
+          ...(messageId ? { message_id: messageId } : {}),
           ...(attachments.length > 0
             ? {
-                attachmentCount: attachments.length,
-                attachmentNames: attachments.map((a) => a.filename),
+                attachment_count: attachments.length,
+                attachment_names: attachments.map((a) => a.filename),
               }
             : {}),
         });
-        logId = logRef.id;
+        logId = newLogId;
         await updateWebhookLog({
           status: 'accepted',
           result: 'log-created',
-          linked: { emailLogId: logRef.id },
+          linked: { emailLogId: newLogId },
         });
 
-        // Upload attachments to Firebase Storage so they are accessible from the dashboard.
+        // Upload attachments to Supabase Storage so they are accessible from the dashboard.
         let aiOnlySerializedAttachments: SerializedAttachment[] | undefined;
         if (attachments.length > 0) {
           const uploaded = await Promise.all(
             attachments.map(async (att, i) => {
-              const storagePath = await uploadAttachmentToStorage(att, userId, logRef.id, i + 1);
+              const storagePath = await uploadAttachmentToStorage(att, userId, newLogId, i + 1);
               if (!storagePath) return null;
               const entry: SerializedAttachment = {
                 filename: att.filename,
@@ -1389,13 +1448,19 @@ export async function POST(request: NextRequest) {
           const valid = uploaded.filter((a): a is SerializedAttachment => a !== null);
           if (valid.length > 0) {
             aiOnlySerializedAttachments = valid;
-            await logRef.update({ attachments: aiOnlySerializedAttachments });
+            await supabase
+              .from('email_logs')
+              .update({
+                attachments:
+                  aiOnlySerializedAttachments as unknown as import('@/types/supabase').Json,
+              })
+              .eq('id', newLogId);
           }
           uploadedSerializedAttachments = valid;
         }
 
         const aiOnlyPayload: QueuedInboundPayload = {
-          logId: logRef.id,
+          logId: newLogId,
           userId,
           userEmail: (userData.email as string) || '',
           matchedRecipient,
@@ -1417,7 +1482,7 @@ export async function POST(request: NextRequest) {
             status: 'skipped',
             result: 'duplicate-job',
             reason: 'Duplicate queue job, already queued',
-            linked: { emailLogId: logRef.id, jobId: nonceId },
+            linked: { emailLogId: newLogId, jobId: nonceId },
           });
           return NextResponse.json({ message: 'Duplicate job, already queued' });
         }
@@ -1425,7 +1490,7 @@ export async function POST(request: NextRequest) {
           status: 'queued',
           result: 'queued',
           reason: null,
-          linked: { emailLogId: logRef.id, jobId: nonceId },
+          linked: { emailLogId: newLogId, jobId: nonceId },
         });
         scheduleProcessingTrigger(request);
         console.log(
@@ -1434,60 +1499,61 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, queued: true });
       }
 
-      const skippedRef = await db.collection('emailLogs').add({
-        toAddress: matchedRecipient,
-        fromAddress: sender,
+      const skippedLogId = crypto.randomUUID();
+      await supabase.from('email_logs').insert({
+        id: skippedLogId,
+        to_address: matchedRecipient,
+        from_address: sender,
         subject,
-        receivedAt: Timestamp.now(),
+        received_at: new Date().toISOString(),
         status: 'skipped',
-        userId,
-        originalBody: emailBody,
-        ...(messageId ? { messageId } : {}),
+        user_id: userId,
+        original_body: emailBody,
+        ...(messageId ? { message_id: messageId } : {}),
       });
-      await sendEmailCompletionPushNotification(userId, sender, subject, skippedRef.id, 'skipped');
+      await sendEmailCompletionPushNotification(userId, sender, subject, skippedLogId, 'skipped');
       console.log(`User ${userId} has address disabled, email skipped`);
       await updateWebhookLog({
         status: 'skipped',
         result: 'address-disabled',
         reason: `User ${userId} has address disabled`,
-        linked: { emailLogId: skippedRef.id },
+        linked: { emailLogId: skippedLogId },
       });
       return NextResponse.json({ message: 'Address disabled, email skipped' });
     }
 
     // Serialize attachments for queue storage.
-    // All attachments, including inline CID-backed parts, are uploaded to Firebase Storage.
+    // All attachments, including inline CID-backed parts, are uploaded to Supabase Storage.
     let serializedAttachments: SerializedAttachment[] | undefined;
 
-    const processingMode = 'queued';
-
-    const logRef = await db.collection('emailLogs').add({
-      toAddress: matchedRecipient,
-      fromAddress: sender,
+    const mainLogId = crypto.randomUUID();
+    await supabase.from('email_logs').insert({
+      id: mainLogId,
+      to_address: matchedRecipient,
+      from_address: sender,
       subject,
-      receivedAt: Timestamp.now(),
+      received_at: new Date().toISOString(),
       status: 'received',
-      userId,
-      originalBody: emailBody,
-      processingMode,
-      ...(ccHeader ? { ccAddress: ccHeader } : {}),
-      ...(bccHeader ? { bccAddress: bccHeader } : {}),
-      ...(messageId ? { messageId } : {}),
+      user_id: userId,
+      original_body: emailBody,
+      ...(ccHeader ? { cc_address: ccHeader } : {}),
+      ...(bccHeader ? { bcc_address: bccHeader } : {}),
+      ...(messageId ? { message_id: messageId } : {}),
       ...(attachments.length > 0
         ? {
-            attachmentCount: attachments.length,
-            attachmentNames: attachments.map((a) => a.filename),
+            attachment_count: attachments.length,
+            attachment_names: attachments.map((a) => a.filename),
           }
         : {}),
     });
-    logId = logRef.id;
+    logId = mainLogId;
     await updateWebhookLog({
       status: 'accepted',
       result: 'log-created',
-      linked: { emailLogId: logRef.id },
+      linked: { emailLogId: mainLogId },
     });
 
-    // Upload all attachments to Firebase Storage now that we have the email log id for the path.
+    // Upload all attachments to Supabase Storage now that we have the email log id for the path.
     console.log('[inbound] pre-upload attachments', {
       count: attachments.length,
       names: attachments.map((a) => a.filename),
@@ -1495,7 +1561,7 @@ export async function POST(request: NextRequest) {
     if (attachments.length > 0) {
       const uploaded: Array<SerializedAttachment | null> = await Promise.all(
         attachments.map(async (att, i): Promise<SerializedAttachment | null> => {
-          const storagePath = await uploadAttachmentToStorage(att, userId, logRef.id, i + 1);
+          const storagePath = await uploadAttachmentToStorage(att, userId, mainLogId, i + 1);
           console.log(`[inbound] upload attachment-${i + 1}`, {
             filename: att.filename,
             contentType: att.contentType,
@@ -1507,7 +1573,7 @@ export async function POST(request: NextRequest) {
             // attachment is not silently dropped.
             console.error('Attachment upload returned no storage path; falling back to sync', {
               userId,
-              emailId: logRef.id,
+              emailId: mainLogId,
               attachmentNumber: i + 1,
               filename: att.filename,
               contentType: att.contentType,
@@ -1536,17 +1602,20 @@ export async function POST(request: NextRequest) {
           .map((attachment, index) => (attachment === null ? index + 1 : null))
           .filter((attachmentNumber): attachmentNumber is number => attachmentNumber !== null);
 
-        console.error('One or more attachments failed to upload to Firebase Storage', {
+        console.error('One or more attachments failed to upload to Supabase Storage', {
           userId,
-          emailId: logRef.id,
+          emailId: mainLogId,
           expectedAttachments: attachments.length,
           uploadedAttachments: uploadedSerializedAttachments.length,
           failedAttachmentNumbers,
         });
 
-        await logRef.update({ status: 'processing', processingStartedAt: Timestamp.now() });
+        await supabase
+          .from('email_logs')
+          .update({ status: 'processing', processing_started_at: new Date().toISOString() })
+          .eq('id', mainLogId);
         const syncPayload: QueuedInboundPayload = {
-          logId: logRef.id,
+          logId: mainLogId,
           userId,
           userEmail: (userData.email as string) || '',
           matchedRecipient,
@@ -1569,7 +1638,7 @@ export async function POST(request: NextRequest) {
           status: 'processed',
           result: 'sync-attachments-fallback',
           reason: 'Attachment storage upload failed; processed synchronously',
-          linked: { emailLogId: logRef.id },
+          linked: { emailLogId: mainLogId },
         });
         return NextResponse.json({ success: true, mode: 'sync-attachments' });
       }
@@ -1578,7 +1647,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload: QueuedInboundPayload = {
-      logId: logRef.id,
+      logId: mainLogId,
       userId,
       userEmail: (userData.email as string) || '',
       matchedRecipient,
@@ -1603,20 +1672,25 @@ export async function POST(request: NextRequest) {
         status: 'skipped',
         result: 'duplicate-job',
         reason: 'Duplicate queue job, already queued',
-        linked: { emailLogId: logRef.id, jobId: nonceId },
+        linked: { emailLogId: mainLogId, jobId: nonceId },
       });
       return NextResponse.json({ message: 'Duplicate job, already queued' });
     }
 
     if (serializedAttachments && serializedAttachments.length > 0) {
-      await logRef.update({ attachments: serializedAttachments });
+      await supabase
+        .from('email_logs')
+        .update({
+          attachments: serializedAttachments as unknown as import('@/types/supabase').Json,
+        })
+        .eq('id', mainLogId);
     }
 
     await updateWebhookLog({
       status: 'queued',
       result: 'queued',
       reason: null,
-      linked: { emailLogId: logRef.id, jobId: nonceId },
+      linked: { emailLogId: mainLogId, jobId: nonceId },
     });
 
     // Kick off a background processing pass after a short delay — non-blocking.
@@ -1633,13 +1707,14 @@ export async function POST(request: NextRequest) {
     });
     if (logId) {
       try {
-        await adminDb()
-          .collection('emailLogs')
-          .doc(logId)
+        const supabaseErr = createAdminClient();
+        await supabaseErr
+          .from('email_logs')
           .update({
             status: 'error',
-            errorMessage: error instanceof Error ? error.message : String(error),
-          });
+            error_message: error instanceof Error ? error.message : String(error),
+          })
+          .eq('id', logId);
         if (finalUserId) {
           await sendEmailCompletionPushNotification(
             finalUserId,

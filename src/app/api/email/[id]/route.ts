@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { deleteAttachmentFromStorage, type SerializedAttachment } from '@/lib/inbound-processing';
 
@@ -8,28 +8,30 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
     const { id } = await params;
-    const db = adminDb();
-    const logSnap = await db.collection('emailLogs').doc(id).get();
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.from('email_logs').select('*').eq('id', id).single();
 
-    if (!logSnap.exists) {
+    if (!data || error) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const data = logSnap.data()!;
-
     // Check ownership: must be the owner or an admin
-    if (data.userId !== decoded.uid) {
-      const userSnap = await db.collection('users').doc(decoded.uid).get();
-      if (!userSnap.data()?.isAdmin) {
+    if (data.user_id !== user.id) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+      if (!userData?.is_admin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
     const attachments = Array.isArray(data.attachments)
-      ? (data.attachments as SerializedAttachment[])
+      ? (data.attachments as unknown as SerializedAttachment[])
       : [];
 
     await Promise.all(
@@ -38,7 +40,7 @@ export async function DELETE(
         .map((attachment) => deleteAttachmentFromStorage(attachment.storagePath!)),
     );
 
-    await db.collection('emailLogs').doc(id).delete();
+    await supabase.from('email_logs').delete().eq('id', id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

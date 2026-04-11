@@ -1,11 +1,10 @@
 import 'server-only';
 
 import { createHash } from 'node:crypto';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { EmailAnalysisPlace } from '@/types';
 import { normalizePlaceLabel, placeLabelKey } from '@/lib/place-utils';
 
-const GEOCODE_CACHE_COLLECTION = 'placeGeocodes';
 const GEOCODE_MIN_INTERVAL_MS = 1100;
 
 // ---------------------------------------------------------------------------
@@ -194,11 +193,14 @@ async function geocodePlace(label: string): Promise<GeocodeResult | null> {
 }
 
 async function readCachedPlace(label: string): Promise<GeocodeResult | null> {
-  const db = adminDb();
-  const doc = await db.collection(GEOCODE_CACHE_COLLECTION).doc(getPlaceCacheId(label)).get();
-  if (!doc.exists) return null;
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('place_geocodes')
+    .select('name, latitude, longitude, display_name')
+    .eq('key', getPlaceCacheId(label))
+    .single();
+  if (!data) return null;
 
-  const data = doc.data();
   const latitude = Number(data?.latitude);
   const longitude = Number(data?.longitude);
   const name = typeof data?.name === 'string' ? normalizePlaceLabel(data.name) : '';
@@ -209,25 +211,21 @@ async function readCachedPlace(label: string): Promise<GeocodeResult | null> {
     name,
     latitude,
     longitude,
-    ...(typeof data?.displayName === 'string' && data.displayName.trim()
-      ? { displayName: data.displayName.trim() }
+    ...(typeof data?.display_name === 'string' && data.display_name.trim()
+      ? { displayName: data.display_name.trim() }
       : {}),
   };
 }
 
 async function writeCachedPlace(place: GeocodeResult): Promise<void> {
-  const db = adminDb();
-  await db
-    .collection(GEOCODE_CACHE_COLLECTION)
-    .doc(getPlaceCacheId(place.name))
-    .set({
-      name: place.name,
-      normalizedLabel: placeLabelKey(place.name),
-      latitude: place.latitude,
-      longitude: place.longitude,
-      ...(place.displayName ? { displayName: place.displayName } : {}),
-      updatedAt: new Date(),
-    });
+  const supabase = createAdminClient();
+  await supabase.from('place_geocodes').upsert({
+    key: getPlaceCacheId(place.name),
+    name: place.name,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    display_name: place.displayName ?? null,
+  });
 }
 
 export async function geocodePlaceName(

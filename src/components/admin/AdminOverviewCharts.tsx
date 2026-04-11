@@ -107,7 +107,7 @@ function ChartSkeleton() {
 const COST_COLOR_DARK = '#efd957';
 
 export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [range, setRange] = useState<TimeRange>('7d');
   const [granularity, setGranularity] = useState<TimeGranularity>(DEFAULT_GRANULARITY['7d']);
@@ -125,10 +125,10 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
   }, []);
 
   const fetchTimeseries = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setTimeseriesLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(
         `/api/admin/stats/timeseries?range=${range}&granularity=${granularity}`,
         { headers: { Authorization: `Bearer ${token}` } },
@@ -142,7 +142,7 @@ export function AdminOverviewCharts({ stats }: AdminOverviewChartsProps) {
     } finally {
       setTimeseriesLoading(false);
     }
-  }, [firebaseUser, range, granularity]);
+  }, [authUser, range, granularity]);
 
   useEffect(() => {
     fetchTimeseries();

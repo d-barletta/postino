@@ -57,7 +57,7 @@ interface OpenRouterModel {
 export default function OriginalEmailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { firebaseUser, user, loading: authLoading } = useAuth();
+  const { authUser, user, loading: authLoading, getIdToken } = useAuth();
   const { t } = useI18n();
   const [email, setEmail] = useState<OriginalEmail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,16 +79,16 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
   // Load available models for admin users
   useEffect(() => {
-    if (!firebaseUser || !user?.isAdmin) return;
+    if (!authUser || !user?.isAdmin) return;
     setModelsLoading(true);
-    firebaseUser.getIdToken().then((token) =>
+    getIdToken().then((token) =>
       fetch('/api/admin/openrouter-models', { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((data) => setModels((data.models || []) as OpenRouterModel[]))
         .catch(() => setModels([]))
         .finally(() => setModelsLoading(false)),
     );
-  }, [firebaseUser, user?.isAdmin]);
+  }, [authUser, user?.isAdmin]);
 
   const handleBack = () => {
     if (
@@ -103,12 +103,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   };
 
   const handleReprocess = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setReprocessing(true);
     setReprocessError('');
     setReprocessResult(null);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(`/api/admin/email/${id}/reprocess`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -130,12 +130,12 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   };
 
   const handleAnalyze = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setAnalyzing(true);
     setAnalysisError('');
     setAnalysisResult(null);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(`/api/admin/email/${id}/analysis`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -175,14 +175,14 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     if (authLoading) return;
-    if (!firebaseUser) {
+    if (!authUser) {
       router.push(`/login?redirect=/email/original/${id}`);
       return;
     }
 
     const fetchEmail = async () => {
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch(`/api/email/original/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -209,7 +209,7 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
 
     fetchEmail();
     // t is intentionally excluded to avoid re-fetching when locale changes
-  }, [firebaseUser, authLoading, id, router]);
+  }, [authUser, authLoading, id, router]);
 
   if (authLoading || loading) {
     return (

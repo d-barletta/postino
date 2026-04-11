@@ -21,7 +21,7 @@ import { ClearMemoriesCard } from '@/components/dashboard/ClearMemoriesCard';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
@@ -47,16 +47,14 @@ const EMPTY_STATS: UserStats = {
   totalEstimatedCost: 0,
 };
 
-const DASHBOARD_TABS = [
-  'overview',
-  'rules',
-  'inbox',
-  'agent',
-  'explore',
-  'relations',
-  'settings',
-] as const;
-type DashboardTab = (typeof DASHBOARD_TABS)[number];
+type DashboardTab =
+  | 'overview'
+  | 'rules'
+  | 'inbox'
+  | 'agent'
+  | 'explore'
+  | 'relations'
+  | 'settings';
 
 function DashboardOverviewSkeleton() {
   return (
@@ -124,7 +122,7 @@ function DashboardPanelSkeleton({ cards = 3 }: { cards?: number }) {
 }
 
 export default function DashboardPage() {
-  const { user, loading, firebaseUser, refreshUser } = useAuth();
+  const { user, loading, authUser, refreshUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
@@ -145,60 +143,15 @@ export default function DashboardPage() {
   const editRuleId = searchParams.get('editRule');
   const selectedEmailId = searchParams.get('selectedEmail');
 
-  // ---------------------------------------------------------------------------
-  // Tab history: push a history entry when the user clicks a tab so the
-  // browser Back button can navigate between previously-visited tabs.
-  // ---------------------------------------------------------------------------
-
-  // On mount, restore the tab stored in the current history entry (survives
-  // page refreshes).  Falls back to the tab saved in localStorage (survives
-  // browser restarts).  If no valid tab is found anywhere, stamp the entry
-  // with the default 'overview' so that popstate always has a value to read.
-  useEffect(() => {
-    const historyTab = (window.history.state as Record<string, unknown> | null)?.postinoTab as
-      | DashboardTab
-      | undefined;
-    const localTab = localStorage.getItem('postinoActiveTab') as DashboardTab | null;
-    const savedTab =
-      historyTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(historyTab)
-        ? historyTab
-        : localTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(localTab)
-          ? localTab
-          : null;
-    if (savedTab) {
-      setActiveTab(savedTab);
-      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: savedTab }, '');
-    } else {
-      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: 'overview' }, '');
-    }
-  }, []);
-
-  // Listen for browser Back/Forward and restore the tab stored in the state.
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if ((e.state as Record<string, unknown> | null)?.postinoTab !== undefined) {
-        setActiveTab((e.state as { postinoTab: DashboardTab }).postinoTab);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Navigate to a tab and record the change in browser history and localStorage.
+  // Navigate to a tab directly.
   const handleTabChange = useCallback((newTab: string) => {
-    localStorage.setItem('postinoActiveTab', newTab);
-    window.history.pushState({ postinoTab: newTab as DashboardTab }, '');
     setActiveTab(newTab as DashboardTab);
   }, []);
 
   useEffect(() => {
     if (selectedEmailId) {
-      // Update history state to reflect the URL-forced tab so that Back works
-      // correctly if the user later opens a modal from this tab.
-      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: 'inbox' }, '');
       setActiveTab('inbox');
     } else if (editRuleId) {
-      window.history.replaceState({ ...(window.history.state ?? {}), postinoTab: 'rules' }, '');
       setActiveTab('rules');
     }
   }, [selectedEmailId, editRuleId]);
@@ -237,8 +190,8 @@ export default function DashboardPage() {
   }, []);
 
   const fetchLogs = useCallback(async () => {
-    if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
+    if (!authUser) return;
+    const token = await getIdToken();
     const res = await fetch('/api/email/logs?pageSize=50', {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -248,12 +201,12 @@ export default function DashboardPage() {
     } else {
       toast.error(t.dashboard.emailHistory.failedToLoad);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const fetchStats = useCallback(
     async (period: StatsPeriod = statsPeriod) => {
-      if (!firebaseUser) return;
-      const token = await firebaseUser.getIdToken();
+      if (!authUser) return;
+      const token = await getIdToken();
       const url = period === 'all' ? '/api/user/stats' : `/api/user/stats?period=${period}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
@@ -263,15 +216,15 @@ export default function DashboardPage() {
         toast.error(t.dashboard.toasts.failedToLoadStats);
       }
     },
-    [firebaseUser, statsPeriod],
+    [authUser, statsPeriod],
   );
 
   const fetchKnowledge = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setKnowledgeLoading(true);
     setKnowledgeError(null);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/email/knowledge', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -284,10 +237,10 @@ export default function DashboardPage() {
     } finally {
       setKnowledgeLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   useEffect(() => {
-    if (!firebaseUser) {
+    if (!authUser) {
       setLogsLoading(false);
       return;
     }
@@ -296,7 +249,7 @@ export default function DashboardPage() {
     Promise.all([fetchLogs(), fetchStats('all'), fetchKnowledge()]).finally(() =>
       setLogsLoading(false),
     );
-  }, [firebaseUser]); // fetchLogs, fetchStats, fetchKnowledge are derived from firebaseUser — no separate dep needed
+  }, [authUser]); // fetchLogs, fetchStats, fetchKnowledge are derived from authUser — no separate dep needed
 
   // Re-fetch stats when period changes.
   const handleStatsPeriodChange = useCallback(
@@ -325,7 +278,7 @@ export default function DashboardPage() {
   // broadcasts an 'EMAIL_NOTIFICATION_CLICK' message via BroadcastChannel so that
   // any open dashboard window re-fetches without requiring a full page reload.
   useEffect(() => {
-    if (typeof window === 'undefined' || !('BroadcastChannel' in window) || !firebaseUser) return;
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window) || !authUser) return;
     const channel = new BroadcastChannel('postino-refresh');
     const handleMessage = (event: MessageEvent) => {
       if ((event.data as { type?: string })?.type === 'EMAIL_NOTIFICATION_CLICK') {
@@ -337,13 +290,13 @@ export default function DashboardPage() {
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [firebaseUser, handleLogsRefresh]);
+  }, [authUser, handleLogsRefresh]);
 
   const handleAddressToggle = useCallback(
     async (enabled: boolean) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/user/address-toggle', {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -356,14 +309,14 @@ export default function DashboardPage() {
         toast.error(t.dashboard.toasts.failedToUpdateEmailSetting);
       }
     },
-    [firebaseUser, refreshUser],
+    [authUser, refreshUser],
   );
 
   const handleAiAnalysisOnlyToggle = useCallback(
     async (enabled: boolean) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/user/ai-analysis-toggle', {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -376,14 +329,14 @@ export default function DashboardPage() {
         toast.error(t.dashboard.toasts.failedToUpdateAiAnalysisOnlySetting);
       }
     },
-    [firebaseUser, refreshUser],
+    [authUser, refreshUser],
   );
 
   const handleForwardingHeaderToggle = useCallback(
     async (enabled: boolean) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/user/forwarding-header-toggle', {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -396,14 +349,14 @@ export default function DashboardPage() {
         toast.error(t.dashboard.toasts.failedToUpdateForwardingHeaderSetting);
       }
     },
-    [firebaseUser, refreshUser],
+    [authUser, refreshUser],
   );
 
   const handleAnalysisLanguageChange = useCallback(
     async (language: string | null) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/user/analysis-language', {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -416,7 +369,7 @@ export default function DashboardPage() {
         toast.error(t.dashboard.toasts.failedToUpdateAnalysisLanguageSetting);
       }
     },
-    [firebaseUser, refreshUser],
+    [authUser, refreshUser],
   );
 
   const renderOverviewContent = () => {
@@ -571,16 +524,20 @@ export default function DashboardPage() {
             <span>{t.dashboard.tabs.settings}</span>
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="overview">{renderOverviewContent()}</TabsContent>
-        <TabsContent value="rules" forceMount className="data-[state=inactive]:hidden">
-          {loading ? (
+      </Tabs>
+
+      <div className="mt-6">
+        {activeTab === 'overview' && renderOverviewContent()}
+
+        {activeTab === 'rules' &&
+          (loading ? (
             <DashboardPanelSkeleton />
           ) : (
             <RulesManager maxRuleLength={maxRuleLength} editRuleId={editRuleId ?? undefined} />
-          )}
-        </TabsContent>
-        <TabsContent value="inbox" forceMount className="data-[state=inactive]:hidden">
-          {loading ? (
+          ))}
+
+        {activeTab === 'inbox' &&
+          (loading ? (
             <DashboardPanelSkeleton />
           ) : (
             <EmailSearchTab
@@ -589,15 +546,14 @@ export default function DashboardPage() {
               refreshTrigger={emailListRefreshTrigger}
               knowledgeData={knowledgeData}
             />
-          )}
-        </TabsContent>
-        {(memoryEnabled || loading || settingsLoading) && (
-          <TabsContent value="agent">
-            {loading || settingsLoading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab />}
-          </TabsContent>
-        )}
-        <TabsContent value="explore">
-          {loading ? (
+          ))}
+
+        {activeTab === 'agent' &&
+          (memoryEnabled || loading || settingsLoading) &&
+          (loading || settingsLoading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab />)}
+
+        {activeTab === 'explore' &&
+          (loading ? (
             <DashboardPanelSkeleton />
           ) : (
             <KnowledgeTab
@@ -606,13 +562,13 @@ export default function DashboardPage() {
               knowledgeError={knowledgeError}
               onRefreshKnowledge={fetchKnowledge}
             />
-          )}
-        </TabsContent>
-        <TabsContent value="relations">
-          {loading ? <DashboardPanelSkeleton /> : <RelationsTab />}
-        </TabsContent>
-        <TabsContent value="settings">{renderSettingsContent()}</TabsContent>
-      </Tabs>
+          ))}
+
+        {activeTab === 'relations' && (loading ? <DashboardPanelSkeleton /> : <RelationsTab />)}
+
+        {activeTab === 'settings' && renderSettingsContent()}
+      </div>
+
       <InstallPwaDrawer forceOpenTrigger={installPwaTrigger} />
     </div>
   );

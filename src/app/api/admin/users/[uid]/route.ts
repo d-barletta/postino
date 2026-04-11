@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { DocumentReference } from 'firebase-admin/firestore';
-import { adminAuth, adminDb, adminStorage } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import {
   generateAssignedEmail,
@@ -8,66 +7,29 @@ import {
   resolveAssignedEmailDomain,
 } from '@/lib/email-utils';
 
-/** Maximum write operations per Firestore batch (hard limit is 500). */
-const BATCH_SIZE = 400;
 const IN_QUERY_LIMIT = 30;
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
 /** Maximum number of log IDs processed concurrently when deleting storage artifacts. */
 const STORAGE_DELETE_CONCURRENCY = 20;
 
-function dedupeRefs(refs: DocumentReference[]): DocumentReference[] {
-  const unique = new Map<string, DocumentReference>();
-  for (const ref of refs) {
-    unique.set(ref.path, ref);
-  }
-  return Array.from(unique.values());
-}
-
-async function deleteRefsInBatches(refs: DocumentReference[]): Promise<void> {
-  const db = adminDb();
-  for (let i = 0; i < refs.length; i += BATCH_SIZE) {
-    const batch = db.batch();
-    const chunk = refs.slice(i, i + BATCH_SIZE);
-    chunk.forEach((ref) => batch.delete(ref));
-    await batch.commit();
-  }
-}
-
-async function queryRefsByIds(
-  collection: string,
-  fieldPath: string,
-  ids: string[],
-): Promise<DocumentReference[]> {
-  if (ids.length === 0) return [];
-
-  const db = adminDb();
-  const chunks: string[][] = [];
-  for (let i = 0; i < ids.length; i += IN_QUERY_LIMIT) {
-    chunks.push(ids.slice(i, i + IN_QUERY_LIMIT));
-  }
-
-  const snaps = await Promise.all(
-    chunks.map((chunk) => db.collection(collection).where(fieldPath, 'in', chunk).get()),
-  );
-
-  return snaps.flatMap((snap) => snap.docs.map((doc) => doc.ref));
-}
-
 async function deleteUserStorageArtifacts(logIds: string[]): Promise<void> {
   if (logIds.length === 0) return;
 
   try {
-    const bucket = adminStorage().bucket();
+    const supabase = createAdminClient();
 
     for (let i = 0; i < logIds.length; i += STORAGE_DELETE_CONCURRENCY) {
       const batch = logIds.slice(i, i + STORAGE_DELETE_CONCURRENCY);
       await Promise.all(
         batch.flatMap((logId) =>
-          [`email-attachments/${logId}/`, `mailgun-webhook-logs/${logId}/`].map(async (prefix) => {
-            const [files] = await bucket.getFiles({ prefix });
-            await Promise.all(
-              files.map((file) => file.delete({ ignoreNotFound: true }).catch(() => undefined)),
-            );
+          [`${logId}/`].map(async (prefix) => {
+            const { data: files } = await supabase.storage
+              .from('email-attachments')
+              .list(prefix, { limit: 1000 });
+            if (files && files.length > 0) {
+              const paths = files.map((f) => `${prefix}${f.name}`);
+              await supabase.storage.from('email-attachments').remove(paths);
+            }
           }),
         ),
       );
@@ -77,68 +39,112 @@ async function deleteUserStorageArtifacts(logIds: string[]): Promise<void> {
   }
 }
 
-async function collectUserDataRefs(uid: string): Promise<{
-  refsToDelete: DocumentReference[];
+async function collectUserDataIds(uid: string): Promise<{
   logIds: string[];
+  jobIds: string[];
+  webhookLogIds: string[];
+  mergeIds: string[];
+  mergeSuggestionIds: string[];
+  ruleIds: string[];
 }> {
-  const db = adminDb();
+  const supabase = createAdminClient();
 
-  const [rulesSnap, logsSnap, entityMergesSnap, entityMergeSuggestionsSnap, jobsSnap] =
-    await Promise.all([
-      db.collection('rules').where('userId', '==', uid).get(),
-      db.collection('emailLogs').where('userId', '==', uid).get(),
-      db.collection('entityMerges').where('userId', '==', uid).get(),
-      db.collection('entityMergeSuggestions').where('userId', '==', uid).get(),
-      db.collection('emailJobs').where('payload.userId', '==', uid).get(),
-    ]);
-
-  const logIds = logsSnap.docs.map((doc) => doc.id);
-  const jobIds = jobsSnap.docs.map((doc) => doc.id);
-
-  const [webhookRefsByLogId, webhookRefsByJobId] = await Promise.all([
-    queryRefsByIds('mailgunWebhookLogs', 'linked.emailLogId', logIds),
-    queryRefsByIds('mailgunWebhookLogs', 'linked.jobId', jobIds),
+  const [rulesResult, logsResult, mergesResult, suggestionsResult, jobsResult] = await Promise.all([
+    supabase.from('rules').select('id').eq('user_id', uid),
+    supabase.from('email_logs').select('id').eq('user_id', uid),
+    supabase.from('entity_merges').select('id').eq('user_id', uid),
+    supabase.from('entity_merge_suggestions').select('id').eq('user_id', uid),
+    supabase.from('email_jobs').select('id').filter('payload->>userId', 'eq', uid),
   ]);
+
+  const logIds = (logsResult.data ?? []).map((d) => d.id as string);
+  const jobIds = (jobsResult.data ?? []).map((d) => d.id as string);
+
+  // Collect webhook log IDs referencing this user's email logs or jobs
+  const webhookLogIds: string[] = [];
+  const chunks: string[][] = [];
+  const allRefIds = [...logIds, ...jobIds];
+  for (let i = 0; i < allRefIds.length; i += IN_QUERY_LIMIT) {
+    chunks.push(allRefIds.slice(i, i + IN_QUERY_LIMIT));
+  }
+  for (const chunk of chunks) {
+    const { data: wRows } = await supabase
+      .from('mailgun_webhook_logs')
+      .select('id')
+      .or(
+        `linked->>emailLogId.in.(${chunk.map((id) => `"${id}"`).join(',')}),linked->>jobId.in.(${chunk.map((id) => `"${id}"`).join(',')})`,
+      );
+    if (wRows) webhookLogIds.push(...wRows.map((r) => r.id as string));
+  }
 
   return {
     logIds,
-    refsToDelete: dedupeRefs([
-      ...rulesSnap.docs.map((doc) => doc.ref),
-      ...logsSnap.docs.map((doc) => doc.ref),
-      ...entityMergesSnap.docs.map((doc) => doc.ref),
-      ...entityMergeSuggestionsSnap.docs.map((doc) => doc.ref),
-      ...jobsSnap.docs.map((doc) => doc.ref),
-      ...webhookRefsByLogId,
-      ...webhookRefsByJobId,
-      db.collection('entityRelations').doc(uid),
-      db.collection('entityFlows').doc(uid),
-      db.collection('entityPlaceMaps').doc(uid),
-      db.collection('userMemory').doc(uid),
-    ]),
+    jobIds,
+    webhookLogIds,
+    mergeIds: (mergesResult.data ?? []).map((d) => d.id as string),
+    mergeSuggestionIds: (suggestionsResult.data ?? []).map((d) => d.id as string),
+    ruleIds: (rulesResult.data ?? []).map((d) => d.id as string),
   };
 }
 
+async function deleteAllUserData(uid: string): Promise<{ logIds: string[] }> {
+  const { logIds, jobIds, webhookLogIds, mergeIds, mergeSuggestionIds, ruleIds } =
+    await collectUserDataIds(uid);
+
+  await deleteUserStorageArtifacts(logIds);
+
+  const supabase = createAdminClient();
+
+  // Delete in dependency order
+  await Promise.all([
+    ruleIds.length > 0 ? supabase.from('rules').delete().in('id', ruleIds) : Promise.resolve(),
+    mergeIds.length > 0
+      ? supabase.from('entity_merges').delete().in('id', mergeIds)
+      : Promise.resolve(),
+    mergeSuggestionIds.length > 0
+      ? supabase.from('entity_merge_suggestions').delete().in('id', mergeSuggestionIds)
+      : Promise.resolve(),
+    jobIds.length > 0 ? supabase.from('email_jobs').delete().in('id', jobIds) : Promise.resolve(),
+    webhookLogIds.length > 0
+      ? supabase.from('mailgun_webhook_logs').delete().in('id', webhookLogIds)
+      : Promise.resolve(),
+    logIds.length > 0 ? supabase.from('email_logs').delete().in('id', logIds) : Promise.resolve(),
+    supabase.from('entity_relations').delete().eq('user_id', uid),
+    supabase.from('entity_flows').delete().eq('user_id', uid),
+    supabase.from('entity_place_maps').delete().eq('user_id', uid),
+    supabase.from('user_memory').delete().eq('user_id', uid),
+  ]);
+
+  return { logIds };
+}
+
 async function provisionFreshUserProfile(uid: string, currentUserData: Record<string, unknown>) {
-  const db = adminDb();
-  const settingsDoc = await db.collection('settings').doc('global').get();
-  const settings = settingsDoc.data();
+  const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  const settings = settingsRow?.data as Record<string, unknown> | undefined;
   const assignedDomain = resolveAssignedEmailDomain(settings);
 
   let authEmail = typeof currentUserData.email === 'string' ? currentUserData.email : '';
   let authDisplayName =
-    typeof currentUserData.displayName === 'string' ? currentUserData.displayName.trim() : '';
-  let isActive = currentUserData.isActive === true;
+    typeof currentUserData.display_name === 'string' ? currentUserData.display_name.trim() : '';
+  let isActive = currentUserData.is_active === true;
 
   try {
-    const authUser = await adminAuth().getUser(uid);
-    authEmail = authUser.email ?? authEmail;
-    authDisplayName = authUser.displayName?.trim() ?? authDisplayName;
-    isActive = authUser.emailVerified;
-  } catch (error) {
-    const code = (error as { code?: string }).code;
-    if (code !== 'auth/user-not-found') {
-      throw error;
+    const { data: authData } = await supabase.auth.admin.getUserById(uid);
+    if (authData?.user) {
+      authEmail = authData.user.email ?? authEmail;
+      authDisplayName =
+        (authData.user.user_metadata?.display_name as string | undefined)?.trim() ??
+        authDisplayName;
+      isActive = !!authData.user.email_confirmed_at;
     }
+  } catch (error) {
+    // If user not found in auth, continue with existing data
+    console.warn(`Could not fetch auth user ${uid}:`, error);
   }
 
   if (authEmail && isEmailUsingDomain(authEmail, assignedDomain)) {
@@ -148,12 +154,12 @@ async function provisionFreshUserProfile(uid: string, currentUserData: Record<st
   let assignedEmail = '';
   for (let attempt = 0; attempt < MAX_ASSIGNED_EMAIL_ATTEMPTS; attempt++) {
     const candidate = generateAssignedEmail(assignedDomain);
-    const existing = await db
-      .collection('users')
-      .where('assignedEmail', '==', candidate)
-      .limit(1)
-      .get();
-    if (existing.empty) {
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('assigned_email', candidate)
+      .limit(1);
+    if (!existing || existing.length === 0) {
       assignedEmail = candidate;
       break;
     }
@@ -163,19 +169,17 @@ async function provisionFreshUserProfile(uid: string, currentUserData: Record<st
     throw new Error('Failed to provision assigned email');
   }
 
-  await db
-    .collection('users')
-    .doc(uid)
-    .set({
-      email: authEmail,
-      assignedEmail,
-      createdAt: new Date(),
-      isAdmin: false,
-      isActive,
-      suspended: false,
-      analysisOutputLanguage: 'en',
-      ...(authDisplayName ? { displayName: authDisplayName } : {}),
-    });
+  await supabase.from('users').upsert({
+    id: uid,
+    email: authEmail,
+    assigned_email: assignedEmail,
+    created_at: new Date().toISOString(),
+    is_admin: false,
+    is_active: isActive,
+    suspended: false,
+    analysis_output_language: 'en',
+    ...(authDisplayName ? { display_name: authDisplayName } : {}),
+  });
 }
 
 export async function PATCH(
@@ -186,22 +190,30 @@ export async function PATCH(
     await verifyAdminRequest(request);
     const updates = await request.json();
     const { uid } = await params;
-    const db = adminDb();
+    const supabase = createAdminClient();
 
     const allowed = ['isAdmin', 'isActive'];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),
     );
 
+    // Map camelCase to snake_case for DB
+    const dbUpdates: { is_admin?: boolean; is_active?: boolean; suspended?: boolean } = {};
+    if ('isAdmin' in filtered) dbUpdates.is_admin = Boolean(filtered.isAdmin);
     if ('isActive' in filtered) {
-      const targetSnap = await db.collection('users').doc(uid).get();
-      if (targetSnap.data()?.isAdmin) {
+      const { data: targetRow } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', uid)
+        .single();
+      if (targetRow?.is_admin) {
         return NextResponse.json({ error: 'Cannot suspend an admin user' }, { status: 400 });
       }
-      filtered.suspended = !filtered.isActive;
+      dbUpdates.is_active = Boolean(filtered.isActive);
+      dbUpdates.suspended = !filtered.isActive;
     }
 
-    await db.collection('users').doc(uid).update(filtered);
+    await supabase.from('users').update(dbUpdates).eq('id', uid);
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleAdminError(error, 'admin/users/[uid] PATCH');
@@ -212,20 +224,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     await verifyAdminRequest(request);
     const { uid } = await params;
-    const db = adminDb();
+    const supabase = createAdminClient();
 
-    const targetSnap = await db.collection('users').doc(uid).get();
-    if (!targetSnap.exists) {
+    const { data: targetRow } = await supabase
+      .from('users')
+      .select('is_admin, email, display_name, is_active')
+      .eq('id', uid)
+      .single();
+    if (!targetRow) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    if (targetSnap.data()?.isAdmin) {
+    if (targetRow.is_admin) {
       return NextResponse.json({ error: 'Cannot reset an admin user' }, { status: 400 });
     }
 
-    const { refsToDelete, logIds } = await collectUserDataRefs(uid);
-    await deleteUserStorageArtifacts(logIds);
-    await deleteRefsInBatches(refsToDelete);
-    await provisionFreshUserProfile(uid, targetSnap.data() ?? {});
+    await deleteAllUserData(uid);
+    await provisionFreshUserProfile(uid, targetRow as Record<string, unknown>);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -240,28 +254,29 @@ export async function DELETE(
   try {
     await verifyAdminRequest(request);
     const { uid } = await params;
-    const db = adminDb();
+    const supabase = createAdminClient();
 
-    const targetSnap = await db.collection('users').doc(uid).get();
-    if (!targetSnap.exists) {
+    const { data: targetRow } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', uid)
+      .single();
+    if (!targetRow) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    if (targetSnap.data()?.isAdmin) {
+    if (targetRow.is_admin) {
       return NextResponse.json({ error: 'Cannot delete an admin user' }, { status: 400 });
     }
 
-    const { refsToDelete, logIds } = await collectUserDataRefs(uid);
-    await deleteUserStorageArtifacts(logIds);
-    await deleteRefsInBatches([...refsToDelete, db.collection('users').doc(uid)]);
+    await deleteAllUserData(uid);
 
-    // Delete Firebase Auth user
-    try {
-      await adminAuth().deleteUser(uid);
-    } catch (authError) {
-      const code = (authError as { code?: string }).code;
-      if (code !== 'auth/user-not-found') {
-        console.error(`Failed to delete Firebase Auth user ${uid}:`, authError);
-      }
+    // Delete the users row first (FK constraint)
+    await supabase.from('users').delete().eq('id', uid);
+
+    // Delete Supabase Auth user
+    const { error: authError } = await supabase.auth.admin.deleteUser(uid);
+    if (authError && !authError.message.includes('not found')) {
+      console.error(`Failed to delete Supabase Auth user ${uid}:`, authError);
     }
 
     return NextResponse.json({ success: true });

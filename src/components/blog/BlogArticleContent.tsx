@@ -24,7 +24,7 @@ export function BlogArticleContent({ article, translations }: BlogArticleContent
   const { t, locale } = useI18n();
   const router = useRouter();
   const { blog } = t.home;
-  const { firebaseUser, loading } = useAuth();
+  const { authUser, loading } = useAuth();
 
   useEffect(() => {
     if (!translations || locale === article.language) return;
@@ -43,7 +43,7 @@ export function BlogArticleContent({ article, translations }: BlogArticleContent
             <span className="font-bold text-xl text-gray-900 dark:text-gray-100">Postino</span>
           </Link>
           <div className="flex items-center gap-3">
-            {!loading && firebaseUser ? (
+            {!loading && authUser ? (
               <>
                 <Button variant="ghost" onClick={() => signOut()}>
                   {t.nav.signOut}

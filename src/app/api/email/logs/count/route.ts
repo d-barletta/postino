@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
-    const result = await db
-      .collection('emailLogs')
-      .where('userId', '==', decoded.uid)
-      .count()
-      .get();
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
+    const { count } = await supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
 
-    return NextResponse.json({ count: result.data().count });
+    return NextResponse.json({ count: count ?? 0 });
   } catch (err) {
     return handleUserError(err, 'email/logs/count GET');
   }

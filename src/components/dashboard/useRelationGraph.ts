@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/hooks/useAuth';
 import type { EntityRelationGraph } from '@/types';
 
-export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
+export function useRelationGraph() {
   const { t } = useI18n();
+  const { authUser, getIdToken } = useAuth();
   const [graph, setGraph] = useState<EntityRelationGraph | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -14,17 +16,17 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (firebaseUser) {
+    if (authUser) {
       setHasFetched(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const fetchGraph = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setLoading(true);
     setError(null);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/relations', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -38,14 +40,14 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
       setLoading(false);
       setHasFetched(true);
     }
-  }, [firebaseUser]);
+  }, [authUser, getIdToken, t]);
 
   const generateGraph = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setGenerating(true);
     setError(null);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/relations', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -60,7 +62,7 @@ export function useRelationGraph(firebaseUser: { getIdToken: () => Promise<strin
     } finally {
       setGenerating(false);
     }
-  }, [firebaseUser]);
+  }, [authUser, getIdToken, t]);
 
   return { graph, hasFetched, loading, generating, error, fetchGraph, generateGraph };
 }

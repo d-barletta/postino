@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getOpenRouterClient } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 import type { EntityCategory } from '@/types';
@@ -60,25 +59,30 @@ function toTopN(map: CountMap, n = TOP_N): string[] {
 export async function GET(request: NextRequest) {
   let uid: string;
   try {
-    const decoded = await verifyUserRequest(request);
-    uid = decoded.uid;
+    const user = await verifyUserRequest(request);
+    uid = user.id;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const db = adminDb();
-    const snap = await db
-      .collection('entityMergeSuggestions')
-      .where('userId', '==', uid)
-      .orderBy('suggestedCanonical', 'asc')
-      .limit(200)
-      .get();
+    const supabase = createAdminClient();
+    const { data: rows } = await supabase
+      .from('entity_merge_suggestions')
+      .select('*')
+      .eq('user_id', uid)
+      .order('suggested_canonical', { ascending: true })
+      .limit(200);
 
-    const suggestions = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
+    const suggestions = (rows ?? []).map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      category: row.category,
+      aliases: row.aliases,
+      suggestedCanonical: row.suggested_canonical,
+      reason: row.reason,
+      status: row.status,
+      createdAt: row.created_at ?? null,
     }));
 
     return NextResponse.json({ suggestions });
@@ -94,18 +98,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   let uid: string;
   try {
-    const decoded = await verifyUserRequest(request);
-    uid = decoded.uid;
+    const user = await verifyUserRequest(request);
+    uid = user.id;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const db = adminDb();
+    const supabase = createAdminClient();
 
     // Fetch user's analysis output language preference
-    const userDoc = await db.collection('users').doc(uid).get();
-    const langCode = (userDoc.data()?.analysisOutputLanguage as string | undefined)
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('analysis_output_language')
+      .eq('id', uid)
+      .single();
+    const langCode = (userRow?.analysis_output_language as string | undefined)
       ?.toLowerCase()
       .trim();
     const langName = langCode ? (LANGUAGE_NAMES[langCode] ?? langCode) : null;
@@ -114,14 +122,14 @@ export async function POST(request: NextRequest) {
       : '';
 
     // Check if there are already pending suggestions — if so, don't regenerate
-    const pendingSnap = await db
-      .collection('entityMergeSuggestions')
-      .where('userId', '==', uid)
-      .where('status', '==', 'pending')
-      .limit(1)
-      .get();
+    const { data: pendingRows } = await supabase
+      .from('entity_merge_suggestions')
+      .select('id')
+      .eq('user_id', uid)
+      .eq('status', 'pending')
+      .limit(1);
 
-    if (!pendingSnap.empty) {
+    if (pendingRows && pendingRows.length > 0) {
       return NextResponse.json(
         { error: 'Complete existing suggestions before generating new ones' },
         { status: 409 },
@@ -129,14 +137,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch email logs and existing merges in parallel
-    const [snap, mergesSnap] = await Promise.all([
-      db
-        .collection('emailLogs')
-        .where('userId', '==', uid)
-        .orderBy('receivedAt', 'desc')
-        .limit(FETCH_LIMIT)
-        .get(),
-      db.collection('entityMerges').where('userId', '==', uid).limit(MERGES_LIMIT).get(),
+    const [logsResult, mergesResult] = await Promise.all([
+      supabase
+        .from('email_logs')
+        .select('email_analysis')
+        .eq('user_id', uid)
+        .not('email_analysis', 'is', null)
+        .order('received_at', { ascending: false })
+        .limit(FETCH_LIMIT),
+      supabase
+        .from('entity_merges')
+        .select('category, aliases')
+        .eq('user_id', uid)
+        .limit(MERGES_LIMIT),
     ]);
 
     // Gather entity counts from email analysis
@@ -149,8 +162,8 @@ export async function POST(request: NextRequest) {
     const dates: CountMap = {};
     const numbers: CountMap = {};
 
-    for (const doc of snap.docs) {
-      const analysis = doc.data().emailAnalysis as Record<string, unknown> | undefined;
+    for (const row of logsResult.data ?? []) {
+      const analysis = row.email_analysis as Record<string, unknown> | undefined;
       if (!analysis) continue;
       incrementAll(topics, analysis.topics);
       incrementAll(tags, analysis.tags);
@@ -167,11 +180,10 @@ export async function POST(request: NextRequest) {
 
     // Collect already-merged aliases to exclude them from suggestions
     const mergedAliasesByCategory: Record<string, Set<string>> = {};
-    for (const doc of mergesSnap.docs) {
-      const d = doc.data();
-      const cat = d.category as string;
+    for (const row of mergesResult.data ?? []) {
+      const cat = row.category as string;
       if (!mergedAliasesByCategory[cat]) mergedAliasesByCategory[cat] = new Set();
-      for (const alias of d.aliases as string[]) {
+      for (const alias of row.aliases as string[]) {
         mergedAliasesByCategory[cat].add(alias.toLowerCase());
       }
     }
@@ -314,19 +326,27 @@ Return an empty array if no confident merges are found. Only include suggestions
     }
 
     // Delete old rejected/accepted suggestions before storing new ones
-    const oldSnap = await db.collection('entityMergeSuggestions').where('userId', '==', uid).get();
-
-    const batch = db.batch();
-    for (const doc of oldSnap.docs) {
-      batch.delete(doc.ref);
-    }
-    await batch.commit();
+    await supabase.from('entity_merge_suggestions').delete().eq('user_id', uid);
 
     // Store new suggestions
-    const now = Timestamp.now();
+    const now = new Date().toISOString();
     const storedSuggestions = await Promise.all(
       validSuggestions.map(async (s) => {
-        const ref = await db.collection('entityMergeSuggestions').add({
+        const { data: inserted } = await supabase
+          .from('entity_merge_suggestions')
+          .insert({
+            user_id: uid,
+            category: s.category,
+            aliases: s.aliases,
+            suggested_canonical: s.suggestedCanonical,
+            reason: s.reason,
+            status: 'pending',
+            created_at: now,
+          })
+          .select('id')
+          .single();
+        return {
+          id: inserted?.id,
           userId: uid,
           category: s.category,
           aliases: s.aliases,
@@ -334,16 +354,6 @@ Return an empty array if no confident merges are found. Only include suggestions
           reason: s.reason,
           status: 'pending',
           createdAt: now,
-        });
-        return {
-          id: ref.id,
-          userId: uid,
-          category: s.category,
-          aliases: s.aliases,
-          suggestedCanonical: s.suggestedCanonical,
-          reason: s.reason,
-          status: 'pending',
-          createdAt: now.toDate().toISOString(),
         };
       }),
     );

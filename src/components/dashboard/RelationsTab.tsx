@@ -66,11 +66,10 @@ const RelationMapChartFullPageContent = dynamic(
 
 export function RelationsTab() {
   const { t } = useI18n();
-  const { firebaseUser, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const k = t.dashboard.knowledge;
 
-  const { graph, hasFetched, loading, generating, fetchGraph, generateGraph } =
-    useRelationGraph(firebaseUser);
+  const { graph, hasFetched, loading, generating, fetchGraph, generateGraph } = useRelationGraph();
 
   const {
     graph: flowGraph,
@@ -79,7 +78,7 @@ export function RelationsTab() {
     generating: flowGenerating,
     fetchGraph: fetchFlowGraph,
     generateGraph: generateFlowGraph,
-  } = useFlowGraph(firebaseUser);
+  } = useFlowGraph();
 
   const {
     graph: placeMap,
@@ -88,7 +87,7 @@ export function RelationsTab() {
     generating: mapGenerating,
     fetchGraph: fetchPlaceMap,
     generateGraph: generatePlaceMap,
-  } = usePlaceMapGraph(firebaseUser);
+  } = usePlaceMapGraph();
 
   // Load cached graphs on first render
   useEffect(() => {

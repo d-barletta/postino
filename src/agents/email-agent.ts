@@ -1,7 +1,7 @@
 /**
  * email-agent.ts — Memory-aware email processing agent.
  *
- * Each user has a personal memory stored in the Firestore `userMemory/{userId}`
+ * Each user has a personal memory stored in the `user_memory` table.
  * document.  The agent:
  *   1. Loads the user's email history from memory.
  *   2. Injects a compact, sender-scoped context summary into the system prompt so
@@ -11,15 +11,14 @@
  *      splits the body into chunks, extracts key content from each chunk (map phase),
  *      then applies the user rules to the combined extractions (reduce phase).
  *   4. Persists the new entry to the user's memory, compacting old entries to keep
- *      the Firestore document small and future prompts token-efficient.
+ *      storage small and future prompts token-efficient.
  */
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject, generateText } from 'ai';
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
-import { adminDb } from '@/lib/firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
 import {
   sanitizeRule,
@@ -83,6 +82,16 @@ const CHUNK_FALLBACK_MAX_CHARS = 2_000;
 
 /** Default max tokens for the simplified fallback pass. */
 const FALLBACK_PASS_MAX_TOKENS = 3_000;
+
+async function getGlobalSettings(): Promise<Record<string, unknown> | undefined> {
+  const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  return (settingsRow?.data as Record<string, unknown> | null) ?? undefined;
+}
 
 interface AgentRuntimeSettings {
   chunkThresholdChars: number;
@@ -151,32 +160,37 @@ function todayUtc(): string {
 }
 
 /**
- * Load the memory document for a user from Firestore.
+ * Load the memory document for a user from persistent storage.
  * Returns an empty memory object if no document exists yet.
  */
 export async function getUserMemory(userId: string): Promise<UserMemory> {
-  const db = adminDb();
-  const snap = await db.collection('userMemory').doc(userId).get();
-  if (!snap.exists) {
+  const supabase = createAdminClient();
+  const { data: row } = await supabase
+    .from('user_memory')
+    .select('entries, updated_at')
+    .eq('user_id', userId)
+    .single();
+  if (!row) {
     return { userId, entries: [], updatedAt: new Date() };
   }
-  const data = snap.data()!;
+  const data = (row.entries as EmailMemoryEntry[] | null) ?? null;
   return {
     userId,
-    entries: (data.entries as EmailMemoryEntry[]) || [],
-    updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
+    entries: data ?? [],
+    updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
   };
 }
 
 /**
- * Persist an updated memory document to Firestore, applying compaction first.
+ * Persist an updated memory document, applying compaction first.
  */
 export async function saveUserMemory(memory: UserMemory): Promise<void> {
   const compacted = compactMemory(memory.entries);
-  const db = adminDb();
-  await db.collection('userMemory').doc(memory.userId).set({
-    entries: compacted,
-    updatedAt: Timestamp.now(),
+  const supabase = createAdminClient();
+  await supabase.from('user_memory').upsert({
+    user_id: memory.userId,
+    entries: compacted as unknown as import('@/types/supabase').Json,
+    updated_at: new Date().toISOString(),
   });
 }
 
@@ -1162,9 +1176,7 @@ export async function analyzeEmailContent(
     throw new Error('Missing OpenRouter API key');
   }
 
-  const db = adminDb();
-  const settingsSnap = await db.collection('settings').doc('global').get();
-  const settings = settingsSnap.data() as Record<string, unknown> | undefined;
+  const settings = await getGlobalSettings();
   const agentRuntimeSettings = resolveAgentRuntimeSettings(settings);
   const googleMapsApiKey =
     (typeof settings?.googleMapsApiKey === 'string' ? settings.googleMapsApiKey.trim() : '') ||
@@ -2000,9 +2012,7 @@ export async function processEmailWithAgent(
     throw new Error('Missing OpenRouter API key');
   }
 
-  const db = adminDb();
-  const settingsSnap = await db.collection('settings').doc('global').get();
-  const settings = settingsSnap.data();
+  const settings = await getGlobalSettings();
 
   const basePrompt =
     typeof settings?.llmSystemPrompt === 'string' && settings.llmSystemPrompt.trim()

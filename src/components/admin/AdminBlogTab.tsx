@@ -56,7 +56,7 @@ const EMPTY_FORM: ArticleFormState = {
 type View = 'list' | 'form';
 
 export default function AdminBlogTab() {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const [articles, setArticles] = useState<BlogArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,9 +71,9 @@ export default function AdminBlogTab() {
   const [thumbnailPreviewError, setThumbnailPreviewError] = useState(false);
 
   const fetchArticles = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/admin/blog', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -92,7 +92,7 @@ export default function AdminBlogTab() {
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   useEffect(() => {
     fetchArticles();
@@ -148,7 +148,7 @@ export default function AdminBlogTab() {
   };
 
   const handleSave = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     const sanitizedTitle = stripDisallowedBlogQuotes(form.title).trim();
 
     if (!sanitizedTitle) {
@@ -162,7 +162,7 @@ export default function AdminBlogTab() {
 
     setSaving(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const url = editingArticle ? `/api/admin/blog/${editingArticle.id}` : '/api/admin/blog';
       const method = editingArticle ? 'PUT' : 'POST';
 
@@ -197,12 +197,12 @@ export default function AdminBlogTab() {
   };
 
   const handleDelete = async (article: BlogArticle) => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     if (!confirm(`Delete article "${article.title}"?`)) return;
 
     setDeleting(article.id);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(`/api/admin/blog/${article.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -219,7 +219,7 @@ export default function AdminBlogTab() {
   };
 
   const handleTogglePublish = async (article: BlogArticle) => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     const action = article.published ? 'unpublish' : 'publish';
     if (
       !window.confirm(
@@ -228,7 +228,7 @@ export default function AdminBlogTab() {
     )
       return;
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(`/api/admin/blog/${article.id}`, {
         method: 'PUT',
         headers: {
@@ -249,10 +249,10 @@ export default function AdminBlogTab() {
   };
 
   const handleTranslate = async () => {
-    if (!firebaseUser || !editingArticle || !translateTarget) return;
+    if (!authUser || !editingArticle || !translateTarget) return;
     setTranslating(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(`/api/admin/blog/${editingArticle.id}/translate`, {
         method: 'POST',
         headers: {

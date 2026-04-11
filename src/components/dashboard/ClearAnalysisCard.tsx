@@ -17,17 +17,17 @@ import {
 } from '@/components/ui/Drawer';
 
 export function ClearAnalysisCard({ onSuccess }: { onSuccess?: () => Promise<void> | void }) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const s = t.dashboard.clearAnalysis;
   const [open, setOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   const handleClear = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setClearing(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/email/clear-analysis', {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

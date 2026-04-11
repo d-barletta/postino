@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { sendEmailVerification } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 
@@ -14,29 +13,30 @@ export default function VerifyEmailPage() {
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
+    const supabase = createClient();
     const interval = setInterval(async () => {
-      const user = auth?.currentUser;
-      if (user) {
-        await user.reload();
-        if (user.emailVerified) {
-          clearInterval(interval);
-          // Force a fresh token with the updated email_verified claim, then
-          // refresh the app user so isActive is updated before navigating.
-          await user.getIdToken(true);
-          await refreshUser();
-          router.push('/dashboard');
-        }
+      // Poll to see if the user's email has been confirmed
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user?.email_confirmed_at) {
+        clearInterval(interval);
+        await refreshUser();
+        router.push('/dashboard');
       }
     }, 3000);
     return () => clearInterval(interval);
   }, [router, refreshUser]);
 
   const handleResend = async () => {
-    const user = auth?.currentUser;
-    if (!user) return;
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user?.email) return;
     setResending(true);
     try {
-      await sendEmailVerification(user);
+      await supabase.auth.resend({ type: 'signup', email: user.email });
       setSent(true);
     } finally {
       setResending(false);

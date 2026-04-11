@@ -2,14 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
-  serverExternalPackages: [
-    'firebase-admin',
-    'google-auth-library',
-    'nodemailer',
-    '@google-cloud/firestore',
-    'grpc',
-    '@grpc/grpc-js',
-  ],
+  serverExternalPackages: ['nodemailer'],
 
   async headers() {
     return [

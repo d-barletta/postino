@@ -29,9 +29,9 @@ These instructions apply to the whole repository.
   - Admin: [src/components/admin](../src/components/admin)
 - Core domain logic:
   - Agent orchestration: [src/lib/agent.ts](../src/lib/agent.ts)
-  - Firestore helpers: [src/lib/firestore.ts](../src/lib/firestore.ts)
+  - Database helpers: [src/lib/database.ts](../src/lib/database.ts)
   - Auth helpers: [src/lib/auth.ts](../src/lib/auth.ts)
-  - Firebase admin setup: [src/lib/firebase-admin.ts](../src/lib/firebase-admin.ts)
+  - Supabase admin setup: [src/lib/supabase/admin.ts](../src/lib/supabase/admin.ts)
   - OpenRouter integration: [src/lib/openrouter.ts](../src/lib/openrouter.ts)
   - Email and webhook helpers: [src/lib/email.ts](../src/lib/email.ts)
 - Shared types: [src/types/index.ts](../src/types/index.ts)
@@ -53,15 +53,15 @@ These instructions apply to the whole repository.
 
 ## Auth, Security, and Data Rules
 
-- For protected API routes, verify Firebase ID tokens on the server.
+- For protected API routes, verify Supabase Bearer tokens on the server.
 - For admin routes, enforce admin checks (follow existing admin route patterns in [src/app/api/admin](../src/app/api/admin)).
 - Do not trust client-provided role/identity data.
 - Preserve email safety behavior already in place (header sanitization and HTML escaping in email pipeline code).
-- Keep Firestore timestamp handling consistent with existing helpers and route code.
+- Keep timestamp handling consistent with existing helpers and route code.
 
 ## Known Pitfalls
 
-- Runtime config may come from Firestore settings and environment variables; preserve fallback behavior used in the email/admin pipeline.
+- Runtime config may come from `settings.data` in Supabase and environment variables; preserve fallback behavior used in the email/admin pipeline.
 - Registration/user bootstrap is server-assisted: avoid direct client writes to `users` during register flow; keep bootstrap logic aligned with [src/app/api/auth/me/route.ts](../src/app/api/auth/me/route.ts).
 - Do not import server-only modules into client components.
 - Respect Next server external package config in [next.config.ts](../next.config.ts).

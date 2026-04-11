@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { applyActionCode } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -18,8 +17,8 @@ export function AuthActionHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const mode = useMemo(() => searchParams.get('mode') ?? '', [searchParams]);
-  const oobCode = useMemo(() => searchParams.get('oobCode') ?? '', [searchParams]);
+  const tokenHash = useMemo(() => searchParams.get('token_hash') ?? '', [searchParams]);
+  const type = useMemo(() => searchParams.get('type') ?? '', [searchParams]);
 
   const [state, setState] = useState<HandlerState>({
     status: 'loading',
@@ -28,73 +27,44 @@ export function AuthActionHandler() {
 
   useEffect(() => {
     const run = async () => {
-      if (!mode || !oobCode) {
+      if (!tokenHash || !type) {
+        setState({ status: 'error', message: 'Invalid action link. Please request a new one.' });
+        return;
+      }
+
+      const supabase = createClient();
+
+      if (type === 'email' || type === 'signup') {
+        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
+        if (error) {
+          setState({ status: 'error', message: 'This verification link is invalid or expired.' });
+          return;
+        }
         setState({
-          status: 'error',
-          message: 'Invalid action link. Please request a new one.',
+          status: 'success',
+          message: 'Email verified successfully. You can now sign in.',
         });
         return;
       }
 
-      if (mode === 'resetPassword') {
-        router.replace(`/reset-password?oobCode=${encodeURIComponent(oobCode)}`);
+      if (type === 'recovery') {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        });
+        if (error) {
+          setState({ status: 'error', message: 'This reset link is invalid or expired.' });
+          return;
+        }
+        router.replace('/reset-password');
         return;
       }
 
-      if (!auth) {
-        setState({
-          status: 'error',
-          message: 'Authentication is not configured. Please contact support.',
-        });
-        return;
-      }
-
-      try {
-        if (mode === 'verifyEmail') {
-          await applyActionCode(auth, oobCode);
-          await auth.currentUser?.getIdToken(true);
-          setState({
-            status: 'success',
-            message: 'Email verified successfully. You can now sign in.',
-          });
-          return;
-        }
-
-        if (mode === 'recoverEmail') {
-          await applyActionCode(auth, oobCode);
-          setState({
-            status: 'success',
-            message: 'Your email address has been restored. Please sign in again.',
-          });
-          return;
-        }
-
-        setState({
-          status: 'error',
-          message: 'Unsupported action type. Please request a new link.',
-        });
-      } catch (err: unknown) {
-        const firebaseError = err as { code?: string };
-        if (
-          firebaseError.code === 'auth/expired-action-code' ||
-          firebaseError.code === 'auth/invalid-action-code'
-        ) {
-          setState({
-            status: 'error',
-            message: 'This link is invalid or expired. Please request a new one.',
-          });
-          return;
-        }
-
-        setState({
-          status: 'error',
-          message: 'Failed to process this action. Please try again.',
-        });
-      }
+      setState({ status: 'error', message: 'Unsupported action type. Please request a new link.' });
     };
 
     run();
-  }, [mode, oobCode, router]);
+  }, [tokenHash, type, router]);
 
   return (
     <div className="space-y-4">

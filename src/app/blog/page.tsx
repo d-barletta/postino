@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { BlogListContent } from '@/components/blog/BlogListContent';
 import type { BlogArticle } from '@/types';
 
@@ -38,26 +38,24 @@ export const metadata: Metadata = {
 const getPublishedArticles = unstable_cache(
   async (): Promise<BlogArticle[]> => {
     try {
-      const db = adminDb();
-      const snap = await db
-        .collection('blogArticles')
-        .where('published', '==', true)
-        .orderBy('createdAt', 'desc')
-        .select('title', 'slug', 'tags', 'thumbnailUrl', 'language', 'createdAt', 'updatedAt')
-        .get();
-      return snap.docs.map((d) => {
-        const data = d.data();
+      const supabase = createAdminClient();
+      const { data } = await supabase
+        .from('blog_articles')
+        .select('id, title, slug, tags, thumbnail_url, language, created_at, updated_at')
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+      return (data ?? []).map((row) => {
         return {
-          id: d.id,
-          title: data.title,
-          slug: data.slug,
+          id: row.id,
+          title: row.title,
+          slug: row.slug,
           content: '',
-          tags: data.tags ?? [],
-          thumbnailUrl: data.thumbnailUrl ?? '',
+          tags: row.tags ?? [],
+          thumbnailUrl: row.thumbnail_url ?? '',
           published: true,
-          language: data.language ?? 'en',
-          createdAt: data.createdAt?.toDate?.() ?? new Date(),
-          updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
+          language: row.language ?? 'en',
+          createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+          updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
         };
       });
     } catch {

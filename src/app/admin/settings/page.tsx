@@ -68,7 +68,7 @@ function normalizeOptionalInteger(
 }
 
 export default function AdminSettingsPage({ showPageHeader = true }: AdminSettingsPageProps) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [settings, setSettings] = useState<Partial<Settings>>({
     maxRuleLength: 1000,
@@ -138,9 +138,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
 
   useEffect(() => {
     const fetchSettings = async () => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/admin/settings', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -153,15 +153,15 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
       }
     };
     fetchSettings();
-  }, [firebaseUser]);
+  }, [authUser]);
 
   useEffect(() => {
     const fetchModels = async () => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       setModelsLoading(true);
       setModelsError('');
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/admin/openrouter-models', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -180,14 +180,14 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
       }
     };
     fetchModels();
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const handleTestLlm = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setLlmTesting(true);
     setLlmTestResult(null);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/admin/test-llm', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -217,12 +217,12 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   };
 
   const handleTestMailgun = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
 
     setMailgunTesting(true);
     setMailgunTestResult(null);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/admin/test-mailgun', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -268,7 +268,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   };
 
   const handleSave = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
 
     const normalizedForSave: Partial<Settings> = {
       ...settings,
@@ -316,7 +316,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     setSaving(true);
     setSaveError('');
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

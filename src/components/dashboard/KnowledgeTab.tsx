@@ -270,7 +270,7 @@ export function KnowledgeTab({
   onRefreshKnowledge,
 }: KnowledgeTabProps) {
   const { t } = useI18n();
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const k = t.dashboard.knowledge;
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -306,10 +306,10 @@ export function KnowledgeTab({
   useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
 
   const fetchMerges = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setMergesLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/merges', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -322,13 +322,13 @@ export function KnowledgeTab({
     } finally {
       setMergesLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const fetchSuggestions = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setSuggestionsLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/merge-suggestions', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -341,13 +341,13 @@ export function KnowledgeTab({
     } finally {
       setSuggestionsLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const generateSuggestions = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setGeneratingSuggestions(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/merge-suggestions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -368,13 +368,13 @@ export function KnowledgeTab({
     } finally {
       setGeneratingSuggestions(false);
     }
-  }, [firebaseUser, k]);
+  }, [authUser, k]);
 
   const handleRejectSuggestion = useCallback(
     async (id: string) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch(`/api/entities/merge-suggestions/${id}`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -389,13 +389,13 @@ export function KnowledgeTab({
         // silently ignore
       }
     },
-    [firebaseUser],
+    [authUser],
   );
 
   const handleAcceptSuggestion = useCallback(
     async (canonical: string, aliases: string[], category: EntityCategory) => {
-      if (!pendingAcceptSuggestion || !firebaseUser) return;
-      const token = await firebaseUser.getIdToken();
+      if (!pendingAcceptSuggestion || !authUser) return;
+      const token = await getIdToken();
       const res = await fetch('/api/entities/merges', {
         method: 'POST',
         headers: {
@@ -435,7 +435,7 @@ export function KnowledgeTab({
       // Mark suggestion as accepted
       const suggestionId = pendingAcceptSuggestion.id;
       try {
-        const pToken = await firebaseUser.getIdToken();
+        const pToken = await getIdToken();
         await fetch(`/api/entities/merge-suggestions/${suggestionId}`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${pToken}`, 'Content-Type': 'application/json' },
@@ -451,7 +451,7 @@ export function KnowledgeTab({
       await Promise.all([onRefreshKnowledge(), fetchMerges()]);
       toast.success(k.mergeCreated);
     },
-    [firebaseUser, merges, pendingAcceptSuggestion, onRefreshKnowledge, fetchMerges, k],
+    [authUser, merges, pendingAcceptSuggestion, onRefreshKnowledge, fetchMerges, k],
   );
 
   useEffect(() => {
@@ -510,8 +510,8 @@ export function KnowledgeTab({
 
   const handleCreateMerge = useCallback(
     async (canonical: string, aliases: string[], category: EntityCategory) => {
-      if (!firebaseUser) return;
-      const token = await firebaseUser.getIdToken();
+      if (!authUser) return;
+      const token = await getIdToken();
       const res = await fetch('/api/entities/merges', {
         method: 'POST',
         headers: {
@@ -560,14 +560,14 @@ export function KnowledgeTab({
       setSelectedChips([]);
       toast.success(k.mergeCreated);
     },
-    [firebaseUser, onRefreshKnowledge, fetchMerges, merges, k],
+    [authUser, onRefreshKnowledge, fetchMerges, merges, k],
   );
 
   const handleDeleteMerge = useCallback(async () => {
-    if (!firebaseUser || !pendingDeleteMerge) return;
+    if (!authUser || !pendingDeleteMerge) return;
     setDeletingMerge(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       await fetch(`/api/entities/merges/${pendingDeleteMerge.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -578,7 +578,7 @@ export function KnowledgeTab({
       setDeletingMerge(false);
       setPendingDeleteMerge(null);
     }
-  }, [firebaseUser, pendingDeleteMerge, onRefreshKnowledge, fetchMerges, k]);
+  }, [authUser, pendingDeleteMerge, onRefreshKnowledge, fetchMerges, k]);
 
   const hasAnyData =
     data &&

@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { jsonrepair } from 'jsonrepair';
 import * as cheerio from 'cheerio';
-import { adminDb } from './firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
 import type { EmailAnalysis } from '@/types';
 
@@ -182,12 +182,22 @@ export async function getOpenRouterClient(): Promise<{
   model: string;
   apiKey: string;
 }> {
-  const db = adminDb();
-  const settingsSnap = await db.collection('settings').doc('global').get();
-  const settings = settingsSnap.data();
+  const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  const settings = (settingsRow?.data as Record<string, unknown> | null) ?? null;
 
-  const apiKey = settings?.llmApiKey || process.env.OPEN_ROUTER_API_KEY || '';
-  const model = settings?.llmModel || process.env.LLM_MODEL || 'openai/gpt-4o-mini';
+  const apiKey =
+    (typeof settings?.llmApiKey === 'string' ? settings.llmApiKey : '') ||
+    process.env.OPEN_ROUTER_API_KEY ||
+    '';
+  const model =
+    (typeof settings?.llmModel === 'string' ? settings.llmModel : '') ||
+    process.env.LLM_MODEL ||
+    'openai/gpt-4o-mini';
   const normalizedApiKey = apiKey.trim();
 
   const client = new OpenAI({
@@ -315,9 +325,13 @@ export async function processEmailWithRules(
     throw new Error('Missing OpenRouter API key');
   }
 
-  const db = adminDb();
-  const settingsSnap = await db.collection('settings').doc('global').get();
-  const settings = settingsSnap.data();
+  const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  const settings = (settingsRow?.data as Record<string, unknown> | null) ?? null;
   const basePrompt =
     typeof settings?.llmSystemPrompt === 'string' && settings.llmSystemPrompt.trim()
       ? settings.llmSystemPrompt.trim()

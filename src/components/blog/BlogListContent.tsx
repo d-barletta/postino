@@ -19,7 +19,7 @@ interface BlogListContentProps {
 export function BlogListContent({ articles }: BlogListContentProps) {
   const { t, locale } = useI18n();
   const { blog } = t.home;
-  const { firebaseUser, loading } = useAuth();
+  const { authUser, loading } = useAuth();
 
   // Show articles matching the user's locale; fall back to 'en' if none exist
   const localeArticles = articles.filter((a) => a.language === locale);
@@ -37,7 +37,7 @@ export function BlogListContent({ articles }: BlogListContentProps) {
             <span className="font-bold text-xl text-gray-900 dark:text-gray-100">Postino</span>
           </Link>
           <div className="flex items-center gap-3">
-            {!loading && firebaseUser ? (
+            {!loading && authUser ? (
               <>
                 <Button variant="ghost" onClick={() => signOut()}>
                   {t.nav.signOut}

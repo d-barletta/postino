@@ -1,48 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Timestamp } from 'firebase-admin/firestore';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { analyzeStoredEmailLog } from '@/lib/email-analysis';
 import { saveToSupermemory, buildMemoryEntryFromAnalysis } from '@/agents/email-agent';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
     const { id } = await params;
-    const db = adminDb();
-    const logRef = db.collection('emailLogs').doc(id);
-    const logSnap = await logRef.get();
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.from('email_logs').select('*').eq('id', id).single();
 
-    if (!logSnap.exists) {
+    if (!data || error) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const data = logSnap.data()!;
-
-    if (data.userId !== decoded.uid) {
-      const requesterSnap = await db.collection('users').doc(decoded.uid).get();
-      if (!requesterSnap.data()?.isAdmin) {
+    if (data.user_id !== user.id) {
+      const { data: requesterData } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+      if (!requesterData?.is_admin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
-    if (typeof data.originalBody !== 'string' || !data.originalBody.trim()) {
+    if (typeof data.original_body !== 'string' || !data.original_body.trim()) {
       return NextResponse.json({ error: 'Original email content unavailable' }, { status: 400 });
     }
 
-    const ownerId = typeof data.userId === 'string' ? data.userId : '';
-    const ownerSnap = ownerId ? await db.collection('users').doc(ownerId).get() : null;
-    const analysisOutputLanguage =
-      typeof ownerSnap?.data()?.analysisOutputLanguage === 'string'
-        ? (ownerSnap.data()?.analysisOutputLanguage as string) || undefined
-        : undefined;
+    const ownerId = typeof data.user_id === 'string' ? data.user_id : '';
+    let analysisOutputLanguage: string | undefined;
+    if (ownerId) {
+      const { data: ownerData } = await supabase
+        .from('users')
+        .select('analysis_output_language')
+        .eq('id', ownerId)
+        .single();
+      analysisOutputLanguage =
+        typeof ownerData?.analysis_output_language === 'string'
+          ? ownerData.analysis_output_language || undefined
+          : undefined;
+    }
 
     let safeAnalysis;
     try {
       safeAnalysis = await analyzeStoredEmailLog({
-        fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
+        fromAddress: typeof data.from_address === 'string' ? data.from_address : '',
         subject: typeof data.subject === 'string' ? data.subject : '',
-        originalBody: data.originalBody,
+        originalBody: data.original_body,
         analysisOutputLanguage,
       });
     } catch (error) {
@@ -52,11 +59,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw error;
     }
 
-    await logRef.update({ emailAnalysis: safeAnalysis });
+    await supabase
+      .from('email_logs')
+      .update({ email_analysis: safeAnalysis as unknown as import('@/types/supabase').Json })
+      .eq('id', id);
 
     // Optionally persist the updated analysis to Supermemory.
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settingsData = settingsSnap.data();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settingsData = (settingsRow?.data as Record<string, unknown>) ?? {};
     if (settingsData?.memoryEnabled === true) {
       const supermemoryApiKey = (
         (settingsData?.memoryApiKey as string | undefined) ||
@@ -64,17 +78,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ''
       ).trim();
       if (supermemoryApiKey && ownerId) {
-        const receivedAt =
-          data.receivedAt instanceof Timestamp ? data.receivedAt.toDate() : new Date();
+        const receivedAt = data.received_at ? new Date(data.received_at) : new Date();
         const entry = buildMemoryEntryFromAnalysis(
           {
             logId: id,
             date: receivedAt.toISOString().slice(0, 10),
             timestamp: receivedAt.toISOString(),
-            fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
+            fromAddress: typeof data.from_address === 'string' ? data.from_address : '',
             subject: typeof data.subject === 'string' ? data.subject : '',
-            ruleApplied: typeof data.ruleApplied === 'string' ? data.ruleApplied : undefined,
-            wasSummarized: typeof data.ruleApplied === 'string' && data.ruleApplied.length > 0,
+            ruleApplied: typeof data.rule_applied === 'string' ? data.rule_applied : undefined,
+            wasSummarized: typeof data.rule_applied === 'string' && data.rule_applied.length > 0,
           },
           safeAnalysis,
         );

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 export async function PATCH(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
     const body = await request.json();
     if (typeof body.isForwardingHeaderEnabled !== 'boolean') {
@@ -14,11 +14,11 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const db = adminDb();
-    await db
-      .collection('users')
-      .doc(decoded.uid)
-      .update({ isForwardingHeaderEnabled: body.isForwardingHeaderEnabled });
+    const supabase = createAdminClient();
+    await supabase
+      .from('users')
+      .update({ is_forwarding_header_enabled: body.isForwardingHeaderEnabled })
+      .eq('id', user.id);
 
     return NextResponse.json({
       success: true,

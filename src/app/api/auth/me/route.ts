@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   generateAssignedEmail,
   resolveAssignedEmailDomain,
@@ -9,26 +9,25 @@ import { verifyUserRequest } from '@/lib/api-auth';
 
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
 
-function toIsoDate(value: unknown): string | null {
-  if (!value) return null;
-  const maybeTimestamp = value as { toDate?: () => Date };
-  if (typeof maybeTimestamp.toDate === 'function') {
-    return maybeTimestamp.toDate().toISOString();
-  }
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  return null;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
-    const db = adminDb();
-    const settingsDoc = await db.collection('settings').doc('global').get();
-    const assignedDomain = resolveAssignedEmailDomain(settingsDoc.data());
-    const loginEmail = decoded.email ?? '';
+    const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settingsData = (settingsRow?.data as Record<string, unknown>) ?? {};
+    const assignedDomain = resolveAssignedEmailDomain(
+      settingsData as {
+        emailDomain?: string;
+        mailgunSandboxEmail?: string;
+        mailgunDomain?: string;
+      },
+    );
+    const loginEmail = user.email ?? '';
 
     if (isEmailUsingDomain(loginEmail, assignedDomain)) {
       return NextResponse.json(
@@ -37,28 +36,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userRef = db.collection('users').doc(decoded.uid);
-    let userSnap = await userRef.get();
+    let { data: userData } = await supabase.from('users').select('*').eq('id', user.id).single();
 
-    if (!userSnap.exists) {
-      if (settingsDoc.data()?.signupMaintenanceMode === true) {
+    if (!userData) {
+      if (settingsData?.signupMaintenanceMode === true) {
         return NextResponse.json(
           { error: 'Signup is temporarily suspended during maintenance' },
           { status: 403 },
         );
       }
 
-      const domain = resolveAssignedEmailDomain(settingsDoc.data());
+      const domain = resolveAssignedEmailDomain(
+        settingsData as {
+          emailDomain?: string;
+          mailgunSandboxEmail?: string;
+          mailgunDomain?: string;
+        },
+      );
       let assignedEmail = '';
 
       for (let attempt = 0; attempt < MAX_ASSIGNED_EMAIL_ATTEMPTS; attempt++) {
         const candidate = generateAssignedEmail(domain);
-        const existing = await db
-          .collection('users')
-          .where('assignedEmail', '==', candidate)
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id')
+          .eq('assigned_email', candidate)
           .limit(1)
-          .get();
-        if (existing.empty) {
+          .maybeSingle();
+        if (!existing) {
           assignedEmail = candidate;
           break;
         }
@@ -74,43 +79,79 @@ export async function GET(request: NextRequest) {
         ? requestedLocale
         : 'en';
 
-      await userRef.set({
-        email: decoded.email ?? '',
-        assignedEmail,
-        createdAt: new Date(),
-        isAdmin: false,
-        isActive: false,
+      await supabase.from('users').insert({
+        id: user.id,
+        email: user.email ?? '',
+        assigned_email: assignedEmail,
+        created_at: new Date().toISOString(),
+        is_admin: false,
+        is_active: false,
         suspended: false,
-        analysisOutputLanguage,
+        analysis_output_language: analysisOutputLanguage,
       });
-      userSnap = await userRef.get();
+      const { data: newUserData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      userData = newUserData;
     } else {
-      if (userSnap.data()?.suspended) {
+      if (userData.suspended) {
         return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
       }
-      if (decoded.email_verified && !userSnap.data()?.isActive && !userSnap.data()?.suspended) {
-        await userRef.update({ isActive: true });
-        userSnap = await userRef.get();
+      if (!!user.email_confirmed_at && !userData.is_active && !userData.suspended) {
+        await supabase.from('users').update({ is_active: true }).eq('id', user.id);
+        const { data: refreshed } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        userData = refreshed;
       }
     }
 
-    const domain = resolveAssignedEmailDomain(settingsDoc.data());
-    const assignedEmail = userSnap.data()?.assignedEmail as string | undefined;
+    const domain = resolveAssignedEmailDomain(
+      settingsData as {
+        emailDomain?: string;
+        mailgunSandboxEmail?: string;
+        mailgunDomain?: string;
+      },
+    );
+    const assignedEmail = userData?.assigned_email as string | undefined;
     const localPart = assignedEmail?.split('@')[0]?.trim();
 
     if (localPart && assignedEmail?.toLowerCase() !== `${localPart}@${domain}`.toLowerCase()) {
-      await userRef.update({ assignedEmail: `${localPart}@${domain}`.toLowerCase() });
-      userSnap = await userRef.get();
+      await supabase
+        .from('users')
+        .update({ assigned_email: `${localPart}@${domain}`.toLowerCase() })
+        .eq('id', user.id);
+      const { data: refreshed } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      userData = refreshed;
     }
 
-    const userData = userSnap.data()!;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { fcmTokens: _fcmTokens, ...safeUserData } = userData;
+    if (!userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const safeUserData = userData;
     return NextResponse.json({
       user: {
-        uid: decoded.uid,
-        ...safeUserData,
-        createdAt: toIsoDate(userData.createdAt),
+        uid: user.id,
+        email: safeUserData.email,
+        assignedEmail: safeUserData.assigned_email,
+        isAdmin: safeUserData.is_admin,
+        isActive: safeUserData.is_active,
+        suspended: safeUserData.suspended,
+        analysisOutputLanguage: safeUserData.analysis_output_language,
+        isAddressEnabled: safeUserData.is_address_enabled,
+        isAiAnalysisOnlyEnabled: safeUserData.is_ai_analysis_only_enabled,
+        isForwardingHeaderEnabled: safeUserData.is_forwarding_header_enabled,
+        displayName: safeUserData.display_name,
+        createdAt: safeUserData.created_at ?? null,
       },
     });
   } catch (error) {

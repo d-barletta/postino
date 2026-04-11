@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const MAX_REORDER_IDS = 200;
 
 export async function PATCH(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
     const body = await request.json();
 
     if (
@@ -32,25 +32,24 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'orderedIds cannot contain duplicates' }, { status: 400 });
     }
 
-    const db = adminDb();
+    const supabase = createAdminClient();
 
     // Verify ownership of all provided rule IDs in one batch read.
-    const ruleRefs = orderedIds.map((id) => db.collection('rules').doc(id));
-    const ruleSnaps = await db.getAll(...ruleRefs);
+    const { data: rules } = await supabase.from('rules').select('id, user_id').in('id', orderedIds);
 
-    const batch = db.batch();
-    let updated = 0;
+    const ruleMap = new Map((rules ?? []).map((r) => [r.id, r]));
+    const ownedIds = orderedIds.filter((id) => ruleMap.get(id)?.user_id === user.id);
 
-    ruleSnaps.forEach((snap, index) => {
-      if (!snap.exists) return;
-      if (snap.data()?.userId !== decoded.uid) return;
-      batch.update(snap.ref, { sortOrder: index });
-      updated++;
-    });
+    await Promise.all(
+      ownedIds.map((id) =>
+        supabase
+          .from('rules')
+          .update({ sort_order: orderedIds.indexOf(id) })
+          .eq('id', id),
+      ),
+    );
 
-    await batch.commit();
-
-    return NextResponse.json({ success: true, updated });
+    return NextResponse.json({ success: true, updated: ownedIds.length });
   } catch (error) {
     return handleUserError(error, 'rules/reorder POST');
   }

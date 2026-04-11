@@ -27,8 +27,6 @@ export interface User {
   /** When false, the Postino notification box is not appended to forwarded emails. Defaults to true. */
   isForwardingHeaderEnabled?: boolean;
   displayName?: string;
-  /** FCM registration tokens for web push notifications (one per browser/device). */
-  fcmTokens?: string[];
   /** Preferred language for AI analysis output (summary, intent, tags, topics). ISO 639-1 code, e.g. "en", "it". When unset, defaults to English. */
   analysisOutputLanguage?: string;
 }
@@ -97,7 +95,7 @@ export interface EmailAnalysis {
   entities: {
     /** Physical or geographic locations mentioned, geocoded and stored with coordinates. */
     places: EmailAnalysisPlace[];
-    /** Denormalized place names used for Firestore search/filter queries. */
+    /** Denormalized place names used for search/filter queries. */
     placeNames: string[];
     /** Events mentioned (meetings, conferences, deadlines, appointments). */
     events: string[];

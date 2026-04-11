@@ -1,45 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import type { SerializedAttachment } from '@/lib/inbound-processing';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
     const { id } = await params;
-    const db = adminDb();
-    const logSnap = await db.collection('emailLogs').doc(id).get();
+    const supabase = createAdminClient();
 
-    if (!logSnap.exists) {
+    const { data: logRow } = await supabase
+      .from('email_logs')
+      .select(
+        'user_id, from_address, to_address, cc_address, bcc_address, subject, original_body, received_at, attachment_count, attachment_names, attachments, email_analysis',
+      )
+      .eq('id', id)
+      .single();
+
+    if (!logRow) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const data = logSnap.data()!;
-    const canDownloadAttachments = data.userId === decoded.uid;
-    const attachments = Array.isArray(data.attachments)
-      ? (data.attachments as SerializedAttachment[])
+    const canDownloadAttachments = logRow.user_id === user.id;
+    const attachments = Array.isArray(logRow.attachments)
+      ? (logRow.attachments as unknown as SerializedAttachment[])
       : [];
 
     // Check ownership: must be the owner or an admin
-    if (data.userId !== decoded.uid) {
-      const userSnap = await db.collection('users').doc(decoded.uid).get();
-      if (!userSnap.data()?.isAdmin) {
+    if (logRow.user_id !== user.id) {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+      if (!userRow?.is_admin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
     return NextResponse.json({
-      id: logSnap.id,
-      fromAddress: data.fromAddress,
-      toAddress: data.toAddress,
-      ccAddress: data.ccAddress ?? null,
-      bccAddress: data.bccAddress ?? null,
-      subject: data.subject,
-      originalBody: data.originalBody ?? null,
-      receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
-      attachmentCount: data.attachmentCount ?? 0,
-      attachmentNames: data.attachmentNames ?? [],
+      id,
+      fromAddress: logRow.from_address,
+      toAddress: logRow.to_address,
+      ccAddress: logRow.cc_address ?? null,
+      bccAddress: logRow.bcc_address ?? null,
+      subject: logRow.subject,
+      originalBody: logRow.original_body ?? null,
+      receivedAt: logRow.received_at ?? null,
+      attachmentCount: logRow.attachment_count ?? 0,
+      attachmentNames: logRow.attachment_names ?? [],
       attachments: attachments.map((attachment, index) => ({
         id: String(index + 1),
         filename: attachment.filename,
@@ -47,7 +57,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         canDownload:
           canDownloadAttachments && Boolean(attachment.storagePath || attachment.contentBase64),
       })),
-      emailAnalysis: data.emailAnalysis ?? null,
+      emailAnalysis: logRow.email_analysis ?? null,
     });
   } catch (error) {
     return handleUserError(error, 'email/original/[id] GET');

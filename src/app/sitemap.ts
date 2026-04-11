@@ -1,20 +1,19 @@
 import type { MetadataRoute } from 'next';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 async function getBlogSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   try {
-    const db = adminDb();
-    const snap = await db
-      .collection('blogArticles')
-      .where('published', '==', true)
-      .orderBy('updatedAt', 'desc')
-      .select('slug', 'updatedAt')
-      .get();
-    return snap.docs.map((d) => ({
-      url: `${appUrl.replace(/\/$/, '')}/blog/${d.data().slug}`,
-      lastModified: d.data().updatedAt?.toDate?.() ?? new Date(),
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from('blog_articles')
+      .select('slug, updated_at')
+      .eq('published', true)
+      .order('updated_at', { ascending: false });
+    return (data ?? []).map((row) => ({
+      url: `${appUrl.replace(/\/$/, '')}/blog/${row.slug}`,
+      lastModified: row.updated_at ? new Date(row.updated_at) : new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     }));

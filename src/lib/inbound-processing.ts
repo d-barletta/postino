@@ -1,5 +1,4 @@
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
-import { adminDb, adminStorage, adminMessaging } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   processEmailWithAgent,
   analyzeEmailContent,
@@ -13,8 +12,8 @@ import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
 
 /**
- * Attachment serialized for Firestore queue storage.
- * New jobs store all attachments in Firebase Storage and reference them by `storagePath`.
+ * Attachment serialized for queue storage.
+ * New jobs store all attachments in Supabase Storage and reference them by `storagePath`.
  * `contentBase64` remains supported only so older queued jobs can still be processed.
  */
 export interface SerializedAttachment {
@@ -25,7 +24,7 @@ export interface SerializedAttachment {
   /** Legacy base64 content kept for backward compatibility with older queued jobs. */
   contentBase64?: string;
   /**
-   * Firebase Storage path for queued attachments.
+   * Supabase Storage path for queued attachments.
    * All new queued attachments, including inline CID-backed parts, use this field.
    */
   storagePath?: string;
@@ -50,8 +49,8 @@ export interface QueuedInboundPayload {
   /** BCC recipients from the original email header. */
   bccAddress?: string;
   /**
-   * Attachments for Firestore queue storage.
-   * New jobs store all attachments in Firebase Storage and reference them by `storagePath`.
+   * Attachments for queue storage.
+   * New jobs store all attachments in Supabase Storage and reference them by `storagePath`.
    * `contentBase64` is still supported for older jobs already in the queue.
    */
   attachments?: SerializedAttachment[];
@@ -151,30 +150,6 @@ function matchesPattern(value: string, pattern?: string): boolean {
   return value.toLowerCase().includes(pattern.toLowerCase());
 }
 
-/**
- * Recursively strips `undefined` values so payloads are always valid Firestore documents.
- * Firestore rejects undefined both in objects and arrays.
- */
-function sanitizeForFirestore<T>(value: T): T {
-  if (value === null) return value;
-
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => sanitizeForFirestore(item))
-      .filter((item) => item !== undefined) as T;
-  }
-
-  if (typeof value === 'object') {
-    const sanitizedEntries = Object.entries(value as Record<string, unknown>)
-      .map(([key, nested]) => [key, sanitizeForFirestore(nested)] as const)
-      .filter(([, nested]) => nested !== undefined);
-
-    return Object.fromEntries(sanitizedEntries) as T;
-  }
-
-  return value;
-}
-
 function sanitizeStorageFilename(filename: string, fallback: string): string {
   const basename = filename.split(/[\\/]/).pop()?.trim() ?? '';
   const sanitized = basename.replace(/[\u0000-\u001f\u007f]/g, '').trim();
@@ -197,7 +172,7 @@ function buildAttachmentStoragePath(
 }
 
 /**
- * Upload an attachment to Firebase Storage for queued email processing.
+ * Upload an attachment to Supabase Storage for queued email processing.
  * Returns the storage path that can later be used to retrieve the file.
  * Falls back gracefully (returns null) when Storage is not configured.
  */
@@ -218,54 +193,34 @@ export async function uploadAttachmentToStorage(
   };
 
   try {
-    const storage = adminStorage();
-    const bucket = storage.bucket();
+    const supabase = createAdminClient();
     const storagePath = buildAttachmentStoragePath(
       userId,
       emailId,
       attachmentNumber,
       attachment.filename,
     );
-    const file = bucket.file(storagePath);
     const contentBuffer = Buffer.from(attachment.content);
 
-    await file.save(contentBuffer, {
-      contentType: attachment.contentType,
-      metadata: {
-        cacheControl: 'no-cache',
-        metadata: {
-          userId,
-          emailId,
-          attachmentNumber: String(attachmentNumber),
-          isInline: attachment.contentId ? 'true' : 'false',
-          originalFilename: attachment.filename,
-        },
-      },
-    });
+    const { error } = await supabase.storage
+      .from('email-attachments')
+      .upload(storagePath, contentBuffer, {
+        contentType: attachment.contentType,
+        upsert: false,
+      });
 
-    const [metadata] = await file.getMetadata();
-    const storedBytes = Number.parseInt(String(metadata.size ?? ''), 10);
-    if (!Number.isFinite(storedBytes) || storedBytes !== contentBuffer.byteLength) {
-      console.error('Attachment storage verification failed after upload', {
+    if (error) {
+      console.error('Failed to upload attachment to Supabase Storage', {
         ...attachmentDetails,
         storagePath,
-        storedBytes,
+        error: error.message,
       });
-      try {
-        await file.delete({ ignoreNotFound: true });
-      } catch (cleanupError) {
-        console.error('Failed to delete attachment after storage verification failure', {
-          ...attachmentDetails,
-          storagePath,
-          error: cleanupError,
-        });
-      }
       return null;
     }
 
     return storagePath;
   } catch (err) {
-    console.error('Failed to upload attachment to Firebase Storage', {
+    console.error('Failed to upload attachment to Supabase Storage', {
       ...attachmentDetails,
       error: err,
     });
@@ -274,40 +229,41 @@ export async function uploadAttachmentToStorage(
 }
 
 /**
- * Download an attachment from Firebase Storage.
+ * Download an attachment from Supabase Storage.
  * Returns null if the download fails.
  */
 async function downloadAttachmentFromStorage(storagePath: string): Promise<ArrayBuffer | null> {
   try {
-    const storage = adminStorage();
-    const bucket = storage.bucket();
-    const file = bucket.file(storagePath);
-    const [contents] = await file.download();
-    const buf = Buffer.from(contents);
-    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+    const supabase = createAdminClient();
+    const { data: blob, error } = await supabase.storage
+      .from('email-attachments')
+      .download(storagePath);
+    if (error || !blob) {
+      console.error(`Failed to download attachment from Supabase Storage (${storagePath}):`, error);
+      return null;
+    }
+    return blob.arrayBuffer();
   } catch (err) {
-    console.error(`Failed to download attachment from Firebase Storage (${storagePath}):`, err);
+    console.error(`Failed to download attachment from Supabase Storage (${storagePath}):`, err);
     return null;
   }
 }
 
 /**
- * Delete an attachment from Firebase Storage after it has been forwarded.
+ * Delete an attachment from Supabase Storage after it has been forwarded.
  * Errors are logged but not re-thrown.
  */
 export async function deleteAttachmentFromStorage(storagePath: string): Promise<void> {
   try {
-    const storage = adminStorage();
-    const bucket = storage.bucket();
-    await bucket.file(storagePath).delete({ ignoreNotFound: true });
+    const supabase = createAdminClient();
+    await supabase.storage.from('email-attachments').remove([storagePath]);
   } catch (err) {
-    console.error(`Failed to delete attachment from Firebase Storage (${storagePath}):`, err);
+    console.error(`Failed to delete attachment from Supabase Storage (${storagePath}):`, err);
   }
 }
 
 /**
- * Send a web push notification to all of a user's registered FCM tokens.
- * Stale tokens that are rejected by FCM are removed from Firestore automatically.
+ * Send a web push notification to the user via OneSignal external ID targeting.
  * Errors are caught and logged so they never block the main email-processing flow.
  */
 async function sendEmailPushNotification(
@@ -318,10 +274,9 @@ async function sendEmailPushNotification(
   status: 'forwarded' | 'error' | 'skipped',
 ): Promise<void> {
   try {
-    const db = adminDb();
-    const userSnap = await db.collection('users').doc(userId).get();
-    const fcmTokens = userSnap.data()?.fcmTokens as string[] | undefined;
-    if (!fcmTokens || fcmTokens.length === 0) return;
+    const oneSignalAppId = process.env.ONESIGNAL_APP_ID ?? process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+    const oneSignalApiKey = process.env.ONESIGNAL_API_KEY;
+    if (!oneSignalAppId || !oneSignalApiKey) return;
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const iconUrl = appUrl
@@ -336,47 +291,40 @@ async function sendEmailPushNotification(
       skipped: `Email skipped from ${sender}`,
     };
 
-    // Use a data-only message (no top-level `notification` field) so that FCM does not
-    // auto-display a notification in the background. Displaying is handled exclusively by
-    // the service worker's onBackgroundMessage handler, which reads from payload.data.
-    // Combining a `notification` field with an `onBackgroundMessage` handler that also
-    // calls showNotification causes duplicate notifications in the browser.
-    const response = await adminMessaging().sendEachForMulticast({
-      webpush: {
-        ...(absoluteEmailUrl ? { fcmOptions: { link: absoluteEmailUrl } } : {}),
+    const response = await fetch('https://api.onesignal.com/notifications', {
+      method: 'POST',
+      headers: {
+        Authorization: `Key ${oneSignalApiKey}`,
+        'Content-Type': 'application/json; charset=utf-8',
       },
-      data: {
-        url: relativeEmailUrl,
-        logId,
-        status,
-        title: titleByStatus[status],
-        body: subject,
-        icon: iconUrl,
-        badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
-        tag: `postino-email-${logId}`,
-      },
-      tokens: fcmTokens,
+      body: JSON.stringify({
+        app_id: oneSignalAppId,
+        target_channel: 'push',
+        include_aliases: {
+          external_id: [userId],
+        },
+        headings: {
+          en: titleByStatus[status],
+        },
+        contents: {
+          en: subject,
+        },
+        url: absoluteEmailUrl || undefined,
+        web_url: absoluteEmailUrl || undefined,
+        chrome_web_icon: iconUrl,
+        chrome_web_badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
+        data: {
+          url: relativeEmailUrl,
+          logId,
+          status,
+          tag: `postino-email-${logId}`,
+        },
+      }),
     });
 
-    // Remove tokens that FCM reports as invalid so they don't accumulate.
-    if (response.failureCount > 0) {
-      const invalidTokens: string[] = [];
-      response.responses.forEach((r, i) => {
-        const code = r.error?.code ?? '';
-        if (
-          !r.success &&
-          (code === 'messaging/registration-token-not-registered' ||
-            code === 'messaging/invalid-registration-token')
-        ) {
-          invalidTokens.push(fcmTokens[i]);
-        }
-      });
-      if (invalidTokens.length > 0) {
-        await db
-          .collection('users')
-          .doc(userId)
-          .update({ fcmTokens: FieldValue.arrayRemove(...invalidTokens) });
-      }
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      console.error('Failed to send OneSignal push notification:', response.status, detail);
     }
   } catch (err) {
     console.error('Failed to send push notification:', err);
@@ -387,15 +335,18 @@ export async function processQueuedInboundPayload(
   payload: QueuedInboundPayload,
   attachments?: EmailAttachment[],
 ): Promise<void> {
-  const db = adminDb();
-  const logRef = db.collection('emailLogs').doc(payload.logId);
+  const supabase = createAdminClient();
 
-  // Fetch user preferences. isForwardingHeaderEnabled defaults to true when unset.
-  const userSnap = await db.collection('users').doc(payload.userId).get();
-  const isForwardingHeaderEnabled = userSnap.data()?.isForwardingHeaderEnabled !== false;
+  // Fetch user preferences. is_forwarding_header_enabled defaults to true when unset.
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('is_forwarding_header_enabled, analysis_output_language')
+    .eq('id', payload.userId)
+    .single();
+  const isForwardingHeaderEnabled = userRow?.is_forwarding_header_enabled !== false;
   const analysisOutputLanguage =
-    typeof userSnap.data()?.analysisOutputLanguage === 'string'
-      ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
+    typeof userRow?.analysis_output_language === 'string'
+      ? (userRow.analysis_output_language as string) || undefined
       : undefined;
 
   // AI-analysis-only mode: run analysis + memory update, skip rules and forwarding.
@@ -413,26 +364,35 @@ export async function processQueuedInboundPayload(
         getUserMemory(payload.userId),
       ]);
 
-      const settingsSnap = await db.collection('settings').doc('global').get();
-      const settings = settingsSnap.data();
-      const safeAnalysis = analysisResult.analysis
-        ? sanitizeForFirestore(analysisResult.analysis)
-        : undefined;
+      const { data: settingsRow } = await supabase
+        .from('settings')
+        .select('data')
+        .eq('id', 'global')
+        .single();
+      const settings = settingsRow?.data as Record<string, unknown> | null;
 
-      await logRef.update({
-        processedAt: Timestamp.now(),
-        status: 'skipped',
-        tokensUsed: analysisResult.tokensUsed,
-        estimatedCost: analysisResult.estimatedCost,
-        ...(safeAnalysis ? { emailAnalysis: safeAnalysis } : {}),
-        ...(payload.attachments && payload.attachments.length > 0
-          ? {
-              attachments: sanitizeForFirestore(payload.attachments),
-              attachmentCount: payload.attachments.length,
-              attachmentNames: payload.attachments.map((a) => a.filename),
-            }
-          : {}),
-      });
+      await supabase
+        .from('email_logs')
+        .update({
+          processed_at: new Date().toISOString(),
+          status: 'skipped',
+          tokens_used: analysisResult.tokensUsed,
+          estimated_cost: analysisResult.estimatedCost,
+          ...(analysisResult.analysis
+            ? {
+                email_analysis:
+                  analysisResult.analysis as unknown as import('@/types/supabase').Json,
+              }
+            : {}),
+          ...(payload.attachments && payload.attachments.length > 0
+            ? {
+                attachments: payload.attachments as unknown as import('@/types/supabase').Json,
+                attachment_count: payload.attachments.length,
+                attachment_names: payload.attachments.map((a) => a.filename),
+              }
+            : {}),
+        })
+        .eq('id', payload.logId);
 
       const newEntry = buildMemoryEntryFromAnalysis(
         {
@@ -498,7 +458,10 @@ export async function processQueuedInboundPayload(
       }
     } catch (err) {
       console.error('AI-analysis-only processing failed:', err);
-      await logRef.update({ status: 'skipped', processedAt: Timestamp.now() });
+      await supabase
+        .from('email_logs')
+        .update({ status: 'skipped', processed_at: new Date().toISOString() })
+        .eq('id', payload.logId);
     }
     await sendEmailPushNotification(
       payload.userId,
@@ -511,7 +474,7 @@ export async function processQueuedInboundPayload(
   }
 
   // If no attachments were provided directly (queue path), deserialize from payload.
-  // New jobs store all attachments in Firebase Storage; inline base64 is supported only
+  // New jobs store all attachments in Supabase Storage; inline base64 is supported only
   // for older queued jobs that were created before the storage-only migration.
   let effectiveAttachments: EmailAttachment[] | undefined;
 
@@ -550,8 +513,8 @@ export async function processQueuedInboundPayload(
           });
           if (!content) {
             console.error(
-              `Failed to download attachment "${att.filename}" from Firebase Storage (path: ${att.storagePath}). ` +
-                'Ensure FIREBASE_STORAGE_BUCKET is configured and the storage bucket exists.',
+              `Failed to download attachment "${att.filename}" from Supabase Storage (path: ${att.storagePath}). ` +
+                'Ensure the storage bucket exists and is accessible.',
             );
           }
         } else if (att.contentBase64) {
@@ -622,47 +585,35 @@ export async function processQueuedInboundPayload(
       effectiveCount: effectiveAttachments?.length ?? 0,
     });
 
-    await logRef.set(
-      {
-        attachments: sanitizeForFirestore(payload.attachments),
-        attachmentCount: payload.attachments.length,
-        attachmentNames: payload.attachments.map((att) => att.filename),
-      },
-      { merge: true },
-    );
+    await supabase
+      .from('email_logs')
+      .update({
+        attachments: payload.attachments as unknown as import('@/types/supabase').Json,
+        attachment_count: payload.attachments.length,
+        attachment_names: payload.attachments.map((att) => att.filename),
+      })
+      .eq('id', payload.logId);
   } else {
     console.log('[processing] no attachments in payload', { logId: payload.logId });
   }
 
-  const rulesSnap = await db
-    .collection('rules')
-    .where('userId', '==', payload.userId)
-    .where('isActive', '==', true)
-    .get();
+  // Fetch rules sorted by sort_order ASC (user-defined), then created_at ASC as tiebreaker.
+  const { data: rulesData } = await supabase
+    .from('rules')
+    .select('id, name, text, match_sender, match_subject, match_body')
+    .eq('user_id', payload.userId)
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: true });
 
-  // Sort rules by sortOrder ASC (user-defined), then by createdAt ASC as tiebreaker,
-  // so rules are always applied in a deterministic order that matches what the user sees.
-  const allRules = rulesSnap.docs
-    .sort((a, b) => {
-      const aOrder =
-        typeof a.data().sortOrder === 'number'
-          ? (a.data().sortOrder as number)
-          : Number.MAX_SAFE_INTEGER;
-      const bOrder =
-        typeof b.data().sortOrder === 'number'
-          ? (b.data().sortOrder as number)
-          : Number.MAX_SAFE_INTEGER;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
-    })
-    .map((d) => ({
-      id: d.id,
-      name: (d.data().name as string) || d.id,
-      text: d.data().text as string,
-      matchSender: (d.data().matchSender as string) || '',
-      matchSubject: (d.data().matchSubject as string) || '',
-      matchBody: (d.data().matchBody as string) || '',
-    }));
+  const allRules = (rulesData ?? []).map((row) => ({
+    id: row.id as string,
+    name: (row.name as string) || (row.id as string),
+    text: row.text as string,
+    matchSender: (row.match_sender as string) || '',
+    matchSubject: (row.match_subject as string) || '',
+    matchBody: (row.match_body as string) || '',
+  }));
 
   // Filter rules based on pattern matching against the incoming email
   const matchingRules: RuleForProcessing[] = allRules.filter(
@@ -774,24 +725,28 @@ export async function processQueuedInboundPayload(
     },
   });
 
-  const safeTrace = result.trace ? sanitizeForFirestore(result.trace) : undefined;
-  const safeAnalysis = result.analysis ? sanitizeForFirestore(result.analysis) : undefined;
-
   const finalStatus: 'forwarded' | 'error' = result.parseError?.includes('forwarded as-is')
     ? 'error'
     : 'forwarded';
 
-  await logRef.update({
-    processedAt: Timestamp.now(),
-    status: finalStatus,
-    ruleApplied: result.ruleApplied,
-    tokensUsed: result.tokensUsed,
-    estimatedCost: result.estimatedCost,
-    processedBody: result.body,
-    ...(safeTrace ? { agentTrace: safeTrace } : {}),
-    ...(safeAnalysis ? { emailAnalysis: safeAnalysis } : {}),
-    ...(result.parseError ? { errorMessage: result.parseError } : {}),
-  });
+  await supabase
+    .from('email_logs')
+    .update({
+      processed_at: new Date().toISOString(),
+      status: finalStatus,
+      rule_applied: result.ruleApplied,
+      tokens_used: result.tokensUsed,
+      estimated_cost: result.estimatedCost,
+      processed_body: result.body,
+      ...(result.trace
+        ? { agent_trace: result.trace as unknown as import('@/types/supabase').Json }
+        : {}),
+      ...(result.analysis
+        ? { email_analysis: result.analysis as unknown as import('@/types/supabase').Json }
+        : {}),
+      ...(result.parseError ? { error_message: result.parseError } : {}),
+    })
+    .eq('id', payload.logId);
 
   // Fire-and-forget push notification — runs after the log update
   // so that a notification failure never blocks or rolls back the email-processing result.

@@ -119,7 +119,7 @@ export function ExploreEmailsModal({
   sourceTitle,
 }: ExploreEmailsModalProps) {
   const { t, locale } = useI18n();
-  const { firebaseUser, user } = useAuth();
+  const { authUser, user, getIdToken } = useAuth();
   const isAdmin = user?.isAdmin === true;
   const ts = t.dashboard.search;
   const tk = t.dashboard.knowledge;
@@ -187,11 +187,11 @@ export function ExploreEmailsModal({
 
   const fetchLogs = useCallback(
     async (targetPage: number) => {
-      if (!firebaseUser || !term) return;
+      if (!authUser || !term) return;
       setLoading(true);
       setTotalCount(undefined);
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const params = new URLSearchParams({
           page: String(targetPage),
           pageSize: String(PAGE_SIZE),
@@ -224,16 +224,16 @@ export function ExploreEmailsModal({
         setLoading(false);
       }
     },
-    [firebaseUser, term, category, aliases],
+    [authUser, term, category, aliases],
   );
 
   const fetchLogsByIds = useCallback(
     async (ids: string[]) => {
-      if (!firebaseUser || ids.length === 0) return;
+      if (!authUser || ids.length === 0) return;
       setLoading(true);
       setTotalCount(undefined);
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/email/by-ids', {
           method: 'POST',
           headers: {
@@ -261,7 +261,7 @@ export function ExploreEmailsModal({
         setLoading(false);
       }
     },
-    [firebaseUser],
+    [authUser],
   );
 
   // Reset + fetch when modal opens (term changes)
@@ -288,7 +288,7 @@ export function ExploreEmailsModal({
 
   const fetchExpandedEmail = useCallback(
     async (logId: string) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       if (fetchedExpandedIds.current.has(logId)) return;
       fetchedExpandedIds.current.add(logId);
       setExpandedData((prev) => ({
@@ -305,7 +305,7 @@ export function ExploreEmailsModal({
         },
       }));
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch(`/api/email/original/${logId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -357,7 +357,7 @@ export function ExploreEmailsModal({
         }));
       }
     },
-    [firebaseUser],
+    [authUser],
   );
 
   const handleToggleExpand = (logId: string) => {

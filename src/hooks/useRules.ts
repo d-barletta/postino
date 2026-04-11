@@ -5,16 +5,16 @@ import { useAuth } from './useAuth';
 import type { Rule } from '@/types';
 
 export function useRules() {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRules = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     try {
       setLoading(true);
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/rules', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -26,7 +26,7 @@ export function useRules() {
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   useEffect(() => {
     fetchRules();
@@ -39,8 +39,8 @@ export function useRules() {
     matchSubject?: string,
     matchBody?: string,
   ) => {
-    if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
+    if (!authUser) return;
+    const token = await getIdToken();
     const res = await fetch('/api/rules', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -55,9 +55,9 @@ export function useRules() {
 
   // Fetches rules in the background without triggering the loading skeleton.
   const silentFetch = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/rules', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -67,7 +67,7 @@ export function useRules() {
     } catch {
       // Silent — optimistic state is still shown
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const updateRule = async (
     id: string,
@@ -78,7 +78,7 @@ export function useRules() {
     matchSubject?: string,
     matchBody?: string,
   ) => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     const previousRules = rules;
     // Optimistic update
     setRules((prev) =>
@@ -97,7 +97,7 @@ export function useRules() {
       ),
     );
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(`/api/rules/${id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -112,8 +112,8 @@ export function useRules() {
   };
 
   const deleteRule = async (id: string) => {
-    if (!firebaseUser) return;
-    const token = await firebaseUser.getIdToken();
+    if (!authUser) return;
+    const token = await getIdToken();
     const res = await fetch(`/api/rules/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
@@ -123,7 +123,7 @@ export function useRules() {
   };
 
   const reorderRules = async (orderedIds: string[]) => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     const previousRules = rules;
     // Optimistic reorder
     const reordered = orderedIds
@@ -131,7 +131,7 @@ export function useRules() {
       .filter(Boolean) as Rule[];
     setRules(reordered);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/rules/reorder', {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

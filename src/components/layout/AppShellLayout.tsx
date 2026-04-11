@@ -16,22 +16,22 @@ type AppShellLayoutProps = {
 
 export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
   const router = useRouter();
-  const { firebaseUser, user, loading } = useAuth();
+  const { authUser, user, loading } = useAuth();
   const { t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const requiresAdmin = mode === 'admin';
-  const checking = loading || Boolean(requiresAdmin && firebaseUser && !user);
+  const checking = loading || Boolean(requiresAdmin && authUser && !user);
 
   useEffect(() => {
     if (!loading) {
-      if (!firebaseUser) {
+      if (!authUser) {
         router.push('/login');
       } else if (requiresAdmin && user && !user.isAdmin) {
         router.push('/dashboard');
       }
     }
-  }, [loading, firebaseUser, requiresAdmin, user, router]);
+  }, [loading, authUser, requiresAdmin, user, router]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -46,7 +46,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
     );
   }
 
-  if (!firebaseUser) return null;
+  if (!authUser) return null;
 
   const contextLink =
     mode === 'admin'
@@ -78,7 +78,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-3">
               <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-                {firebaseUser.email}
+                {authUser.email}
               </span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 {t.nav.signOut}
@@ -101,7 +101,7 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/50 dark:border-white/10 px-4 py-3 space-y-2 ui-fade-up">
             <div className="px-3 pt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
-              {firebaseUser.email}
+              {authUser.email}
             </div>
             <Button
               variant="ghost"

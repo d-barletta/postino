@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 // ---------------------------------------------------------------------------
@@ -8,8 +8,8 @@ import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let uid: string;
   try {
-    const decoded = await verifyUserRequest(request);
-    uid = decoded.uid;
+    const user = await verifyUserRequest(request);
+    uid = user.id;
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -26,19 +26,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       );
     }
 
-    const db = adminDb();
-    const docRef = db.collection('entityMergeSuggestions').doc(id);
-    const snap = await docRef.get();
+    const supabase = createAdminClient();
+    const { data: snap } = await supabase
+      .from('entity_merge_suggestions')
+      .select('id, user_id')
+      .eq('id', id)
+      .single();
 
-    if (!snap.exists) {
+    if (!snap) {
       return NextResponse.json({ error: 'Suggestion not found' }, { status: 404 });
     }
 
-    if (snap.data()?.userId !== uid) {
+    if (snap.user_id !== uid) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await docRef.update({ status });
+    await supabase.from('entity_merge_suggestions').update({ status }).eq('id', id);
 
     return NextResponse.json({ id, status });
   } catch (err) {

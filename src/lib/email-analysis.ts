@@ -19,7 +19,7 @@ export interface StoredEmailAnalysisDebugResult {
   model: string;
 }
 
-export function toFirestoreSafeAnalysis(analysis: EmailAnalysis): EmailAnalysis {
+export function toStoredAnalysis(analysis: EmailAnalysis): EmailAnalysis {
   return JSON.parse(JSON.stringify(analysis)) as EmailAnalysis;
 }
 
@@ -45,7 +45,7 @@ export async function analyzeStoredEmailLogWithDebug(
   );
 
   return {
-    analysis: result.analysis ? toFirestoreSafeAnalysis(result.analysis) : null,
+    analysis: result.analysis ? toStoredAnalysis(result.analysis) : null,
     extractedBody: result.extractedBody,
     tokensUsed: result.tokensUsed,
     promptTokens: result.promptTokens,

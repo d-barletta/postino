@@ -91,7 +91,7 @@ interface AdminEmailsPageProps {
 }
 
 export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPageProps) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const [logs, setLogs] = useState<AdminEmailLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,12 +117,12 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
 
   const fetchLogs = useCallback(
     async (targetPage: number, isRefresh = false) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setTotalCount(undefined);
       try {
-        let token = await firebaseUser.getIdToken();
+        let token = await getIdToken();
         const params = new URLSearchParams({
           page: String(targetPage),
           pageSize: String(PAGE_SIZE),
@@ -137,7 +137,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
 
         // Retry once with a forced token refresh for transient auth expiration.
         if (res.status === 401) {
-          token = await firebaseUser.getIdToken(true);
+          token = await getIdToken();
           res = await fetch(`/api/admin/emails?${params}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -168,7 +168,7 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
         setRefreshing(false);
       }
     },
-    [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter],
+    [authUser, searchQuery, statusFilter, hasAttachmentsFilter],
   );
 
   useEffect(() => {
