@@ -338,6 +338,7 @@ export interface Translations {
       filterEvents: string;
       filterDates: string;
       filterNumbers: string;
+      filterPrices: string;
       languagePlaceholder: string;
       tagsPlaceholder: string;
       peoplePlaceholder: string;
@@ -346,6 +347,7 @@ export interface Translations {
       eventsPlaceholder: string;
       datesPlaceholder: string;
       numbersPlaceholder: string;
+      pricesPlaceholder: string;
       advancedFilters: string;
       withAttachments: string;
       requiresResponse: string;
@@ -386,6 +388,7 @@ export interface Translations {
       dates: string;
       tags: string;
       numbers: string;
+      prices: string;
       emailsAnalyzed: string;
       noData: string;
       noDataDesc: string;
@@ -1050,6 +1053,7 @@ const translations: Record<Locale, Translations> = {
         filterEvents: 'Events',
         filterDates: 'Dates',
         filterNumbers: 'Numbers & codes',
+        filterPrices: 'Prices',
         languagePlaceholder: 'Select language…',
         tagsPlaceholder: 'Select tags…',
         peoplePlaceholder: 'Select people…',
@@ -1058,6 +1062,7 @@ const translations: Record<Locale, Translations> = {
         eventsPlaceholder: 'Select events…',
         datesPlaceholder: 'Select dates…',
         numbersPlaceholder: 'Select numbers/codes…',
+        pricesPlaceholder: 'Select prices…',
         advancedFilters: 'Advanced filters',
         withAttachments: 'With attachments',
         requiresResponse: 'Requires response',
@@ -1098,6 +1103,7 @@ const translations: Record<Locale, Translations> = {
         dates: 'Dates',
         tags: 'Tags',
         numbers: 'Numbers & codes',
+        prices: 'Prices',
         emailsAnalyzed: '{count} emails analyzed',
         noData: 'No knowledge data yet',
         noDataDesc:
@@ -1773,6 +1779,7 @@ const translations: Record<Locale, Translations> = {
         filterEvents: 'Eventi',
         filterDates: 'Date',
         filterNumbers: 'Numeri e codici',
+        filterPrices: 'Prezzi',
         languagePlaceholder: 'Seleziona lingua…',
         tagsPlaceholder: 'Seleziona tag…',
         peoplePlaceholder: 'Seleziona persone…',
@@ -1781,6 +1788,7 @@ const translations: Record<Locale, Translations> = {
         eventsPlaceholder: 'Seleziona eventi…',
         datesPlaceholder: 'Seleziona date…',
         numbersPlaceholder: 'Seleziona numeri/codici…',
+        pricesPlaceholder: 'Seleziona prezzi…',
         advancedFilters: 'Filtri avanzati',
         withAttachments: 'Con allegati',
         requiresResponse: 'Richiede risposta',
@@ -1821,6 +1829,7 @@ const translations: Record<Locale, Translations> = {
         dates: 'Date',
         tags: 'Tag',
         numbers: 'Numeri e codici',
+        prices: 'Prezzi',
         emailsAnalyzed: '{count} email analizzate',
         noData: 'Nessun dato disponibile',
         noDataDesc:
@@ -2496,6 +2505,7 @@ const translations: Record<Locale, Translations> = {
         filterEvents: 'Eventos',
         filterDates: 'Fechas',
         filterNumbers: 'Números y códigos',
+        filterPrices: 'Precios',
         languagePlaceholder: 'Seleccionar idioma…',
         tagsPlaceholder: 'Seleccionar etiquetas…',
         peoplePlaceholder: 'Seleccionar personas…',
@@ -2504,6 +2514,7 @@ const translations: Record<Locale, Translations> = {
         eventsPlaceholder: 'Seleccionar eventos…',
         datesPlaceholder: 'Seleccionar fechas…',
         numbersPlaceholder: 'Seleccionar números/códigos…',
+        pricesPlaceholder: 'Seleccionar precios…',
         advancedFilters: 'Filtros avanzados',
         withAttachments: 'Con adjuntos',
         requiresResponse: 'Requiere respuesta',
@@ -2544,6 +2555,7 @@ const translations: Record<Locale, Translations> = {
         dates: 'Fechas',
         tags: 'Etiquetas',
         numbers: 'Números y códigos',
+        prices: 'Precios',
         emailsAnalyzed: '{count} correos analizados',
         noData: 'Sin datos de conocimiento',
         noDataDesc:
@@ -3221,6 +3233,7 @@ const translations: Record<Locale, Translations> = {
         filterEvents: 'Événements',
         filterDates: 'Dates',
         filterNumbers: 'Numéros et codes',
+        filterPrices: 'Prix',
         languagePlaceholder: 'Sélectionner une langue…',
         tagsPlaceholder: 'Sélectionner des tags…',
         peoplePlaceholder: 'Sélectionner des personnes…',
@@ -3229,6 +3242,7 @@ const translations: Record<Locale, Translations> = {
         eventsPlaceholder: 'Sélectionner des événements…',
         datesPlaceholder: 'Sélectionner des dates…',
         numbersPlaceholder: 'Sélectionner des numéros/codes…',
+        pricesPlaceholder: 'Sélectionner des prix…',
         advancedFilters: 'Filtres avancés',
         withAttachments: 'Avec pièces jointes',
         requiresResponse: 'Nécessite une réponse',
@@ -3269,6 +3283,7 @@ const translations: Record<Locale, Translations> = {
         dates: 'Dates',
         tags: 'Étiquettes',
         numbers: 'Numéros et codes',
+        prices: 'Prix',
         emailsAnalyzed: '{count} emails analysés',
         noData: 'Aucune donnée disponible',
         noDataDesc:
@@ -3949,6 +3964,7 @@ const translations: Record<Locale, Translations> = {
         filterEvents: 'Ereignisse',
         filterDates: 'Datumsangaben',
         filterNumbers: 'Nummern & Codes',
+        filterPrices: 'Preise',
         languagePlaceholder: 'Sprache auswählen…',
         tagsPlaceholder: 'Tags auswählen…',
         peoplePlaceholder: 'Personen auswählen…',
@@ -3957,6 +3973,7 @@ const translations: Record<Locale, Translations> = {
         eventsPlaceholder: 'Ereignisse auswählen…',
         datesPlaceholder: 'Datumsangaben auswählen…',
         numbersPlaceholder: 'Nummern/Codes auswählen…',
+        pricesPlaceholder: 'Preise auswählen…',
         advancedFilters: 'Erweiterte Filter',
         withAttachments: 'Mit Anhängen',
         requiresResponse: 'Antwort erforderlich',
@@ -3997,6 +4014,7 @@ const translations: Record<Locale, Translations> = {
         dates: 'Datumsangaben',
         tags: 'Tags',
         numbers: 'Nummern & Codes',
+        prices: 'Preise',
         emailsAnalyzed: '{count} E-Mails analysiert',
         noData: 'Keine Wissensdaten vorhanden',
         noDataDesc:

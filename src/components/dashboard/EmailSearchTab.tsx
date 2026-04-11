@@ -105,6 +105,7 @@ interface FilterState {
   events: string[];
   dates: string[];
   numbers: string[];
+  prices: string[];
   attachments: boolean;
   requiresResponse: boolean;
   hasActionItems: boolean;
@@ -126,6 +127,7 @@ const EMPTY_FILTERS: FilterState = {
   events: [],
   dates: [],
   numbers: [],
+  prices: [],
   attachments: false,
   requiresResponse: false,
   hasActionItems: false,
@@ -155,6 +157,7 @@ function filtersEqual(a: FilterState, b: FilterState): boolean {
     setEq(a.events, b.events) &&
     setEq(a.dates, b.dates) &&
     setEq(a.numbers, b.numbers) &&
+    setEq(a.prices, b.prices) &&
     a.attachments === b.attachments &&
     a.requiresResponse === b.requiresResponse &&
     a.hasActionItems === b.hasActionItems &&
@@ -178,6 +181,7 @@ function hasActiveFilter(f: FilterState): boolean {
     f.events.length > 0 ||
     f.dates.length > 0 ||
     f.numbers.length > 0 ||
+    f.prices.length > 0 ||
     f.attachments ||
     f.requiresResponse ||
     f.hasActionItems ||
@@ -504,6 +508,7 @@ export function EmailSearchTab({
     events: SuggestionItem[];
     dates: SuggestionItem[];
     numbers: SuggestionItem[];
+    prices: SuggestionItem[];
     languages: SuggestionItem[];
   }
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
@@ -522,6 +527,7 @@ export function EmailSearchTab({
           events: knowledgeData.events ?? [],
           dates: knowledgeData.dates ?? [],
           numbers: knowledgeData.numbers ?? [],
+          prices: knowledgeData.prices ?? [],
           languages: knowledgeData.languages ?? [],
         });
       }
@@ -545,6 +551,7 @@ export function EmailSearchTab({
           events: data.events ?? [],
           dates: data.dates ?? [],
           numbers: data.numbers ?? [],
+          prices: data.prices ?? [],
           languages: data.languages ?? [],
         });
       }
@@ -664,6 +671,7 @@ export function EmailSearchTab({
         applied.events.forEach((e) => params.append('events', e));
         applied.dates.forEach((d) => params.append('dates', d));
         applied.numbers.forEach((n) => params.append('numbers', n));
+        applied.prices.forEach((p) => params.append('prices', p));
         if (applied.attachments) params.set('hasAttachments', 'true');
         if (applied.requiresResponse) params.set('requiresResponse', 'true');
         if (applied.hasActionItems) params.set('hasActionItems', 'true');
@@ -1191,6 +1199,20 @@ export function EmailSearchTab({
                             loading={suggestionsLoading}
                           />
                         </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {ts.filterPrices}
+                          </label>
+                          <ComboboxChips
+                            options={suggestions ? toChipsOptions(suggestions.prices) : []}
+                            values={pending.prices}
+                            onValuesChange={(v) => setPending((p) => ({ ...p, prices: v }))}
+                            placeholder={ts.pricesPlaceholder}
+                            searchPlaceholder={ts.pricesPlaceholder}
+                            loading={suggestionsLoading}
+                          />
+                        </div>
                       </div>
 
                       {/* Toggle filters row */}
@@ -1450,6 +1472,38 @@ export function EmailSearchTab({
                 onClick={() => {
                   setPending((p) => ({ ...p, dates: p.dates.filter((v) => v !== date) }));
                   setApplied((a) => ({ ...a, dates: a.dates.filter((v) => v !== date) }));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {applied.numbers.map((num) => (
+            <span
+              key={num}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+            >
+              {ts.filterNumbers}: {num}
+              <button
+                onClick={() => {
+                  setPending((p) => ({ ...p, numbers: p.numbers.filter((v) => v !== num) }));
+                  setApplied((a) => ({ ...a, numbers: a.numbers.filter((v) => v !== num) }));
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {applied.prices.map((price) => (
+            <span
+              key={price}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            >
+              {ts.filterPrices}: {price}
+              <button
+                onClick={() => {
+                  setPending((p) => ({ ...p, prices: p.prices.filter((v) => v !== price) }));
+                  setApplied((a) => ({ ...a, prices: a.prices.filter((v) => v !== price) }));
                 }}
               >
                 <X className="h-3 w-3" />

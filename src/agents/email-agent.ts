@@ -810,7 +810,7 @@ const emailAnalysisSchema = z.object({
       numbers: z
         .array(z.string())
         .describe(
-          'Labelled numeric codes and identifiers found in the visible text of the email: phone numbers, credit card numbers, client IDs, order codes, account numbers, tracking codes, etc. Each entry must be formatted as "<label> <number>" where the label describes what the number represents and the number itself is written without spaces, hyphens, or other separators (e.g. "telefono +390212345678", "codice carta 134533", "numero cliente 98765", "tracking IT123456789IT"). Do NOT include postal/ZIP codes (already captured in places), monetary amounts (captured in prices), or dates (captured in dates). Do NOT extract numbers from URLs, query-string parameters, path segments, or any href/src attributes — URLs must be treated as atomic and their internal numeric parts ignored. Deduplicate: if the same number appears in multiple formats, include it only once.',
+          'Labelled numeric codes and identifiers found in the visible text of the email: phone numbers, credit card numbers, client IDs, order codes, account numbers, tracking codes, etc. Each entry must be formatted as "<label> <number>" where the label describes what the number represents and the number itself is written without spaces, hyphens, or other separators (e.g. "telefono +390212345678", "codice carta 134533", "numero cliente 98765", "tracking IT123456789IT"). Do NOT include postal/ZIP codes (already captured in places), monetary amounts with a currency symbol (captured in prices), or dates (captured in dates). Do NOT extract numbers from URLs, query-string parameters, path segments, or any href/src attributes — URLs must be treated as atomic and their internal numeric parts ignored. Deduplicate: if the same number appears in multiple formats, include it only once.',
         ),
     })
     .describe('Named entities extracted from the email content'),
@@ -818,7 +818,7 @@ const emailAnalysisSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      'Prices, costs, or monetary amounts mentioned in the email (e.g. "$19.99/month", "€50 discount", "free trial")',
+      'Prices, costs, or monetary amounts explicitly stated in the email. Each entry must include the currency symbol and amount in a consistent format: use the currency symbol immediately before the number (e.g. "$19.99", "€50", "£9.99/month", "€500 discount", "¥1200"). For free/no-cost offers use "free". Do NOT include vague descriptions without a number (e.g. "discounted price"). Do NOT duplicate amounts that appear multiple times. These are monetary values and must NOT appear in the numbers/codes list.',
     ),
 });
 
