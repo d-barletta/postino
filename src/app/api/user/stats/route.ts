@@ -48,13 +48,11 @@ export async function GET(request: NextRequest) {
         buildBaseCount().eq('status', 'error'),
         buildBaseCount().eq('status', 'skipped'),
         buildBaseAgg(),
-        period === 'all'
-          ? supabase
-              .from('users')
-              .select('memory_tokens_used, memory_estimated_cost')
-              .eq('id', user.id)
-              .single()
-          : Promise.resolve({ data: null }),
+        supabase
+          .from('users')
+          .select('memory_tokens_used, memory_estimated_cost')
+          .eq('id', user.id)
+          .single(),
       ]);
 
     const aggData = aggResult.data?.[0] as
@@ -75,7 +73,7 @@ export async function GET(request: NextRequest) {
       totalEmailsForwarded: forwardedResult.count ?? 0,
       totalEmailsError: errorResult.count ?? 0,
       totalEmailsSkipped: skippedResult.count ?? 0,
-      // Memory chat token usage (only included in 'all' period since it is not time-bucketed).
+      // Memory chat token usage is a lifetime running total; always included regardless of period.
       totalTokensUsed: (aggData?.total_tokens ?? 0) + memoryTokensUsed,
       totalEstimatedCost: (aggData?.total_cost ?? 0) + memoryEstimatedCost,
     };

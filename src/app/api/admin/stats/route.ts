@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       errorResult,
       skippedResult,
       emailAggResult,
+      memoryAggResult,
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }),
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('is_active', true),
@@ -55,10 +56,19 @@ export async function GET(request: NextRequest) {
       buildBaseCount().eq('status', 'error'),
       buildBaseCount().eq('status', 'skipped'),
       buildBaseAgg(),
+      // Memory chat token usage is stored on the user row (lifetime running total).
+      supabase
+        .from('users')
+        .select(
+          'total_memory_tokens:memory_tokens_used.sum(), total_memory_cost:memory_estimated_cost.sum()',
+        ),
     ]);
 
     const aggData = emailAggResult.data?.[0] as
       | { total_tokens: number | null; total_cost: number | null }
+      | undefined;
+    const memoryAggData = memoryAggResult.data?.[0] as
+      | { total_memory_tokens: number | null; total_memory_cost: number | null }
       | undefined;
 
     const stats = {
@@ -68,8 +78,8 @@ export async function GET(request: NextRequest) {
       totalEmailsForwarded: forwardedResult.count ?? 0,
       totalEmailsError: errorResult.count ?? 0,
       totalEmailsSkipped: skippedResult.count ?? 0,
-      totalTokensUsed: aggData?.total_tokens ?? 0,
-      totalEstimatedCost: aggData?.total_cost ?? 0,
+      totalTokensUsed: (aggData?.total_tokens ?? 0) + (memoryAggData?.total_memory_tokens ?? 0),
+      totalEstimatedCost: (aggData?.total_cost ?? 0) + (memoryAggData?.total_memory_cost ?? 0),
     };
 
     return NextResponse.json({ stats });
