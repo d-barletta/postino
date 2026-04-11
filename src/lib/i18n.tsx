@@ -820,7 +820,8 @@ const translations: Record<Locale, Translations> = {
         backToSignIn: 'Back to sign in',
         errors: {
           missingEmail: "We couldn't find your signup email. Go back and try signing up again.",
-          tooManyRequests: 'Please wait a moment before requesting another verification email.',
+          tooManyRequests:
+            'Please wait about 60 seconds before requesting another verification email.',
           failed: 'Failed to resend the verification email. Please try again.',
         },
       },
@@ -1540,7 +1541,8 @@ const translations: Record<Locale, Translations> = {
         errors: {
           missingEmail:
             "Non riusciamo a trovare l'email usata per la registrazione. Torna indietro e riprova.",
-          tooManyRequests: "Attendi un momento prima di richiedere un'altra email di verifica.",
+          tooManyRequests:
+            "Attendi circa 60 secondi prima di richiedere un'altra email di verifica.",
           failed: "Invio dell'email di verifica non riuscito. Riprova.",
         },
       },
@@ -2261,7 +2263,8 @@ const translations: Record<Locale, Translations> = {
         errors: {
           missingEmail:
             'No pudimos encontrar el correo usado en el registro. Vuelve atrás e inténtalo de nuevo.',
-          tooManyRequests: 'Espera un momento antes de solicitar otro correo de verificación.',
+          tooManyRequests:
+            'Espera unos 60 segundos antes de solicitar otro correo de verificación.',
           failed: 'No se pudo reenviar el correo de verificación. Inténtalo de nuevo.',
         },
       },
@@ -2985,7 +2988,7 @@ const translations: Record<Locale, Translations> = {
           missingEmail:
             "Nous n'avons pas trouvé l'e-mail utilisé lors de l'inscription. Revenez en arrière et réessayez.",
           tooManyRequests:
-            'Veuillez patienter un instant avant de demander un autre e-mail de vérification.',
+            'Veuillez patienter environ 60 secondes avant de demander un autre e-mail de vérification.',
           failed: "Échec du renvoi de l'e-mail de vérification. Veuillez réessayer.",
         },
       },
@@ -3711,7 +3714,7 @@ const translations: Record<Locale, Translations> = {
           missingEmail:
             'Wir konnten die bei der Registrierung verwendete E-Mail-Adresse nicht finden. Gehen Sie zurück und versuchen Sie es erneut.',
           tooManyRequests:
-            'Bitte warten Sie einen Moment, bevor Sie eine weitere Bestätigungs-E-Mail anfordern.',
+            'Bitte warten Sie etwa 60 Sekunden, bevor Sie eine weitere Bestätigungs-E-Mail anfordern.',
           failed:
             'Die Bestätigungs-E-Mail konnte nicht erneut gesendet werden. Bitte versuchen Sie es erneut.',
         },
