@@ -118,6 +118,21 @@ export interface Translations {
       goToDashboard: string;
       loadingDashboard: string;
     };
+    verifyEmail: {
+      title: string;
+      subtitle: string;
+      instructions: string;
+      checkSpam: string;
+      automaticRedirect: string;
+      sentMessage: string;
+      resendButton: string;
+      backToSignIn: string;
+      errors: {
+        missingEmail: string;
+        tooManyRequests: string;
+        failed: string;
+      };
+    };
   };
   dashboard: {
     title: string;
@@ -793,6 +808,21 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: 'You are already signed in.',
         goToDashboard: 'Go to Dashboard',
         loadingDashboard: 'Loading dashboard…',
+      },
+      verifyEmail: {
+        title: 'Verify your email',
+        subtitle: "We've sent a verification link to the email address you used during sign up.",
+        instructions: 'Open the email to confirm your account and access your dashboard.',
+        checkSpam: "If you don't see it, check your spam folder.",
+        automaticRedirect: 'This page will automatically redirect once your email is verified.',
+        sentMessage: 'Verification email sent.',
+        resendButton: 'Resend verification email',
+        backToSignIn: 'Back to sign in',
+        errors: {
+          missingEmail: "We couldn't find your signup email. Go back and try signing up again.",
+          tooManyRequests: 'Please wait a moment before requesting another verification email.',
+          failed: 'Failed to resend the verification email. Please try again.',
+        },
       },
     },
     dashboard: {
@@ -1496,6 +1526,23 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: "Hai già effettuato l'accesso.",
         goToDashboard: 'Vai alla Dashboard',
         loadingDashboard: 'Caricamento dashboard…',
+      },
+      verifyEmail: {
+        title: 'Verifica la tua email',
+        subtitle:
+          "Abbiamo inviato un link di verifica all'indirizzo email usato durante la registrazione.",
+        instructions: "Apri l'email per confermare il tuo account e accedere alla dashboard.",
+        checkSpam: 'Se non la vedi, controlla anche la cartella spam.',
+        automaticRedirect: 'Questa pagina si aggiornerà automaticamente dopo la verifica.',
+        sentMessage: 'Email di verifica inviata.',
+        resendButton: "Invia di nuovo l'email di verifica",
+        backToSignIn: "Torna all'accesso",
+        errors: {
+          missingEmail:
+            "Non riusciamo a trovare l'email usata per la registrazione. Torna indietro e riprova.",
+          tooManyRequests: "Attendi un momento prima di richiedere un'altra email di verifica.",
+          failed: "Invio dell'email di verifica non riuscito. Riprova.",
+        },
       },
     },
     dashboard: {
@@ -2202,6 +2249,22 @@ const translations: Record<Locale, Translations> = {
         goToDashboard: 'Ir al Panel',
         loadingDashboard: 'Cargando panel…',
       },
+      verifyEmail: {
+        title: 'Verifica tu correo electrónico',
+        subtitle: 'Te hemos enviado un enlace de verificación al correo que usaste al registrarte.',
+        instructions: 'Abre el correo para confirmar tu cuenta y acceder al panel.',
+        checkSpam: 'Si no lo ves, revisa también la carpeta de spam.',
+        automaticRedirect: 'Esta página se redirigirá automáticamente cuando verifiques tu correo.',
+        sentMessage: 'Correo de verificación enviado.',
+        resendButton: 'Reenviar correo de verificación',
+        backToSignIn: 'Volver a iniciar sesión',
+        errors: {
+          missingEmail:
+            'No pudimos encontrar el correo usado en el registro. Vuelve atrás e inténtalo de nuevo.',
+          tooManyRequests: 'Espera un momento antes de solicitar otro correo de verificación.',
+          failed: 'No se pudo reenviar el correo de verificación. Inténtalo de nuevo.',
+        },
+      },
     },
     dashboard: {
       title: 'Panel',
@@ -2905,6 +2968,26 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: 'Vous êtes déjà connecté.',
         goToDashboard: 'Aller au tableau de bord',
         loadingDashboard: 'Chargement du tableau de bord…',
+      },
+      verifyEmail: {
+        title: 'Vérifiez votre e-mail',
+        subtitle:
+          "Nous avons envoyé un lien de vérification à l'adresse e-mail utilisée lors de l'inscription.",
+        instructions:
+          "Ouvrez l'e-mail pour confirmer votre compte et accéder à votre tableau de bord.",
+        checkSpam: 'Si vous ne le voyez pas, vérifiez aussi le dossier spam.',
+        automaticRedirect:
+          'Cette page vous redirigera automatiquement une fois votre e-mail vérifié.',
+        sentMessage: 'E-mail de vérification envoyé.',
+        resendButton: "Renvoyer l'e-mail de vérification",
+        backToSignIn: 'Retour à la connexion',
+        errors: {
+          missingEmail:
+            "Nous n'avons pas trouvé l'e-mail utilisé lors de l'inscription. Revenez en arrière et réessayez.",
+          tooManyRequests:
+            'Veuillez patienter un instant avant de demander un autre e-mail de vérification.',
+          failed: "Échec du renvoi de l'e-mail de vérification. Veuillez réessayer.",
+        },
       },
     },
     dashboard: {
@@ -3611,6 +3694,27 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: 'Sie sind bereits angemeldet.',
         goToDashboard: 'Zum Dashboard',
         loadingDashboard: 'Dashboard wird geladen…',
+      },
+      verifyEmail: {
+        title: 'Bestätigen Sie Ihre E-Mail-Adresse',
+        subtitle:
+          'Wir haben einen Bestätigungslink an die E-Mail-Adresse gesendet, die Sie bei der Registrierung verwendet haben.',
+        instructions:
+          'Öffnen Sie die E-Mail, um Ihr Konto zu bestätigen und auf Ihr Dashboard zuzugreifen.',
+        checkSpam: 'Wenn Sie sie nicht sehen, prüfen Sie auch Ihren Spam-Ordner.',
+        automaticRedirect:
+          'Diese Seite leitet Sie automatisch weiter, sobald Ihre E-Mail bestätigt wurde.',
+        sentMessage: 'Bestätigungs-E-Mail gesendet.',
+        resendButton: 'Bestätigungs-E-Mail erneut senden',
+        backToSignIn: 'Zurück zur Anmeldung',
+        errors: {
+          missingEmail:
+            'Wir konnten die bei der Registrierung verwendete E-Mail-Adresse nicht finden. Gehen Sie zurück und versuchen Sie es erneut.',
+          tooManyRequests:
+            'Bitte warten Sie einen Moment, bevor Sie eine weitere Bestätigungs-E-Mail anfordern.',
+          failed:
+            'Die Bestätigungs-E-Mail konnte nicht erneut gesendet werden. Bitte versuchen Sie es erneut.',
+        },
       },
     },
     dashboard: {

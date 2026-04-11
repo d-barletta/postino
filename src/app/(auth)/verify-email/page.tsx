@@ -2,16 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getEmailConfirmationRedirectUrl } from '@/lib/auth';
+import { AlertCircle } from 'lucide-react';
+import {
+  clearPendingVerificationEmail,
+  getEmailConfirmationRedirectUrl,
+  getPendingVerificationEmail,
+  setPendingVerificationEmail,
+} from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
-  const { refreshUser } = useAuth();
+  const { authUser, refreshUser } = useAuth();
+  const { t } = useI18n();
+  const tv = t.auth.verifyEmail;
   const [resending, setResending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingEmail(getPendingVerificationEmail());
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -22,6 +38,7 @@ export default function VerifyEmailPage() {
       } = await supabase.auth.getUser();
       if (user?.email_confirmed_at) {
         clearInterval(interval);
+        clearPendingVerificationEmail();
         await refreshUser();
         router.push('/dashboard');
       }
@@ -34,16 +51,43 @@ export default function VerifyEmailPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user?.email) return;
+
+    const targetEmail = user?.email ?? authUser?.email ?? pendingEmail;
+    if (!targetEmail) {
+      setError(tv.errors.missingEmail);
+      setSent(false);
+      return;
+    }
+
     setResending(true);
+    setError('');
+    setSent(false);
+
     try {
-      await supabase.auth.resend({
+      const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
-        email: user.email,
+        email: targetEmail,
         options: {
           emailRedirectTo: getEmailConfirmationRedirectUrl(),
         },
       });
+
+      if (resendError) {
+        const resendMessage = resendError.message.toLowerCase();
+        if (
+          resendMessage.includes('too many') ||
+          resendMessage.includes('security purposes') ||
+          resendMessage.includes('rate limit')
+        ) {
+          setError(tv.errors.tooManyRequests);
+        } else {
+          setError(tv.errors.failed);
+        }
+        return;
+      }
+
+      setPendingVerificationEmail(targetEmail);
+      setPendingEmail(targetEmail);
       setSent(true);
     } finally {
       setResending(false);
@@ -54,28 +98,32 @@ export default function VerifyEmailPage() {
     <div className="flex-1 from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md text-center">
         <div className="text-6xl mb-6">📧</div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">Verify your email</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">{tv.title}</h1>
         <p className="text-gray-600 mb-6">
-          We&apos;ve sent a verification link to your email address.
+          {tv.subtitle}
           <br />
-          Click the link to verify and access your dashboard.
+          {tv.instructions}
           <br />
-          Check also the spam folder.
+          {tv.checkSpam}
         </p>
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-          <p className="text-sm text-gray-500">
-            This page will automatically redirect once verified.
-          </p>
+          <p className="text-sm text-gray-500">{tv.automaticRedirect}</p>
+          {error && (
+            <Alert variant="destructive" className="text-left">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           {sent && (
-            <div className="bg-green-50 text-green-700 rounded-lg p-3 text-sm">
-              Verification email sent!
-            </div>
+            <Alert variant="success" className="text-left">
+              <AlertDescription>{tv.sentMessage}</AlertDescription>
+            </Alert>
           )}
           <Button variant="secondary" className="w-full" loading={resending} onClick={handleResend}>
-            Resend verification email
+            {tv.resendButton}
           </Button>
           <Button variant="ghost" className="w-full" onClick={() => router.push('/login')}>
-            Back to sign in
+            {tv.backToSignIn}
           </Button>
         </div>
       </div>
