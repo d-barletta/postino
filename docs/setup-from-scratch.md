@@ -1,4 +1,4 @@
-# Postino Setup From Scratch
+# 📬 Postino - Setup From Scratch
 
 This guide is for setting up Postino from zero, including accounts, environment variables, local run, and production deployment.
 
@@ -44,7 +44,11 @@ npm install
   - `https://<your-domain>/auth/confirm?type=recovery&next=/reset-password`
   - Optional Vercel previews: `https://*-<team-or-account-slug>.vercel.app/auth/confirm**`
 
-1. If you customized Supabase auth email templates, make sure they do not hardcode `localhost` and do not rely on `{{ .SiteURL }}` for Postino auth actions.
+1. The default Supabase email templates work with Postino.
+
+The default confirmation flow sends users through Supabase's `/auth/v1/verify` endpoint and then back to `/auth/confirm` in your app. No template customization is required for this to work.
+
+1. If you customize Supabase auth email templates, make sure they do not hardcode `localhost` and do not rely on `{{ .SiteURL }}` for Postino auth actions.
 
 Use Postino-compatible links instead:
 
@@ -61,7 +65,7 @@ Use Postino-compatible links instead:
 - Signup confirmation: `https://<your-domain>/auth/confirm`
 - Password recovery: `https://<your-domain>/auth/confirm?type=recovery&next=/reset-password`
 
-If you keep the default Supabase templates instead of custom ones, the Site URL and Redirect URLs above still must be correct.
+Whether you use the default Supabase templates or custom ones, the Site URL and Redirect URLs above still must be correct.
 
 ## 4. Database Schema Setup
 

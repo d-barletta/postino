@@ -1,4 +1,4 @@
-# Postino
+# 📬 Postino
 
 Postino is an AI-powered email redirector. Each user gets a private assigned address, defines natural-language rules, and inbound email is analyzed, transformed, and forwarded to their destination inbox.
 
