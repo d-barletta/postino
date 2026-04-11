@@ -592,8 +592,9 @@ export function ExploreEmailsModal({
                                 <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
                                   {emailData?.loading ? (
                                     <span className="text-gray-400">…</span>
-                                  ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) >
-                                    0 ? (
+                                  ) : (emailData != null
+                                      ? emailData.attachments.length
+                                      : (log.attachmentCount ?? 0)) > 0 ? (
                                     <AttachmentList
                                       emailId={log.id}
                                       names={

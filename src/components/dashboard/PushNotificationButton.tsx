@@ -50,9 +50,15 @@ export function PushNotificationButton() {
   const handleDisable = useCallback(async () => {
     if (!authUser) return;
     setLoading(true);
+    setSubscribed(false);
     try {
-      await unsubscribeFromPushNotifications();
-      setSubscribed(false);
+      const success = await unsubscribeFromPushNotifications();
+      if (!success) {
+        setSubscribed(true);
+      }
+    } catch (err) {
+      console.error('[Push] handleDisable: unsubscribe threw unexpectedly:', err);
+      setSubscribed(true);
     } finally {
       setLoading(false);
     }
