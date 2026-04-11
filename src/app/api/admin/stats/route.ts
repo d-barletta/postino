@@ -64,6 +64,15 @@ export async function GET(request: NextRequest) {
         ),
     ]);
 
+    if (emailAggResult.error) {
+      console.error('[admin/stats] email_logs aggregate failed:', emailAggResult.error);
+      throw emailAggResult.error;
+    }
+    if (memoryAggResult.error) {
+      console.error('[admin/stats] users memory aggregate failed:', memoryAggResult.error);
+      throw memoryAggResult.error;
+    }
+
     const aggData = emailAggResult.data?.[0] as
       | { total_tokens: number | null; total_cost: number | null }
       | undefined;
