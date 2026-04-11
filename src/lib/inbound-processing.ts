@@ -411,8 +411,8 @@ export async function processQueuedInboundPayload(
           ...(payload.attachments && payload.attachments.length > 0
             ? {
                 attachments: payload.attachments as unknown as import('@/types/supabase').Json,
-                attachment_count: payload.attachments.length,
-                attachment_names: payload.attachments.map((a) => a.filename),
+                attachment_count: payload.attachments.filter((a) => !a.contentId).length,
+                attachment_names: payload.attachments.filter((a) => !a.contentId).map((a) => a.filename),
               }
             : {}),
         })
@@ -613,8 +613,8 @@ export async function processQueuedInboundPayload(
       .from('email_logs')
       .update({
         attachments: payload.attachments as unknown as import('@/types/supabase').Json,
-        attachment_count: payload.attachments.length,
-        attachment_names: payload.attachments.map((att) => att.filename),
+        attachment_count: payload.attachments.filter((att) => !att.contentId).length,
+        attachment_names: payload.attachments.filter((att) => !att.contentId).map((att) => att.filename),
       })
       .eq('id', payload.logId);
   } else {

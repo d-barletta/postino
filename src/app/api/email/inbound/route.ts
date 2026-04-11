@@ -1417,8 +1417,8 @@ export async function POST(request: NextRequest) {
           ...(messageId ? { message_id: messageId } : {}),
           ...(attachments.length > 0
             ? {
-                attachment_count: attachments.length,
-                attachment_names: attachments.map((a) => a.filename),
+                attachment_count: attachments.filter((a) => !a.contentId).length,
+                attachment_names: attachments.filter((a) => !a.contentId).map((a) => a.filename),
               }
             : {}),
         });
@@ -1541,8 +1541,8 @@ export async function POST(request: NextRequest) {
       ...(messageId ? { message_id: messageId } : {}),
       ...(attachments.length > 0
         ? {
-            attachment_count: attachments.length,
-            attachment_names: attachments.map((a) => a.filename),
+            attachment_count: attachments.filter((a) => !a.contentId).length,
+            attachment_names: attachments.filter((a) => !a.contentId).map((a) => a.filename),
           }
         : {}),
     });
