@@ -110,8 +110,6 @@ async function ensureOneSignalInitialized(): Promise<void> {
     console.log('[Push] ensureOneSignalInitialized: creating init promise with appId:', appId);
     oneSignalInitPromise = OneSignal.init({
       appId,
-      serviceWorkerParam: { scope: '/' },
-      serviceWorkerPath: '/OneSignalSDKWorker.js',
       allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
     });
   } else {
