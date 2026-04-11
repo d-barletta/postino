@@ -13,20 +13,22 @@ interface AttachmentListProps {
   attachments?: EmailAttachmentInfo[];
 }
 
-export function AttachmentList({ emailId, names, attachments = [] }: AttachmentListProps) {
+export function AttachmentList({ emailId, names, attachments }: AttachmentListProps) {
   const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const items =
-    attachments.length > 0
+  const items: EmailAttachmentInfo[] =
+    attachments != null && attachments.length > 0
       ? attachments
-      : names.map((name, index) => ({
-          id: `fallback-${index}`,
-          filename: name,
-          contentType: 'application/octet-stream',
-          canDownload: false,
-        }));
+      : attachments == null
+        ? names.map((name, index) => ({
+            id: `fallback-${index}`,
+            filename: name,
+            contentType: 'application/octet-stream',
+            canDownload: false,
+          }))
+        : [];
 
   const handleDownload = async (attachment: EmailAttachmentInfo) => {
     if (!emailId || !attachment.canDownload || !authUser) {

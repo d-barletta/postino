@@ -144,17 +144,17 @@ export async function subscribeToPushNotifications(userId?: string): Promise<boo
   }
   try {
     await ensureOneSignalInitialized();
-    if (userId) {
-      console.log('[Push] subscribeToPushNotifications: logging in with userId:', userId);
-      await OneSignal.login(userId);
-      console.log('[Push] subscribeToPushNotifications: login successful');
-    }
     console.log('[Push] subscribeToPushNotifications: requesting permission');
     const granted = await OneSignal.Notifications.requestPermission();
     console.log('[Push] subscribeToPushNotifications: permission granted:', granted);
     if (granted) {
       await OneSignal.User.PushSubscription.optIn();
       console.log('[Push] subscribeToPushNotifications: opted in successfully');
+      if (userId) {
+        console.log('[Push] subscribeToPushNotifications: logging in with userId:', userId);
+        await OneSignal.login(userId);
+        console.log('[Push] subscribeToPushNotifications: login successful');
+      }
     }
     return granted;
   } catch (err) {
