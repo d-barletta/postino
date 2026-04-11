@@ -57,28 +57,25 @@ const MEMORY_RETENTION_DAYS = 30;
  * Default character threshold above which the agent switches to chunked
  * map-reduce processing.
  */
-const CHUNK_THRESHOLD_CHARS = 60_000;
+const CHUNK_THRESHOLD_CHARS = 100_000;
 
 /** Default target size for each map-phase chunk. */
 const CHUNK_SIZE_CHARS = 15_000;
 
 /** Default max output tokens for each chunk extraction call. */
-const CHUNK_EXTRACT_MAX_TOKENS = 600;
+const CHUNK_EXTRACT_MAX_TOKENS = 1_000;
 
-/** Default max output tokens for the pre-analysis classification call.
- * Set to 500 to accommodate the richer schema (language, sentiment, priority,
- * tags, intent, senderType in addition to the original 5 fields).
- */
-const ANALYSIS_MAX_TOKENS = 500;
+/** Default max output tokens for the pre-analysis classification call. */
+const ANALYSIS_MAX_TOKENS = 2_000;
 
 /** Default max body characters included in pre-analysis.
  * HTML emails are reduced to reader-friendly structured text before this limit
  * is applied so the AI sees more useful content within the same token budget.
  */
-const BODY_ANALYSIS_MAX_CHARS = 20_000;
+const BODY_ANALYSIS_MAX_CHARS = 30_000;
 
 /** Default max raw characters used when a chunk extraction call fails. */
-const CHUNK_FALLBACK_MAX_CHARS = 2_000;
+const CHUNK_FALLBACK_MAX_CHARS = 1_000;
 
 /** Default max tokens for the simplified fallback pass. */
 const FALLBACK_PASS_MAX_TOKENS = 3_000;
@@ -2049,7 +2046,7 @@ export async function processEmailWithAgent(
   const maxTokens =
     typeof settings?.llmMaxTokens === 'number' && settings.llmMaxTokens > 0
       ? settings.llmMaxTokens
-      : 4000;
+      : 180_000;
 
   const agentRuntimeSettings = resolveAgentRuntimeSettings(
     settings as Record<string, unknown> | undefined,
