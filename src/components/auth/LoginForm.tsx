@@ -37,9 +37,17 @@ export function LoginForm() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 403) {
+        const payload = (await res.json().catch(() => null)) as
+          | { error?: string; code?: string }
+          | null;
         await signOut();
-        setError(tr.errors.suspended);
+        setError(
+          payload?.code === 'email_not_verified' || payload?.error === 'Email not verified'
+            ? tr.errors.emailNotVerified
+            : tr.errors.suspended,
+        );
         setRedirecting(false);
+        setLoading(false);
         return;
       }
       router.push('/dashboard');

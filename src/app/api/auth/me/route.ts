@@ -155,7 +155,16 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Email not verified') {
+      return NextResponse.json(
+        { error: 'Email not verified', code: 'email_not_verified' },
+        { status: 403 },
+      );
+    }
     console.error('Auth me error:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }

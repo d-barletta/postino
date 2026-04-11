@@ -61,6 +61,11 @@ export async function registerUser(email: string, password: string) {
     }
     throw out;
   }
+
+  if (data.session && !data.user?.email_confirmed_at) {
+    await supabase.auth.signOut();
+  }
+
   return data.user;
 }
 
@@ -81,6 +86,14 @@ export async function loginUser(email: string, password: string) {
     }
     throw out;
   }
+
+  if (!data.user?.email_confirmed_at) {
+    await supabase.auth.signOut();
+    const out = new Error('Email not verified') as Error & { code?: string };
+    out.code = 'auth/email-not-verified';
+    throw out;
+  }
+
   return data.user;
 }
 
