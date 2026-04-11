@@ -18,7 +18,7 @@ function stripCrlf(value: string): string {
  */
 function quoteDisplayName(name: string): string {
   // RFC 5322 specials that require the display name to be quoted.
-  if (/[()<>\[\]:;@\\,."']/.test(name)) {
+  if (/[()<>\[\]:;@\\,"]/.test(name)) {
     return '"' + name.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   }
   return name;
