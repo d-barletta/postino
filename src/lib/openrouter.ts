@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { jsonrepair } from 'jsonrepair';
 import * as cheerio from 'cheerio';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { DEFAULT_LLM_MODEL } from '@/lib/llm';
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
 import type { EmailAnalysis } from '@/types';
 
@@ -169,7 +170,7 @@ export function calculateCost(
   pricing: ModelPricing | null,
 ): number {
   if (!pricing) {
-    // Fallback: approximate cost at $0.30/M tokens (openai/gpt-4o-mini approximate rate)
+    // Fallback: approximate cost at $0.30/M tokens when live pricing is unavailable.
     return ((promptTokens + completionTokens) / 1_000_000) * 0.3;
   }
   return (
@@ -197,7 +198,7 @@ export async function getOpenRouterClient(): Promise<{
   const model =
     (typeof settings?.llmModel === 'string' ? settings.llmModel : '') ||
     process.env.LLM_MODEL ||
-    'openai/gpt-4o-mini';
+    DEFAULT_LLM_MODEL;
   const normalizedApiKey = apiKey.trim();
 
   const client = new OpenAI({

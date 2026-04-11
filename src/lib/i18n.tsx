@@ -126,6 +126,7 @@ export interface Translations {
       automaticRedirect: string;
       sentMessage: string;
       resendButton: string;
+      resendButtonCountdown: string;
       backToSignIn: string;
       errors: {
         missingEmail: string;
@@ -817,6 +818,7 @@ const translations: Record<Locale, Translations> = {
         automaticRedirect: 'This page will automatically redirect once your email is verified.',
         sentMessage: 'Verification email sent.',
         resendButton: 'Resend verification email',
+        resendButtonCountdown: 'Resend verification email ({seconds}s)',
         backToSignIn: 'Back to sign in',
         errors: {
           missingEmail: "We couldn't find your signup email. Go back and try signing up again.",
@@ -1537,6 +1539,7 @@ const translations: Record<Locale, Translations> = {
         automaticRedirect: 'Questa pagina si aggiornerà automaticamente dopo la verifica.',
         sentMessage: 'Email di verifica inviata.',
         resendButton: "Invia di nuovo l'email di verifica",
+        resendButtonCountdown: "Invia di nuovo l'email di verifica ({seconds}s)",
         backToSignIn: "Torna all'accesso",
         errors: {
           missingEmail:
@@ -2259,6 +2262,7 @@ const translations: Record<Locale, Translations> = {
         automaticRedirect: 'Esta página se redirigirá automáticamente cuando verifiques tu correo.',
         sentMessage: 'Correo de verificación enviado.',
         resendButton: 'Reenviar correo de verificación',
+        resendButtonCountdown: 'Reenviar correo de verificación ({seconds}s)',
         backToSignIn: 'Volver a iniciar sesión',
         errors: {
           missingEmail:
@@ -2983,6 +2987,7 @@ const translations: Record<Locale, Translations> = {
           'Cette page vous redirigera automatiquement une fois votre e-mail vérifié.',
         sentMessage: 'E-mail de vérification envoyé.',
         resendButton: "Renvoyer l'e-mail de vérification",
+        resendButtonCountdown: "Renvoyer l'e-mail de vérification ({seconds}s)",
         backToSignIn: 'Retour à la connexion',
         errors: {
           missingEmail:
@@ -3709,6 +3714,7 @@ const translations: Record<Locale, Translations> = {
           'Diese Seite leitet Sie automatisch weiter, sobald Ihre E-Mail bestätigt wurde.',
         sentMessage: 'Bestätigungs-E-Mail gesendet.',
         resendButton: 'Bestätigungs-E-Mail erneut senden',
+        resendButtonCountdown: 'Bestätigungs-E-Mail erneut senden ({seconds}s)',
         backToSignIn: 'Zurück zur Anmeldung',
         errors: {
           missingEmail:

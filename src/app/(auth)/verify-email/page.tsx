@@ -15,12 +15,17 @@ import { useI18n } from '@/lib/i18n';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 
+const INITIAL_RESEND_COUNTDOWN_SECONDS = 15;
+
 export default function VerifyEmailPage() {
   const router = useRouter();
   const { authUser, refreshUser } = useAuth();
   const { t } = useI18n();
   const tv = t.auth.verifyEmail;
   const [resending, setResending] = useState(false);
+  const [resendCountdownSeconds, setResendCountdownSeconds] = useState(
+    INITIAL_RESEND_COUNTDOWN_SECONDS,
+  );
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -28,6 +33,18 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     setPendingEmail(getPendingVerificationEmail());
   }, []);
+
+  useEffect(() => {
+    if (resendCountdownSeconds <= 0) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setResendCountdownSeconds((currentSeconds) => Math.max(0, currentSeconds - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [resendCountdownSeconds]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -88,11 +105,17 @@ export default function VerifyEmailPage() {
 
       setPendingVerificationEmail(targetEmail);
       setPendingEmail(targetEmail);
+      setResendCountdownSeconds(INITIAL_RESEND_COUNTDOWN_SECONDS);
       setSent(true);
     } finally {
       setResending(false);
     }
   };
+
+  const resendButtonLabel =
+    resendCountdownSeconds > 0
+      ? tv.resendButtonCountdown.replace('{seconds}', String(resendCountdownSeconds))
+      : tv.resendButton;
 
   return (
     <div className="flex-1 from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -119,8 +142,14 @@ export default function VerifyEmailPage() {
               <AlertDescription>{tv.sentMessage}</AlertDescription>
             </Alert>
           )}
-          <Button variant="secondary" className="w-full" loading={resending} onClick={handleResend}>
-            {tv.resendButton}
+          <Button
+            variant="secondary"
+            className="w-full"
+            loading={resending}
+            onClick={handleResend}
+            disabled={resendCountdownSeconds > 0}
+          >
+            {resendButtonLabel}
           </Button>
           <Button variant="ghost" className="w-full" onClick={() => router.push('/login')}>
             {tv.backToSignIn}

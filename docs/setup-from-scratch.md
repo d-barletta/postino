@@ -115,7 +115,7 @@ Important:
 ## 7. Configure OpenRouter
 
 1. Create an API key.
-2. Choose a model (default recommended: `openai/gpt-4o-mini`).
+2. Choose a model (default recommended: `anthropic/claude-haiku-4.5`).
 3. Collect:
 
 - `OPEN_ROUTER_API_KEY`

@@ -29,7 +29,7 @@ No fixed free plan. Usage is token-based.
 
 Typical model choices:
 
-- `openai/gpt-4o-mini` for cost-effective production.
+- `anthropic/claude-haiku-4.5` as the current default model.
 - More advanced models increase quality and cost.
 
 Postino notes:

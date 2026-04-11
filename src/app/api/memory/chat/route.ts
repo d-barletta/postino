@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { DEFAULT_LLM_MODEL } from '@/lib/llm';
 import { getModelPricing, calculateCost } from '@/lib/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
@@ -35,9 +36,7 @@ export async function POST(request: NextRequest) {
     const llmApiKey =
       (settingsData?.llmApiKey as string | undefined) || process.env.OPEN_ROUTER_API_KEY || '';
     const llmModel =
-      (settingsData?.llmModel as string | undefined) ||
-      process.env.LLM_MODEL ||
-      'openai/gpt-4o-mini';
+      (settingsData?.llmModel as string | undefined) || process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
 
     if (!llmApiKey) {
       return NextResponse.json({ error: 'LLM API key is not configured' }, { status: 500 });
