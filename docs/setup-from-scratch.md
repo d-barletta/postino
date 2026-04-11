@@ -32,7 +32,7 @@ npm install
 - Publishable key
 - Service role key
 
-3. Keep service role key server-only.
+1. Keep service role key server-only.
 
 ## 4. Database Schema Setup
 
@@ -56,12 +56,12 @@ Important:
 - Local: `http://localhost:3000` (for local testing)
 - Production: `https://<your-domain>`
 
-3. Collect:
+1. Collect:
 
 - OneSignal App ID
 - OneSignal REST API Key
 
-4. Keep `public/OneSignalSDKWorker.js` reachable at:
+1. Keep `public/OneSignalSDKWorker.js` reachable at:
 
 - `https://<your-domain>/OneSignalSDKWorker.js`
 
@@ -72,7 +72,7 @@ Important:
 
 - `https://<your-domain>/api/email/inbound`
 
-3. Collect:
+1. Collect:
 
 - Mailgun API key
 - Mailgun webhook signing key
@@ -188,7 +188,7 @@ For frequent processing on Vercel Hobby, use GitHub Actions:
 - `POSTINO_WORKER_URL` = `https://<your-domain>/api/internal/email-jobs/process`
 - `EMAIL_JOBS_WORKER_SECRET` = same value as env `EMAIL_JOBS_WORKER_SECRET`
 
-2. Ensure worker route is reachable.
+1. Ensure worker route is reachable.
 
 ## 13. First Admin Bootstrap
 

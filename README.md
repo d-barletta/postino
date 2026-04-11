@@ -19,21 +19,21 @@ Postino is an AI-powered email redirector. Each user gets a private assigned add
 npm install
 ```
 
-2. Create environment file.
+1. Create environment file.
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-3. Fill all required variables in `.env.local`.
+1. Fill all required variables in `.env.local`.
 
-4. Start development server.
+2. Start development server.
 
 ```bash
 npm run dev
 ```
 
-5. Validate before deploy.
+1. Validate before deploy.
 
 ```bash
 npm run lint

@@ -6,7 +6,7 @@ Prices change frequently. Always verify current pricing on provider pages before
 
 ## 1. Supabase (Auth + Postgres + Storage)
 
-Provider: https://supabase.com/pricing
+Provider: <https://supabase.com/pricing>
 
 | Feature                  | Free                | Pro                     | Recommended                         |
 | ------------------------ | ------------------- | ----------------------- | ----------------------------------- |
@@ -23,7 +23,7 @@ Postino notes:
 
 ## 2. OpenRouter (LLM)
 
-Provider: https://openrouter.ai/pricing
+Provider: <https://openrouter.ai/pricing>
 
 No fixed free plan. Usage is token-based.
 
@@ -39,7 +39,7 @@ Postino notes:
 
 ## 3. Mailgun (Inbound + Optional Outbound)
 
-Provider: https://www.mailgun.com/pricing/
+Provider: <https://www.mailgun.com/pricing/>
 
 Typical tiers:
 
@@ -54,7 +54,7 @@ Postino notes:
 
 ## 4. OneSignal (Web Push)
 
-Provider: https://onesignal.com/pricing
+Provider: <https://onesignal.com/pricing>
 
 Typical tiers:
 
@@ -69,7 +69,7 @@ Postino notes:
 
 ## 5. Vercel (Hosting)
 
-Provider: https://vercel.com/pricing
+Provider: <https://vercel.com/pricing>
 
 Typical tiers:
 
@@ -83,7 +83,7 @@ Postino notes:
 
 ## 6. Supermemory (Optional Memory Augmentation)
 
-Provider: https://supermemory.ai
+Provider: <https://supermemory.ai>
 
 Optional service. Used only if memory features are enabled.
 
@@ -94,7 +94,7 @@ Postino notes:
 
 ## 7. Google Maps Geocoding (Optional)
 
-Provider: https://developers.google.com/maps/documentation/geocoding
+Provider: <https://developers.google.com/maps/documentation/geocoding>
 
 Optional for better place resolution than free Nominatim fallback.
 
