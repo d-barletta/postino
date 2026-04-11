@@ -36,11 +36,15 @@ function canUseOneSignalOnCurrentOrigin(): boolean {
     return false;
   }
   if (isLocalRuntime()) {
-    console.log('[Push] canUseOneSignalOnCurrentOrigin: false — local/dev runtime, skipping OneSignal');
+    console.log(
+      '[Push] canUseOneSignalOnCurrentOrigin: false — local/dev runtime, skipping OneSignal',
+    );
     return false;
   }
   if (!ONESIGNAL_APP_ID) {
-    console.warn('[Push] canUseOneSignalOnCurrentOrigin: false — NEXT_PUBLIC_ONESIGNAL_APP_ID is not set');
+    console.warn(
+      '[Push] canUseOneSignalOnCurrentOrigin: false — NEXT_PUBLIC_ONESIGNAL_APP_ID is not set',
+    );
     return false;
   }
   if (!APP_URL) {
@@ -60,7 +64,10 @@ function canUseOneSignalOnCurrentOrigin(): boolean {
     }
     return match;
   } catch {
-    console.error('[Push] canUseOneSignalOnCurrentOrigin: false — failed to parse NEXT_PUBLIC_APP_URL:', APP_URL);
+    console.error(
+      '[Push] canUseOneSignalOnCurrentOrigin: false — failed to parse NEXT_PUBLIC_APP_URL:',
+      APP_URL,
+    );
     return false;
   }
 }

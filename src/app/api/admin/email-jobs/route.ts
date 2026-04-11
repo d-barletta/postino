@@ -181,7 +181,9 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json().catch(() => ({}))) as { batchSize?: number };
     const batchSize =
-      typeof body.batchSize === 'number' ? Math.min(Math.max(Math.floor(body.batchSize), 1), 50) : 10;
+      typeof body.batchSize === 'number'
+        ? Math.min(Math.max(Math.floor(body.batchSize), 1), 50)
+        : 10;
 
     const result = await processEmailJobsBatch(batchSize);
     return NextResponse.json({ success: true, ...result });

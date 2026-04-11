@@ -11,7 +11,9 @@ const AuthProvider = dynamic(() => import('./AuthProvider').then((m) => m.AuthPr
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    console.log('[Push] ClientProviders mounted — cleaning up legacy artifacts and initializing OneSignal');
+    console.log(
+      '[Push] ClientProviders mounted — cleaning up legacy artifacts and initializing OneSignal',
+    );
     cleanupLegacyPushArtifacts();
     initOneSignal();
   }, []);

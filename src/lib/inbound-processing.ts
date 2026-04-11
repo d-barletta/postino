@@ -344,7 +344,11 @@ async function sendEmailPushNotification(
       console.error('Failed to send OneSignal push notification:', response.status, detail);
     } else {
       const responseBody = await response.text().catch(() => '');
-      console.log('[Push] sendEmailPushNotification: OneSignal API response OK:', response.status, responseBody);
+      console.log(
+        '[Push] sendEmailPushNotification: OneSignal API response OK:',
+        response.status,
+        responseBody,
+      );
     }
   } catch (err) {
     console.error('Failed to send push notification:', err);
