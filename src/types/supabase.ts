@@ -575,6 +575,18 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_email_stats_aggregate: {
+        Args: { from_date?: string | null };
+        Returns: { total_tokens: number; total_cost: number }[];
+      };
+      get_memory_stats_aggregate: {
+        Args: Record<string, never>;
+        Returns: { total_memory_tokens: number; total_memory_cost: number }[];
+      };
+      get_user_email_stats_aggregate: {
+        Args: { p_user_id: string; from_date?: string | null };
+        Returns: { total_tokens: number; total_cost: number }[];
+      };
       remove_entity_fields_from_analysis: {
         Args: { log_ids: string[] };
         Returns: undefined;

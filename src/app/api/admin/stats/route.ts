@@ -29,14 +29,6 @@ export async function GET(request: NextRequest) {
       return q;
     };
 
-    const buildBaseAgg = (): any => {
-      let q = supabase
-        .from('email_logs')
-        .select('total_tokens:tokens_used.sum(), total_cost:estimated_cost.sum()');
-      if (from) q = q.gte('received_at', from.toISOString());
-      return q;
-    };
-
     // Use server-side aggregation queries to avoid reading every document.
     // totalUsers and activeUsers are always all-time counts (not filtered by period).
     const [
@@ -55,13 +47,10 @@ export async function GET(request: NextRequest) {
       buildBaseCount().eq('status', 'forwarded'),
       buildBaseCount().eq('status', 'error'),
       buildBaseCount().eq('status', 'skipped'),
-      buildBaseAgg(),
-      // Memory chat token usage is stored on the user row (lifetime running total).
-      supabase
-        .from('users')
-        .select(
-          'total_memory_tokens:memory_tokens_used.sum(), total_memory_cost:memory_estimated_cost.sum()',
-        ),
+      supabase.rpc('get_email_stats_aggregate', {
+        from_date: from ? from.toISOString() : null,
+      }),
+      supabase.rpc('get_memory_stats_aggregate'),
     ]);
 
     if (emailAggResult.error) {
@@ -73,12 +62,14 @@ export async function GET(request: NextRequest) {
       throw memoryAggResult.error;
     }
 
-    const aggData = emailAggResult.data?.[0] as
-      | { total_tokens: number | null; total_cost: number | null }
-      | undefined;
-    const memoryAggData = memoryAggResult.data?.[0] as
-      | { total_memory_tokens: number | null; total_memory_cost: number | null }
-      | undefined;
+    const aggData = (emailAggResult.data?.[0] ?? {}) as {
+      total_tokens?: number | null;
+      total_cost?: number | null;
+    };
+    const memoryAggData = (memoryAggResult.data?.[0] ?? {}) as {
+      total_memory_tokens?: number | null;
+      total_memory_cost?: number | null;
+    };
 
     const stats = {
       totalUsers: totalUsersResult.count ?? 0,

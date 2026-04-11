@@ -33,12 +33,10 @@ export async function GET(request: NextRequest) {
     };
 
     const buildBaseAgg = (): any => {
-      let q = supabase
-        .from('email_logs')
-        .select('total_tokens:tokens_used.sum(), total_cost:estimated_cost.sum()')
-        .eq('user_id', user.id);
-      if (from) q = q.gte('received_at', from.toISOString());
-      return q;
+      return supabase.rpc('get_user_email_stats_aggregate', {
+        p_user_id: user.id,
+        from_date: from ? from.toISOString() : null,
+      });
     };
 
     const [totalResult, forwardedResult, errorResult, skippedResult, aggResult, userResult] =
@@ -55,9 +53,10 @@ export async function GET(request: NextRequest) {
           .single(),
       ]);
 
-    const aggData = aggResult.data?.[0] as
-      | { total_tokens: number | null; total_cost: number | null }
-      | undefined;
+    const aggData = (aggResult.data?.[0] ?? {}) as {
+      total_tokens?: number | null;
+      total_cost?: number | null;
+    };
     const userData = userResult.data as {
       memory_tokens_used: number | null;
       memory_estimated_cost: number | null;
