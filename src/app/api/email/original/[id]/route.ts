@@ -39,6 +39,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
+    const realAttachments = attachments.filter((a) => !a.contentId);
+
     return NextResponse.json({
       id,
       fromAddress: logRow.from_address,
@@ -50,8 +52,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       receivedAt: logRow.received_at ?? null,
       attachmentCount: logRow.attachment_count ?? 0,
       attachmentNames: logRow.attachment_names ?? [],
-      attachments: attachments.map((attachment, index) => ({
-        id: String(index + 1),
+      attachments: realAttachments.map((attachment, index) => ({
+        id: String(attachments.indexOf(attachment) + 1),
         filename: attachment.filename,
         contentType: attachment.contentType,
         canDownload:
