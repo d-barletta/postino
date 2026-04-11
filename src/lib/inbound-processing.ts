@@ -426,7 +426,11 @@ export async function processQueuedInboundPayload(
           subject: payload.subject,
           wasSummarized: false,
           ...(payload.attachments && payload.attachments.length > 0
-            ? { attachmentNames: payload.attachments.map((a) => a.filename) }
+            ? {
+                attachmentNames: payload.attachments
+                  .filter((a) => !a.contentId)
+                  .map((a) => a.filename),
+              }
             : {}),
         },
         analysisResult.analysis,
@@ -647,9 +651,11 @@ export async function processQueuedInboundPayload(
   );
 
   // Collect attachment names for the LLM prompt and the notification box.
+  // Exclude inline attachments (embedded images referenced via cid: in HTML body).
   const attachmentNames =
     effectiveAttachments && effectiveAttachments.length > 0
       ? effectiveAttachments
+          .filter((att) => !att.contentId)
           .map((att) => att.filename)
           .filter((name): name is string => Boolean(name))
       : undefined;

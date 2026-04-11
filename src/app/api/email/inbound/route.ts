@@ -35,6 +35,8 @@ interface StoreAttachmentRef {
   name?: string;
   contentType?: string;
   size?: number;
+  /** Stripped Content-ID for inline attachments (angle brackets removed). */
+  contentId?: string;
 }
 
 /** Extract a bare email address from `Name <email@example.com>` style headers. */
@@ -196,6 +198,11 @@ function snapshotWebhookFormData(formData: FormData): WebhookFormSnapshot {
   };
 }
 
+/** Strip enclosing angle brackets from a Content-ID value (e.g. `<abc@def>` → `abc@def`). */
+function stripContentId(raw: string): string {
+  return raw.replace(/^</, '').replace(/>$/, '');
+}
+
 function parseStoreAttachments(formData: FormData): StoreAttachmentRef[] {
   const raw = formData.get('attachments');
   if (typeof raw !== 'string' || !raw.trim()) return [];
@@ -218,11 +225,17 @@ function parseStoreAttachments(formData: FormData): StoreAttachmentRef[] {
             ? Math.max(0, Math.floor(record.size))
             : undefined;
 
+        const strippedContentId =
+          typeof record['content-id'] === 'string'
+            ? stripContentId(record['content-id'].trim())
+            : '';
+
         return {
           url: rawUrl,
           ...(rawName ? { name: rawName } : {}),
           ...(rawType ? { contentType: rawType } : {}),
           ...(typeof rawSize === 'number' ? { size: rawSize } : {}),
+          ...(strippedContentId ? { contentId: strippedContentId } : {}),
         };
       })
       .filter((entry): entry is StoreAttachmentRef => entry !== null);
@@ -255,11 +268,17 @@ function parseAttachmentsFromStoredMessage(data: unknown): StoreAttachmentRef[] 
           ? Math.max(0, Math.floor(record.size))
           : undefined;
 
+      const strippedContentId =
+        typeof record['content-id'] === 'string'
+          ? stripContentId(record['content-id'].trim())
+          : '';
+
       return {
         url: rawUrl,
         ...(rawName ? { name: rawName } : {}),
         ...(rawType ? { contentType: rawType } : {}),
         ...(typeof rawSize === 'number' ? { size: rawSize } : {}),
+        ...(strippedContentId ? { contentId: strippedContentId } : {}),
       };
     })
     .filter((entry): entry is StoreAttachmentRef => entry !== null);
@@ -887,7 +906,7 @@ export async function POST(request: NextRequest) {
       try {
         const parsed = JSON.parse(contentIdMapRaw) as Record<string, string | string[]>;
         for (const [cid, refs] of Object.entries(parsed)) {
-          const strippedCid = cid.replace(/^<|>$/, '');
+          const strippedCid = stripContentId(cid);
           const referenceValues = Array.isArray(refs) ? refs : [refs];
           for (const refValue of referenceValues) {
             if (typeof refValue === 'string') {
@@ -1220,7 +1239,9 @@ export async function POST(request: NextRequest) {
         const resolvedFilename = ensureFilenameExtension(rawFilename, resolvedContentType);
 
         const contentId =
-          contentIdFieldMap.get(attachmentRef.url) || contentIdFieldMap.get(safeUrl);
+          attachmentRef.contentId ||
+          contentIdFieldMap.get(attachmentRef.url) ||
+          contentIdFieldMap.get(safeUrl);
         attachments.push({
           filename: resolvedFilename,
           content,
