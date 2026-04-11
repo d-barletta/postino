@@ -314,7 +314,6 @@ async function sendEmailPushNotification(
       contents: {
         en: subject,
       },
-      url: absoluteEmailUrl || undefined,
       web_url: absoluteEmailUrl || undefined,
       chrome_web_icon: iconUrl,
       chrome_web_badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
