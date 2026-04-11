@@ -126,6 +126,7 @@ export function useAuthState() {
       if (!isActive) return;
 
       const sbUser = session?.user ?? null;
+      const accessToken = session?.access_token ?? null;
       setAuthUser(sbUser);
       setLoading(false);
 
@@ -133,8 +134,8 @@ export function useAuthState() {
         // Supabase documents a deadlock bug when async auth work runs directly
         // inside onAuthStateChange. Defer the follow-up fetch to the next task.
         window.setTimeout(() => {
-          if (isActive && session.access_token) {
-            void fetchUserData(session.access_token);
+          if (isActive && accessToken) {
+            void fetchUserData(accessToken);
           }
         }, 0);
       } else {
