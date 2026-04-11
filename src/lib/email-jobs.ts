@@ -109,7 +109,7 @@ async function claimJob(
 async function markJobDone(jobId: string): Promise<void> {
   const supabase = createAdminClient();
   const now = new Date().toISOString();
-  await supabase
+  const { error } = await supabase
     .from('email_jobs')
     .update({
       status: 'done',
@@ -119,6 +119,7 @@ async function markJobDone(jobId: string): Promise<void> {
       completed_at: now,
     })
     .eq('id', jobId);
+  if (error) console.error('[email-jobs] markJobDone failed (job:', jobId, '):', error);
   await updateWebhookLogForJob(jobId, 'processed', 'done');
 }
 
@@ -128,15 +129,22 @@ async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Pro
   const notBefore = new Date(Date.now() + delayMs).toISOString();
   const now = new Date().toISOString();
 
-  await supabase
+  const { error: logErr } = await supabase
     .from('email_logs')
     .update({
       status: 'received',
       error_message: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
     })
     .eq('id', job.payload.logId);
+  if (logErr)
+    console.error(
+      '[email-jobs] markJobRetry: email_log update failed (log:',
+      job.payload.logId,
+      '):',
+      logErr,
+    );
 
-  await supabase
+  const { error: jobErr } = await supabase
     .from('email_jobs')
     .update({
       status: 'retrying',
@@ -147,6 +155,8 @@ async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Pro
       updated_at: now,
     })
     .eq('id', job.id);
+  if (jobErr)
+    console.error('[email-jobs] markJobRetry: email_job update failed (job:', job.id, '):', jobErr);
 
   await updateWebhookLogForJob(job.id, 'retrying', 'retrying');
 }
@@ -155,12 +165,19 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
   const supabase = createAdminClient();
   const now = new Date().toISOString();
 
-  await supabase
+  const { error: logErr } = await supabase
     .from('email_logs')
     .update({ status: 'error', error_message: errMsg })
     .eq('id', job.payload.logId);
+  if (logErr)
+    console.error(
+      '[email-jobs] markJobFailed: email_log update failed (log:',
+      job.payload.logId,
+      '):',
+      logErr,
+    );
 
-  await supabase
+  const { error: jobErr } = await supabase
     .from('email_jobs')
     .update({
       status: 'failed',
@@ -171,6 +188,13 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
       completed_at: now,
     })
     .eq('id', job.id);
+  if (jobErr)
+    console.error(
+      '[email-jobs] markJobFailed: email_job update failed (job:',
+      job.id,
+      '):',
+      jobErr,
+    );
 
   await sendEmailCompletionPushNotification(
     job.payload.userId,
@@ -211,10 +235,17 @@ async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> 
   }
 
   const now = new Date().toISOString();
-  await supabase
+  const { error: procErr } = await supabase
     .from('email_logs')
     .update({ status: 'processing', processing_started_at: now })
     .eq('id', job.payload.logId);
+  if (procErr)
+    console.error(
+      '[email-jobs] processClaimedJob: email_log status update failed (log:',
+      job.payload.logId,
+      '):',
+      procErr,
+    );
   await updateWebhookLogForJob(job.id, 'processing', 'processing');
 
   try {

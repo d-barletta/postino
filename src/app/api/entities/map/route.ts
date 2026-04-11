@@ -153,11 +153,12 @@ export async function POST(request: NextRequest) {
       totalEmails,
     };
 
-    await supabase.from('entity_place_maps').upsert({
+    const { error: upsertErr } = await supabase.from('entity_place_maps').upsert({
       user_id: user.id,
       data: { ...graph, version: PLACE_MAP_VERSION } as unknown as import('@/types/supabase').Json,
       updated_at: new Date().toISOString(),
     });
+    if (upsertErr) console.error('[entities/map] upsert failed:', upsertErr);
 
     return NextResponse.json({ graph });
   } catch (err) {

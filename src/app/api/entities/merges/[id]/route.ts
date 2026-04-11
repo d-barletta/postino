@@ -81,26 +81,31 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         new Set([...trimmedAliases, ...overlappingRows.flatMap((row) => row.aliases as string[])]),
       );
 
-      await supabase
+      const { error: updateErr } = await supabase
         .from('entity_merges')
         .update({ canonical: trimmedCanonical, aliases: unifiedAliases })
         .eq('id', id);
+      if (updateErr)
+        console.error('[entities/merges/[id]] PATCH unified update failed:', updateErr);
 
-      await supabase
+      const { error: deleteErr } = await supabase
         .from('entity_merges')
         .delete()
         .in(
           'id',
           overlappingRows.map((r) => r.id),
         );
+      if (deleteErr)
+        console.error('[entities/merges/[id]] PATCH overlapping delete failed:', deleteErr);
 
       return NextResponse.json({ success: true });
     }
 
-    await supabase
+    const { error: updateErr } = await supabase
       .from('entity_merges')
       .update({ canonical: trimmedCanonical, aliases: trimmedAliases })
       .eq('id', id);
+    if (updateErr) console.error('[entities/merges/[id]] PATCH update failed:', updateErr);
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -135,7 +140,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await supabase.from('entity_merges').delete().eq('id', id);
+    const { error: deleteErr } = await supabase.from('entity_merges').delete().eq('id', id);
+    if (deleteErr) console.error('[entities/merges/[id]] DELETE failed:', deleteErr);
     return NextResponse.json({ success: true });
   } catch (err) {
     return handleUserError(err, 'entities/merges/[id] DELETE');

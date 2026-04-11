@@ -79,16 +79,21 @@ export async function GET(request: NextRequest) {
         ? requestedLocale
         : 'en';
 
-      await supabase.from('users').insert({
-        id: user.id,
-        email: user.email ?? '',
-        assigned_email: assignedEmail,
-        created_at: new Date().toISOString(),
-        is_admin: false,
-        is_active: false,
-        suspended: false,
-        analysis_output_language: analysisOutputLanguage,
-      });
+      await supabase
+        .from('users')
+        .insert({
+          id: user.id,
+          email: user.email ?? '',
+          assigned_email: assignedEmail,
+          created_at: new Date().toISOString(),
+          is_admin: false,
+          is_active: false,
+          suspended: false,
+          analysis_output_language: analysisOutputLanguage,
+        })
+        .then(({ error }) => {
+          if (error) console.error('[auth/me] users insert failed:', error);
+        });
       const { data: newUserData } = await supabase
         .from('users')
         .select('*')
@@ -100,7 +105,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
       }
       if (!!user.email_confirmed_at && !userData.is_active && !userData.suspended) {
-        await supabase.from('users').update({ is_active: true }).eq('id', user.id);
+        const { error: activateErr } = await supabase
+          .from('users')
+          .update({ is_active: true })
+          .eq('id', user.id);
+        if (activateErr) console.error('[auth/me] users activate update failed:', activateErr);
         const { data: refreshed } = await supabase
           .from('users')
           .select('*')

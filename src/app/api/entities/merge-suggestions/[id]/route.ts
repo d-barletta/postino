@@ -41,7 +41,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await supabase.from('entity_merge_suggestions').update({ status }).eq('id', id);
+    const { error } = await supabase
+      .from('entity_merge_suggestions')
+      .update({ status })
+      .eq('id', id);
+    if (error) console.error('[entities/merge-suggestions/[id]] update failed:', error);
 
     return NextResponse.json({ id, status });
   } catch (err) {

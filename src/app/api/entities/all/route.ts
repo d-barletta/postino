@@ -12,13 +12,16 @@ export async function DELETE(request: NextRequest) {
     const uid = user.id;
 
     // Delete merges, suggestions, cached graphs in parallel
-    await Promise.all([
+    const deleteResults = await Promise.all([
       supabase.from('entity_merges').delete().eq('user_id', uid),
       supabase.from('entity_merge_suggestions').delete().eq('user_id', uid),
       supabase.from('entity_relations').delete().eq('user_id', uid),
       supabase.from('entity_flows').delete().eq('user_id', uid),
       supabase.from('entity_place_maps').delete().eq('user_id', uid),
     ]);
+    deleteResults.forEach(({ error }, i) => {
+      if (error) console.error(`[entities/all] DELETE parallel operation ${i} failed:`, error);
+    });
 
     // Clear extracted entity fields from email logs (set to NULL)
     // We fetch only IDs of logs with analysis and update in batches
@@ -33,7 +36,11 @@ export async function DELETE(request: NextRequest) {
     for (let i = 0; i < analyzedIds.length; i += BATCH_SIZE) {
       const chunk = analyzedIds.slice(i, i + BATCH_SIZE);
       // Remove entity fields from analysis JSONB using PostgreSQL jsonb subtraction
-      await supabase.rpc('remove_entity_fields_from_analysis', { log_ids: chunk });
+      const { error } = await supabase.rpc('remove_entity_fields_from_analysis', {
+        log_ids: chunk,
+      });
+      if (error)
+        console.error('[entities/all] remove_entity_fields_from_analysis rpc failed:', error);
     }
 
     return NextResponse.json({ success: true });

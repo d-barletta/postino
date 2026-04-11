@@ -219,13 +219,14 @@ async function readCachedPlace(label: string): Promise<GeocodeResult | null> {
 
 async function writeCachedPlace(place: GeocodeResult): Promise<void> {
   const supabase = createAdminClient();
-  await supabase.from('place_geocodes').upsert({
+  const { error } = await supabase.from('place_geocodes').upsert({
     key: getPlaceCacheId(place.name),
     name: place.name,
     latitude: place.latitude,
     longitude: place.longitude,
     display_name: place.displayName ?? null,
   });
+  if (error) console.error('[lib/place-geocoding] writeCachedPlace upsert failed:', error);
 }
 
 export async function geocodePlaceName(

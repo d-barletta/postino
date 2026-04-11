@@ -84,7 +84,7 @@ export async function getUserById(uid: string): Promise<User | null> {
 
 export async function createUser(uid: string, data: Omit<User, 'uid'>): Promise<void> {
   const supabase = createAdminClient();
-  await supabase.from('users').insert({
+  const { error } = await supabase.from('users').insert({
     id: uid,
     email: data.email,
     assigned_email: data.assignedEmail,
@@ -97,6 +97,7 @@ export async function createUser(uid: string, data: Omit<User, 'uid'>): Promise<
     display_name: data.displayName ?? null,
     analysis_output_language: data.analysisOutputLanguage ?? 'en',
   });
+  if (error) console.error('[lib/database] createUser failed:', error);
 }
 
 export async function updateUser(uid: string, data: Partial<User>): Promise<void> {
@@ -115,7 +116,8 @@ export async function updateUser(uid: string, data: Partial<User>): Promise<void
   if (data.displayName !== undefined) updates.display_name = data.displayName;
   if (data.analysisOutputLanguage !== undefined)
     updates.analysis_output_language = data.analysisOutputLanguage;
-  await supabase.from('users').update(updates).eq('id', uid);
+  const { error } = await supabase.from('users').update(updates).eq('id', uid);
+  if (error) console.error('[lib/database] updateUser failed:', error);
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +137,7 @@ export async function getRulesByUser(userId: string, limitCount = 200): Promise<
 
 export async function createRule(data: Omit<Rule, 'id'>): Promise<string> {
   const supabase = createAdminClient();
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from('rules')
     .insert({
       user_id: data.userId,
@@ -151,6 +153,7 @@ export async function createRule(data: Omit<Rule, 'id'>): Promise<string> {
     })
     .select('id')
     .single();
+  if (error) console.error('[lib/database] createRule failed:', error);
   return row?.id ?? '';
 }
 
@@ -166,12 +169,14 @@ export async function updateRule(id: string, data: Partial<Rule>): Promise<void>
   if (data.isActive !== undefined) updates.is_active = data.isActive;
   if (data.sortOrder !== undefined) updates.sort_order = data.sortOrder;
   if (data.updatedAt) updates.updated_at = data.updatedAt.toISOString();
-  await supabase.from('rules').update(updates).eq('id', id);
+  const { error } = await supabase.from('rules').update(updates).eq('id', id);
+  if (error) console.error('[lib/database] updateRule failed:', error);
 }
 
 export async function deleteRule(id: string): Promise<void> {
   const supabase = createAdminClient();
-  await supabase.from('rules').delete().eq('id', id);
+  const { error } = await supabase.from('rules').delete().eq('id', id);
+  if (error) console.error('[lib/database] deleteRule failed:', error);
 }
 
 // ---------------------------------------------------------------------------

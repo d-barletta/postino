@@ -373,11 +373,12 @@ export async function POST(request: NextRequest) {
       totalEmails,
     };
 
-    await supabase.from('entity_flows').upsert({
+    const { error: upsertErr } = await supabase.from('entity_flows').upsert({
       user_id: user.id,
       data: { ...graph, version: FLOW_GRAPH_VERSION } as unknown as import('@/types/supabase').Json,
       updated_at: new Date().toISOString(),
     });
+    if (upsertErr) console.error('[entities/flow] upsert failed:', upsertErr);
 
     return NextResponse.json({ graph });
   } catch (err) {

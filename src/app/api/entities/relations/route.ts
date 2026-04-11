@@ -284,11 +284,12 @@ export async function POST(request: NextRequest) {
     const generatedAt = new Date().toISOString();
     const graph: EntityRelationGraph = { nodes, edges, generatedAt, totalEmails };
 
-    await supabase.from('entity_relations').upsert({
+    const { error: upsertErr } = await supabase.from('entity_relations').upsert({
       user_id: user.id,
       data: graph as unknown as import('@/types/supabase').Json,
       updated_at: new Date().toISOString(),
     });
+    if (upsertErr) console.error('[entities/relations] upsert failed:', upsertErr);
 
     return NextResponse.json({ graph });
   } catch (err) {

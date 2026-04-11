@@ -326,7 +326,12 @@ Return an empty array if no confident merges are found. Only include suggestions
     }
 
     // Delete old rejected/accepted suggestions before storing new ones
-    await supabase.from('entity_merge_suggestions').delete().eq('user_id', uid);
+    const { error: deleteErr } = await supabase
+      .from('entity_merge_suggestions')
+      .delete()
+      .eq('user_id', uid);
+    if (deleteErr)
+      console.error('[entities/merge-suggestions] DELETE old suggestions failed:', deleteErr);
 
     // Store new suggestions
     const now = new Date().toISOString();

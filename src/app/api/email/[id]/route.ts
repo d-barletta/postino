@@ -40,7 +40,8 @@ export async function DELETE(
         .map((attachment) => deleteAttachmentFromStorage(attachment.storagePath!)),
     );
 
-    await supabase.from('email_logs').delete().eq('id', id);
+    const { error: deleteErr } = await supabase.from('email_logs').delete().eq('id', id);
+    if (deleteErr) console.error('[email/[id]] delete failed:', deleteErr);
 
     return NextResponse.json({ success: true });
   } catch (error) {
