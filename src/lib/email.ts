@@ -10,6 +10,20 @@ function stripCrlf(value: string): string {
   return value.replace(/[\r\n]/g, '');
 }
 
+/**
+ * Quote a display name for use in an RFC 5322 `From` header.
+ * If the name contains any special characters that would break the
+ * `Display Name <address@domain>` format, the name is wrapped in double
+ * quotes with internal backslashes and double-quotes escaped.
+ */
+function quoteDisplayName(name: string): string {
+  // RFC 5322 specials that require the display name to be quoted.
+  if (/[()<>\[\]:;@\\,."']/.test(name)) {
+    return '"' + name.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  }
+  return name;
+}
+
 export async function createTransport() {
   const supabase = createAdminClient();
   const { data: settingsRow } = await supabase
@@ -166,7 +180,7 @@ export async function sendEmail(options: {
     const safeSenderName = stripCrlf(options.senderName || '');
     const expandedName = rawName.replace(/\{senderName\}/g, safeSenderName).trim();
     const emailPart = settings.smtpFromEmail;
-    resolvedFrom = expandedName ? `${expandedName} <${emailPart}>` : emailPart;
+    resolvedFrom = expandedName ? `${quoteDisplayName(expandedName)} <${emailPart}>` : emailPart;
   } else {
     resolvedFrom =
       (typeof settings?.smtpFrom === 'string' ? settings.smtpFrom : '') ||
