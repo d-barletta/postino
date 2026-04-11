@@ -97,6 +97,7 @@ export default function EmailJobsLiveTab() {
         const token = await getIdToken();
         const res = await fetch('/api/admin/email-jobs', {
           headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
         });
         if (!res.ok) {
           setError('Failed to fetch queue data');
@@ -302,7 +303,7 @@ export default function EmailJobsLiveTab() {
                 onCheckedChange={setAutoRefresh}
                 aria-label="Enable realtime refresh"
               />
-              <span>Enable realtime (5s): {autoRefresh ? 'ON' : 'OFF'}</span>
+              <span>Realtime: {autoRefresh ? 'ON' : 'OFF'}</span>
             </label>
             <Badge variant="info">Last update: {formatDate(data?.latestUpdatedAt ?? null)}</Badge>
           </div>

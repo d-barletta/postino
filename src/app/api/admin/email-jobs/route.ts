@@ -162,14 +162,17 @@ export async function GET(request: NextRequest) {
         ? ((latestJobRows[0].created_at as string) ?? null)
         : null;
 
-    return NextResponse.json({
-      counts,
-      backlog: counts.pending + counts.retrying,
-      latestUpdatedAt,
-      recentFailures,
-      webhookLoggingEnabled,
-      recentWebhookRequests,
-    });
+    return NextResponse.json(
+      {
+        counts,
+        backlog: counts.pending + counts.retrying,
+        latestUpdatedAt,
+        recentFailures,
+        webhookLoggingEnabled,
+        recentWebhookRequests,
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     return handleAdminError(error, 'admin/email-jobs GET');
   }
@@ -196,10 +199,12 @@ export async function DELETE(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
     const supabase = createAdminClient();
-    await Promise.all([
-      supabase.from('mailgun_webhook_logs').delete().neq('id', ''),
-      supabase.from('email_jobs').delete().in('status', ['done', 'failed']),
+    const [logsResult, jobsResult] = await Promise.all([
+      supabase.from('mailgun_webhook_logs').delete().not('id', 'is', null),
+      supabase.from('email_jobs').delete().not('id', 'is', null),
     ]);
+    if (logsResult.error) throw logsResult.error;
+    if (jobsResult.error) throw jobsResult.error;
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleAdminError(error, 'admin/email-jobs DELETE');
