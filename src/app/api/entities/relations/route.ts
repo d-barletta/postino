@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 import type {
@@ -91,20 +91,25 @@ function collectNormalized(
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
 
-    const doc = await db.collection('entityRelations').doc(decoded.uid).get();
-    if (!doc.exists) {
+    const { data: row } = await supabase
+      .from('entity_relations')
+      .select('data, updated_at')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!row) {
       return NextResponse.json({ graph: null });
     }
 
-    const data = doc.data();
+    const data = row.data as EntityRelationGraph | null;
     return NextResponse.json({
       graph: {
         nodes: data?.nodes ?? [],
         edges: data?.edges ?? [],
-        generatedAt: data?.generatedAt ?? null,
+        generatedAt: data?.generatedAt ?? '',
         totalEmails: data?.totalEmails ?? 0,
       } satisfies EntityRelationGraph,
     });
@@ -118,29 +123,33 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
 
     // Fetch email logs and entity merges in parallel
-    const [snap, mergesSnap] = await Promise.all([
-      db
-        .collection('emailLogs')
-        .where('userId', '==', decoded.uid)
-        .orderBy('receivedAt', 'desc')
-        .limit(FETCH_LIMIT)
-        .get(),
-      db.collection('entityMerges').where('userId', '==', decoded.uid).limit(MERGES_LIMIT).get(),
+    const [logsResult, mergesResult] = await Promise.all([
+      supabase
+        .from('email_logs')
+        .select('email_analysis')
+        .eq('user_id', user.id)
+        .not('email_analysis', 'is', null)
+        .order('received_at', { ascending: false })
+        .limit(FETCH_LIMIT),
+      supabase
+        .from('entity_merges')
+        .select('category, canonical, aliases')
+        .eq('user_id', user.id)
+        .limit(MERGES_LIMIT),
     ]);
 
     // Build merges by category
     const mergesByCategory: Record<string, Array<{ canonical: string; aliases: string[] }>> = {};
-    for (const doc of mergesSnap.docs) {
-      const d = doc.data();
-      const cat = d.category as string;
+    for (const row of mergesResult.data ?? []) {
+      const cat = row.category as string;
       if (!mergesByCategory[cat]) mergesByCategory[cat] = [];
       mergesByCategory[cat].push({
-        canonical: d.canonical as string,
-        aliases: d.aliases as string[],
+        canonical: row.canonical as string,
+        aliases: row.aliases as string[],
       });
     }
 
@@ -163,8 +172,8 @@ export async function POST(request: NextRequest) {
 
     let totalEmails = 0;
 
-    for (const doc of snap.docs) {
-      const analysis = doc.data().emailAnalysis as Record<string, unknown> | undefined;
+    for (const row of logsResult.data ?? []) {
+      const analysis = row.email_analysis as Record<string, unknown> | undefined;
       if (!analysis) continue;
       totalEmails++;
 
@@ -275,15 +284,11 @@ export async function POST(request: NextRequest) {
     const generatedAt = new Date().toISOString();
     const graph: EntityRelationGraph = { nodes, edges, generatedAt, totalEmails };
 
-    // Persist to Firestore (merge: true to overwrite)
-    await db
-      .collection('entityRelations')
-      .doc(decoded.uid)
-      .set({
-        ...graph,
-        userId: decoded.uid,
-        updatedAt: new Date(),
-      });
+    await supabase.from('entity_relations').upsert({
+      user_id: user.id,
+      data: graph as unknown as import('@/types/supabase').Json,
+      updated_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ graph });
   } catch (err) {

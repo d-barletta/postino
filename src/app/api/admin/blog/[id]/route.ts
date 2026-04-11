@@ -1,24 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await verifyAdminRequest(request);
     const { id } = await params;
-    const db = adminDb();
-    const snap = await db.collection('blogArticles').doc(id).get();
-    if (!snap.exists) {
+    const supabase = createAdminClient();
+    const { data: row } = await supabase.from('blog_articles').select('*').eq('id', id).single();
+    if (!row) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    const data = snap.data()!;
     return NextResponse.json({
       article: {
-        id: snap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        thumbnailUrl: row.thumbnail_url,
+        published: row.published,
+        language: row.language,
+        translationGroupId: row.translation_group_id ?? null,
+        createdAt: row.created_at ?? null,
+        updatedAt: row.updated_at ?? null,
+        content: row.content,
+        tags: row.tags ?? [],
       },
     });
   } catch (error) {
@@ -30,7 +36,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     await verifyAdminRequest(request);
     const { id } = await params;
-    const db = adminDb();
+    const supabase = createAdminClient();
     const body = await request.json();
     const { title, content, tags, thumbnailUrl, published, language, translationGroupId } = body;
 
@@ -41,26 +47,31 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    const snap = await db.collection('blogArticles').doc(id).get();
-    if (!snap.exists) {
+    const { data: existing } = await supabase
+      .from('blog_articles')
+      .select('id')
+      .eq('id', id)
+      .single();
+    if (!existing) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    await db
-      .collection('blogArticles')
-      .doc(id)
+    await supabase
+      .from('blog_articles')
       .update({
         title: title.trim(),
-        content,
-        tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string') : [],
-        thumbnailUrl: typeof thumbnailUrl === 'string' ? thumbnailUrl.trim() : '',
+        thumbnail_url: typeof thumbnailUrl === 'string' ? thumbnailUrl.trim() : '',
         published: Boolean(published),
         language: typeof language === 'string' && language.trim() ? language.trim() : 'en',
-        ...(typeof translationGroupId === 'string' && translationGroupId.trim()
-          ? { translationGroupId: translationGroupId.trim() }
-          : {}),
-        updatedAt: new Date(),
-      });
+        translation_group_id:
+          typeof translationGroupId === 'string' && translationGroupId.trim()
+            ? translationGroupId.trim()
+            : null,
+        updated_at: new Date().toISOString(),
+        content,
+        tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string') : [],
+      })
+      .eq('id', id);
 
     revalidateTag('blog-articles', {});
     return NextResponse.json({ success: true });
@@ -76,12 +87,16 @@ export async function DELETE(
   try {
     await verifyAdminRequest(request);
     const { id } = await params;
-    const db = adminDb();
-    const snap = await db.collection('blogArticles').doc(id).get();
-    if (!snap.exists) {
+    const supabase = createAdminClient();
+    const { data: existing } = await supabase
+      .from('blog_articles')
+      .select('id')
+      .eq('id', id)
+      .single();
+    if (!existing) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    await db.collection('blogArticles').doc(id).delete();
+    await supabase.from('blog_articles').delete().eq('id', id);
     revalidateTag('blog-articles', {});
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 const MAX_IDS = 20;
 
 export async function POST(request: NextRequest) {
   try {
-    const { uid } = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
     const body = await request.json().catch(() => ({}));
     const ids: string[] = Array.isArray(body.ids)
@@ -19,33 +19,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ logs: [] });
     }
 
-    const db = adminDb();
-    const snapshots = await Promise.all(ids.map((id) => db.collection('emailLogs').doc(id).get()));
+    const supabase = createAdminClient();
+    const { data: rows } = await supabase
+      .from('email_logs')
+      .select('*')
+      .in('id', ids)
+      .eq('user_id', user.id);
 
-    const logs = snapshots
-      .filter((snap) => snap.exists && snap.data()?.userId === uid)
-      .map((snap) => {
-        const d = snap.data()!;
-        return {
-          id: snap.id,
-          toAddress: (d.toAddress as string) || '',
-          fromAddress: (d.fromAddress as string) || '',
-          ccAddress: (d.ccAddress as string | undefined) || undefined,
-          bccAddress: (d.bccAddress as string | undefined) || undefined,
-          subject: (d.subject as string) || '',
-          receivedAt: d.receivedAt?.toDate?.()?.toISOString() ?? null,
-          processedAt: d.processedAt?.toDate?.()?.toISOString() ?? null,
-          status: d.status,
-          ruleApplied: d.ruleApplied,
-          tokensUsed: d.tokensUsed,
-          estimatedCost: d.estimatedCost,
-          errorMessage: d.errorMessage,
-          attachmentCount: (d.attachmentCount as number) ?? 0,
-          attachmentNames: (d.attachmentNames as string[]) ?? [],
-          userId: d.userId,
-          emailAnalysis: d.emailAnalysis ?? null,
-        };
-      });
+    const logs = (rows ?? []).map((d) => ({
+      id: d.id,
+      toAddress: (d.to_address as string) || '',
+      fromAddress: (d.from_address as string) || '',
+      ccAddress: (d.cc_address as string | undefined) || undefined,
+      bccAddress: (d.bcc_address as string | undefined) || undefined,
+      subject: (d.subject as string) || '',
+      receivedAt: d.received_at ?? null,
+      processedAt: d.processed_at ?? null,
+      status: d.status,
+      ruleApplied: d.rule_applied,
+      tokensUsed: d.tokens_used,
+      estimatedCost: d.estimated_cost,
+      errorMessage: d.error_message,
+      attachmentCount: (d.attachment_count as number) ?? 0,
+      attachmentNames: (d.attachment_names as string[]) ?? [],
+      userId: d.user_id,
+      emailAnalysis: d.email_analysis ?? null,
+    }));
 
     return NextResponse.json({ logs });
   } catch (error) {

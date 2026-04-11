@@ -72,10 +72,10 @@ export function RegisterForm() {
       await registerUser(email, password);
       router.push('/verify-email');
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
-      if (firebaseError.code === 'auth/email-already-in-use') {
+      const authError = err as { code?: string };
+      if (authError.code === 'auth/email-already-in-use') {
         setError(tr.errors.emailAlreadyInUse);
-      } else if (firebaseError.code === 'auth/weak-password') {
+      } else if (authError.code === 'auth/weak-password') {
         setError(tr.errors.weakPassword);
       } else if (assignedEmailDomain && isEmailUsingDomain(email, assignedEmailDomain)) {
         setError(tr.errors.blockedDomain);

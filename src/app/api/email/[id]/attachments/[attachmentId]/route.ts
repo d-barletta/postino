@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminStorage } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import type { SerializedAttachment } from '@/lib/inbound-processing';
 
@@ -13,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; attachmentId: string }> },
 ) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
     const { id, attachmentId } = await params;
     const attachmentIndex = Number.parseInt(attachmentId, 10);
 
@@ -21,20 +21,24 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const db = adminDb();
-    const logSnap = await db.collection('emailLogs').doc(id).get();
+    const supabase = createAdminClient();
 
-    if (!logSnap.exists) {
+    const { data: logRow } = await supabase
+      .from('email_logs')
+      .select('user_id, attachments')
+      .eq('id', id)
+      .single();
+
+    if (!logRow) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const data = logSnap.data()!;
-    if (data.userId !== decoded.uid) {
+    if (logRow.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const attachments = Array.isArray(data.attachments)
-      ? (data.attachments as SerializedAttachment[])
+    const attachments = Array.isArray(logRow.attachments)
+      ? (logRow.attachments as unknown as SerializedAttachment[])
       : [];
     const attachment = attachments[attachmentIndex - 1];
 
@@ -45,14 +49,17 @@ export async function GET(
     let content: Buffer;
     if (attachment.storagePath) {
       try {
-        const [downloaded] = await adminStorage().bucket().file(attachment.storagePath).download();
-        content = Buffer.from(downloaded);
+        const { data: downloaded, error: storageError } = await supabase.storage
+          .from('email-attachments')
+          .download(attachment.storagePath);
+        if (storageError || !downloaded) throw storageError ?? new Error('Download failed');
+        content = Buffer.from(await downloaded.arrayBuffer());
       } catch (error) {
         console.error('Failed to download stored attachment for user request', {
           emailId: id,
           attachmentId,
           storagePath: attachment.storagePath,
-          userId: decoded.uid,
+          userId: user.id,
           error,
         });
         return NextResponse.json({ error: 'Failed to download attachment' }, { status: 500 });
@@ -64,7 +71,7 @@ export async function GET(
         console.error('Failed to decode legacy attachment payload for user download', {
           emailId: id,
           attachmentId,
-          userId: decoded.uid,
+          userId: user.id,
           error,
         });
         return NextResponse.json({ error: 'Failed to download attachment' }, { status: 500 });
@@ -73,7 +80,7 @@ export async function GET(
       console.error('Attachment record is missing both storagePath and contentBase64', {
         emailId: id,
         attachmentId,
-        userId: decoded.uid,
+        userId: user.id,
         filename: attachment.filename,
       });
       return NextResponse.json({ error: 'Not found' }, { status: 404 });

@@ -16,7 +16,7 @@ export function LoginForm() {
   const router = useRouter();
   const { t } = useI18n();
   const tr = t.auth.login;
-  const { firebaseUser, loading: authLoading } = useAuth();
+  const { authUser, loading: authLoading, getIdToken } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,37 +29,40 @@ export function LoginForm() {
     setError('');
     setLoading(true);
     try {
-      const fbUser = await loginUser(email, password);
-      if (!fbUser.emailVerified) {
-        await signOut();
-        setError(tr.errors.emailNotVerified);
-        setLoading(false);
-        return;
-      }
-      // Set redirecting immediately so the "already signed in" view renders
-      // with the loading spinner straight away — before the /api/auth/me round-trip.
+      await loginUser(email, password);
       setLoading(false);
       setRedirecting(true);
-      const token = await fbUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 403) {
+        const payload = (await res.json().catch(() => null)) as {
+          error?: string;
+          code?: string;
+        } | null;
         await signOut();
-        setError(tr.errors.suspended);
+        setError(
+          payload?.code === 'email_not_verified' || payload?.error === 'Email not verified'
+            ? tr.errors.emailNotVerified
+            : tr.errors.suspended,
+        );
         setRedirecting(false);
+        setLoading(false);
         return;
       }
       router.push('/dashboard');
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
+      const authError = err as { code?: string };
       if (
-        firebaseError.code === 'auth/invalid-credential' ||
-        firebaseError.code === 'auth/user-not-found'
+        authError.code === 'auth/invalid-credential' ||
+        authError.code === 'auth/user-not-found'
       ) {
         setError(tr.errors.invalidCredential);
-      } else if (firebaseError.code === 'auth/too-many-requests') {
+      } else if (authError.code === 'auth/too-many-requests') {
         setError(tr.errors.tooManyRequests);
+      } else if (authError.code === 'auth/email-not-verified') {
+        setError(tr.errors.emailNotVerified);
       } else {
         setError(tr.errors.failed);
       }
@@ -82,7 +85,7 @@ export function LoginForm() {
     router.push('/dashboard');
   };
 
-  if (!authLoading && firebaseUser) {
+  if (!authLoading && authUser) {
     return (
       <div className="space-y-4 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">

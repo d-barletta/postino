@@ -27,7 +27,7 @@ const ADMIN_TABS: ReadonlyArray<AdminTab> = [
 ];
 
 export default function AdminPage() {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,9 +37,9 @@ export default function AdminPage() {
 
   const fetchAdminStats = useCallback(
     async (period: StatsPeriod = statsPeriod) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const url = period === 'all' ? '/api/admin/stats' : `/api/admin/stats?period=${period}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
@@ -54,13 +54,13 @@ export default function AdminPage() {
         setLoading(false);
       }
     },
-    [firebaseUser, statsPeriod],
+    [authUser, statsPeriod],
   );
 
   useEffect(() => {
     // Use 'all' on initial load; period changes are handled by handleStatsPeriodChange.
     fetchAdminStats('all');
-  }, [firebaseUser]); // fetchAdminStats is derived from firebaseUser — no separate dep needed
+  }, [authUser]); // fetchAdminStats is derived from authUser — no separate dep needed
 
   const handleStatsPeriodChange = useCallback(
     (period: StatsPeriod) => {

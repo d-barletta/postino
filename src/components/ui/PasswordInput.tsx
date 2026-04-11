@@ -8,8 +8,10 @@ import {
   InputGroupInput,
 } from '@/components/ui/InputGroup';
 
-export interface PasswordInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface PasswordInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'type'
+> {
   label?: string;
   error?: string;
   hint?: string;
@@ -36,12 +38,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             className,
           )}
         >
-          <InputGroupInput
-            ref={ref}
-            id={inputId}
-            type={show ? 'text' : 'password'}
-            {...props}
-          />
+          <InputGroupInput ref={ref} id={inputId} type={show ? 'text' : 'password'} {...props} />
           <InputGroupAddon align="inline-end" className="pr-1">
             <InputGroupButton
               type="button"

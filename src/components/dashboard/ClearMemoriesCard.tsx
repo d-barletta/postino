@@ -21,17 +21,17 @@ interface ClearMemoriesCardProps {
 }
 
 export function ClearMemoriesCard({ onSuccess }: ClearMemoriesCardProps) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const s = t.dashboard.clearMemories;
   const [open, setOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   const handleClear = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setClearing(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/user/memories', {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

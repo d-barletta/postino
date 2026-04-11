@@ -21,17 +21,17 @@ interface ResetUsageStatsCardProps {
 }
 
 export function ResetUsageStatsCard({ onSuccess }: ResetUsageStatsCardProps) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const s = t.dashboard.resetUsageStats;
   const [open, setOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   const handleReset = async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setResetting(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/user/stats/reset', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

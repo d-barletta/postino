@@ -11,7 +11,7 @@ import { signOut } from '@/lib/auth';
 export function HomePageContent() {
   const { t } = useI18n();
   const { hero, howItWorks, exampleRules, blog } = t.home;
-  const { firebaseUser, loading } = useAuth();
+  const { authUser, loading } = useAuth();
 
   const steps = [
     { icon: 'bi bi-inbox-fill', step: '1', ...howItWorks.step1 },
@@ -28,7 +28,7 @@ export function HomePageContent() {
             <span className="font-bold text-xl text-gray-900">Postino</span>
           </div>
           <div className="flex items-center gap-3">
-            {!loading && firebaseUser ? (
+            {!loading && authUser ? (
               <>
                 <Button variant="ghost" onClick={() => signOut()}>
                   {t.nav.signOut}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FieldValue } from 'firebase-admin/firestore';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { DEFAULT_LLM_MODEL } from '@/lib/llm';
 import { getModelPricing, calculateCost } from '@/lib/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
@@ -13,12 +13,16 @@ function resolveMemoryApiKey(settingsApiKey?: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { uid } = await verifyUserRequest(request);
+    const { id: uid } = await verifyUserRequest(request);
 
     // Check if memory is enabled and get the API key from admin settings
-    const db = adminDb();
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settingsData = settingsSnap.data();
+    const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settingsData = settingsRow?.data as Record<string, unknown> | undefined;
 
     if (!settingsData?.memoryEnabled) {
       return NextResponse.json({ error: 'Memory feature is not enabled' }, { status: 403 });
@@ -32,9 +36,7 @@ export async function POST(request: NextRequest) {
     const llmApiKey =
       (settingsData?.llmApiKey as string | undefined) || process.env.OPEN_ROUTER_API_KEY || '';
     const llmModel =
-      (settingsData?.llmModel as string | undefined) ||
-      process.env.LLM_MODEL ||
-      'openai/gpt-4o-mini';
+      (settingsData?.llmModel as string | undefined) || process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
 
     if (!llmApiKey) {
       return NextResponse.json({ error: 'LLM API key is not configured' }, { status: 500 });
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
         content: String(m.content).slice(0, MAX_MESSAGE_LENGTH),
       }));
 
-    // uid comes from server-side Firebase token verification and cannot be
+    // uid comes from server-side token verification and cannot be
     // spoofed by the client. The containerTag ensures each search query is
     // restricted to the authenticated user's own memory partition in
     // Supermemory, preventing any cross-user data access.
@@ -224,13 +226,24 @@ export async function POST(request: NextRequest) {
     const outputTokens = result.usage.outputTokens ?? 0;
     const pricing = await getModelPricing(llmModel, llmApiKey).catch(() => null);
     const cost = calculateCost(inputTokens, outputTokens, pricing);
-    db.collection('users')
-      .doc(uid)
+
+    // Read-modify-write for token counters
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('memory_tokens_used, memory_estimated_cost')
+      .eq('id', uid)
+      .single();
+    supabase
+      .from('users')
       .update({
-        memoryTokensUsed: FieldValue.increment(inputTokens + outputTokens),
-        memoryEstimatedCost: FieldValue.increment(cost),
+        memory_tokens_used:
+          ((currentUser?.memory_tokens_used as number) ?? 0) + inputTokens + outputTokens,
+        memory_estimated_cost: ((currentUser?.memory_estimated_cost as number) ?? 0) + cost,
       })
-      .catch((err) => console.error('[memory/chat] Failed to update memory token stats:', err));
+      .eq('id', uid)
+      .then(undefined, (err: unknown) =>
+        console.error('[memory/chat] Failed to update memory token stats:', err),
+      );
 
     return NextResponse.json({ answer: result.text, sourceEmailIds });
   } catch (error) {

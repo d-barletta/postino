@@ -1,37 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
-    const snap = await db.collection('rules').where('userId', '==', decoded.uid).get();
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
+    const { data: rules } = await supabase
+      .from('rules')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true });
 
-    // Sort rules by sortOrder ASC (user-defined), then by createdAt ASC as tiebreaker.
-    // This keeps the display order consistent with processing order.
-    const rules = snap.docs
-      .sort((a, b) => {
-        const aOrder =
-          typeof a.data().sortOrder === 'number'
-            ? (a.data().sortOrder as number)
-            : Number.MAX_SAFE_INTEGER;
-        const bOrder =
-          typeof b.data().sortOrder === 'number'
-            ? (b.data().sortOrder as number)
-            : Number.MAX_SAFE_INTEGER;
-        if (aOrder !== bOrder) return aOrder - bOrder;
-        return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
-      })
-      .map((d) => ({
-        id: d.id,
-        ...d.data(),
-        createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
-        updatedAt: d.data().updatedAt?.toDate?.()?.toISOString() ?? null,
-      }));
-
-    return NextResponse.json({ rules });
+    return NextResponse.json({
+      rules: (rules ?? []).map((r) => ({
+        id: r.id,
+        userId: r.user_id,
+        name: r.name,
+        text: r.text,
+        matchSender: r.match_sender,
+        matchSubject: r.match_subject,
+        matchBody: r.match_body,
+        isActive: r.is_active,
+        sortOrder: r.sort_order,
+        createdAt: r.created_at ?? null,
+        updatedAt: r.updated_at ?? null,
+      })),
+    });
   } catch (err) {
     return handleUserError(err, 'rules GET');
   }
@@ -42,7 +38,7 @@ const MAX_PATTERN_LENGTH = 200;
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
     const { name, text, matchSender, matchSubject, matchBody } = await request.json();
 
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -90,25 +86,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = adminDb();
+    const supabase = createAdminClient();
 
     // Fetch name-uniqueness check, settings and user doc in parallel.
-    const [existingSnap, settingsSnap, userSnap] = await Promise.all([
-      db
-        .collection('rules')
-        .where('userId', '==', decoded.uid)
-        .where('name', '==', name.trim())
+    const [existingResult, settingsResult, userResult] = await Promise.all([
+      supabase
+        .from('rules')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('name', name.trim())
         .limit(1)
-        .get(),
-      db.collection('settings').doc('global').get(),
-      db.collection('users').doc(decoded.uid).get(),
+        .maybeSingle(),
+      supabase.from('settings').select('data').eq('id', 'global').single(),
+      supabase.from('users').select('is_admin').eq('id', user.id).single(),
     ]);
 
-    if (!existingSnap.empty) {
+    if (existingResult.data) {
       return NextResponse.json({ error: 'A rule with this name already exists' }, { status: 409 });
     }
 
-    const maxRuleLength = settingsSnap.data()?.maxRuleLength ?? 1000;
+    const settingsData = (settingsResult.data?.data as Record<string, unknown>) ?? {};
+    const maxRuleLength = (settingsData?.maxRuleLength as number | undefined) ?? 1000;
 
     if (text.length > maxRuleLength) {
       return NextResponse.json(
@@ -117,17 +115,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const maxActiveRules = settingsSnap.data()?.maxActiveRules ?? 3;
-    const isAdmin = !!userSnap.data()?.isAdmin;
+    const maxActiveRules = (settingsData?.maxActiveRules as number | undefined) ?? 3;
+    const isAdmin = !!userResult.data?.is_admin;
 
     if (!isAdmin) {
-      const activeRulesSnap = await db
-        .collection('rules')
-        .where('userId', '==', decoded.uid)
-        .where('isActive', '==', true)
-        .get();
+      const { count: activeRulesCount } = await supabase
+        .from('rules')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
 
-      if (activeRulesSnap.size >= maxActiveRules) {
+      if ((activeRulesCount ?? 0) >= maxActiveRules) {
         return NextResponse.json(
           { error: `You have reached the maximum of ${maxActiveRules} active rules` },
           { status: 400 },
@@ -135,20 +133,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const now = Timestamp.now();
-    const ref = await db.collection('rules').add({
-      userId: decoded.uid,
-      name: name.trim(),
-      text: text.trim(),
-      matchSender: matchSender?.trim() || '',
-      matchSubject: matchSubject?.trim() || '',
-      matchBody: matchBody?.trim() || '',
-      createdAt: now,
-      updatedAt: now,
-      isActive: true,
-    });
+    const now = new Date().toISOString();
+    const { data: newRule } = await supabase
+      .from('rules')
+      .insert({
+        user_id: user.id,
+        name: name.trim(),
+        text: text.trim(),
+        match_sender: matchSender?.trim() || '',
+        match_subject: matchSubject?.trim() || '',
+        match_body: matchBody?.trim() || '',
+        created_at: now,
+        updated_at: now,
+        is_active: true,
+      })
+      .select('id')
+      .single();
 
-    return NextResponse.json({ id: ref.id }, { status: 201 });
+    return NextResponse.json({ id: newRule?.id }, { status: 201 });
   } catch (error) {
     return handleUserError(error, 'rules POST');
   }

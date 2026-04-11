@@ -78,7 +78,7 @@ function toPrettyJson(value: unknown): string {
 }
 
 export default function EmailJobsLiveTab() {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [data, setData] = useState<JobsOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,10 +91,10 @@ export default function EmailJobsLiveTab() {
 
   const fetchOverview = useCallback(
     async (silent = false) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       if (!silent) setLoading(true);
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/admin/email-jobs', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -112,7 +112,7 @@ export default function EmailJobsLiveTab() {
         setRefreshing(false);
       }
     },
-    [firebaseUser],
+    [authUser],
   );
 
   useEffect(() => {
@@ -129,10 +129,10 @@ export default function EmailJobsLiveTab() {
   }, [autoRefresh, fetchOverview]);
 
   const handleProcessNow = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setProcessingNow(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/admin/email-jobs', {
         method: 'POST',
         headers: {
@@ -153,14 +153,14 @@ export default function EmailJobsLiveTab() {
     } finally {
       setProcessingNow(false);
     }
-  }, [firebaseUser, fetchOverview]);
+  }, [authUser, fetchOverview]);
 
   const handleToggleWebhookLogging = useCallback(
     async (enabled: boolean) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       setLoggingSaving(true);
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch('/api/admin/email-jobs', {
           method: 'PUT',
           headers: {
@@ -183,11 +183,11 @@ export default function EmailJobsLiveTab() {
         setLoggingSaving(false);
       }
     },
-    [firebaseUser, fetchOverview],
+    [authUser, fetchOverview],
   );
 
   const handleClearWebhookLogs = useCallback(async () => {
-    if (!firebaseUser || clearingLogs) return;
+    if (!authUser || clearingLogs) return;
 
     const confirmed = window.confirm(
       'Delete all Mailgun inbound webhook request logs? This action cannot be undone.',
@@ -196,7 +196,7 @@ export default function EmailJobsLiveTab() {
 
     setClearingLogs(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/admin/email-jobs', {
         method: 'DELETE',
         headers: {
@@ -215,7 +215,7 @@ export default function EmailJobsLiveTab() {
     } finally {
       setClearingLogs(false);
     }
-  }, [clearingLogs, firebaseUser, fetchOverview]);
+  }, [clearingLogs, authUser, fetchOverview]);
 
   const cards = useMemo(() => {
     const counts = data?.counts;

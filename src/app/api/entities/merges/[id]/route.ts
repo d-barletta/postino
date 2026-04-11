@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { EntityCategory } from '@/types';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
@@ -15,7 +15,7 @@ const VALID_CATEGORIES: EntityCategory[] = [
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
     const { id } = await params;
 
     if (!id) {
@@ -47,56 +47,60 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const trimmedCanonical = (canonical as string).trim();
     const trimmedAliases: string[] = (aliases as string[]).map((a) => a.trim());
 
-    const db = adminDb();
-    const docRef = db.collection('entityMerges').doc(id);
-    const snap = await docRef.get();
+    const supabase = createAdminClient();
+    const { data: snap } = await supabase
+      .from('entity_merges')
+      .select('id, user_id, aliases')
+      .eq('id', id)
+      .single();
 
-    if (!snap.exists) {
+    if (!snap) {
       return NextResponse.json({ error: 'Merge not found' }, { status: 404 });
     }
 
-    if (snap.data()?.userId !== decoded.uid) {
+    if (snap.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Find all OTHER merges in this category that overlap with the incoming aliases
-    const existingSnap = await db
-      .collection('entityMerges')
-      .where('userId', '==', decoded.uid)
-      .where('category', '==', category)
-      .limit(500)
-      .get();
+    const { data: existingRows } = await supabase
+      .from('entity_merges')
+      .select('id, aliases')
+      .eq('user_id', user.id)
+      .eq('category', category as string)
+      .neq('id', id)
+      .limit(500);
 
-    const overlappingDocs = existingSnap.docs.filter((doc) => {
-      if (doc.id === id) return false; // skip the merge being updated
-      const existingAliases = doc.data().aliases as string[];
+    const overlappingRows = (existingRows ?? []).filter((row) => {
+      const existingAliases = row.aliases as string[];
       return trimmedAliases.some((a) => existingAliases.includes(a));
     });
 
-    if (overlappingDocs.length > 0) {
-      // Combine aliases from all overlapping merges + the incoming aliases into one unified set
-      const unifiedAliases = new Set([
-        ...trimmedAliases,
-        ...overlappingDocs.flatMap((doc) => doc.data().aliases as string[]),
-      ]);
+    if (overlappingRows.length > 0) {
+      const unifiedAliases = Array.from(
+        new Set([...trimmedAliases, ...overlappingRows.flatMap((row) => row.aliases as string[])]),
+      );
 
-      const batch = db.batch();
-      batch.update(docRef, {
-        canonical: trimmedCanonical,
-        aliases: Array.from(unifiedAliases),
-      });
-      for (const doc of overlappingDocs) {
-        batch.delete(doc.ref);
-      }
-      await batch.commit();
+      await supabase
+        .from('entity_merges')
+        .update({ canonical: trimmedCanonical, aliases: unifiedAliases })
+        .eq('id', id);
+
+      await supabase
+        .from('entity_merges')
+        .delete()
+        .in(
+          'id',
+          overlappingRows.map((r) => r.id),
+        );
 
       return NextResponse.json({ success: true });
     }
 
-    await docRef.update({
-      canonical: trimmedCanonical,
-      aliases: trimmedAliases,
-    });
+    await supabase
+      .from('entity_merges')
+      .update({ canonical: trimmedCanonical, aliases: trimmedAliases })
+      .eq('id', id);
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -109,26 +113,29 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
     const { id } = await params;
 
     if (!id) {
       return NextResponse.json({ error: 'Missing merge ID' }, { status: 400 });
     }
 
-    const db = adminDb();
-    const docRef = db.collection('entityMerges').doc(id);
-    const snap = await docRef.get();
+    const supabase = createAdminClient();
+    const { data: snap } = await supabase
+      .from('entity_merges')
+      .select('id, user_id')
+      .eq('id', id)
+      .single();
 
-    if (!snap.exists) {
+    if (!snap) {
       return NextResponse.json({ error: 'Merge not found' }, { status: 404 });
     }
 
-    if (snap.data()?.userId !== decoded.uid) {
+    if (snap.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await docRef.delete();
+    await supabase.from('entity_merges').delete().eq('id', id);
     return NextResponse.json({ success: true });
   } catch (err) {
     return handleUserError(err, 'entities/merges/[id] DELETE');

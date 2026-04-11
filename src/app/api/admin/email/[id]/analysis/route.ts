@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { analyzeStoredEmailLogWithDebug } from '@/lib/email-analysis';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -8,10 +8,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await verifyAdminRequest(request);
 
     const { id } = await params;
-    const db = adminDb();
-    const logSnap = await db.collection('emailLogs').doc(id).get();
+    const supabase = createAdminClient();
 
-    if (!logSnap.exists) {
+    const { data: logRow } = await supabase
+      .from('email_logs')
+      .select('user_id, from_address, subject, original_body')
+      .eq('id', id)
+      .single();
+
+    if (!logRow) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -25,18 +30,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // No body or invalid JSON — proceed without model override.
     }
 
-    const data = logSnap.data()!;
-    const userId = typeof data.userId === 'string' ? data.userId : '';
-    const userSnap = userId ? await db.collection('users').doc(userId).get() : null;
+    const userId = typeof logRow.user_id === 'string' ? logRow.user_id : '';
+    const { data: userRow } = userId
+      ? await supabase.from('users').select('analysis_output_language').eq('id', userId).single()
+      : { data: null };
+
     const analysisOutputLanguage =
-      typeof userSnap?.data()?.analysisOutputLanguage === 'string'
-        ? (userSnap.data()?.analysisOutputLanguage as string) || undefined
+      typeof userRow?.analysis_output_language === 'string'
+        ? (userRow.analysis_output_language as string) || undefined
         : undefined;
 
     const result = await analyzeStoredEmailLogWithDebug({
-      fromAddress: typeof data.fromAddress === 'string' ? data.fromAddress : '',
-      subject: typeof data.subject === 'string' ? data.subject : '',
-      originalBody: typeof data.originalBody === 'string' ? data.originalBody : '',
+      fromAddress: typeof logRow.from_address === 'string' ? logRow.from_address : '',
+      subject: typeof logRow.subject === 'string' ? logRow.subject : '',
+      originalBody: typeof logRow.original_body === 'string' ? logRow.original_body : '',
       analysisOutputLanguage,
       modelOverride,
     });

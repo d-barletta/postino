@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 type Granularity = 'hour' | 'day' | 'week';
@@ -34,7 +33,7 @@ const VALID_GRANULARITIES = new Set<Granularity>(['hour', 'day', 'week']);
 export async function GET(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
-    const db = adminDb();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const rangeParam = searchParams.get('range') ?? '7d';
@@ -46,12 +45,12 @@ export async function GET(request: NextRequest) {
 
     const from = new Date(Date.now() - RANGE_MS[range]);
 
-    const snap = await db
-      .collection('emailLogs')
-      .where('receivedAt', '>=', Timestamp.fromDate(from))
-      .orderBy('receivedAt', 'asc')
-      .limit(10000)
-      .get();
+    const { data: rows } = await supabase
+      .from('email_logs')
+      .select('status, received_at, estimated_cost')
+      .gte('received_at', from.toISOString())
+      .order('received_at', { ascending: true })
+      .limit(10000);
 
     type BucketData = {
       received: number;
@@ -64,9 +63,8 @@ export async function GET(request: NextRequest) {
 
     const bucketMap = new Map<string, BucketData>();
 
-    for (const doc of snap.docs) {
-      const data = doc.data();
-      const receivedAt: Date | undefined = data.receivedAt?.toDate?.();
+    for (const row of rows ?? []) {
+      const receivedAt = row.received_at ? new Date(row.received_at as string) : null;
       if (!receivedAt) continue;
 
       const key = getBucketKey(receivedAt, granularity);
@@ -79,15 +77,14 @@ export async function GET(request: NextRequest) {
         cost: 0,
       };
 
-      const status = data.status as string;
+      const status = row.status as string;
       if (status === 'received') existing.received++;
       else if (status === 'forwarded') existing.forwarded++;
       else if (status === 'error') existing.error++;
       else if (status === 'skipped') existing.skipped++;
       else if (status === 'processing') existing.processing++;
-      // unknown/missing status: not counted
 
-      existing.cost += data.estimatedCost || 0;
+      existing.cost += (row.estimated_cost as number) || 0;
       bucketMap.set(key, existing);
     }
 

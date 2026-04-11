@@ -26,11 +26,11 @@ export function ForgotPasswordForm() {
       await sendPasswordReset(email.trim());
       setSent(true);
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
+      const authError = err as { code?: string };
 
-      if (firebaseError.code === 'auth/invalid-email') {
+      if (authError.code === 'auth/invalid-email') {
         setError(tr.errors.invalidEmail);
-      } else if (firebaseError.code === 'auth/too-many-requests') {
+      } else if (authError.code === 'auth/too-many-requests') {
         setError(tr.errors.tooManyAttempts);
       } else {
         setError(tr.errors.failed);

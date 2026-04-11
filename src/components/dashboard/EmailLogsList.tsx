@@ -221,7 +221,7 @@ function EmailDetailTabs({
 
 export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsListProps) {
   const { t, locale } = useI18n();
-  const { firebaseUser, user } = useAuth();
+  const { authUser, user, getIdToken } = useAuth();
   const isAdmin = user?.isAdmin === true;
 
   const [logs, setLogs] = useState<EmailLog[]>([]);
@@ -286,12 +286,12 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
 
   const fetchLogs = useCallback(
     async (targetPage: number, isRefresh = false) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       if (isRefresh) setRefreshing(true);
       else setLogsLoading(true);
       setTotalCount(undefined);
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const params = new URLSearchParams({
           page: String(targetPage),
           pageSize: String(PAGE_SIZE),
@@ -317,14 +317,14 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         setRefreshing(false);
       }
     },
-    [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter, t],
+    [authUser, searchQuery, statusFilter, hasAttachmentsFilter, t],
   );
 
   const fetchTotalCount = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setTotalEmailCountLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/email/logs/count', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -337,21 +337,21 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     } finally {
       setTotalEmailCountLoading(false);
     }
-  }, [firebaseUser, t]);
+  }, [authUser, t]);
 
   // Initial load and when filters/search change
   useEffect(() => {
     setPage(1);
     fetchLogs(1);
-  }, [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter, refreshTrigger, fetchLogs]);
+  }, [authUser, searchQuery, statusFilter, hasAttachmentsFilter, refreshTrigger, fetchLogs]);
 
   useEffect(() => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setTotalEmailCount(undefined);
     if (!searchQuery && !statusFilter && !hasAttachmentsFilter) {
       fetchTotalCount();
     }
-  }, [firebaseUser, searchQuery, statusFilter, hasAttachmentsFilter, fetchTotalCount]);
+  }, [authUser, searchQuery, statusFilter, hasAttachmentsFilter, fetchTotalCount]);
 
   const handleApplyFilters = () => {
     setSearchQuery(pendingSearch.trim());
@@ -388,7 +388,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
 
   const fetchExpandedEmail = useCallback(
     async (logId: string) => {
-      if (!firebaseUser || fetchedExpandedIds.current.has(logId)) return;
+      if (!authUser || fetchedExpandedIds.current.has(logId)) return;
       fetchedExpandedIds.current.add(logId);
       setExpandedData((prev) => ({
         ...prev,
@@ -404,7 +404,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         },
       }));
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch(`/api/email/original/${logId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -456,7 +456,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
         }));
       }
     },
-    [firebaseUser],
+    [authUser],
   );
 
   // Auto-expand and fetch email content when opened from a push notification link.

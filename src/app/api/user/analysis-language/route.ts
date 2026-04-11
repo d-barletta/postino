@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 /** The set of language codes accepted for AI analysis output — must match the UI locale selector. */
@@ -7,7 +7,7 @@ const SUPPORTED_ANALYSIS_LANGUAGES = new Set(['en', 'it', 'es', 'fr', 'de']);
 
 export async function PATCH(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
     const body = await request.json();
     // Allow null or one of the supported language codes; null clears the preference.
@@ -30,10 +30,10 @@ export async function PATCH(request: NextRequest) {
         { status: 400 },
       );
     }
-    const value = raw;
+    const value = raw ?? 'en';
 
-    const db = adminDb();
-    await db.collection('users').doc(decoded.uid).update({ analysisOutputLanguage: value });
+    const supabase = createAdminClient();
+    await supabase.from('users').update({ analysis_output_language: value }).eq('id', user.id);
 
     return NextResponse.json({ success: true, analysisOutputLanguage: value });
   } catch (error) {

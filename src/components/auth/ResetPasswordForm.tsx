@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { resetPassword, verifyResetPasswordCode } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
+import { resetPassword } from '@/lib/auth';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,80 +11,33 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export function ResetPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const actionCode = useMemo(() => searchParams.get('oobCode') ?? '', [searchParams]);
 
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [validating, setValidating] = useState(true);
-  const [isCodeValid, setIsCodeValid] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    const validateCode = async () => {
-      if (!actionCode) {
-        setError('Missing reset code. Please request a new password reset link.');
-        setValidating(false);
-        return;
-      }
-
-      try {
-        await verifyResetPasswordCode(actionCode);
-        setIsCodeValid(true);
-      } catch {
-        setIsCodeValid(false);
-        setError('This reset link is invalid or expired. Request a new one.');
-      } finally {
-        setValidating(false);
-      }
-    };
-
-    validateCode();
-  }, [actionCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!actionCode) {
-      setError('Missing reset code. Please request a new password reset link.');
-      return;
-    }
-
-    if (!isCodeValid) {
-      setError('This reset link is invalid or expired. Request a new one.');
-      return;
-    }
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await resetPassword(actionCode, password);
+      // Session is already active (established by /auth/confirm redirect)
+      await resetPassword('', password);
       setSuccess(true);
       setTimeout(() => {
         router.push('/login');
       }, 1800);
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
-
-      if (
-        firebaseError.code === 'auth/expired-action-code' ||
-        firebaseError.code === 'auth/invalid-action-code'
-      ) {
-        setError('This reset link is invalid or expired. Request a new one.');
-      } else if (firebaseError.code === 'auth/weak-password') {
+      const authError = err as { code?: string };
+      if (authError.code === 'auth/weak-password') {
         setError('Password is too weak');
       } else {
         setError('Failed to reset password. Please try again.');
@@ -93,16 +46,6 @@ export function ResetPasswordForm() {
       setLoading(false);
     }
   };
-
-  if (validating) {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-          Validating reset link...
-        </p>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -130,27 +73,10 @@ export function ResetPasswordForm() {
         required
         autoComplete="new-password"
         placeholder="Min. 8 characters"
-        disabled={loading || success || !isCodeValid}
+        disabled={loading || success}
       />
 
-      <Input
-        label="Confirm new password"
-        type="password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        required
-        autoComplete="new-password"
-        placeholder="Repeat password"
-        disabled={loading || success || !isCodeValid}
-      />
-
-      <Button
-        type="submit"
-        loading={loading}
-        className="w-full"
-        size="md"
-        disabled={success || !isCodeValid}
-      >
+      <Button type="submit" loading={loading} className="w-full" size="md" disabled={success}>
         Reset password
       </Button>
 

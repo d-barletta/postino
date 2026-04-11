@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 import type {
@@ -102,26 +102,31 @@ function sortCountEntries(map: CountMap): Array<[string, number]> {
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
 
-    const doc = await db.collection('entityFlows').doc(decoded.uid).get();
-    if (!doc.exists) {
+    const { data: row } = await supabase
+      .from('entity_flows')
+      .select('data, updated_at')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!row) {
       return NextResponse.json({ graph: null });
     }
 
-    const data = doc.data();
-    if (data?.version !== FLOW_GRAPH_VERSION) {
+    const data = row.data as (Record<string, unknown> & { version?: number }) | null;
+    if (!data || data.version !== FLOW_GRAPH_VERSION) {
       return NextResponse.json({ graph: null });
     }
 
     return NextResponse.json({
       graph: {
-        nodes: data?.nodes ?? [],
-        edges: data?.edges ?? [],
-        buckets: data?.buckets ?? [],
-        generatedAt: data?.generatedAt ?? null,
-        totalEmails: data?.totalEmails ?? 0,
+        nodes: (data.nodes ?? []) as import('@/types').FlowGraphNode[],
+        edges: (data.edges ?? []) as import('@/types').EntityGraphEdge[],
+        buckets: (data.buckets ?? []) as import('@/types').FlowGraphBucket[],
+        generatedAt: (data.generatedAt ?? '') as string,
+        totalEmails: (data.totalEmails ?? 0) as number,
       } satisfies EntityFlowGraph,
     });
   } catch (err) {
@@ -134,29 +139,33 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
 
     // Fetch email logs and merges in parallel
-    const [snap, mergesSnap] = await Promise.all([
-      db
-        .collection('emailLogs')
-        .where('userId', '==', decoded.uid)
-        .orderBy('receivedAt', 'desc')
-        .limit(FETCH_LIMIT)
-        .get(),
-      db.collection('entityMerges').where('userId', '==', decoded.uid).limit(MERGES_LIMIT).get(),
+    const [logsResult, mergesResult] = await Promise.all([
+      supabase
+        .from('email_logs')
+        .select('email_analysis, received_at')
+        .eq('user_id', user.id)
+        .not('email_analysis', 'is', null)
+        .order('received_at', { ascending: false })
+        .limit(FETCH_LIMIT),
+      supabase
+        .from('entity_merges')
+        .select('category, canonical, aliases')
+        .eq('user_id', user.id)
+        .limit(MERGES_LIMIT),
     ]);
 
     // Build merges by category
     const mergesByCategory: Record<string, Array<{ canonical: string; aliases: string[] }>> = {};
-    for (const doc of mergesSnap.docs) {
-      const d = doc.data();
-      const cat = d.category as string;
+    for (const row of mergesResult.data ?? []) {
+      const cat = row.category as string;
       if (!mergesByCategory[cat]) mergesByCategory[cat] = [];
       mergesByCategory[cat].push({
-        canonical: d.canonical as string,
-        aliases: d.aliases as string[],
+        canonical: row.canonical as string,
+        aliases: row.aliases as string[],
       });
     }
 
@@ -170,10 +179,9 @@ export async function POST(request: NextRequest) {
     // -----------------------------------------------------------------------
     const analyzedEmails: AnalyzedEmail[] = [];
 
-    for (const doc of snap.docs) {
-      const data = doc.data();
-      const analysis = data.emailAnalysis as Record<string, unknown> | undefined;
-      const receivedAt = getDateOrNull(data.receivedAt);
+    for (const row of logsResult.data ?? []) {
+      const analysis = row.email_analysis as Record<string, unknown> | undefined;
+      const receivedAt = getDateOrNull(row.received_at);
       if (!analysis || !receivedAt) continue;
 
       analyzedEmails.push({ receivedAt, analysis });
@@ -365,10 +373,11 @@ export async function POST(request: NextRequest) {
       totalEmails,
     };
 
-    await db
-      .collection('entityFlows')
-      .doc(decoded.uid)
-      .set({ ...graph, version: FLOW_GRAPH_VERSION, userId: decoded.uid, updatedAt: new Date() });
+    await supabase.from('entity_flows').upsert({
+      user_id: user.id,
+      data: { ...graph, version: FLOW_GRAPH_VERSION } as unknown as import('@/types/supabase').Json,
+      updated_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ graph });
   } catch (err) {

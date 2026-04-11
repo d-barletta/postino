@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Supermemory from 'supermemory';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 function resolveMemoryApiKey(settingsApiKey?: string): string {
@@ -9,14 +9,20 @@ function resolveMemoryApiKey(settingsApiKey?: string): string {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { uid } = await verifyUserRequest(request);
-    const db = adminDb();
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const settingsData = settingsSnap.data();
+    const { id: uid } = await verifyUserRequest(request);
+    const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settingsData = (settingsRow?.data as Record<string, unknown>) ?? {};
     const memoryApiKey = resolveMemoryApiKey(settingsData?.memoryApiKey as string | undefined);
     const containerTag = `user_${uid}`;
 
-    const operations: Promise<unknown>[] = [db.collection('userMemory').doc(uid).delete()];
+    const operations: Promise<unknown>[] = [
+      Promise.resolve(supabase.from('user_memory').delete().eq('user_id', uid)),
+    ];
 
     if (memoryApiKey) {
       const client = new Supermemory({ apiKey: memoryApiKey });

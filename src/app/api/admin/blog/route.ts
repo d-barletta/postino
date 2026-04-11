@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 function slugify(title: string): string {
@@ -15,14 +15,26 @@ function slugify(title: string): string {
 export async function GET(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
-    const db = adminDb();
-    const snap = await db.collection('blogArticles').orderBy('createdAt', 'desc').get();
-    const articles = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.()?.toISOString() ?? null,
-      updatedAt: d.data().updatedAt?.toDate?.()?.toISOString() ?? null,
+    const supabase = createAdminClient();
+    const { data: rows } = await supabase
+      .from('blog_articles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const articles = (rows ?? []).map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      thumbnailUrl: row.thumbnail_url,
+      published: row.published,
+      language: row.language,
+      translationGroupId: row.translation_group_id ?? null,
+      createdAt: row.created_at ?? null,
+      updatedAt: row.updated_at ?? null,
+      content: row.content,
+      tags: row.tags ?? [],
     }));
+
     return NextResponse.json({ articles });
   } catch (error) {
     return handleAdminError(error, 'admin/blog GET');
@@ -32,7 +44,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
-    const db = adminDb();
+    const supabase = createAdminClient();
     const body = await request.json();
     const { title, content, tags, thumbnailUrl, published, language, translationGroupId } = body;
 
@@ -48,32 +60,41 @@ export async function POST(request: NextRequest) {
     let counter = 1;
     const MAX_SLUG_ITERATIONS = 100;
     while (counter <= MAX_SLUG_ITERATIONS) {
-      const existing = await db.collection('blogArticles').where('slug', '==', slug).limit(1).get();
-      if (existing.empty) break;
+      const { data: existing } = await supabase
+        .from('blog_articles')
+        .select('id')
+        .eq('slug', slug)
+        .limit(1);
+      if (!existing || existing.length === 0) break;
       slug = `${baseSlug}-${counter++}`;
     }
     if (counter > MAX_SLUG_ITERATIONS) {
       return NextResponse.json({ error: 'Could not generate a unique slug' }, { status: 409 });
     }
 
-    const now = new Date();
-    const docRef = await db.collection('blogArticles').add({
-      title: title.trim(),
-      slug,
-      content,
-      tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string') : [],
-      thumbnailUrl: typeof thumbnailUrl === 'string' ? thumbnailUrl.trim() : '',
-      published: Boolean(published),
-      language: typeof language === 'string' && language.trim() ? language.trim() : 'en',
-      ...(typeof translationGroupId === 'string' && translationGroupId.trim()
-        ? { translationGroupId: translationGroupId.trim() }
-        : {}),
-      createdAt: now,
-      updatedAt: now,
-    });
+    const now = new Date().toISOString();
+    const { data: inserted } = await supabase
+      .from('blog_articles')
+      .insert({
+        slug,
+        title: title.trim(),
+        thumbnail_url: typeof thumbnailUrl === 'string' ? thumbnailUrl.trim() : '',
+        published: Boolean(published),
+        language: typeof language === 'string' && language.trim() ? language.trim() : 'en',
+        translation_group_id:
+          typeof translationGroupId === 'string' && translationGroupId.trim()
+            ? translationGroupId.trim()
+            : null,
+        created_at: now,
+        updated_at: now,
+        content,
+        tags: Array.isArray(tags) ? tags.filter((t: unknown) => typeof t === 'string') : [],
+      })
+      .select('id, slug')
+      .single();
 
     revalidateTag('blog-articles', {});
-    return NextResponse.json({ id: docRef.id, slug }, { status: 201 });
+    return NextResponse.json({ id: inserted?.id, slug: inserted?.slug ?? slug }, { status: 201 });
   } catch (error) {
     return handleAdminError(error, 'admin/blog POST');
   }

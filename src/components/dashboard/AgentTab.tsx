@@ -235,7 +235,7 @@ function ChatContent({
 }
 
 export function AgentTab() {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>(_persistedMessages);
   const [query, setQuery] = useState('');
@@ -271,7 +271,7 @@ export function AgentTab() {
 
   const handleSubmit = async () => {
     const trimmed = query.trim();
-    if (!trimmed || loading || !firebaseUser) return;
+    if (!trimmed || loading || !authUser) return;
 
     const userMessage: Message = { role: 'user', content: trimmed };
     // Capture current messages as history before appending the new user message
@@ -281,7 +281,7 @@ export function AgentTab() {
     setLoading(true);
 
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/memory/chat', {
         method: 'POST',
         headers: {

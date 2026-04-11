@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { processEmailJobsBatch } from '@/lib/email-jobs';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 const STATUSES = ['pending', 'processing', 'retrying', 'done', 'failed'] as const;
@@ -47,122 +46,120 @@ function emptyCounts(): JobCounts {
 export async function GET(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
-    const db = adminDb();
+    const supabase = createAdminClient();
 
-    const countSnaps = await Promise.all(
+    // Count per status in parallel
+    const countResults = await Promise.all(
       STATUSES.map((status) =>
-        db.collection('emailJobs').where('status', '==', status).count().get(),
+        supabase
+          .from('email_jobs')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', status),
       ),
     );
 
     const counts = emptyCounts();
     STATUSES.forEach((status, idx) => {
-      counts[status] = countSnaps[idx].data().count;
+      counts[status] = countResults[idx].count ?? 0;
     });
 
-    const recentFailuresSnap = await db
-      .collection('emailJobs')
-      .where('status', '==', 'failed')
-      .orderBy('updatedAt', 'desc')
-      .limit(10)
-      .get();
+    const { data: failureRows } = await supabase
+      .from('email_jobs')
+      .select('id, last_error, payload, created_at')
+      .eq('status', 'failed')
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    const recentFailures = recentFailuresSnap.docs.map((doc) => {
-      const data = doc.data() as {
-        lastError?: string;
-        attempts?: number;
-        payload?: { subject?: string; sender?: string; userEmail?: string; logId?: string };
-        updatedAt?: { toDate?: () => Date };
+    const recentFailures = (failureRows ?? []).map((row) => {
+      const payload = (row.payload ?? {}) as {
+        subject?: string;
+        sender?: string;
+        userEmail?: string;
+        logId?: string;
       };
       return {
-        id: doc.id,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
-        attempts: typeof data.attempts === 'number' ? data.attempts : 0,
-        error: data.lastError || 'Unknown error',
-        subject: data.payload?.subject || 'No subject',
-        sender: data.payload?.sender || 'Unknown sender',
-        userEmail: data.payload?.userEmail || null,
-        logId: data.payload?.logId || null,
+        id: row.id as string,
+        updatedAt: (row.created_at as string) ?? null,
+        attempts: 0,
+        error: (row.last_error as string) || 'Unknown error',
+        subject: payload.subject || 'No subject',
+        sender: payload.sender || 'Unknown sender',
+        userEmail: payload.userEmail || null,
+        logId: payload.logId || null,
       };
     });
 
-    const recentUpdatedSnap = await db
-      .collection('emailJobs')
-      .orderBy('updatedAt', 'desc')
-      .limit(1)
-      .get();
+    const { data: latestJobRows } = await supabase
+      .from('email_jobs')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    const settingsSnap = await db.collection('settings').doc('global').get();
-    const webhookLoggingEnabled = Boolean(settingsSnap.data()?.mailgunWebhookLoggingEnabled);
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settingsData = (settingsRow?.data ?? {}) as Record<string, unknown>;
+    const webhookLoggingEnabled = Boolean(settingsData.mailgunWebhookLoggingEnabled);
 
-    const recentWebhookLogsSnap = await db
-      .collection('mailgunWebhookLogs')
-      .orderBy('receivedAt', 'desc')
-      .limit(MAX_WEBHOOK_LOGS_DISPLAY)
-      .get();
+    const { data: webhookRows } = await supabase
+      .from('mailgun_webhook_logs')
+      .select(
+        'id, received_at, updated_at, status, result, reason, preview_fields, raw_fields, linked',
+      )
+      .order('received_at', { ascending: false })
+      .limit(MAX_WEBHOOK_LOGS_DISPLAY);
 
-    const recentWebhookRequests: MailgunWebhookLogSummary[] = recentWebhookLogsSnap.docs.map(
-      (doc) => {
-        const data = doc.data() as {
-          receivedAt?: { toDate?: () => Date };
-          updatedAt?: { toDate?: () => Date };
-          status?: string;
-          result?: string;
-          reason?: string;
-          parsed?: {
-            sender?: string;
-            recipient?: string;
-            subject?: string;
-            messageId?: string;
-            attachmentCount?: number;
-          };
-          request?: {
-            ip?: string;
-            userAgent?: string;
-            method?: string;
-            url?: string;
-            host?: string;
-            contentType?: string;
-            headers?: Record<string, string>;
-            payloadStoragePath?: string | null;
-          };
-          linked?: {
-            emailLogId?: string;
-            jobId?: string;
-          };
-          details?: unknown;
-        };
+    const recentWebhookRequests: MailgunWebhookLogSummary[] = (webhookRows ?? []).map((row) => {
+      const preview = (row.preview_fields ?? {}) as {
+        sender?: string;
+        recipient?: string;
+        subject?: string;
+        messageId?: string;
+        attachmentCount?: number;
+      };
+      const raw = (row.raw_fields ?? {}) as {
+        ip?: string;
+        userAgent?: string;
+        method?: string;
+        url?: string;
+        host?: string;
+        contentType?: string;
+        headers?: Record<string, string>;
+        payloadStoragePath?: string | null;
+      };
+      const linked = (row.linked ?? {}) as { emailLogId?: string; jobId?: string };
 
-        return {
-          id: doc.id,
-          receivedAt: data.receivedAt?.toDate?.()?.toISOString() ?? null,
-          updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
-          status: data.status || 'received',
-          result: data.result || 'pending',
-          reason: data.reason || null,
-          sender: data.parsed?.sender || 'Unknown sender',
-          recipient: data.parsed?.recipient || 'Unknown recipient',
-          subject: data.parsed?.subject || '(no subject)',
-          messageId: data.parsed?.messageId || '',
-          attachmentCount:
-            typeof data.parsed?.attachmentCount === 'number' ? data.parsed.attachmentCount : 0,
-          ip: data.request?.ip || '—',
-          userAgent: data.request?.userAgent || '—',
-          emailLogId: data.linked?.emailLogId || null,
-          jobId: data.linked?.jobId || null,
-          details: {
-            request: data.request ?? null,
-            parsed: data.parsed ?? null,
-            linked: data.linked ?? null,
-            details: data.details ?? null,
-          },
-        };
-      },
-    );
+      return {
+        id: row.id as string,
+        receivedAt: (row.received_at as string) ?? null,
+        updatedAt: (row.updated_at as string) ?? null,
+        status: (row.status as string) || 'received',
+        result: (row.result as string) || 'pending',
+        reason: (row.reason as string) || null,
+        sender: preview.sender || 'Unknown sender',
+        recipient: preview.recipient || 'Unknown recipient',
+        subject: preview.subject || '(no subject)',
+        messageId: preview.messageId || '',
+        attachmentCount: typeof preview.attachmentCount === 'number' ? preview.attachmentCount : 0,
+        ip: raw.ip || '\u2014',
+        userAgent: raw.userAgent || '\u2014',
+        emailLogId: linked.emailLogId || null,
+        jobId: linked.jobId || null,
+        details: {
+          request: raw ?? null,
+          parsed: preview ?? null,
+          linked: linked ?? null,
+          details: null,
+        },
+      };
+    });
 
-    const latestUpdatedAt = recentUpdatedSnap.empty
-      ? null
-      : (recentUpdatedSnap.docs[0].data().updatedAt?.toDate?.()?.toISOString() ?? null);
+    const latestUpdatedAt =
+      latestJobRows && latestJobRows.length > 0
+        ? ((latestJobRows[0].created_at as string) ?? null)
+        : null;
 
     return NextResponse.json({
       counts,
@@ -192,58 +189,22 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const db = adminDb();
-    await db.collection('settings').doc('global').set(
-      {
-        mailgunWebhookLoggingEnabled: body.webhookLoggingEnabled,
-      },
-      { merge: true },
-    );
+    const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const existingData = (settingsRow?.data ?? {}) as Record<string, unknown>;
+    const now = new Date().toISOString();
+    await supabase.from('settings').upsert({
+      id: 'global',
+      data: { ...existingData, mailgunWebhookLoggingEnabled: body.webhookLoggingEnabled },
+      updated_at: now,
+    });
 
-    return NextResponse.json({ success: true, webhookLoggingEnabled: body.webhookLoggingEnabled });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return handleAdminError(error, 'admin/email-jobs PUT');
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    await verifyAdminRequest(request);
-
-    const body = (await request.json().catch(() => ({}))) as { batchSize?: number };
-    const rawBatchSize = typeof body.batchSize === 'number' ? Math.floor(body.batchSize) : 10;
-    const batchSize = Math.min(Math.max(rawBatchSize, 1), 50);
-
-    const result = await processEmailJobsBatch(batchSize);
-    return NextResponse.json({ success: true, ...result });
-  } catch (error) {
-    return handleAdminError(error, 'admin/email-jobs POST');
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    await verifyAdminRequest(request);
-
-    const db = adminDb();
-    const query = db.collection('mailgunWebhookLogs').orderBy('receivedAt', 'desc');
-    let deletedCount = 0;
-
-    // Delete in chunks to stay within Firestore batch operation limits.
-    while (true) {
-      const snap = await query.limit(500).get();
-      if (snap.empty) break;
-
-      const batch = db.batch();
-      for (const doc of snap.docs) {
-        batch.delete(doc.ref);
-      }
-      await batch.commit();
-      deletedCount += snap.size;
-    }
-
-    return NextResponse.json({ success: true, deletedCount });
-  } catch (error) {
-    return handleAdminError(error, 'admin/email-jobs DELETE');
   }
 }

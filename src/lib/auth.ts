@@ -1,67 +1,212 @@
-import {
-  confirmPasswordReset,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  sendEmailVerification,
-  signOut as firebaseSignOut,
-  User as FirebaseUser,
-  verifyPasswordResetCode,
-} from 'firebase/auth';
-import { auth } from './firebase';
-import { getUserById } from './firestore';
+import { createClient } from '@/lib/supabase/client';
 
-function getAuth() {
-  if (!auth)
-    throw new Error(
-      'Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_* environment variables.',
-    );
-  return auth;
+function getSupabase() {
+  return createClient();
 }
 
-export async function registerUser(email: string, password: string): Promise<FirebaseUser> {
-  const credential = await createUserWithEmailAndPassword(getAuth(), email, password);
-  const user = credential.user;
+function getAuthOrigin() {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin.replace(/\/$/, '');
+  }
 
-  await sendEmailVerification(user);
+  const configuredOrigin =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.NEXT_PUBLIC_VERCEL_URL
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+      : 'http://localhost:3000');
 
-  return user;
+  return configuredOrigin.replace(/\/$/, '');
 }
 
-export async function loginUser(email: string, password: string): Promise<FirebaseUser> {
-  const credential = await signInWithEmailAndPassword(getAuth(), email, password);
-  return credential.user;
+function buildAuthRedirectUrl(pathname: string, searchParams?: URLSearchParams) {
+  const url = new URL(pathname, `${getAuthOrigin()}/`);
+
+  if (searchParams) {
+    url.search = searchParams.toString();
+  }
+
+  return url.toString();
+}
+
+const PENDING_VERIFICATION_EMAIL_KEY = 'postino.pendingVerificationEmail';
+
+function getPendingVerificationStorage(): Storage | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function normalizePendingVerificationEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+export function getEmailConfirmationRedirectUrl() {
+  return buildAuthRedirectUrl('/auth/confirm');
+}
+
+export function getPasswordRecoveryRedirectUrl() {
+  return buildAuthRedirectUrl(
+    '/auth/confirm',
+    new URLSearchParams({
+      type: 'recovery',
+      next: '/reset-password',
+    }),
+  );
+}
+
+export function setPendingVerificationEmail(email: string) {
+  const storage = getPendingVerificationStorage();
+  if (!storage) {
+    return;
+  }
+
+  const normalizedEmail = normalizePendingVerificationEmail(email);
+  if (!normalizedEmail) {
+    storage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+    return;
+  }
+
+  storage.setItem(PENDING_VERIFICATION_EMAIL_KEY, normalizedEmail);
+}
+
+export function getPendingVerificationEmail() {
+  const storage = getPendingVerificationStorage();
+  if (!storage) {
+    return null;
+  }
+
+  const storedEmail = storage.getItem(PENDING_VERIFICATION_EMAIL_KEY);
+  if (!storedEmail) {
+    return null;
+  }
+
+  const normalizedEmail = normalizePendingVerificationEmail(storedEmail);
+  if (!normalizedEmail) {
+    storage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+    return null;
+  }
+
+  return normalizedEmail;
+}
+
+export function clearPendingVerificationEmail() {
+  const storage = getPendingVerificationStorage();
+  if (!storage) {
+    return;
+  }
+
+  storage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+}
+
+export async function registerUser(email: string, password: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: getEmailConfirmationRedirectUrl(),
+    },
+  });
+  if (error) {
+    const out = new Error(error.message) as Error & { code?: string };
+    if (error.message.toLowerCase().includes('already registered')) {
+      out.code = 'auth/email-already-in-use';
+    } else if (error.message.toLowerCase().includes('password')) {
+      out.code = 'auth/weak-password';
+    }
+    throw out;
+  }
+
+  if (!data.user?.email_confirmed_at) {
+    setPendingVerificationEmail(email);
+  } else {
+    clearPendingVerificationEmail();
+  }
+
+  if (data.session && !data.user?.email_confirmed_at) {
+    await supabase.auth.signOut();
+  }
+
+  return data.user;
+}
+
+export async function loginUser(email: string, password: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    const out = new Error(error.message) as Error & { code?: string };
+    if (
+      error.message.toLowerCase().includes('invalid') ||
+      error.message.toLowerCase().includes('credentials')
+    ) {
+      out.code = 'auth/invalid-credential';
+    } else if (error.message.toLowerCase().includes('too many')) {
+      out.code = 'auth/too-many-requests';
+    } else if (error.message.toLowerCase().includes('not confirmed')) {
+      setPendingVerificationEmail(email);
+      out.code = 'auth/email-not-verified';
+    }
+    throw out;
+  }
+
+  if (!data.user?.email_confirmed_at) {
+    setPendingVerificationEmail(email);
+    await supabase.auth.signOut();
+    const out = new Error('Email not verified') as Error & { code?: string };
+    out.code = 'auth/email-not-verified';
+    throw out;
+  }
+
+  clearPendingVerificationEmail();
+  return data.user;
 }
 
 export async function sendPasswordReset(email: string): Promise<void> {
-  await sendPasswordResetEmail(getAuth(), email);
+  const supabase = getSupabase();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: getPasswordRecoveryRedirectUrl(),
+  });
+  if (error) throw new Error(error.message);
 }
 
-export async function resetPassword(actionCode: string, newPassword: string): Promise<void> {
-  await confirmPasswordReset(getAuth(), actionCode, newPassword);
+/** Called from /reset-password after session is established via /auth/confirm. */
+export async function resetPassword(_actionCode: string, newPassword: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message);
 }
 
-export async function verifyResetPasswordCode(actionCode: string): Promise<string> {
-  return verifyPasswordResetCode(getAuth(), actionCode);
+/** No-op stub — Supabase validates the reset link automatically via PKCE. */
+export async function verifyResetPasswordCode(_actionCode: string): Promise<string> {
+  return '';
 }
 
 export async function signOut(): Promise<void> {
-  await firebaseSignOut(getAuth());
+  const supabase = getSupabase();
+  await supabase.auth.signOut();
 }
 
 export async function getIdToken(): Promise<string | null> {
-  const a = auth;
-  if (!a) return null;
-  const user = a.currentUser;
-  if (!user) return null;
-  return user.getIdToken();
+  const supabase = getSupabase();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 }
 
 export async function isCurrentUserAdmin(): Promise<boolean> {
-  const a = auth;
-  if (!a) return false;
-  const user = a.currentUser;
+  const supabase = getSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
-  const userData = await getUserById(user.uid);
-  return userData?.isAdmin ?? false;
+  const { data } = await supabase.from('users').select('is_admin').eq('id', user.id).single();
+  return data?.is_admin ?? false;
 }

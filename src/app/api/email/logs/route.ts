@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import type { Query } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 
@@ -8,16 +7,14 @@ const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 /**
  * Max docs fetched for full-text search queries.
- * Full-text search cannot be done in Firestore; we fetch a bounded set and filter in-memory.
- * Structured filters are still pushed to Firestore first to reduce this set.
+ * Full-text search cannot be done server-side; we fetch a bounded set and filter in-memory.
+ * Structured scalar filters are still pushed to the database first to reduce this set.
  */
 const TEXT_SEARCH_FETCH_LIMIT = 500;
-/** Firestore array-contains-any supports at most 30 values. */
-const ARRAY_CONTAINS_ANY_LIMIT = 30;
 
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
     const { searchParams } = request.nextUrl;
     const pageParam = parseInt(searchParams.get('page') || '1', 10);
@@ -37,13 +34,13 @@ export async function GET(request: NextRequest) {
     const hasActionItems = searchParams.get('hasActionItems') === 'true';
     const isUrgent = searchParams.get('isUrgent') === 'true';
     const languageFilter = (searchParams.get('language') || '').trim().toLowerCase();
-    // tags – multi-value; preserve original case so Firestore array-contains-any can match stored values exactly.
+    // tags – multi-value; preserve original case for matching stored values exactly.
     const tagsFilter = searchParams
       .getAll('tags')
       .map((t) => t.trim())
       .filter(Boolean);
     const statusFilter = (searchParams.get('status') || '').trim().toLowerCase();
-    // entity filters – multi-value; preserve original case for Firestore array-contains-any matching.
+    // entity filters – multi-value; preserve original case for matching.
     const peopleFilter = searchParams
       .getAll('people')
       .map((v) => v.trim())
@@ -77,35 +74,25 @@ export async function GET(request: NextRequest) {
       Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam),
     );
 
-    const db = adminDb();
+    const supabase = createAdminClient();
 
     const hasTextSearch = !!(search || termsRaw.length > 0);
 
-    // Track which array filter was pushed to Firestore.
-    // Firestore allows only ONE array-contains / array-contains-any per query.
-    let pushedArrayField:
-      | 'tags'
-      | 'people'
-      | 'orgs'
-      | 'places'
-      | 'events'
-      | 'numbers'
-      | 'dates'
-      | null = null;
+    // Array filters are all handled in-memory (no server-side JSONB array-contains push).
+    const hasArrayFilters = !!(
+      tagsFilter.length > 0 ||
+      peopleFilter.length > 0 ||
+      orgsFilter.length > 0 ||
+      placesFilter.length > 0 ||
+      eventsFilter.length > 0 ||
+      numbersFilter.length > 0 ||
+      datesFilter.length > 0
+    );
 
     // ---------------------------------------------------------------------------
-    // Build Firestore query – push all structured filters to the database.
-    // Structured filters include equality fields, boolean flags, and array filters.
-    // The only filters that cannot be pushed are:
-    //   • Full-text search (subject/body/summary) – no native Firestore support.
-    //   • hasAttachments (inequality on attachmentCount) – would require a changed sort order.
-    //   • Secondary array filters when multiple array filters are active (Firestore limit: 1).
+    // Build Supabase query – push scalar/boolean structured filters to the database.
+    // Array filters (tags, entities) and full-text search are applied in-memory.
     // ---------------------------------------------------------------------------
-    let firestoreQuery: Query = db
-      .collection('emailLogs')
-      .where('userId', '==', decoded.uid)
-      .orderBy('receivedAt', 'desc');
-
     const structuredFiltersActive = !!(
       statusFilter ||
       sentimentFilter ||
@@ -116,152 +103,95 @@ export async function GET(request: NextRequest) {
       requiresResponse ||
       hasActionItems ||
       isUrgent ||
-      tagsFilter.length > 0 ||
-      peopleFilter.length > 0 ||
-      orgsFilter.length > 0 ||
-      placesFilter.length > 0 ||
-      eventsFilter.length > 0 ||
-      numbersFilter.length > 0 ||
-      datesFilter.length > 0
+      hasArrayFilters
     );
 
-    if (structuredFiltersActive) {
-      // Equality / boolean filters — pushed directly to Firestore.
-      if (statusFilter) firestoreQuery = firestoreQuery.where('status', '==', statusFilter);
-      if (sentimentFilter)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.sentiment', '==', sentimentFilter);
-      if (emailTypeFilter)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.emailType', '==', emailTypeFilter);
-      if (priorityFilter)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.priority', '==', priorityFilter);
-      if (senderTypeFilter)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.senderType', '==', senderTypeFilter);
-      if (languageFilter)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.language', '==', languageFilter);
-      if (requiresResponse)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.requiresResponse', '==', true);
-      if (hasActionItems)
-        firestoreQuery = firestoreQuery.where('emailAnalysis.hasActionItems', '==', true);
-      if (isUrgent) firestoreQuery = firestoreQuery.where('emailAnalysis.isUrgent', '==', true);
+    let supabaseQuery: any = supabase
+      .from('email_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('received_at', { ascending: false });
 
-      // Array filters — push the first active one via array-contains-any; apply remaining in-memory.
-      if (tagsFilter.length > 0) {
-        firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.tags',
-          'array-contains-any',
-          tagsFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
-        );
-        pushedArrayField = 'tags';
-      } else if (peopleFilter.length > 0) {
-        firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.entities.people',
-          'array-contains-any',
-          peopleFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
-        );
-        pushedArrayField = 'people';
-      } else if (orgsFilter.length > 0) {
-        firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.entities.organizations',
-          'array-contains-any',
-          orgsFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
-        );
-        pushedArrayField = 'orgs';
-      } else if (placesFilter.length > 0) {
-        firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.entities.placeNames',
-          'array-contains-any',
-          placesFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
-        );
-        pushedArrayField = 'places';
-      } else if (eventsFilter.length > 0) {
-        firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.entities.events',
-          'array-contains-any',
-          eventsFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
-        );
-        pushedArrayField = 'events';
-      } else if (numbersFilter.length > 0) {
-        firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.entities.numbers',
-          'array-contains-any',
-          numbersFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
-        );
-        pushedArrayField = 'numbers';
-      } else if (datesFilter.length > 0) {
-        firestoreQuery = firestoreQuery.where(
-          'emailAnalysis.entities.dates',
-          'array-contains-any',
-          datesFilter.slice(0, ARRAY_CONTAINS_ANY_LIMIT),
-        );
-        pushedArrayField = 'dates';
-      }
-    }
+    if (statusFilter) supabaseQuery = supabaseQuery.eq('status', statusFilter);
+    if (sentimentFilter)
+      supabaseQuery = supabaseQuery.filter('email_analysis->>sentiment', 'eq', sentimentFilter);
+    if (emailTypeFilter)
+      supabaseQuery = supabaseQuery.filter('email_analysis->>emailType', 'eq', emailTypeFilter);
+    if (priorityFilter)
+      supabaseQuery = supabaseQuery.filter('email_analysis->>priority', 'eq', priorityFilter);
+    if (senderTypeFilter)
+      supabaseQuery = supabaseQuery.filter('email_analysis->>senderType', 'eq', senderTypeFilter);
+    if (languageFilter)
+      supabaseQuery = supabaseQuery.filter('email_analysis->>language', 'eq', languageFilter);
+    if (requiresResponse)
+      supabaseQuery = supabaseQuery.filter('email_analysis->requiresResponse', 'eq', 'true');
+    if (hasActionItems)
+      supabaseQuery = supabaseQuery.filter('email_analysis->hasActionItems', 'eq', 'true');
+    if (isUrgent) supabaseQuery = supabaseQuery.filter('email_analysis->isUrgent', 'eq', 'true');
 
     // ---------------------------------------------------------------------------
-    // Execute Firestore query
+    // Execute query
     // ---------------------------------------------------------------------------
-    let snap;
-    let totalCountFromFirestore: number | undefined;
+    let rows: Record<string, unknown>[] = [];
+    let totalCountFromDB: number | undefined;
 
-    if (hasTextSearch || hasAttachments) {
-      // Full-text search or attachment filter: Firestore structured filters already applied above
-      // to narrow the result set; fetch up to TEXT_SEARCH_FETCH_LIMIT docs for in-memory filtering.
-      snap = await firestoreQuery.limit(TEXT_SEARCH_FETCH_LIMIT).get();
+    if (hasTextSearch || hasAttachments || hasArrayFilters) {
+      // Full-text search, attachment filter, or array filters: push scalar filters to DB,
+      // fetch up to TEXT_SEARCH_FETCH_LIMIT docs for in-memory filtering.
+      const { data } = await supabaseQuery.limit(TEXT_SEARCH_FETCH_LIMIT);
+      rows = data ?? [];
     } else if (structuredFiltersActive) {
-      // Fetch a large batch with the structured Firestore filters already applied, then
-      // paginate in-memory. Using .offset().limit() with array-contains-any can silently return
-      // zero docs even when a count() on the same query returns results, so we avoid offset here.
-      const [batchSnap, countSnap] = await Promise.all([
-        firestoreQuery.limit(TEXT_SEARCH_FETCH_LIMIT).get(),
-        firestoreQuery
-          .count()
-          .get()
-          .catch(() => null),
-      ]);
-      snap = batchSnap;
-      totalCountFromFirestore = countSnap?.data().count ?? undefined;
+      // Scalar filters only: fetch a large batch with count for in-memory pagination.
+      const { data, count } = await supabaseQuery
+        .select('*', { count: 'exact' })
+        .limit(TEXT_SEARCH_FETCH_LIMIT);
+      rows = data ?? [];
+      totalCountFromDB = count ?? undefined;
     } else if (cursor) {
-      // No filters, cursor provided for pagination.
-      const cursorDoc = await db.collection('emailLogs').doc(cursor).get();
-      if (cursorDoc.exists) {
-        snap = await firestoreQuery
-          .startAfter(cursorDoc)
-          .limit(pageSize + 1)
-          .get();
+      // No filters, cursor provided for keyset pagination.
+      const { data: cursorRow } = await supabase
+        .from('email_logs')
+        .select('received_at')
+        .eq('id', cursor)
+        .single();
+      if (cursorRow) {
+        const { data } = await supabaseQuery
+          .lt('received_at', cursorRow.received_at)
+          .limit(pageSize + 1);
+        rows = data ?? [];
       } else {
-        snap = await firestoreQuery.limit(pageSize + 1).get();
+        const { data } = await supabaseQuery.limit(pageSize + 1);
+        rows = data ?? [];
       }
     } else {
       // No filters, no cursor: offset pagination.
       const offset = (page - 1) * pageSize;
-      snap = await firestoreQuery
-        .offset(offset)
-        .limit(pageSize + 1)
-        .get();
+      const { data } = await supabaseQuery.range(offset, offset + pageSize);
+      rows = data ?? [];
     }
 
-    let docs = snap.docs.map((d) => ({
-      id: d.id,
-      toAddress: (d.data().toAddress as string) || '',
-      fromAddress: (d.data().fromAddress as string) || '',
-      ccAddress: (d.data().ccAddress as string | undefined) || undefined,
-      bccAddress: (d.data().bccAddress as string | undefined) || undefined,
-      subject: (d.data().subject as string) || '',
-      receivedAt: d.data().receivedAt?.toDate?.()?.toISOString() ?? null,
-      processedAt: d.data().processedAt?.toDate?.()?.toISOString() ?? null,
-      status: d.data().status,
-      ruleApplied: d.data().ruleApplied,
-      tokensUsed: d.data().tokensUsed,
-      estimatedCost: d.data().estimatedCost,
-      errorMessage: d.data().errorMessage,
-      attachmentCount: (d.data().attachmentCount as number) ?? 0,
-      attachmentNames: (d.data().attachmentNames as string[]) ?? [],
-      userId: d.data().userId,
-      emailAnalysis: d.data().emailAnalysis ?? null,
+    let docs = rows.map((d) => ({
+      id: d.id as string,
+      toAddress: (d.to_address as string) || '',
+      fromAddress: (d.from_address as string) || '',
+      ccAddress: (d.cc_address as string | undefined) || undefined,
+      bccAddress: (d.bcc_address as string | undefined) || undefined,
+      subject: (d.subject as string) || '',
+      receivedAt: (d.received_at as string) ?? null,
+      processedAt: (d.processed_at as string) ?? null,
+      status: d.status,
+      ruleApplied: d.rule_applied,
+      tokensUsed: d.tokens_used,
+      estimatedCost: d.estimated_cost,
+      errorMessage: d.error_message,
+      attachmentCount: (d.attachment_count as number) ?? 0,
+      attachmentNames: (d.attachment_names as string[]) ?? [],
+      userId: d.user_id,
+      emailAnalysis: (d.email_analysis as Record<string, unknown> | null) ?? null,
     }));
 
     // ---------------------------------------------------------------------------
-    // In-memory filters — only for capabilities Firestore cannot handle natively.
+    // In-memory filters
     // ---------------------------------------------------------------------------
 
     /** Returns true if the given doc matches the provided single search term. */
@@ -308,15 +238,13 @@ export async function GET(request: NextRequest) {
       docs = docs.filter((d) => termsRaw.some((term) => matchesTerm(d, term)));
     }
 
-    // hasAttachments: inequality on attachmentCount would change the sort order in Firestore,
-    // so it is applied in-memory after the Firestore query.
+    // hasAttachments: applied in-memory.
     if (hasAttachments) {
       docs = docs.filter((d) => (d.attachmentCount ?? 0) > 0);
     }
 
-    // Secondary array filters — applied in-memory when more than one array filter is active
-    // (Firestore only supports one array-contains-any per query).
-    if (tagsFilter.length > 0 && pushedArrayField !== 'tags') {
+    // Array filters — all applied in-memory.
+    if (tagsFilter.length > 0) {
       docs = docs.filter((d) =>
         tagsFilter.some(
           (tag) =>
@@ -328,7 +256,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (peopleFilter.length > 0 && pushedArrayField !== 'people') {
+    if (peopleFilter.length > 0) {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
         const list = entities?.people;
@@ -341,7 +269,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (orgsFilter.length > 0 && pushedArrayField !== 'orgs') {
+    if (orgsFilter.length > 0) {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
         const list = entities?.organizations;
@@ -354,7 +282,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (placesFilter.length > 0 && pushedArrayField !== 'places') {
+    if (placesFilter.length > 0) {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
         const list = extractStoredPlaceNames(entities?.places, entities?.placeNames);
@@ -365,7 +293,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (eventsFilter.length > 0 && pushedArrayField !== 'events') {
+    if (eventsFilter.length > 0) {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
         const list = entities?.events;
@@ -378,7 +306,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (numbersFilter.length > 0 && pushedArrayField !== 'numbers') {
+    if (numbersFilter.length > 0) {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
         const list = entities?.numbers;
@@ -391,7 +319,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (datesFilter.length > 0 && pushedArrayField !== 'dates') {
+    if (datesFilter.length > 0) {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
         const list = entities?.dates;
@@ -410,7 +338,7 @@ export async function GET(request: NextRequest) {
     // Pagination & response
     // ---------------------------------------------------------------------------
 
-    if (hasTextSearch || hasAttachments) {
+    if (hasTextSearch || hasAttachments || hasArrayFilters) {
       // In-memory post-filter: compute pagination from the full filtered result set.
       const totalCount = docs.length;
       const start = (page - 1) * pageSize;
@@ -432,10 +360,9 @@ export async function GET(request: NextRequest) {
       const paginatedDocs = docs.slice(start, start + pageSize);
       const hasNextPage = start + pageSize < total;
       const totalPages = Math.max(1, Math.ceil(total / pageSize));
-      // If we hit the fetch limit, the in-memory count is a lower bound; prefer the Firestore
+      // If we hit the fetch limit, the in-memory count is a lower bound; prefer the DB
       // count aggregation in that case. Otherwise the in-memory count is exact.
-      const totalCount =
-        total >= TEXT_SEARCH_FETCH_LIMIT ? (totalCountFromFirestore ?? total) : total;
+      const totalCount = total >= TEXT_SEARCH_FETCH_LIMIT ? (totalCountFromDB ?? total) : total;
       return NextResponse.json({
         logs: paginatedDocs,
         page,

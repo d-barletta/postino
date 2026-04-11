@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
-import { adminDb } from './firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 export { generateAssignedEmail } from './email-utils';
 
 const MAILGUN_TIMESTAMP_MAX_SKEW_SECONDS = 5 * 60;
@@ -11,10 +11,15 @@ function stripCrlf(value: string): string {
 }
 
 export async function createTransport() {
-  const db = adminDb();
-  const settingsSnap = await db.collection('settings').doc('global').get();
+  const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  const settings = settingsRow?.data as Record<string, unknown> | null;
 
-  if (!settingsSnap.exists) {
+  if (!settings) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
@@ -26,14 +31,19 @@ export async function createTransport() {
     });
   }
 
-  const settings = settingsSnap.data()!;
   return nodemailer.createTransport({
-    host: settings.smtpHost,
-    port: settings.smtpPort || 587,
-    secure: settings.smtpPort === 465,
+    host: typeof settings.smtpHost === 'string' ? settings.smtpHost : process.env.SMTP_HOST,
+    port:
+      typeof settings.smtpPort === 'number'
+        ? settings.smtpPort
+        : parseInt(process.env.SMTP_PORT || '587'),
+    secure:
+      typeof settings.smtpPort === 'number'
+        ? settings.smtpPort === 465
+        : process.env.SMTP_SECURE === 'true',
     auth: {
-      user: settings.smtpUser,
-      pass: settings.smtpPass,
+      user: typeof settings.smtpUser === 'string' ? settings.smtpUser : process.env.SMTP_USER,
+      pass: typeof settings.smtpPass === 'string' ? settings.smtpPass : process.env.SMTP_PASS,
     },
   });
 }
@@ -125,32 +135,41 @@ export async function sendEmail(options: {
   attachments?: EmailAttachment[];
   headers?: Record<string, string>;
 }): Promise<void> {
-  const db = adminDb();
-  const settingsSnap = await db.collection('settings').doc('global').get();
-  const settings = settingsSnap.data();
+  const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  const settings = (settingsRow?.data as Record<string, unknown> | null) ?? null;
 
-  const mailgunApiKey = settings?.mailgunApiKey || process.env.MAILGUN_API_KEY || '';
+  const mailgunApiKey =
+    (typeof settings?.mailgunApiKey === 'string' ? settings.mailgunApiKey : '') ||
+    process.env.MAILGUN_API_KEY ||
+    '';
   const mailgunDomain =
-    settings?.mailgunSandboxEmail ||
-    settings?.mailgunDomain ||
+    (typeof settings?.mailgunSandboxEmail === 'string' ? settings.mailgunSandboxEmail : '') ||
+    (typeof settings?.mailgunDomain === 'string' ? settings.mailgunDomain : '') ||
     process.env.MAILGUN_SANDBOX_EMAIL ||
     '';
   const mailgunBaseUrl =
-    settings?.mailgunBaseUrl || process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
+    (typeof settings?.mailgunBaseUrl === 'string' ? settings.mailgunBaseUrl : '') ||
+    process.env.MAILGUN_BASE_URL ||
+    'https://api.mailgun.net';
 
   let resolvedFrom: string;
   if (options.from) {
     resolvedFrom = options.from;
-  } else if (settings?.smtpFromEmail) {
+  } else if (typeof settings?.smtpFromEmail === 'string' && settings.smtpFromEmail) {
     // Build from address from split name + email fields
-    const rawName: string = settings.smtpFromName || '';
+    const rawName = typeof settings.smtpFromName === 'string' ? settings.smtpFromName : '';
     const safeSenderName = stripCrlf(options.senderName || '');
     const expandedName = rawName.replace(/\{senderName\}/g, safeSenderName).trim();
-    const emailPart = settings.smtpFromEmail as string;
+    const emailPart = settings.smtpFromEmail;
     resolvedFrom = expandedName ? `${expandedName} <${emailPart}>` : emailPart;
   } else {
     resolvedFrom =
-      settings?.smtpFrom ||
+      (typeof settings?.smtpFrom === 'string' ? settings.smtpFrom : '') ||
       process.env.SMTP_FROM ||
       `Postino <noreply@${mailgunDomain || 'postino.pro'}>`;
   }

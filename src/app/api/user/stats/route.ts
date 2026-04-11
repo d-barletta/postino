@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { AggregateField, Timestamp } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 
 type StatsPeriod = '24h' | '7d' | '30d' | 'all';
@@ -14,58 +13,71 @@ const PERIOD_MS: Record<Exclude<StatsPeriod, 'all'>, number> = {
 
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
-    const db = adminDb();
+    const user = await verifyUserRequest(request);
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const periodParam = searchParams.get('period') ?? 'all';
     const period: StatsPeriod = VALID_PERIODS.has(periodParam as StatsPeriod)
       ? (periodParam as StatsPeriod)
       : 'all';
 
-    let base = db.collection('emailLogs').where('userId', '==', decoded.uid);
-    if (period !== 'all') {
-      const from = new Date(Date.now() - PERIOD_MS[period]);
-      base = base.where('receivedAt', '>=', Timestamp.fromDate(from)) as typeof base;
-    }
+    const from = period !== 'all' ? new Date(Date.now() - PERIOD_MS[period]) : null;
 
-    // Use server-side aggregation queries to avoid reading every document.
-    // For the 'all' period we also fetch the user doc to include memory chat token usage.
-    const [
-      totalResult,
-      forwardedResult,
-      errorResult,
-      skippedResult,
-      aggregateResult,
-      userDocResult,
-    ] = await Promise.all([
-      base.count().get(),
-      base.where('status', '==', 'forwarded').count().get(),
-      base.where('status', '==', 'error').count().get(),
-      base.where('status', '==', 'skipped').count().get(),
-      base
-        .aggregate({
-          totalTokensUsed: AggregateField.sum('tokensUsed'),
-          totalEstimatedCost: AggregateField.sum('estimatedCost'),
-        })
-        .get(),
-      period === 'all' ? db.collection('users').doc(decoded.uid).get() : Promise.resolve(null),
-    ]);
+    const buildBaseCount = (): any => {
+      let q = supabase
+        .from('email_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (from) q = q.gte('received_at', from.toISOString());
+      return q;
+    };
 
-    const userData = userDocResult?.data?.() ?? null;
+    const buildBaseAgg = (): any => {
+      let q = supabase
+        .from('email_logs')
+        .select('total_tokens:tokens_used.sum(), total_cost:estimated_cost.sum()')
+        .eq('user_id', user.id);
+      if (from) q = q.gte('received_at', from.toISOString());
+      return q;
+    };
+
+    const [totalResult, forwardedResult, errorResult, skippedResult, aggResult, userResult] =
+      await Promise.all([
+        buildBaseCount(),
+        buildBaseCount().eq('status', 'forwarded'),
+        buildBaseCount().eq('status', 'error'),
+        buildBaseCount().eq('status', 'skipped'),
+        buildBaseAgg(),
+        period === 'all'
+          ? supabase
+              .from('users')
+              .select('memory_tokens_used, memory_estimated_cost')
+              .eq('id', user.id)
+              .single()
+          : Promise.resolve({ data: null }),
+      ]);
+
+    const aggData = aggResult.data?.[0] as
+      | { total_tokens: number | null; total_cost: number | null }
+      | undefined;
+    const userData = userResult.data as {
+      memory_tokens_used: number | null;
+      memory_estimated_cost: number | null;
+    } | null;
+
     const memoryTokensUsed =
-      typeof userData?.memoryTokensUsed === 'number' ? userData.memoryTokensUsed : 0;
+      typeof userData?.memory_tokens_used === 'number' ? userData.memory_tokens_used : 0;
     const memoryEstimatedCost =
-      typeof userData?.memoryEstimatedCost === 'number' ? userData.memoryEstimatedCost : 0;
+      typeof userData?.memory_estimated_cost === 'number' ? userData.memory_estimated_cost : 0;
 
     const stats = {
-      totalEmailsReceived: totalResult.data().count,
-      totalEmailsForwarded: forwardedResult.data().count,
-      totalEmailsError: errorResult.data().count,
-      totalEmailsSkipped: skippedResult.data().count,
-      // Firestore sum() returns null when no documents match; treat as 0.
+      totalEmailsReceived: totalResult.count ?? 0,
+      totalEmailsForwarded: forwardedResult.count ?? 0,
+      totalEmailsError: errorResult.count ?? 0,
+      totalEmailsSkipped: skippedResult.count ?? 0,
       // Memory chat token usage (only included in 'all' period since it is not time-bucketed).
-      totalTokensUsed: (aggregateResult.data().totalTokensUsed ?? 0) + memoryTokensUsed,
-      totalEstimatedCost: (aggregateResult.data().totalEstimatedCost ?? 0) + memoryEstimatedCost,
+      totalTokensUsed: (aggData?.total_tokens ?? 0) + memoryTokensUsed,
+      totalEstimatedCost: (aggData?.total_cost ?? 0) + memoryEstimatedCost,
     };
 
     return NextResponse.json({ stats });

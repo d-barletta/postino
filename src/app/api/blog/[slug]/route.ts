@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(
   _request: NextRequest,
@@ -7,28 +7,30 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const db = adminDb();
-    const snap = await db
-      .collection('blogArticles')
-      .where('slug', '==', slug)
-      .where('published', '==', true)
+    const supabase = createAdminClient();
+    const { data: row, error } = await supabase
+      .from('blog_articles')
+      .select('id, slug, title, thumbnail_url, language, created_at, updated_at, content, tags')
+      .eq('slug', slug)
+      .eq('published', true)
       .limit(1)
-      .get();
-    if (snap.empty) {
+      .single();
+
+    if (error || !row) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    const d = snap.docs[0];
-    const data = d.data();
+
     return NextResponse.json({
       article: {
-        id: d.id,
-        title: data.title,
-        slug: data.slug,
-        content: data.content,
-        tags: data.tags ?? [],
-        thumbnailUrl: data.thumbnailUrl ?? '',
-        createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        content: row.content ?? '',
+        tags: row.tags ?? [],
+        thumbnailUrl: row.thumbnail_url ?? '',
+        language: row.language ?? 'en',
+        createdAt: row.created_at ?? null,
+        updatedAt: row.updated_at ?? null,
       },
     });
   } catch (error) {

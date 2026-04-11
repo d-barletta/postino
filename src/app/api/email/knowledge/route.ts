@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 
@@ -51,30 +51,33 @@ function applyMerges(map: CountMap, merges: Array<{ canonical: string; aliases: 
 
 export async function GET(request: NextRequest) {
   try {
-    const decoded = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
 
-    const db = adminDb();
+    const supabase = createAdminClient();
 
     // Fetch email logs and entity merges in parallel
-    const [snap, mergesSnap] = await Promise.all([
-      db
-        .collection('emailLogs')
-        .where('userId', '==', decoded.uid)
-        .orderBy('receivedAt', 'desc')
-        .limit(FETCH_LIMIT)
-        .get(),
-      db.collection('entityMerges').where('userId', '==', decoded.uid).limit(MERGES_LIMIT).get(),
+    const [{ data: emailLogs }, { data: mergeRows }] = await Promise.all([
+      supabase
+        .from('email_logs')
+        .select('email_analysis')
+        .eq('user_id', user.id)
+        .order('received_at', { ascending: false })
+        .limit(FETCH_LIMIT),
+      supabase
+        .from('entity_merges')
+        .select('category, canonical, aliases')
+        .eq('user_id', user.id)
+        .limit(MERGES_LIMIT),
     ]);
 
     // Group merges by category
     const mergesByCategory: Record<string, Array<{ canonical: string; aliases: string[] }>> = {};
-    for (const doc of mergesSnap.docs) {
-      const d = doc.data();
-      const cat = d.category as string;
+    for (const row of mergeRows ?? []) {
+      const cat = row.category as string;
       if (!mergesByCategory[cat]) mergesByCategory[cat] = [];
       mergesByCategory[cat].push({
-        canonical: d.canonical as string,
-        aliases: d.aliases as string[],
+        canonical: row.canonical as string,
+        aliases: row.aliases as string[],
       });
     }
 
@@ -90,8 +93,8 @@ export async function GET(request: NextRequest) {
 
     let totalEmails = 0;
 
-    for (const doc of snap.docs) {
-      const analysis = doc.data().emailAnalysis as Record<string, unknown> | undefined;
+    for (const row of emailLogs ?? []) {
+      const analysis = row.email_analysis as Record<string, unknown> | undefined;
       if (!analysis) continue;
       totalEmails++;
       incrementAll(topics, analysis.topics);

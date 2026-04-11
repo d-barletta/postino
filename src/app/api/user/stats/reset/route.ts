@@ -1,27 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-
-const BATCH_SIZE = 400;
 
 export async function POST(request: NextRequest) {
   try {
-    const { uid } = await verifyUserRequest(request);
-    const db = adminDb();
-    const logsSnap = await db.collection('emailLogs').where('userId', '==', uid).get();
+    const { id: uid } = await verifyUserRequest(request);
+    const supabase = createAdminClient();
 
-    for (let i = 0; i < logsSnap.docs.length; i += BATCH_SIZE) {
-      const batch = db.batch();
-      logsSnap.docs.slice(i, i + BATCH_SIZE).forEach((doc) => {
-        batch.update(doc.ref, {
-          tokensUsed: 0,
-          estimatedCost: 0,
-        });
-      });
-      await batch.commit();
-    }
+    const { count: logCount } = await supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', uid);
 
-    return NextResponse.json({ success: true, updatedCount: logsSnap.size });
+    await supabase
+      .from('email_logs')
+      .update({ tokens_used: 0, estimated_cost: 0 })
+      .eq('user_id', uid);
+
+    return NextResponse.json({ success: true, updatedCount: logCount ?? 0 });
   } catch (err) {
     return handleUserError(err, 'user/stats/reset POST');
   }

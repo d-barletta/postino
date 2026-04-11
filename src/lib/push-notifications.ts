@@ -1,8 +1,48 @@
-import { getMessaging, getToken, onMessage, deleteToken } from 'firebase/messaging';
-import type { Unsubscribe } from 'firebase/messaging';
-import app from '@/lib/firebase';
+import OneSignal from 'react-onesignal';
 
-const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+let oneSignalInitPromise: Promise<void> | null = null;
+
+function isLocalRuntime(): boolean {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return (
+    process.env.NODE_ENV !== 'production' ||
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '::1'
+  );
+}
+
+async function cleanupLegacyPushServiceWorkers(): Promise<void> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    const legacy = regs.filter((r) => r.active?.scriptURL.includes('/firebase-messaging-sw.js'));
+    await Promise.all(legacy.map((r) => r.unregister()));
+  } catch {
+    // Non-fatal cleanup: ignore failures.
+  }
+}
+
+export function cleanupLegacyPushArtifacts(): void {
+  void cleanupLegacyPushServiceWorkers();
+}
+
+function canUseOneSignalOnCurrentOrigin(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (isLocalRuntime()) return false;
+  if (!ONESIGNAL_APP_ID) return false;
+  if (!APP_URL) return false;
+
+  try {
+    const configuredOrigin = new URL(APP_URL).origin;
+    return window.location.origin === configuredOrigin;
+  } catch {
+    return false;
+  }
+}
 
 /** Returns true when the current environment supports web push notifications. */
 export function isPushSupported(): boolean {
@@ -21,136 +61,84 @@ export function getNotificationPermission(): NotificationPermission | null {
 }
 
 /**
- * Registers the FCM service worker, requests notification permission, retrieves the
- * FCM registration token, and persists it to the server.
- *
- * @param getIdToken - Async function that returns a Firebase ID token for the current user.
- * @returns `true` when the subscription succeeds, `false` otherwise.
+ * Initializes the OneSignal SDK. Call once at app startup (client-side only).
  */
-export async function subscribeToPushNotifications(
-  getIdToken: () => Promise<string>,
-): Promise<boolean> {
-  if (!isPushSupported() || !app || !VAPID_KEY) return false;
+export function initOneSignal(): void {
+  cleanupLegacyPushArtifacts();
+  if (!canUseOneSignalOnCurrentOrigin()) return;
+  void ensureOneSignalInitialized();
+}
 
+async function ensureOneSignalInitialized(): Promise<void> {
+  if (!canUseOneSignalOnCurrentOrigin()) return;
+  const appId = ONESIGNAL_APP_ID;
+  if (!appId) return;
+  if (!oneSignalInitPromise) {
+    oneSignalInitPromise = OneSignal.init({
+      appId,
+      serviceWorkerParam: { scope: '/' },
+      serviceWorkerPath: '/OneSignalSDKWorker.js',
+      allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
+    });
+  }
   try {
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return false;
-
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/',
-    });
-    await navigator.serviceWorker.ready;
-
-    const messaging = getMessaging(app);
-    const token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: registration,
-    });
-    if (!token) return false;
-
-    const idToken = await getIdToken();
-    const res = await fetch('/api/push/register', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ fcmToken: token }),
-    });
-    return res.ok;
+    await oneSignalInitPromise;
   } catch (err) {
-    console.error('Failed to subscribe to push notifications:', err);
+    oneSignalInitPromise = null;
+    console.error('[OneSignal] init failed:', err);
+    throw err;
+  }
+}
+
+/**
+ * Associates the OneSignal subscription with a specific user ID.
+ * Call after the user is authenticated.
+ */
+/**
+ * Requests push notification permission and opts the user in.
+ * @returns `true` when permission is granted, `false` otherwise.
+ */
+export async function subscribeToPushNotifications(userId?: string): Promise<boolean> {
+  if (!isPushSupported() || !canUseOneSignalOnCurrentOrigin()) return false;
+  try {
+    await ensureOneSignalInitialized();
+    if (userId) {
+      await OneSignal.login(userId);
+    }
+    const granted = await OneSignal.Notifications.requestPermission();
+    if (granted) {
+      await OneSignal.User.PushSubscription.optIn();
+    }
+    return granted;
+  } catch (err) {
+    console.error('[OneSignal] subscribe failed:', err);
     return false;
   }
 }
 
 /**
- * Deletes the current FCM token and removes it from the server.
- *
- * @param getIdToken - Async function that returns a Firebase ID token for the current user.
- * @returns `true` when the unsubscription succeeds, `false` otherwise.
+ * Opts the user out of push notifications without revoking browser permission.
+ * @returns `true` when the operation succeeds.
  */
-export async function unsubscribeFromPushNotifications(
-  getIdToken: () => Promise<string>,
-): Promise<boolean> {
-  if (!isPushSupported() || !app || !VAPID_KEY) return false;
-
+export async function unsubscribeFromPushNotifications(): Promise<boolean> {
+  if (!isPushSupported() || !canUseOneSignalOnCurrentOrigin()) return false;
   try {
-    // We need the current token before deleting it so we can remove it from the server.
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    const swRegistration = registrations.find((r) =>
-      r.active?.scriptURL.includes('firebase-messaging-sw'),
-    );
-
-    const messaging = getMessaging(app);
-    let currentToken: string | null = null;
-    try {
-      currentToken = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        ...(swRegistration ? { serviceWorkerRegistration: swRegistration } : {}),
-      });
-    } catch {
-      // Token may already be invalid – proceed with deleteToken anyway.
-    }
-
-    await deleteToken(messaging);
-
-    if (currentToken) {
-      const idToken = await getIdToken();
-      await fetch('/api/push/register', {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fcmToken: currentToken }),
-      });
-    }
+    await ensureOneSignalInitialized();
+    await OneSignal.User.PushSubscription.optOut();
     return true;
   } catch (err) {
-    console.error('Failed to unsubscribe from push notifications:', err);
+    console.error('[OneSignal] unsubscribe failed:', err);
     return false;
   }
 }
 
-/**
- * Listens for FCM messages while the app is in the foreground and shows a browser
- * notification for each one (mirrors the background handler in the service worker).
- *
- * @returns An unsubscribe function, or `null` when not supported.
- */
-export function setupForegroundMessageHandler(): Unsubscribe | null {
-  if (!app || typeof window === 'undefined') return null;
-
+/** Returns whether the user is currently opted in to push notifications. */
+export function isOneSignalOptedIn(): boolean {
+  if (!canUseOneSignalOnCurrentOrigin()) return false;
   try {
-    const messaging = getMessaging(app);
-    return onMessage(messaging, (payload) => {
-      // Notification content is in payload.data (data-only messages); fall back to
-      // payload.notification for any legacy messages that still carry the field.
-      const data = payload.data ?? {};
-      const title = data.title ?? payload.notification?.title ?? 'New Email';
-      const options: NotificationOptions = {
-        body: data.body ?? payload.notification?.body ?? '',
-        icon: data.icon ?? payload.notification?.icon ?? '/web-app-manifest-192x192.png',
-        badge: data.badge ?? '/favicon-96x96.png',
-        tag: data.tag ?? 'postino-email',
-        data: payload.data ?? {},
-      };
-
-      // Prefer showing via the service worker so the notification looks identical
-      // to background notifications (supports actions, badge, etc.).
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready
-          .then((reg) => reg.showNotification(title, options))
-          .catch(() => {
-            if (Notification.permission === 'granted') new Notification(title, options);
-          });
-      } else if (Notification.permission === 'granted') {
-        new Notification(title, options);
-      }
-    });
-  } catch (err) {
-    console.error('Failed to set up foreground message handler:', err);
-    return null;
+    if (!oneSignalInitPromise) return false;
+    return OneSignal.User.PushSubscription.optedIn ?? false;
+  } catch {
+    return false;
   }
 }

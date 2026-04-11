@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { processEmailWithAgent } from '@/lib/agent';
 import type { RuleForProcessing } from '@/lib/openrouter';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
@@ -15,10 +15,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await verifyAdminRequest(request);
 
     const { id } = await params;
-    const db = adminDb();
-    const logSnap = await db.collection('emailLogs').doc(id).get();
+    const supabase = createAdminClient();
 
-    if (!logSnap.exists) {
+    const { data: logRow } = await supabase
+      .from('email_logs')
+      .select('user_id, from_address, subject, original_body')
+      .eq('id', id)
+      .single();
+
+    if (!logRow) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -33,48 +38,49 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // No body or invalid JSON — proceed without model override
     }
 
-    const data = logSnap.data()!;
-    const userId = data.userId as string;
-    const emailFrom = (data.fromAddress as string) || '';
-    const emailSubject = (data.subject as string) || '';
-    const originalBody = (data.originalBody as string) || '';
+    const userId = logRow.user_id as string;
+    const emailFrom = (logRow.from_address as string) || '';
+    const emailSubject = (logRow.subject as string) || '';
+    const originalBody = (logRow.original_body as string) || '';
 
     // Fetch the email owner's analysis language preference
-    const userSnap = await db.collection('users').doc(userId).get();
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('analysis_output_language')
+      .eq('id', userId)
+      .single();
     const analysisOutputLanguage =
-      typeof userSnap.data()?.analysisOutputLanguage === 'string'
-        ? (userSnap.data()!.analysisOutputLanguage as string) || undefined
+      typeof userRow?.analysis_output_language === 'string'
+        ? (userRow.analysis_output_language as string) || undefined
         : undefined;
 
     // Fetch active rules for this email's owner
-    const rulesSnap = await db
-      .collection('rules')
-      .where('userId', '==', userId)
-      .where('isActive', '==', true)
-      .get();
+    const { data: rulesRows } = await supabase
+      .from('rules')
+      .select('id, name, text, match_sender, match_subject, match_body, sort_order, created_at')
+      .eq('user_id', userId)
+      .eq('is_active', true);
 
-    // Sort rules by sortOrder ASC (user-defined), then by createdAt ASC as tiebreaker,
+    // Sort rules by sort_order ASC (user-defined), then by created_at ASC as tiebreaker,
     // so rules are always applied in a deterministic order that matches what the user sees.
-    const allRules = rulesSnap.docs
+    const allRules = (rulesRows ?? [])
       .sort((a, b) => {
         const aOrder =
-          typeof a.data().sortOrder === 'number'
-            ? (a.data().sortOrder as number)
-            : Number.MAX_SAFE_INTEGER;
+          typeof a.sort_order === 'number' ? (a.sort_order as number) : Number.MAX_SAFE_INTEGER;
         const bOrder =
-          typeof b.data().sortOrder === 'number'
-            ? (b.data().sortOrder as number)
-            : Number.MAX_SAFE_INTEGER;
+          typeof b.sort_order === 'number' ? (b.sort_order as number) : Number.MAX_SAFE_INTEGER;
         if (aOrder !== bOrder) return aOrder - bOrder;
-        return (a.data().createdAt?.toMillis?.() ?? 0) - (b.data().createdAt?.toMillis?.() ?? 0);
+        const aTime = a.created_at ? new Date(a.created_at as string).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at as string).getTime() : 0;
+        return aTime - bTime;
       })
       .map((d) => ({
-        id: d.id,
-        name: (d.data().name as string) || d.id,
-        text: d.data().text as string,
-        matchSender: (d.data().matchSender as string) || '',
-        matchSubject: (d.data().matchSubject as string) || '',
-        matchBody: (d.data().matchBody as string) || '',
+        id: d.id as string,
+        name: (d.name as string) || (d.id as string),
+        text: d.text as string,
+        matchSender: (d.match_sender as string) || '',
+        matchSubject: (d.match_subject as string) || '',
+        matchBody: (d.match_body as string) || '',
       }));
 
     // Filter rules by pattern matching (same logic as the inbound route)

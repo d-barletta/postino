@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { BlogArticleContent } from '@/components/blog/BlogArticleContent';
 import type { BlogArticle } from '@/types';
 
@@ -10,28 +10,29 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 const getArticle = unstable_cache(
   async (slug: string): Promise<BlogArticle | null> => {
     try {
-      const db = adminDb();
-      const snap = await db
-        .collection('blogArticles')
-        .where('slug', '==', slug)
-        .where('published', '==', true)
+      const supabase = createAdminClient();
+      const { data } = await supabase
+        .from('blog_articles')
+        .select(
+          'id, title, slug, content, tags, thumbnail_url, language, translation_group_id, created_at, updated_at',
+        )
+        .eq('slug', slug)
+        .eq('published', true)
         .limit(1)
-        .get();
-      if (snap.empty) return null;
-      const d = snap.docs[0];
-      const data = d.data();
+        .single();
+      if (!data) return null;
       return {
-        id: d.id,
+        id: data.id,
         title: data.title,
         slug: data.slug,
         content: data.content,
         tags: data.tags ?? [],
-        thumbnailUrl: data.thumbnailUrl ?? '',
+        thumbnailUrl: data.thumbnail_url ?? '',
         published: true,
         language: data.language ?? 'en',
-        translationGroupId: data.translationGroupId ?? undefined,
-        createdAt: data.createdAt?.toDate?.() ?? new Date(),
-        updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
+        translationGroupId: data.translation_group_id ?? undefined,
+        createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+        updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(),
       };
     } catch {
       return null;
@@ -44,17 +45,15 @@ const getArticle = unstable_cache(
 const getArticleSiblings = unstable_cache(
   async (groupId: string): Promise<Record<string, string>> => {
     try {
-      const db = adminDb();
-      const snap = await db
-        .collection('blogArticles')
-        .where('translationGroupId', '==', groupId)
-        .where('published', '==', true)
-        .select('slug', 'language')
-        .get();
+      const supabase = createAdminClient();
+      const { data } = await supabase
+        .from('blog_articles')
+        .select('slug, language')
+        .eq('translation_group_id', groupId)
+        .eq('published', true);
       const result: Record<string, string> = {};
-      for (const d of snap.docs) {
-        const data = d.data();
-        if (data.language && data.slug) result[data.language] = data.slug;
+      for (const row of data ?? []) {
+        if (row.language && row.slug) result[row.language] = row.slug;
       }
       return result;
     } catch {

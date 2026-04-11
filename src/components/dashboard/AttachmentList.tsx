@@ -14,7 +14,7 @@ interface AttachmentListProps {
 }
 
 export function AttachmentList({ emailId, names, attachments = [] }: AttachmentListProps) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
@@ -29,7 +29,7 @@ export function AttachmentList({ emailId, names, attachments = [] }: AttachmentL
         }));
 
   const handleDownload = async (attachment: EmailAttachmentInfo) => {
-    if (!emailId || !attachment.canDownload || !firebaseUser) {
+    if (!emailId || !attachment.canDownload || !authUser) {
       toast.error(t.dashboard.toasts.downloadAttachmentFailed);
       return;
     }
@@ -37,7 +37,7 @@ export function AttachmentList({ emailId, names, attachments = [] }: AttachmentL
     setDownloadingId(attachment.id);
 
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const response = await fetch(`/api/email/${emailId}/attachments/${attachment.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

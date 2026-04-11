@@ -3,24 +3,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/hooks/useAuth';
 import type { EntityFlowGraph } from '@/types';
 
-export function useFlowGraph(firebaseUser: { getIdToken: () => Promise<string> } | null) {
+export function useFlowGraph() {
   const { t } = useI18n();
+  const { authUser, getIdToken } = useAuth();
   const [graph, setGraph] = useState<EntityFlowGraph | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
-    if (firebaseUser) setHasFetched(false);
-  }, [firebaseUser]);
+    if (authUser) setHasFetched(false);
+  }, [authUser]);
 
   const fetchGraph = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/flow', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -33,13 +35,13 @@ export function useFlowGraph(firebaseUser: { getIdToken: () => Promise<string> }
       setLoading(false);
       setHasFetched(true);
     }
-  }, [firebaseUser, t]);
+  }, [authUser, getIdToken, t]);
 
   const generateGraph = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setGenerating(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/entities/flow', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -53,7 +55,7 @@ export function useFlowGraph(firebaseUser: { getIdToken: () => Promise<string> }
     } finally {
       setGenerating(false);
     }
-  }, [firebaseUser, t]);
+  }, [authUser, getIdToken, t]);
 
   return { graph, hasFetched, loading, generating, fetchGraph, generateGraph };
 }

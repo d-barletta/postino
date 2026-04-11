@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { AggregateField, Timestamp } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 type StatsPeriod = '24h' | '7d' | '30d' | 'all';
@@ -15,19 +14,28 @@ const PERIOD_MS: Record<Exclude<StatsPeriod, 'all'>, number> = {
 export async function GET(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
-    const db = adminDb();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const periodParam = searchParams.get('period') ?? 'all';
     const period: StatsPeriod = VALID_PERIODS.has(periodParam as StatsPeriod)
       ? (periodParam as StatsPeriod)
       : 'all';
 
-    let emailBase = db.collection('emailLogs') as FirebaseFirestore.Query;
-    if (period !== 'all') {
-      const from = new Date(Date.now() - PERIOD_MS[period]);
-      emailBase = db.collection('emailLogs').where('receivedAt', '>=', Timestamp.fromDate(from));
-    }
-    const filteredBase = emailBase;
+    const from = period !== 'all' ? new Date(Date.now() - PERIOD_MS[period]) : null;
+
+    const buildBaseCount = (): any => {
+      let q = supabase.from('email_logs').select('*', { count: 'exact', head: true });
+      if (from) q = q.gte('received_at', from.toISOString());
+      return q;
+    };
+
+    const buildBaseAgg = (): any => {
+      let q = supabase
+        .from('email_logs')
+        .select('total_tokens:tokens_used.sum(), total_cost:estimated_cost.sum()');
+      if (from) q = q.gte('received_at', from.toISOString());
+      return q;
+    };
 
     // Use server-side aggregation queries to avoid reading every document.
     // totalUsers and activeUsers are always all-time counts (not filtered by period).
@@ -40,29 +48,28 @@ export async function GET(request: NextRequest) {
       skippedResult,
       emailAggResult,
     ] = await Promise.all([
-      db.collection('users').count().get(),
-      db.collection('users').where('isActive', '==', true).count().get(),
-      filteredBase.count().get(),
-      filteredBase.where('status', '==', 'forwarded').count().get(),
-      filteredBase.where('status', '==', 'error').count().get(),
-      filteredBase.where('status', '==', 'skipped').count().get(),
-      filteredBase
-        .aggregate({
-          totalTokensUsed: AggregateField.sum('tokensUsed'),
-          totalEstimatedCost: AggregateField.sum('estimatedCost'),
-        })
-        .get(),
+      supabase.from('users').select('*', { count: 'exact', head: true }),
+      supabase.from('users').select('*', { count: 'exact', head: true }).eq('is_active', true),
+      buildBaseCount(),
+      buildBaseCount().eq('status', 'forwarded'),
+      buildBaseCount().eq('status', 'error'),
+      buildBaseCount().eq('status', 'skipped'),
+      buildBaseAgg(),
     ]);
 
+    const aggData = emailAggResult.data?.[0] as
+      | { total_tokens: number | null; total_cost: number | null }
+      | undefined;
+
     const stats = {
-      totalUsers: totalUsersResult.data().count,
-      activeUsers: activeUsersResult.data().count,
-      totalEmailsReceived: totalEmailsResult.data().count,
-      totalEmailsForwarded: forwardedResult.data().count,
-      totalEmailsError: errorResult.data().count,
-      totalEmailsSkipped: skippedResult.data().count,
-      totalTokensUsed: emailAggResult.data().totalTokensUsed ?? 0,
-      totalEstimatedCost: emailAggResult.data().totalEstimatedCost ?? 0,
+      totalUsers: totalUsersResult.count ?? 0,
+      activeUsers: activeUsersResult.count ?? 0,
+      totalEmailsReceived: totalEmailsResult.count ?? 0,
+      totalEmailsForwarded: forwardedResult.count ?? 0,
+      totalEmailsError: errorResult.count ?? 0,
+      totalEmailsSkipped: skippedResult.count ?? 0,
+      totalTokensUsed: aggData?.total_tokens ?? 0,
+      totalEstimatedCost: aggData?.total_cost ?? 0,
     };
 
     return NextResponse.json({ stats });

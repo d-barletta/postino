@@ -1,5 +1,4 @@
-import { Timestamp } from 'firebase-admin/firestore';
-import { adminDb } from '@/lib/firebase-admin';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   processQueuedInboundPayload,
   sendEmailCompletionPushNotification,
@@ -13,19 +12,22 @@ async function updateWebhookLogForJob(
   status: string,
   result?: string,
 ): Promise<void> {
-  const db = adminDb();
+  const supabase = createAdminClient();
   try {
-    const snap = await db
-      .collection('mailgunWebhookLogs')
-      .where('linked.jobId', '==', jobId)
-      .limit(1)
-      .get();
-    if (!snap.empty) {
-      await snap.docs[0].ref.update({
-        status,
-        ...(result !== undefined ? { result } : {}),
-        updatedAt: Timestamp.now(),
-      });
+    const { data: rows } = await supabase
+      .from('mailgun_webhook_logs')
+      .select('id')
+      .filter('linked->>jobId', 'eq', jobId)
+      .limit(1);
+    if (rows && rows.length > 0) {
+      await supabase
+        .from('mailgun_webhook_logs')
+        .update({
+          status,
+          ...(result !== undefined ? { result } : {}),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', rows[0].id);
     }
   } catch (err) {
     console.error('Failed to update webhook log status for job', jobId, err);
@@ -38,13 +40,13 @@ interface EmailJob {
   idempotencyKey: string;
   attempts: number;
   maxAttempts: number;
-  notBefore?: FirebaseFirestore.Timestamp;
-  lockUntil?: FirebaseFirestore.Timestamp;
+  notBefore?: string;
+  lockUntil?: string;
   lockedBy?: string;
   lastError?: string;
-  createdAt: FirebaseFirestore.Timestamp;
-  updatedAt: FirebaseFirestore.Timestamp;
-  completedAt?: FirebaseFirestore.Timestamp;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
 }
 
 const DEFAULT_MAX_ATTEMPTS = 5;
@@ -60,21 +62,21 @@ export async function enqueueEmailJob(
   payload: QueuedInboundPayload,
   idempotencyKey: string,
 ): Promise<boolean> {
-  const db = adminDb();
-  const now = Timestamp.now();
-  const jobRef = db.collection('emailJobs').doc(idempotencyKey);
+  const supabase = createAdminClient();
+  const now = new Date().toISOString();
 
   try {
-    await jobRef.create({
+    const { error } = await supabase.from('email_jobs').insert({
+      id: idempotencyKey,
       status: 'pending',
-      payload,
-      idempotencyKey,
+      payload: payload as unknown as import('@/types/supabase').Json,
       attempts: 0,
-      maxAttempts: DEFAULT_MAX_ATTEMPTS,
-      createdAt: now,
-      updatedAt: now,
-    } as EmailJob);
-    return true;
+      max_attempts: DEFAULT_MAX_ATTEMPTS,
+      created_at: now,
+      updated_at: now,
+    });
+    // If insert fails due to duplicate key, return false (already enqueued)
+    return !error;
   } catch {
     return false;
   }
@@ -85,106 +87,90 @@ async function claimJob(
   workerId: string,
   now: Date,
 ): Promise<(EmailJob & { id: string }) | null> {
-  const db = adminDb();
-  const jobRef = db.collection('emailJobs').doc(jobId);
+  const supabase = createAdminClient();
+  const leaseEnd = new Date(now.getTime() + CLAIM_LEASE_MS).toISOString();
 
-  return db.runTransaction(async (tx) => {
-    const snap = await tx.get(jobRef);
-    if (!snap.exists) return null;
-
-    const data = snap.data() as EmailJob;
-
-    // Accept pending/retrying jobs, or processing jobs whose lease has expired.
-    const isClaimableStatus =
-      data.status === 'pending' || data.status === 'retrying' || data.status === 'processing';
-    if (!isClaimableStatus) return null;
-
-    if ((data.lockUntil?.toMillis?.() ?? 0) > now.getTime()) return null;
-
-    const notBeforeMs = data.notBefore?.toMillis?.() ?? 0;
-    if (notBeforeMs > now.getTime()) return null;
-
-    const attempts = (typeof data.attempts === 'number' ? data.attempts : 0) + 1;
-
-    tx.update(jobRef, {
-      status: 'processing',
-      attempts,
-      lockedBy: workerId,
-      lockUntil: Timestamp.fromMillis(now.getTime() + CLAIM_LEASE_MS),
-      updatedAt: Timestamp.now(),
-    });
-
-    return {
-      ...data,
-      id: jobId,
-      attempts,
-      status: 'processing',
-      lockedBy: workerId,
-      lockUntil: Timestamp.fromMillis(now.getTime() + CLAIM_LEASE_MS),
-    };
+  const { data: result } = await supabase.rpc('claim_email_job', {
+    p_job_id: jobId,
+    p_worker_id: workerId,
+    p_now: now.toISOString(),
+    p_lease_end: leaseEnd,
   });
+
+  if (!result) return null;
+
+  // claim_email_job returns the claimed job as JSONB or null
+  const claimed = result as unknown as (EmailJob & { id: string }) | null;
+  if (!claimed || !claimed.id) return null;
+
+  return claimed;
 }
 
 async function markJobDone(jobId: string): Promise<void> {
-  const db = adminDb();
-  await db.collection('emailJobs').doc(jobId).update({
-    status: 'done',
-    lockUntil: null,
-    lockedBy: null,
-    updatedAt: Timestamp.now(),
-    completedAt: Timestamp.now(),
-  });
+  const supabase = createAdminClient();
+  const now = new Date().toISOString();
+  await supabase
+    .from('email_jobs')
+    .update({
+      status: 'done',
+      lock_until: null,
+      locked_by: null,
+      updated_at: now,
+      completed_at: now,
+    })
+    .eq('id', jobId);
   await updateWebhookLogForJob(jobId, 'processed', 'done');
 }
 
 async function markJobRetry(job: EmailJob & { id: string }, errMsg: string): Promise<void> {
-  const db = adminDb();
+  const supabase = createAdminClient();
   const delayMs = computeRetryDelayMs(job.attempts);
-  const notBefore = Timestamp.fromMillis(Date.now() + delayMs);
+  const notBefore = new Date(Date.now() + delayMs).toISOString();
+  const now = new Date().toISOString();
 
-  // Update the email log first so that even if the job status update fails, the
-  // log reflects a non-stuck state. The job will remain re-claimable via lease
-  // expiry and will be retried on the next worker run.
-  await db
-    .collection('emailLogs')
-    .doc(job.payload.logId)
+  await supabase
+    .from('email_logs')
     .update({
       status: 'received',
-      errorMessage: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
-    });
+      error_message: `Retry scheduled after failure (${job.attempts}/${job.maxAttempts}): ${errMsg}`,
+    })
+    .eq('id', job.payload.logId);
 
-  await db.collection('emailJobs').doc(job.id).update({
-    status: 'retrying',
-    lastError: errMsg,
-    notBefore,
-    lockUntil: null,
-    lockedBy: null,
-    updatedAt: Timestamp.now(),
-  });
+  await supabase
+    .from('email_jobs')
+    .update({
+      status: 'retrying',
+      last_error: errMsg,
+      not_before: notBefore,
+      lock_until: null,
+      locked_by: null,
+      updated_at: now,
+    })
+    .eq('id', job.id);
 
   await updateWebhookLogForJob(job.id, 'retrying', 'retrying');
 }
 
 async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Promise<void> {
-  const db = adminDb();
+  const supabase = createAdminClient();
+  const now = new Date().toISOString();
 
-  // Update the email log first so that even if the job status update fails, the
-  // log reflects the error and does not stay stuck in 'processing' permanently.
-  // A job whose status update fails here will remain re-claimable via lease expiry;
-  // the idempotency guard will then recognise the terminal log state and mark it done.
-  await db.collection('emailLogs').doc(job.payload.logId).update({
-    status: 'error',
-    errorMessage: errMsg,
-  });
+  await supabase
+    .from('email_logs')
+    .update({ status: 'error', error_message: errMsg })
+    .eq('id', job.payload.logId);
 
-  await db.collection('emailJobs').doc(job.id).update({
-    status: 'failed',
-    lastError: errMsg,
-    lockUntil: null,
-    lockedBy: null,
-    updatedAt: Timestamp.now(),
-    completedAt: Timestamp.now(),
-  });
+  await supabase
+    .from('email_jobs')
+    .update({
+      status: 'failed',
+      last_error: errMsg,
+      lock_until: null,
+      locked_by: null,
+      updated_at: now,
+      completed_at: now,
+    })
+    .eq('id', job.id);
 
   await sendEmailCompletionPushNotification(
     job.payload.userId,
@@ -197,7 +183,7 @@ async function markJobFailed(job: EmailJob & { id: string }, errMsg: string): Pr
 }
 
 async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> {
-  const db = adminDb();
+  const supabase = createAdminClient();
 
   console.log('[email-jobs] processClaimedJob start', {
     jobId: job.id,
@@ -209,15 +195,12 @@ async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> 
     payloadAttachmentStoragePaths: job.payload.attachments?.map((a) => a.storagePath ?? null) ?? [],
   });
 
-  // Idempotency guard: read the current log status BEFORE overwriting it so we
-  // can detect cases where a previous worker already completed this job (e.g. the
-  // job lease expired after a successful forward but before markJobDone ran).
-  // Terminal states: forwarded / error / skipped → skip re-processing, just close
-  // the job so it is not re-queued.
-  const logSnap = await db.collection('emailLogs').doc(job.payload.logId).get();
-  const currentLogStatus = logSnap.exists
-    ? (logSnap.data()?.status as string | undefined)
-    : undefined;
+  const { data: logRow } = await supabase
+    .from('email_logs')
+    .select('status')
+    .eq('id', job.payload.logId)
+    .single();
+  const currentLogStatus = logRow?.status as string | undefined;
   if (
     currentLogStatus === 'forwarded' ||
     currentLogStatus === 'error' ||
@@ -227,18 +210,15 @@ async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> 
     return;
   }
 
-  await db.collection('emailLogs').doc(job.payload.logId).update({
-    status: 'processing',
-    processingStartedAt: Timestamp.now(),
-  });
+  const now = new Date().toISOString();
+  await supabase
+    .from('email_logs')
+    .update({ status: 'processing', processing_started_at: now })
+    .eq('id', job.payload.logId);
   await updateWebhookLogForJob(job.id, 'processing', 'processing');
 
   try {
     await processQueuedInboundPayload(job.payload);
-    // The email was forwarded successfully (processQueuedInboundPayload updated the
-    // log status). Catch markJobDone failures in isolation so that a transient
-    // Firestore error here does not cascade into the error/retry path and
-    // overwrite the 'forwarded' log status with 'error' or 'received'.
     try {
       await markJobDone(job.id);
     } catch (doneErr) {
@@ -248,8 +228,6 @@ async function processClaimedJob(job: EmailJob & { id: string }): Promise<void> 
         '):',
         doneErr,
       );
-      // The job lease will expire and it will be re-claimed; the idempotency guard
-      // above will then recognise the 'forwarded' log state and mark it done.
     }
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
@@ -268,21 +246,23 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
   processed: number;
   failed: number;
 }> {
-  const db = adminDb();
+  const supabase = createAdminClient();
   const now = new Date();
   const workerId = `worker-${process.pid}-${Math.random().toString(36).slice(2, 10)}`;
 
-  const candidatesSnap = await db
-    .collection('emailJobs')
-    .where('status', 'in', ['pending', 'retrying', 'processing'])
-    .limit(Math.max(batchSize * 3, 15))
-    .get();
+  const { data: candidates } = await supabase
+    .from('email_jobs')
+    .select(
+      'id, status, attempts, max_attempts, payload, lock_until, not_before, locked_by, last_error, created_at, updated_at, completed_at',
+    )
+    .in('status', ['pending', 'retrying', 'processing'])
+    .limit(Math.max(batchSize * 3, 15));
 
   let claimed = 0;
   let processed = 0;
   let failed = 0;
 
-  for (const candidate of candidatesSnap.docs) {
+  for (const candidate of candidates ?? []) {
     if (claimed >= batchSize) break;
 
     const job = await claimJob(candidate.id, workerId, now);
@@ -292,8 +272,12 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
 
     try {
       await processClaimedJob(job);
-      const updated = await db.collection('emailJobs').doc(job.id).get();
-      const status = updated.data()?.status as EmailJobStatus | undefined;
+      const { data: updated } = await supabase
+        .from('email_jobs')
+        .select('status')
+        .eq('id', job.id)
+        .single();
+      const status = updated?.status as EmailJobStatus | undefined;
       if (status === 'failed') {
         failed += 1;
       } else {
@@ -301,7 +285,6 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
       }
     } catch (err) {
       failed += 1;
-      // Rescue the job so it doesn't remain stuck in 'processing' forever.
       const errMsg = err instanceof Error ? err.message : String(err);
       try {
         if (job.attempts >= job.maxAttempts) {
@@ -310,7 +293,6 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
           await markJobRetry(job, errMsg);
         }
       } catch {
-        // Best-effort; lease expiry will allow reclaiming on the next run.
         console.error('Failed to rescue job', job.id, 'after processing error:', err);
       }
     }

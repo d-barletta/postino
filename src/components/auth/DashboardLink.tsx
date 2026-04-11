@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/lib/i18n';
 
 export function DashboardLink() {
-  const { firebaseUser, loading } = useAuth();
+  const { authUser, loading } = useAuth();
   const { t } = useI18n();
 
-  if (loading || !firebaseUser) return null;
+  if (loading || !authUser) return null;
 
   return (
     <div className="mt-4 text-center">

@@ -51,7 +51,7 @@ interface AdminUsersPageProps {
 }
 
 export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPageProps) {
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const adminUsers = t.admin.users;
   const [users, setUsers] = useState<User[]>([]);
@@ -65,9 +65,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
   const abortRef = useRef(false);
 
   const fetchUsers = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -80,13 +80,13 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const loadMore = useCallback(async () => {
-    if (!firebaseUser || !nextCursor) return;
+    if (!authUser || !nextCursor) return;
     setLoadingMore(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const url = `/api/admin/users?cursor=${encodeURIComponent(nextCursor)}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
@@ -98,7 +98,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     } finally {
       setLoadingMore(false);
     }
-  }, [firebaseUser, nextCursor]);
+  }, [authUser, nextCursor]);
 
   useEffect(() => {
     fetchUsers();
@@ -110,7 +110,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       pendingIds: string[],
       counters: { reanalyzed: number; failed: number; skipped: number },
     ) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       abortRef.current = false;
 
       let remaining = [...pendingIds];
@@ -124,9 +124,10 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           remaining = remaining.slice(ANALYSIS_BATCH_SIZE);
         }
 
-        let token: string;
+        let token: string | null;
         try {
-          token = await firebaseUser.getIdToken();
+          token = await getIdToken();
+          if (!token) throw new Error('No auth token');
         } catch (tokenError) {
           console.error('[admin/users/analysis] failed to refresh auth token:', tokenError);
           setReanalysis((prev) =>
@@ -228,12 +229,12 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       setConfirmAction(null);
       await fetchUsers();
     },
-    [firebaseUser, fetchUsers, t],
+    [authUser, fetchUsers, t],
   );
 
   const startReanalysis = useCallback(
     async (uid: string) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       setReanalysis({
         uid,
         totalCount: 0,
@@ -247,7 +248,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       });
 
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch(`/api/admin/users/${uid}/analysis`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -298,11 +299,11 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         );
       }
     },
-    [firebaseUser, runReanalysisBatches, t],
+    [authUser, runReanalysisBatches, t],
   );
 
   const executeAction = async () => {
-    if (!firebaseUser || !confirmAction) return;
+    if (!authUser || !confirmAction) return;
 
     if (confirmAction.action === 'reanalyze') {
       void startReanalysis(confirmAction.uid);
@@ -311,7 +312,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
 
     setConfirming(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       let res: Response;
 
       if (confirmAction.action === 'delete') {

@@ -11,11 +11,11 @@ import {
   getNotificationPermission,
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications,
-  setupForegroundMessageHandler,
+  isOneSignalOptedIn,
 } from '@/lib/push-notifications';
 
 export function PushNotificationButton() {
-  const { firebaseUser } = useAuth();
+  const { authUser } = useAuth();
   const { t } = useI18n();
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
@@ -29,25 +29,15 @@ export function PushNotificationButton() {
     if (ok) {
       const perm = getNotificationPermission();
       setPermission(perm);
-      setSubscribed(perm === 'granted');
+      setSubscribed(isOneSignalOptedIn());
     }
   }, []);
 
-  // When subscribed, keep a foreground message handler alive so that push
-  // notifications received while the app is open are still displayed.
-  useEffect(() => {
-    if (!subscribed) return;
-    const unsubscribe = setupForegroundMessageHandler();
-    return () => {
-      unsubscribe?.();
-    };
-  }, [subscribed]);
-
   const handleEnable = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setLoading(true);
     try {
-      const success = await subscribeToPushNotifications(() => firebaseUser.getIdToken());
+      const success = await subscribeToPushNotifications(authUser.id);
       if (success) {
         setPermission('granted');
         setSubscribed(true);
@@ -55,18 +45,18 @@ export function PushNotificationButton() {
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   const handleDisable = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setLoading(true);
     try {
-      await unsubscribeFromPushNotifications(() => firebaseUser.getIdToken());
+      await unsubscribeFromPushNotifications();
       setSubscribed(false);
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   if (!supported) return null;
 

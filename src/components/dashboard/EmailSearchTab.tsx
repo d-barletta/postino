@@ -455,7 +455,7 @@ export function EmailSearchTab({
   knowledgeData,
 }: EmailSearchTabProps) {
   const { t, locale } = useI18n();
-  const { firebaseUser, user } = useAuth();
+  const { authUser, user, getIdToken } = useAuth();
   const isAdmin = user?.isAdmin === true;
   const ts = t.dashboard.search;
 
@@ -527,11 +527,11 @@ export function EmailSearchTab({
       }
       return;
     }
-    if (!firebaseUser || suggestionsFetched.current) return;
+    if (!authUser || suggestionsFetched.current) return;
     suggestionsFetched.current = true;
     setSuggestionsLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/email/knowledge', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -551,7 +551,7 @@ export function EmailSearchTab({
     } finally {
       setSuggestionsLoading(false);
     }
-  }, [firebaseUser, knowledgeData]);
+  }, [authUser, knowledgeData]);
 
   // Fetch suggestions when advanced section is first opened
   useEffect(() => {
@@ -640,12 +640,12 @@ export function EmailSearchTab({
 
   const fetchLogs = useCallback(
     async (targetPage: number, isRefresh = false) => {
-      if (!firebaseUser) return;
+      if (!authUser) return;
       if (isRefresh) setRefreshing(true);
       else setLogsLoading(true);
       setTotalCount(undefined);
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const params = new URLSearchParams({
           page: String(targetPage),
           pageSize: String(PAGE_SIZE),
@@ -687,14 +687,14 @@ export function EmailSearchTab({
         setRefreshing(false);
       }
     },
-    [firebaseUser, applied],
+    [authUser, applied],
   );
 
   const fetchTotalCount = useCallback(async () => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setTotalEmailCountLoading(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch('/api/email/logs/count', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -707,22 +707,22 @@ export function EmailSearchTab({
     } finally {
       setTotalEmailCountLoading(false);
     }
-  }, [firebaseUser]);
+  }, [authUser]);
 
   useEffect(() => {
     setPage(1);
     fetchLogs(1);
-  }, [firebaseUser, applied]);
+  }, [authUser, applied]);
 
   // Fetch total email count asynchronously when no filters are active.
   useEffect(() => {
-    if (!firebaseUser) return;
+    if (!authUser) return;
     setTotalEmailCount(undefined);
     const hasActiveFilters = hasActiveFilter(applied);
     if (!hasActiveFilters) {
       fetchTotalCount();
     }
-  }, [firebaseUser, applied]);
+  }, [authUser, applied]);
 
   const handleApplyFilters = () => {
     setApplied({ ...pending });
@@ -753,7 +753,7 @@ export function EmailSearchTab({
 
   const fetchExpandedEmail = useCallback(
     async (logId: string) => {
-      if (!firebaseUser || fetchedExpandedIds.current.has(logId)) return;
+      if (!authUser || fetchedExpandedIds.current.has(logId)) return;
       fetchedExpandedIds.current.add(logId);
       setExpandedData((prev) => ({
         ...prev,
@@ -769,7 +769,7 @@ export function EmailSearchTab({
         },
       }));
       try {
-        const token = await firebaseUser.getIdToken();
+        const token = await getIdToken();
         const res = await fetch(`/api/email/original/${logId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -821,7 +821,7 @@ export function EmailSearchTab({
         }));
       }
     },
-    [firebaseUser],
+    [authUser],
   );
 
   const handleToggleExpand = (logId: string) => {
@@ -835,10 +835,10 @@ export function EmailSearchTab({
   };
 
   const handleDeleteEmail = useCallback(async () => {
-    if (!deleteEmailId || !firebaseUser) return;
+    if (!deleteEmailId || !authUser) return;
     setDeleting(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const res = await fetch(`/api/email/${deleteEmailId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -863,7 +863,7 @@ export function EmailSearchTab({
     } finally {
       setDeleting(false);
     }
-  }, [deleteEmailId, firebaseUser, selectedId, t, totalCount, totalEmailCount]);
+  }, [deleteEmailId, authUser, selectedId, t, totalCount, totalEmailCount]);
 
   // Auto-expand when selectedEmailId prop is provided (e.g., from push notification link)
   useEffect(() => {

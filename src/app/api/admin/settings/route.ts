@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { resolveAssignedEmailDomain } from '@/lib/email-utils';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
-
-const USER_UPDATE_BATCH_SIZE = 400;
+import type { Json } from '@/types/supabase';
 
 const AGENT_LIMITS = {
   agentChunkThresholdChars: { min: 5000, max: 300000 },
@@ -33,18 +31,22 @@ function pickDomainSettings(source: Record<string, unknown>) {
 export async function GET(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
-    const db = adminDb();
-    const snap = await db.collection('settings').doc('global').get();
+    const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data, updated_at')
+      .eq('id', 'global')
+      .single();
 
-    if (!snap.exists) {
+    if (!settingsRow) {
       return NextResponse.json({ settings: {} });
     }
 
-    const data = snap.data()!;
+    const data = settingsRow.data as Record<string, unknown>;
     return NextResponse.json({
       settings: {
         ...data,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() ?? null,
+        updatedAt: settingsRow.updated_at ?? null,
       },
     });
   } catch (error) {
@@ -56,10 +58,13 @@ export async function PUT(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
     const updates = await request.json();
-    const db = adminDb();
-    const settingsRef = db.collection('settings').doc('global');
-    const currentSettingsSnap = await settingsRef.get();
-    const currentSettings = currentSettingsSnap.data() || {};
+    const supabase = createAdminClient();
+    const { data: currentSettingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const currentSettings = (currentSettingsRow?.data as Record<string, unknown> | null) ?? {};
 
     const allowed = [
       'maxRuleLength',
@@ -191,32 +196,33 @@ export async function PUT(request: NextRequest) {
       pickDomainSettings(nextSettings as Record<string, unknown>),
     );
 
-    await settingsRef.set({ ...normalizedWithBounds, updatedAt: Timestamp.now() }, { merge: true });
+    await supabase.from('settings').upsert({
+      id: 'global',
+      data: nextSettings as unknown as Json,
+      updated_at: new Date().toISOString(),
+    });
 
     let reassignedUsers = 0;
 
     if (previousAssignedEmailDomain !== nextAssignedEmailDomain) {
-      const usersSnap = await db.collection('users').get();
+      const { data: usersData } = await supabase.from('users').select('id, assigned_email');
+      const toReassign = (usersData ?? []).filter((u) => {
+        const localPart = u.assigned_email?.split('@')[0]?.trim();
+        return !!localPart;
+      });
 
-      for (let i = 0; i < usersSnap.docs.length; i += USER_UPDATE_BATCH_SIZE) {
-        const batch = db.batch();
-        const docs = usersSnap.docs.slice(i, i + USER_UPDATE_BATCH_SIZE);
-
-        for (const userDoc of docs) {
-          const assignedEmail = userDoc.data().assignedEmail as string | undefined;
-          if (!assignedEmail) continue;
-
-          const localPart = assignedEmail.split('@')[0]?.trim();
-          if (!localPart) continue;
-
-          batch.update(userDoc.ref, {
-            assignedEmail: `${localPart}@${nextAssignedEmailDomain}`.toLowerCase(),
-          });
-          reassignedUsers += 1;
-        }
-
-        await batch.commit();
-      }
+      await Promise.all(
+        toReassign.map((u) => {
+          const localPart = u.assigned_email!.split('@')[0].trim();
+          return supabase
+            .from('users')
+            .update({
+              assigned_email: `${localPart}@${nextAssignedEmailDomain}`.toLowerCase(),
+            })
+            .eq('id', u.id);
+        }),
+      );
+      reassignedUsers = toReassign.length;
     }
 
     return NextResponse.json({

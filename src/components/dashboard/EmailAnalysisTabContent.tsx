@@ -21,19 +21,19 @@ export function EmailAnalysisTabContent({
   onAnalysisUpdated,
 }: EmailAnalysisTabContentProps) {
   const { t } = useI18n();
-  const { firebaseUser } = useAuth();
+  const { authUser, getIdToken } = useAuth();
   const [refreshingAnalysis, setRefreshingAnalysis] = useState(false);
 
   const handleRepeatAnalysis = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
 
-    if (!firebaseUser || refreshingAnalysis) {
+    if (!authUser || refreshingAnalysis) {
       return;
     }
 
     setRefreshingAnalysis(true);
     try {
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken();
       const response = await fetch(`/api/email/${emailId}/analysis`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -70,7 +70,7 @@ export function EmailAnalysisTabContent({
           variant="primary"
           size="sm"
           loading={refreshingAnalysis}
-          disabled={!firebaseUser}
+          disabled={!authUser}
           onClick={handleRepeatAnalysis}
         >
           {!refreshingAnalysis && <RefreshCw className="h-3.5 w-3.5" />}
