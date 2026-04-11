@@ -276,7 +276,18 @@ async function sendEmailPushNotification(
   try {
     const oneSignalAppId = process.env.ONESIGNAL_APP_ID ?? process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
     const oneSignalApiKey = process.env.ONESIGNAL_API_KEY;
-    if (!oneSignalAppId || !oneSignalApiKey) return;
+    console.log(
+      `[Push] sendEmailPushNotification: userId=${userId} status=${status} logId=${logId}`,
+      `appIdPresent=${!!oneSignalAppId} apiKeyPresent=${!!oneSignalApiKey}`,
+    );
+    if (!oneSignalAppId || !oneSignalApiKey) {
+      console.warn(
+        '[Push] sendEmailPushNotification: skipped — missing env vars:',
+        !oneSignalAppId ? 'ONESIGNAL_APP_ID' : '',
+        !oneSignalApiKey ? 'ONESIGNAL_API_KEY' : '',
+      );
+      return;
+    }
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
     const iconUrl = appUrl
@@ -291,40 +302,46 @@ async function sendEmailPushNotification(
       skipped: `Email skipped from ${sender}`,
     };
 
+    const payload = {
+      app_id: oneSignalAppId,
+      target_channel: 'push',
+      include_aliases: {
+        external_id: [userId],
+      },
+      headings: {
+        en: titleByStatus[status],
+      },
+      contents: {
+        en: subject,
+      },
+      url: absoluteEmailUrl || undefined,
+      web_url: absoluteEmailUrl || undefined,
+      chrome_web_icon: iconUrl,
+      chrome_web_badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
+      data: {
+        url: relativeEmailUrl,
+        logId,
+        status,
+        tag: `postino-email-${logId}`,
+      },
+    };
+    console.log('[Push] sendEmailPushNotification: sending request to OneSignal API, payload:', JSON.stringify(payload));
+
     const response = await fetch('https://api.onesignal.com/notifications', {
       method: 'POST',
       headers: {
         Authorization: `Key ${oneSignalApiKey}`,
         'Content-Type': 'application/json; charset=utf-8',
       },
-      body: JSON.stringify({
-        app_id: oneSignalAppId,
-        target_channel: 'push',
-        include_aliases: {
-          external_id: [userId],
-        },
-        headings: {
-          en: titleByStatus[status],
-        },
-        contents: {
-          en: subject,
-        },
-        url: absoluteEmailUrl || undefined,
-        web_url: absoluteEmailUrl || undefined,
-        chrome_web_icon: iconUrl,
-        chrome_web_badge: appUrl ? `${appUrl}/favicon-96x96.png` : '/favicon-96x96.png',
-        data: {
-          url: relativeEmailUrl,
-          logId,
-          status,
-          tag: `postino-email-${logId}`,
-        },
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
       console.error('Failed to send OneSignal push notification:', response.status, detail);
+    } else {
+      const responseBody = await response.text().catch(() => '');
+      console.log('[Push] sendEmailPushNotification: OneSignal API response OK:', response.status, responseBody);
     }
   } catch (err) {
     console.error('Failed to send push notification:', err);
