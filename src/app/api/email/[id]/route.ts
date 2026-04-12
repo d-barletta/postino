@@ -3,10 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { deleteAttachmentFromStorage, type SerializedAttachment } from '@/lib/inbound-processing';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await verifyUserRequest(request);
     const { id } = await params;

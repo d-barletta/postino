@@ -95,9 +95,7 @@ export function ExploreEmailsModal({
 
   const markEmailAsRead = useCallback(
     async (emailId: string) => {
-      setLogs((prev) =>
-        prev.map((log) => (log.id === emailId ? { ...log, isRead: true } : log)),
-      );
+      setLogs((prev) => prev.map((log) => (log.id === emailId ? { ...log, isRead: true } : log)));
       try {
         const token = await getIdToken();
         await fetch(`/api/email/${emailId}`, {
