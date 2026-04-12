@@ -102,7 +102,28 @@ export function ExploreEmailsModal({
         const token = await getIdToken();
         await fetch(`/api/email/${emailId}`, {
           method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isRead: true }),
+        });
+      } catch {
+        // best-effort
+      }
+    },
+    [getIdToken],
+  );
+
+  const toggleEmailRead = useCallback(
+    async (emailId: string, currentIsRead: boolean) => {
+      const newIsRead = !currentIsRead;
+      setLogs((prev) =>
+        prev.map((log) => (log.id === emailId ? { ...log, isRead: newIsRead } : log)),
+      );
+      try {
+        const token = await getIdToken();
+        await fetch(`/api/email/${emailId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isRead: newIsRead }),
         });
       } catch {
         // best-effort
@@ -332,6 +353,7 @@ export function ExploreEmailsModal({
                       setPendingFullscreenId(log.id);
                     }}
                     onDelete={() => setDeleteEmailId(log.id)}
+                    onToggleRead={() => toggleEmailRead(log.id, log.isRead !== false)}
                     onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
                     statusLayout="side"
                   />

@@ -6,7 +6,7 @@ import { EmailDetailTabs } from '@/components/dashboard/EmailDetailTabs';
 import { Spinner } from '@/components/ui/Spinner';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { Mail, Paperclip, Trash2, Eye } from 'lucide-react';
+import { Mail, Paperclip, Trash2, Eye, MailOpen } from 'lucide-react';
 import type { EmailAnalysis, EmailAttachmentInfo, EmailLog } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -82,17 +82,21 @@ export function EmailRowSkeleton() {
 // Works with mouse, touch and stylus via the Pointer Events API.
 // Normal tap/click passes through unchanged; only horizontal drags reveal actions.
 // ---------------------------------------------------------------------------
-const SWIPE_ACTION_WIDTH = 128; // 64 px per action button × 2
+const SWIPE_ACTION_WIDTH = 192; // 64 px per action button × 3
 const DRAG_THRESHOLD = 6; // px of movement before we commit to a drag
 
 export function SwipeableEmailRow({
   children,
   onOpen,
   onDelete,
+  onToggleRead,
+  isRead,
 }: {
   children: React.ReactNode;
   onOpen: () => void;
   onDelete: () => void;
+  onToggleRead: () => void;
+  isRead: boolean;
 }) {
   const { t } = useI18n();
   const [offset, setOffset] = useState(0);
@@ -208,6 +212,20 @@ export function SwipeableEmailRow({
         }}
       >
         <button
+          className="flex-1 flex items-center justify-center bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-colors"
+          onPointerDown={() => {
+            skipNextClose.current = true;
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            close();
+            onToggleRead();
+          }}
+          aria-label={isRead ? t.dashboard.emailHistory.markUnread : t.dashboard.emailHistory.markRead}
+        >
+          <MailOpen className="h-5 w-5" />
+        </button>
+        <button
           className="flex-1 flex items-center justify-center bg-[#efd957] hover:bg-[#d0b53f] active:bg-[#b89c2e] text-white transition-colors"
           onPointerDown={() => {
             skipNextClose.current = true;
@@ -272,6 +290,8 @@ export interface EmailListItemProps {
   onFullscreen: () => void;
   /** If provided, enables swipe-to-delete and the swipe delete action */
   onDelete?: () => void;
+  /** If provided, enables swipe-to-toggle-read and the swipe toggle action */
+  onToggleRead?: () => void;
   /** Called when AI analysis is updated for this email */
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
   /**
@@ -290,6 +310,7 @@ export function EmailListItem({
   onTabChange,
   onFullscreen,
   onDelete,
+  onToggleRead,
   onAnalysisUpdated,
   statusLayout = 'bottom',
 }: EmailListItemProps) {
@@ -450,7 +471,12 @@ export function EmailListItem({
 
   if (onDelete) {
     return (
-      <SwipeableEmailRow onOpen={onFullscreen} onDelete={onDelete}>
+      <SwipeableEmailRow
+        onOpen={onFullscreen}
+        onDelete={onDelete}
+        onToggleRead={onToggleRead ?? (() => {})}
+        isRead={log.isRead !== false}
+      >
         {rowContent}
       </SwipeableEmailRow>
     );

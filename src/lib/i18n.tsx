@@ -315,6 +315,8 @@ export interface Translations {
       deleteEmailConfirm: string;
       deleteEmailSuccess: string;
       deleteEmailError: string;
+      markRead: string;
+      markUnread: string;
       failedToLoad: string;
       failedToLoadCount: string;
     };
@@ -1026,6 +1028,8 @@ const translations: Record<Locale, Translations> = {
           'Are you sure you want to permanently delete this email? This action cannot be undone.',
         deleteEmailSuccess: 'Email deleted.',
         deleteEmailError: 'Failed to delete email.',
+        markRead: 'Mark as read',
+        markUnread: 'Mark as unread',
         failedToLoad: 'Failed to load emails',
         failedToLoadCount: 'Failed to load email count',
       },
@@ -1748,6 +1752,8 @@ const translations: Record<Locale, Translations> = {
           'Sei sicuro di voler eliminare definitivamente questa email? Questa azione non può essere annullata.',
         deleteEmailSuccess: 'Email eliminata.',
         deleteEmailError: "Impossibile eliminare l'email.",
+        markRead: 'Segna come letta',
+        markUnread: 'Segna come non letta',
         failedToLoad: 'Caricamento email non riuscito',
         failedToLoadCount: 'Caricamento conteggio email non riuscito',
       },
@@ -2470,6 +2476,8 @@ const translations: Record<Locale, Translations> = {
           '¿Seguro que quieres eliminar permanentemente este correo? Esta acción no se puede deshacer.',
         deleteEmailSuccess: 'Correo eliminado.',
         deleteEmailError: 'No se pudo eliminar el correo.',
+        markRead: 'Marcar como leído',
+        markUnread: 'Marcar como no leído',
         failedToLoad: 'Error al cargar los correos',
         failedToLoadCount: 'Error al cargar el recuento de correos',
       },
@@ -3194,6 +3202,8 @@ const translations: Record<Locale, Translations> = {
           'Voulez-vous vraiment supprimer définitivement cet e-mail ? Cette action est irréversible.',
         deleteEmailSuccess: 'E-mail supprimé.',
         deleteEmailError: "Impossible de supprimer l'e-mail.",
+        markRead: 'Marquer comme lu',
+        markUnread: 'Marquer comme non lu',
         failedToLoad: 'Échec du chargement des e-mails',
         failedToLoadCount: "Échec du chargement du nombre d'e-mails",
       },
@@ -3921,6 +3931,8 @@ const translations: Record<Locale, Translations> = {
           'Möchten Sie diese E-Mail wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
         deleteEmailSuccess: 'E-Mail gelöscht.',
         deleteEmailError: 'E-Mail konnte nicht gelöscht werden.',
+        markRead: 'Als gelesen markieren',
+        markUnread: 'Als ungelesen markieren',
         failedToLoad: 'E-Mails konnten nicht geladen werden',
         failedToLoadCount: 'Anzahl der E-Mails konnte nicht geladen werden',
       },
