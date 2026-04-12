@@ -26,10 +26,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // `is_read` is added via migration; cast required until Supabase types are regenerated.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatePayload = { is_read: true } as any;
     const { error: updateErr } = await supabase
       .from('email_logs')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ is_read: true } as any)
+      .update(updatePayload)
       .eq('id', id);
 
     if (updateErr) {
