@@ -22,7 +22,7 @@ import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
@@ -48,6 +48,16 @@ const EMPTY_STATS: UserStats = {
 };
 
 type DashboardTab = 'overview' | 'rules' | 'inbox' | 'agent' | 'explore' | 'relations' | 'settings';
+
+const DASHBOARD_TABS: ReadonlyArray<DashboardTab> = [
+  'overview',
+  'rules',
+  'inbox',
+  'agent',
+  'explore',
+  'relations',
+  'settings',
+];
 
 function DashboardOverviewSkeleton() {
   return (
@@ -121,6 +131,7 @@ export default function DashboardPage() {
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [, startTransition] = useTransition();
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -136,10 +147,19 @@ export default function DashboardPage() {
   const editRuleId = searchParams.get('editRule');
   const selectedEmailId = searchParams.get('selectedEmail');
 
-  // Navigate to a tab directly.
-  const handleTabChange = useCallback((newTab: string) => {
-    setActiveTab(newTab as DashboardTab);
-  }, []);
+  // Navigate to a tab and record the change in browser history and localStorage.
+  const handleTabChange = useCallback(
+    (newTab: string) => {
+      if (!(DASHBOARD_TABS as ReadonlyArray<string>).includes(newTab)) return;
+      const tab = newTab as DashboardTab;
+      localStorage.setItem('postinoDashboardActiveTab', tab);
+      window.history.pushState({ postinoDashboardTab: tab }, '');
+      startTransition(() => {
+        setActiveTab(tab);
+      });
+    },
+    [startTransition],
+  );
 
   useEffect(() => {
     if (selectedEmailId) {
@@ -148,6 +168,47 @@ export default function DashboardPage() {
       setActiveTab('rules');
     }
   }, [selectedEmailId, editRuleId]);
+
+  // On mount, restore the tab from the current history entry (survives
+  // page refreshes) or from localStorage (survives browser restarts).
+  // Search-param overrides take priority and are handled by the effect above.
+  useEffect(() => {
+    if (selectedEmailId || editRuleId) return;
+    const historyTab = (
+      window.history.state as Record<string, unknown> | null
+    )?.postinoDashboardTab as DashboardTab | undefined;
+    const localTab = localStorage.getItem('postinoDashboardActiveTab') as DashboardTab | null;
+    const savedTab =
+      historyTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(historyTab)
+        ? historyTab
+        : localTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(localTab)
+          ? localTab
+          : null;
+    if (savedTab) {
+      setActiveTab(savedTab);
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoDashboardTab: savedTab },
+        '',
+      );
+    } else {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), postinoDashboardTab: 'overview' },
+        '',
+      );
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for browser Back/Forward and restore the tab stored in the state.
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const tab = (e.state as Record<string, unknown> | null)?.postinoDashboardTab;
+      if (typeof tab === 'string' && (DASHBOARD_TABS as ReadonlyArray<string>).includes(tab)) {
+        setActiveTab(tab as DashboardTab);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
