@@ -1394,6 +1394,23 @@ export async function POST(request: NextRequest) {
     finalUserId = userId;
     const matchedRecipient = (userData.assigned_email as string) || normalizedRecipients[0];
 
+    // Verify email is confirmed in Supabase Auth. An admin can manually set is_active=true
+    // without email verification, so we enforce this check explicitly here to ensure unverified
+    // users are treated the same as inactive users: skip completely without saving to the DB.
+    const { data: authUserData } = await supabase.auth.admin.getUserById(userId);
+    if (!authUserData?.user?.email_confirmed_at) {
+      const recipientsText = normalizedRecipients.join(',');
+      console.log(`User ${userId} email not verified, skipping inbound email`);
+      await updateWebhookLog({
+        status: 'skipped',
+        result: 'email-not-verified',
+        reason: `User ${userId} has not verified their email address`,
+      });
+      return NextResponse.json({
+        message: `User email not verified for email(s): ${recipientsText}`,
+      });
+    }
+
     if (isLikelyMailLoop(formData, sender, (userData.email as string) || '')) {
       const skippedLogId = crypto.randomUUID();
       await supabase.from('email_logs').insert({
