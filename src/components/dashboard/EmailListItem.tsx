@@ -364,10 +364,17 @@ export function EmailListItem({
       {hasAtt ? (
         <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400" />
       ) : (
-        <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60" />
+        <Mail
+          className={cn(
+            'h-4 w-4',
+            isUnread
+              ? 'text-gray-600 dark:text-gray-200'
+              : 'text-gray-200 dark:text-gray-700 opacity-60',
+          )}
+        />
       )}
       {isUnread && (
-        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-purple-500 dark:bg-yellow-400" />
+        <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-purple-500 dark:bg-yellow-400" />
       )}
     </div>
   );
