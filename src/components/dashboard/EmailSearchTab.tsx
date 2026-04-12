@@ -248,6 +248,24 @@ export function EmailSearchTab({
     );
   }, []);
 
+  const markEmailAsRead = useCallback(
+    async (emailId: string) => {
+      setLogs((prev) =>
+        prev.map((log) => (log.id === emailId ? { ...log, isRead: true } : log)),
+      );
+      try {
+        const token = await getIdToken();
+        await fetch(`/api/email/${emailId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // best-effort
+      }
+    },
+    [getIdToken],
+  );
+
   // Integrate the fullscreen email dialog with browser history.
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
   useModalHistory(!!fullscreenEmailId, () => setFullscreenEmailId(null));
@@ -524,6 +542,8 @@ export function EmailSearchTab({
       setSelectedId(logId);
       setActiveDetailTab('summary');
       fetchExpandedEmail(logId);
+      const log = logs.find((l) => l.id === logId);
+      if (log?.isRead === false) markEmailAsRead(logId);
     }
   };
 
@@ -1305,6 +1325,7 @@ export function EmailSearchTab({
                       onTabChange={setActiveDetailTab}
                       onFullscreen={() => {
                         fetchExpandedEmail(log.id);
+                        if (log.isRead === false) markEmailAsRead(log.id);
                         setFullscreenEmailId(log.id);
                       }}
                       onDelete={() => setDeleteEmailId(log.id)}
@@ -1407,6 +1428,7 @@ export function EmailSearchTab({
             ) : (
               logs.map((log) => {
                 const hasAtt = (log.attachmentCount ?? 0) > 0;
+                const isUnread = log.isRead === false;
                 const isSelected = selectedId === log.id;
                 return (
                   <div
@@ -1420,11 +1442,16 @@ export function EmailSearchTab({
                     onClick={() => handleToggleExpand(log.id)}
                   >
                     <div className="flex items-start gap-2">
-                      {hasAtt ? (
-                        <Paperclip className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
-                      ) : (
-                        <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
-                      )}
+                      <div className="relative mt-0.5 shrink-0">
+                        {hasAtt ? (
+                          <Paperclip className="h-3.5 w-3.5 text-gray-400" />
+                        ) : (
+                          <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                        )}
+                        {isUnread && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-purple-500 dark:bg-yellow-400" />
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p
                           className={cn(
@@ -1576,7 +1603,10 @@ export function EmailSearchTab({
                       emailData={emailData}
                       activeTab={activeDetailTab}
                       onTabChange={setActiveDetailTab}
-                      onFullscreen={() => setFullscreenEmailId(log.id)}
+                      onFullscreen={() => {
+                        if (log.isRead === false) markEmailAsRead(log.id);
+                        setFullscreenEmailId(log.id);
+                      }}
                       onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
                       className="flex flex-col flex-1 overflow-hidden"
                       summaryClassName="overflow-y-auto"

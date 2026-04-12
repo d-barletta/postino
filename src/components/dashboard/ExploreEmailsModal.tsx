@@ -93,6 +93,24 @@ export function ExploreEmailsModal({
     );
   }, []);
 
+  const markEmailAsRead = useCallback(
+    async (emailId: string) => {
+      setLogs((prev) =>
+        prev.map((log) => (log.id === emailId ? { ...log, isRead: true } : log)),
+      );
+      try {
+        const token = await getIdToken();
+        await fetch(`/api/email/${emailId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // best-effort
+      }
+    },
+    [getIdToken],
+  );
+
   const fetchLogs = useCallback(
     async (targetPage: number) => {
       if (!authUser || !term) return;
@@ -197,6 +215,8 @@ export function ExploreEmailsModal({
       setSelectedId(logId);
       setActiveDetailTab('summary');
       fetchExpandedEmail(logId);
+      const log = logs.find((l) => l.id === logId);
+      if (log?.isRead === false) markEmailAsRead(logId);
     }
   };
 
@@ -308,6 +328,7 @@ export function ExploreEmailsModal({
                     onTabChange={setActiveDetailTab}
                     onFullscreen={() => {
                       fetchExpandedEmail(log.id);
+                      if (log.isRead === false) markEmailAsRead(log.id);
                       setPendingFullscreenId(log.id);
                     }}
                     onDelete={() => setDeleteEmailId(log.id)}

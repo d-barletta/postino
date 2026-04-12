@@ -336,6 +336,20 @@ export function EmailListItem({
   };
 
   const hasAtt = (log.attachmentCount ?? 0) > 0;
+  const isUnread = log.isRead === false;
+
+  const emailIcon = (
+    <div className="relative mt-0.5 shrink-0">
+      {hasAtt ? (
+        <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+      ) : (
+        <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60" />
+      )}
+      {isUnread && (
+        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-purple-500 dark:bg-yellow-400" />
+      )}
+    </div>
+  );
 
   const statusAndDate = (
     <>
@@ -363,11 +377,7 @@ export function EmailListItem({
         /* Modal layout: left content + right status/date */
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
           <div className="min-w-0 flex items-start gap-2">
-            {hasAtt ? (
-              <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
-            ) : (
-              <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60 mt-0.5 shrink-0" />
-            )}
+            {emailIcon}
             <div className="min-w-0">
               <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">
                 {log.subject}
@@ -393,11 +403,7 @@ export function EmailListItem({
         /* Narrow list layout: stacked, status/date in a separate bottom row */
         <div className="flex flex-col gap-2">
           <div className="min-w-0 flex items-start gap-2">
-            {hasAtt ? (
-              <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
-            ) : (
-              <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60 mt-0.5 shrink-0" />
-            )}
+            {emailIcon}
             <div className="min-w-0">
               <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">
                 {log.subject}

@@ -145,6 +145,8 @@ export interface EmailLog {
   attachments?: EmailAttachmentInfo[];
   /** Structured AI pre-analysis of the email stored at processing time. */
   emailAnalysis?: EmailAnalysis;
+  /** Whether the email has been read by the user. False means unread; null/undefined means read (legacy rows). */
+  isRead?: boolean;
 }
 
 export interface LogsResponse {
