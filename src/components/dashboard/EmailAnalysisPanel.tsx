@@ -120,7 +120,6 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
         <p className="text-xs text-gray-600 dark:text-gray-300 italic">{analysis.summary}</p>
       )}
 
-
       {hasTopics && (
         <div className="flex flex-wrap gap-1">
           {analysis.topics.map((t) => (

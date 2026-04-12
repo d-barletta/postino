@@ -9,58 +9,28 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog';
-import { Badge } from '@/components/ui/Badge';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
-import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
-import { Mail, Paperclip, ExternalLink, AlignLeft, Brain, RefreshCw } from 'lucide-react';
-import type { EmailAnalysis, EmailAttachmentInfo, EmailLog, LogsResponse } from '@/types';
-import { AttachmentList } from '@/components/dashboard/AttachmentList';
-import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
+import { Mail, RefreshCw } from 'lucide-react';
+import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
+import {
+  EmailListItem,
+  EmailRowSkeleton,
+  ExpandedEmailData,
+} from '@/components/dashboard/EmailListItem';
 
 const PAGE_SIZE = 20;
-
-const DEFAULT_BADGE_COLOR = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
-
-const SENTIMENT_COLORS: Record<string, string> = {
-  positive: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  neutral: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  negative: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  low: DEFAULT_BADGE_COLOR,
-  normal: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  critical: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  newsletter: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
-  transactional: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  promotional: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-  personal: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  notification: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
-  automated: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  other: DEFAULT_BADGE_COLOR,
-};
-
-interface ExpandedEmailData {
-  originalBody: string | null;
-  toAddress: string;
-  ccAddress?: string | null;
-  bccAddress?: string | null;
-  attachmentCount: number;
-  attachmentNames: string[];
-  attachments: EmailAttachmentInfo[];
-  loading: boolean;
-  error?: string;
-}
 
 export interface ExploreEmailsModalProps {
   /** The term to search for (chip value). Null means the modal is closed (in term mode). */
@@ -86,28 +56,6 @@ export interface ExploreEmailsModalProps {
   sourceTitle?: string;
 }
 
-function EmailRowSkeleton() {
-  return (
-    <div className="px-6 py-4 animate-pulse">
-      <div className="flex items-start gap-2">
-        <div className="mt-1 h-4 w-4 rounded bg-gray-200 dark:bg-gray-700 shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-          <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/3" />
-          <div className="flex gap-1.5">
-            <div className="h-4 w-14 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="h-4 w-10 bg-gray-100 dark:bg-gray-800 rounded" />
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
-          <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800 rounded" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function ExploreEmailsModal({
   term,
   category,
@@ -118,10 +66,8 @@ export function ExploreEmailsModal({
   logIds,
   sourceTitle,
 }: ExploreEmailsModalProps) {
-  const { t, locale } = useI18n();
-  const { authUser, user, getIdToken } = useAuth();
-  const isAdmin = user?.isAdmin === true;
-  const ts = t.dashboard.search;
+  const { t } = useI18n();
+  const { authUser, getIdToken } = useAuth();
   const tk = t.dashboard.knowledge;
 
   const isLogIdsMode = !term && !!logIds && logIds.length > 0;
@@ -139,6 +85,10 @@ export function ExploreEmailsModal({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
   const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
+  const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  // When set, we're waiting for this email's body to load before opening fullscreen.
+  const [pendingFullscreenId, setPendingFullscreenId] = useState<string | null>(null);
 
   const handleAnalysisUpdated = useCallback((emailId: string, analysis: EmailAnalysis) => {
     setLogs((prev) =>
@@ -147,43 +97,6 @@ export function ExploreEmailsModal({
   }, []);
 
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
-
-  const statusLabel: Record<string, string> = {
-    received: t.dashboard.charts.received,
-    processing: t.dashboard.charts.processing,
-    forwarded: t.dashboard.charts.forwarded,
-    error: t.dashboard.charts.error,
-    skipped: t.dashboard.charts.skipped,
-  };
-
-  const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
-    received: 'info',
-    processing: 'warning',
-    forwarded: 'success',
-    error: 'error',
-    skipped: 'default',
-  };
-
-  const rowTypeLabel: Record<string, string> = {
-    newsletter: ts.typeNewsletter,
-    transactional: ts.typeTransactional,
-    promotional: ts.typePromotional,
-    personal: ts.typePersonal,
-    notification: ts.typeNotification,
-    automated: ts.typeAutomated,
-    other: ts.typeOther,
-  };
-  const rowSentimentLabel: Record<string, string> = {
-    positive: ts.sentimentPositive,
-    neutral: ts.sentimentNeutral,
-    negative: ts.sentimentNegative,
-  };
-  const rowPriorityLabel: Record<string, string> = {
-    low: ts.priorityLow,
-    normal: ts.priorityNormal,
-    high: ts.priorityHigh,
-    critical: ts.priorityCritical,
-  };
 
   const fetchLogs = useCallback(
     async (targetPage: number) => {
@@ -368,6 +281,47 @@ export function ExploreEmailsModal({
     }
   };
 
+  // Once pending fullscreen email body is loaded, fire the callback.
+  useEffect(() => {
+    if (!pendingFullscreenId) return;
+    const data = expandedData[pendingFullscreenId];
+    if (!data || data.loading) return;
+    if (data.originalBody) {
+      const log = logs.find((l) => l.id === pendingFullscreenId);
+      if (log) onRequestFullscreen({ subject: log.subject, body: data.originalBody });
+    }
+    setPendingFullscreenId(null);
+  }, [pendingFullscreenId, expandedData, logs, onRequestFullscreen]);
+
+  const handleDeleteEmail = useCallback(async () => {
+    if (!deleteEmailId || !authUser) return;
+    setDeleting(true);
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`/api/email/${deleteEmailId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setLogs((prev) => prev.filter((l) => l.id !== deleteEmailId));
+        if (selectedId === deleteEmailId) setSelectedId(null);
+        if (totalCount !== undefined)
+          setTotalCount((c) => (c !== undefined ? Math.max(0, c - 1) : undefined));
+        setDeleteEmailId(null);
+      } else {
+        console.error('Failed to delete email:', await res.text());
+        toast.error(t.dashboard.emailHistory.deleteEmailError);
+        setDeleteEmailId(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete email:', err);
+      toast.error(t.dashboard.emailHistory.deleteEmailError);
+      setDeleteEmailId(null);
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteEmailId, authUser, selectedId, t, totalCount]);
+
   const handlePageChange = (newPage: number) => {
     setSelectedId(null);
     fetchLogs(newPage);
@@ -424,287 +378,24 @@ export function ExploreEmailsModal({
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {logs.map((log) => {
-                  const hasAtt = (log.attachmentCount ?? 0) > 0;
-                  const expanded = selectedId === log.id;
-                  const emailData = expandedData[log.id];
-
-                  return (
-                    <div
-                      key={log.id}
-                      className={cn(
-                        'px-6 py-4 hover:bg-yellow-50/70 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors',
-                        expanded && 'bg-yellow-50/70 dark:bg-yellow-900/10',
-                      )}
-                      onClick={() => handleToggleExpand(log.id)}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
-                        <div className="min-w-0 flex items-start gap-2">
-                          {hasAtt ? (
-                            <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
-                          ) : (
-                            <Mail className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60 mt-0.5 shrink-0" />
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">
-                              {log.subject}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">
-                              {t.dashboard.emailHistory.from} {log.fromAddress}
-                            </p>
-                            {log.emailAnalysis && (
-                              <div className="mt-1.5 space-y-1">
-                                <div className="flex flex-wrap gap-1">
-                                  {log.emailAnalysis.emailType && (
-                                    <span
-                                      className={cn(
-                                        'inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium',
-                                        TYPE_COLORS[log.emailAnalysis.emailType] ??
-                                          DEFAULT_BADGE_COLOR,
-                                      )}
-                                    >
-                                      {rowTypeLabel[log.emailAnalysis.emailType] ??
-                                        log.emailAnalysis.emailType}
-                                    </span>
-                                  )}
-                                  {log.emailAnalysis.sentiment && (
-                                    <span
-                                      className={cn(
-                                        'inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium',
-                                        SENTIMENT_COLORS[log.emailAnalysis.sentiment] ??
-                                          DEFAULT_BADGE_COLOR,
-                                      )}
-                                    >
-                                      {rowSentimentLabel[log.emailAnalysis.sentiment] ??
-                                        log.emailAnalysis.sentiment}
-                                    </span>
-                                  )}
-                                  {log.emailAnalysis.priority &&
-                                    log.emailAnalysis.priority !== 'normal' && (
-                                      <span
-                                        className={cn(
-                                          'inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium',
-                                          PRIORITY_COLORS[log.emailAnalysis.priority] ??
-                                            DEFAULT_BADGE_COLOR,
-                                        )}
-                                      >
-                                        {rowPriorityLabel[log.emailAnalysis.priority] ??
-                                          log.emailAnalysis.priority}
-                                      </span>
-                                    )}
-                                  {log.emailAnalysis.requiresResponse && (
-                                    <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                      {t.dashboard.emailHistory.analysisRequiresResponse}
-                                    </span>
-                                  )}
-                                  {log.emailAnalysis.isUrgent && (
-                                    <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                                      {ts.isUrgent}
-                                    </span>
-                                  )}
-                                </div>
-                                {log.emailAnalysis.topics &&
-                                  log.emailAnalysis.topics.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                      {log.emailAnalysis.topics.slice(0, 3).map((t) => (
-                                        <span
-                                          key={t}
-                                          className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
-                                        >
-                                          {t}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 pl-6 sm:pl-0">
-                          {log.status !== 'forwarded' && (
-                            <Badge variant={statusVariant[log.status] || 'default'}>
-                              {statusLabel[log.status] ?? log.status}
-                            </Badge>
-                          )}
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {formatDate(log.receivedAt, locale)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {expanded && (
-                        <div
-                          className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 pl-6"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
-                            <TabsList>
-                              <TabsTrigger
-                                value="content"
-                                title={t.dashboard.emailHistory.tabContent}
-                              >
-                                <Mail className="h-3.5 w-3.5 shrink-0mr-1.5" />
-                                {t.dashboard.emailHistory.tabContent}
-                              </TabsTrigger>
-                              <TabsTrigger value="summary">
-                                <AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                                {t.dashboard.emailHistory.tabSummary}
-                              </TabsTrigger>
-                              <TabsTrigger value="ai">
-                                <Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                                {t.dashboard.emailHistory.tabAiAnalysis}
-                              </TabsTrigger>
-                            </TabsList>
-
-                            {/* Summary tab */}
-                            <TabsContent value="summary" className="mt-3 space-y-3">
-                              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-                                <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                                  {t.dashboard.emailHistory.to}
-                                </dt>
-                                <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                                  {log.toAddress}
-                                </dd>
-                                {emailData?.ccAddress && (
-                                  <>
-                                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                                      {t.dashboard.emailHistory.cc}
-                                    </dt>
-                                    <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                                      {emailData.ccAddress}
-                                    </dd>
-                                  </>
-                                )}
-                                {emailData?.bccAddress && (
-                                  <>
-                                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                                      {t.dashboard.emailHistory.bcc}
-                                    </dt>
-                                    <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                                      {emailData.bccAddress}
-                                    </dd>
-                                  </>
-                                )}
-                                <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                                  {t.dashboard.emailHistory.attachments}
-                                </dt>
-                                <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
-                                  {emailData?.loading ? (
-                                    <span className="text-gray-400">…</span>
-                                  ) : (emailData != null
-                                      ? emailData.attachments.length
-                                      : (log.attachmentCount ?? 0)) > 0 ? (
-                                    <AttachmentList
-                                      emailId={log.id}
-                                      names={
-                                        emailData?.attachmentNames ?? log.attachmentNames ?? []
-                                      }
-                                      attachments={emailData?.attachments}
-                                    />
-                                  ) : (
-                                    <span className="text-gray-400">
-                                      {t.dashboard.emailHistory.noAttachmentsShort}
-                                    </span>
-                                  )}
-                                </dd>
-                              </dl>
-                              {log.ruleApplied && (
-                                <p className="text-xs text-gray-600 dark:text-gray-300">
-                                  <span className="font-medium">
-                                    {t.dashboard.emailHistory.ruleApplied}
-                                  </span>{' '}
-                                  {log.ruleApplied}
-                                </p>
-                              )}
-                              {log.tokensUsed !== undefined && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {t.dashboard.emailHistory.tokens} {log.tokensUsed} |{' '}
-                                  {t.dashboard.stats.estCost}: $
-                                  {(log.estimatedCost || 0).toFixed(5)}
-                                </p>
-                              )}
-                            </TabsContent>
-
-                            {/* Content tab */}
-                            <TabsContent value="content" className="mt-3 space-y-2">
-                              {emailData?.loading && (
-                                <div className="animate-pulse space-y-2 pt-1">
-                                  <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                                  <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
-                                  <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
-                                </div>
-                              )}
-                              {emailData && !emailData.loading && emailData.originalBody && (
-                                <>
-                                  <SafeEmailIframe
-                                    html={emailData.originalBody}
-                                    className="rounded-lg"
-                                    style={{ minHeight: '200px', maxHeight: '400px' }}
-                                    maxAutoHeight={400}
-                                    // autoResize
-                                  />
-                                  <div className="flex items-center gap-3 pt-1">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const emailData = expandedData[log.id];
-                                        if (emailData?.originalBody) {
-                                          onRequestFullscreen({
-                                            subject: log.subject,
-                                            body: emailData.originalBody,
-                                          });
-                                        }
-                                      }}
-                                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                      title={t.emailOriginal.openFullPageView}
-                                    >
-                                      <i
-                                        className="bi bi-fullscreen text-[11px]"
-                                        aria-hidden="true"
-                                      />
-                                      {t.dashboard.emailHistory.viewFullPage}
-                                    </button>
-                                    {isAdmin && (
-                                      <a
-                                        href={`/email/original/${log.id}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                        {t.dashboard.emailHistory.viewOriginal}
-                                      </a>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                              {emailData &&
-                                !emailData.loading &&
-                                !emailData.originalBody &&
-                                !emailData.error && (
-                                  <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-                                    {t.emailOriginal.noOriginalContent}
-                                  </p>
-                                )}
-                            </TabsContent>
-
-                            {/* AI Analysis tab */}
-                            <TabsContent value="ai" className="mt-3">
-                              <EmailAnalysisTabContent
-                                emailId={log.id}
-                                analysis={log.emailAnalysis}
-                                onAnalysisUpdated={(analysis) =>
-                                  handleAnalysisUpdated(log.id, analysis)
-                                }
-                              />
-                            </TabsContent>
-                          </Tabs>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {logs.map((log) => (
+                  <EmailListItem
+                    key={log.id}
+                    log={log}
+                    expandedData={expandedData[log.id]}
+                    isSelected={selectedId === log.id}
+                    activeDetailTab={activeDetailTab}
+                    onToggleExpand={() => handleToggleExpand(log.id)}
+                    onTabChange={setActiveDetailTab}
+                    onFullscreen={() => {
+                      fetchExpandedEmail(log.id);
+                      setPendingFullscreenId(log.id);
+                    }}
+                    onDelete={() => setDeleteEmailId(log.id)}
+                    onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
+                    statusLayout="side"
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -751,6 +442,39 @@ export function ExploreEmailsModal({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation drawer */}
+      <Drawer
+        open={!!deleteEmailId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteEmailId(null);
+        }}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{t.dashboard.emailHistory.deleteEmail}</DrawerTitle>
+            <DrawerDescription>{t.dashboard.emailHistory.deleteEmailConfirm}</DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter className="pb-8">
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteEmailId(null)}
+              disabled={deleting}
+              className="flex-1"
+            >
+              {t.dashboard.rules.cancel}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteEmail}
+              disabled={deleting}
+              className="flex-1"
+            >
+              {deleting ? '…' : t.dashboard.emailHistory.deleteEmail}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }
