@@ -221,9 +221,11 @@ export function SwipeableEmailRow({
             close();
             onToggleRead();
           }}
-          aria-label={isRead ? t.dashboard.emailHistory.markUnread : t.dashboard.emailHistory.markRead}
+          aria-label={
+            isRead ? t.dashboard.emailHistory.markUnread : t.dashboard.emailHistory.markRead
+          }
         >
-          <MailOpen className="h-5 w-5" />
+          {isRead ? <Mail className="h-5 w-5" /> : <MailOpen className="h-5 w-5" />}
         </button>
         <button
           className="flex-1 flex items-center justify-center bg-[#efd957] hover:bg-[#d0b53f] active:bg-[#b89c2e] text-white transition-colors"
@@ -363,19 +365,12 @@ export function EmailListItem({
     <div className="relative mt-0.5 shrink-0">
       {hasAtt ? (
         <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+      ) : isUnread ? (
+        <Mail className="h-4 w-4 text-gray-600 dark:text-gray-200" />
       ) : (
-        <Mail
-          className={cn(
-            'h-4 w-4',
-            isUnread
-              ? 'text-gray-600 dark:text-gray-200'
-              : 'text-gray-200 dark:text-gray-700 opacity-60',
-          )}
-        />
+        <MailOpen className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60" />
       )}
-      {isUnread && (
-        <span className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-purple-500 dark:bg-yellow-400" />
-      )}
+      {isUnread && <span className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-blue-500" />}
     </div>
   );
 
