@@ -86,8 +86,9 @@ export function SafeEmailIframe({
       // -webkit-text-size-adjust: prevents iOS Safari from auto-scaling small
       // text it considers too small for mobile reading.
       'html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}',
-      // Base canvas
-      'body{background:#fff!important;color:#000!important;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;margin:0;padding:8px;}',
+      // Base canvas. Use a slightly smaller default than the app previously used
+      // so rendered emails feel closer to Gmail/native clients in the preview.
+      'body{background:#fff!important;color:#000!important;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.35;margin:0;padding:8px;}',
       // Constrain everything — fixed-pixel widths (e.g. width="600" HTML attrs) won't overflow
       '*{max-width:100%!important;box-sizing:border-box!important;word-wrap:break-word;}',
       // Tables: most email layout is table-based.
