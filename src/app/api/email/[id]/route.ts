@@ -27,7 +27,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const isRead = typeof body.isRead === 'boolean' ? body.isRead : true;
 
     // `is_read` is added via migration; cast required until Supabase types are regenerated.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const updatePayload = { is_read: isRead } as any;
     const { error: updateErr } = await supabase
       .from('email_logs')
