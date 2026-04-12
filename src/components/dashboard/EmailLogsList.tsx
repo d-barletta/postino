@@ -76,6 +76,24 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
     );
   }, []);
 
+  const markEmailAsRead = useCallback(
+    async (emailId: string) => {
+      setLogs((prev) =>
+        prev.map((log) => (log.id === emailId ? { ...log, isRead: true } : log)),
+      );
+      try {
+        const token = await getIdToken();
+        await fetch(`/api/email/${emailId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // best-effort; don't surface errors to the user
+      }
+    },
+    [getIdToken],
+  );
+
   const STATUS_OPTIONS = [
     { value: ALL_STATUS_VALUE, label: t.dashboard.emailHistory.allStatuses },
     { value: 'received', label: t.dashboard.charts.received },
@@ -218,6 +236,8 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
       setSelectedId(logId);
       setActiveDetailTab('summary');
       fetchExpandedEmail(logId);
+      const log = logs.find((l) => l.id === logId);
+      if (log?.isRead === false) markEmailAsRead(logId);
     }
   };
 
@@ -434,6 +454,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
                   {filteredLogs.map((log) => {
                     const hasAttachments = (log.attachmentCount ?? 0) > 0;
+                    const isUnread = log.isRead === false;
                     const expanded = selectedId === log.id;
                     const emailData = expandedData[log.id];
                     return (
@@ -444,11 +465,16 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
                           <div className="min-w-0 flex items-start gap-2">
-                            {hasAttachments ? (
-                              <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
-                            ) : (
-                              <Mail className="h-4 w-4 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
-                            )}
+                            <div className="relative mt-0.5 shrink-0">
+                              {hasAttachments ? (
+                                <Paperclip className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                              ) : (
+                                <Mail className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+                              )}
+                              {isUnread && (
+                                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-purple-500 dark:bg-yellow-400" />
+                              )}
+                            </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium text-gray-800 dark:text-gray-100 wrap-break-word">
                                 {log.subject}
@@ -480,7 +506,10 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                               emailData={emailData}
                               activeTab={activeDetailTab}
                               onTabChange={setActiveDetailTab}
-                              onFullscreen={() => setFullscreenEmailId(log.id)}
+                              onFullscreen={() => {
+                                if (log.isRead === false) markEmailAsRead(log.id);
+                                setFullscreenEmailId(log.id);
+                              }}
                               onAnalysisUpdated={(analysis) =>
                                 handleAnalysisUpdated(log.id, analysis)
                               }
@@ -516,6 +545,7 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                 ? emptyState
                 : filteredLogs.map((log) => {
                     const hasAttachments = (log.attachmentCount ?? 0) > 0;
+                    const isUnread = log.isRead === false;
                     const selected = selectedId === log.id;
                     return (
                       <div
@@ -529,11 +559,16 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                         onClick={() => handleToggleExpand(log.id)}
                       >
                         <div className="flex items-start gap-2">
-                          {hasAttachments ? (
-                            <Paperclip className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
-                          ) : (
-                            <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
-                          )}
+                          <div className="relative mt-0.5 shrink-0">
+                            {hasAttachments ? (
+                              <Paperclip className="h-3.5 w-3.5 text-gray-400" />
+                            ) : (
+                              <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                            )}
+                            {isUnread && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-purple-500 dark:bg-yellow-400" />
+                            )}
+                          </div>
                           <div className="min-w-0 flex-1">
                             <p
                               className={cn(
@@ -592,7 +627,10 @@ export function EmailLogsList({ selectedEmailId, refreshTrigger }: EmailLogsList
                   emailData={selectedEmailData}
                   activeTab={activeDetailTab}
                   onTabChange={setActiveDetailTab}
-                  onFullscreen={() => setFullscreenEmailId(selectedLog.id)}
+                  onFullscreen={() => {
+                    if (selectedLog.isRead === false) markEmailAsRead(selectedLog.id);
+                    setFullscreenEmailId(selectedLog.id);
+                  }}
                   onAnalysisUpdated={(analysis) => handleAnalysisUpdated(selectedLog.id, analysis)}
                 />
               </div>

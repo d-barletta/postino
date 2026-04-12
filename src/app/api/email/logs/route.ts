@@ -187,6 +187,7 @@ export async function GET(request: NextRequest) {
       attachmentNames: (d.attachment_names as string[]) ?? [],
       userId: d.user_id,
       emailAnalysis: (d.email_analysis as Record<string, unknown> | null) ?? null,
+      isRead: d.is_read !== false,
     }));
 
     // ---------------------------------------------------------------------------

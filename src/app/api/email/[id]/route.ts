@@ -3,6 +3,48 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { deleteAttachmentFromStorage, type SerializedAttachment } from '@/lib/inbound-processing';
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const user = await verifyUserRequest(request);
+    const { id } = await params;
+    const supabase = createAdminClient();
+
+    const { data, error } = await supabase
+      .from('email_logs')
+      .select('id, user_id')
+      .eq('id', id)
+      .single();
+
+    if (!data || error) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    if (data.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // `is_read` is added via migration; cast required until Supabase types are regenerated.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatePayload = { is_read: true } as any;
+    const { error: updateErr } = await supabase
+      .from('email_logs')
+      .update(updatePayload)
+      .eq('id', id);
+
+    if (updateErr) {
+      console.error('[email/[id]] PATCH mark-read failed:', updateErr);
+      return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleUserError(error, 'email/[id] PATCH');
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
