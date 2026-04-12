@@ -13,7 +13,9 @@ import { createClient } from '@/lib/supabase/client';
  *
  * Supports:
  *  - PKCE code flow:  ?code=<auth_code>&next=<path>
- *  - Token-hash flow: ?token_hash=<hash>&type=<otp_type>&next=<path>
+ *  - PKCE recovery flow: ?type=recovery&next=<path>
+ *    (session already established by /auth/v1/verify endpoint before redirect)
+ *  - Token-hash OTP flow: ?token_hash=<hash>&type=<otp_type>&next=<path>
  */
 export function AuthConfirmHandler() {
   const router = useRouter();
@@ -39,6 +41,19 @@ export function AuthConfirmHandler() {
       if (tokenHash && type) {
         const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
         if (!error) {
+          router.replace(next);
+          return;
+        }
+      }
+
+      // For recovery type without token_hash: session was already established
+      // by Supabase's /auth/v1/verify endpoint before redirecting here.
+      // Check if session exists; if yes, redirect to next page.
+      if (type === 'recovery') {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
           router.replace(next);
           return;
         }
