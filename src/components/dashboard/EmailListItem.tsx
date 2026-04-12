@@ -89,13 +89,13 @@ export function SwipeableEmailRow({
   children,
   onOpen,
   onDelete,
-  onToggleRead,
+  onToggleRead = () => {},
   isRead,
 }: {
   children: React.ReactNode;
   onOpen: () => void;
   onDelete: () => void;
-  onToggleRead: () => void;
+  onToggleRead?: () => void;
   isRead: boolean;
 }) {
   const { t } = useI18n();
@@ -474,7 +474,7 @@ export function EmailListItem({
       <SwipeableEmailRow
         onOpen={onFullscreen}
         onDelete={onDelete}
-        onToggleRead={onToggleRead ?? (() => {})}
+        onToggleRead={onToggleRead}
         isRead={log.isRead !== false}
       >
         {rowContent}
