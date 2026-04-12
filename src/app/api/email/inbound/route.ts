@@ -1397,8 +1397,12 @@ export async function POST(request: NextRequest) {
     // Verify email is confirmed in Supabase Auth. An admin can manually set is_active=true
     // without email verification, so we enforce this check explicitly here to ensure unverified
     // users are treated the same as inactive users: skip completely without saving to the DB.
-    const { data: authUserData } = await supabase.auth.admin.getUserById(userId);
-    if (!authUserData?.user?.email_confirmed_at) {
+    const { data: authUserData, error: authUserError } =
+      await supabase.auth.admin.getUserById(userId);
+    if (authUserError) {
+      console.error(`Failed to fetch auth user for ${userId}:`, authUserError);
+      // Do not skip — let processing continue to avoid dropping emails due to a transient error.
+    } else if (!authUserData?.user?.email_confirmed_at) {
       const recipientsText = normalizedRecipients.join(',');
       console.log(`User ${userId} email not verified, skipping inbound email`);
       await updateWebhookLog({
