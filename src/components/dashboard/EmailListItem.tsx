@@ -14,6 +14,14 @@ import type { EmailAnalysis, EmailAttachmentInfo, EmailLog } from '@/types';
 // ---------------------------------------------------------------------------
 export const DEFAULT_BADGE_COLOR = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
 
+/** Format a From header value as `Name <email>` (stripping outer quotes from the display name).
+ *  Falls back to the raw value when no angle-bracket form is present. */
+function extractSenderDisplay(addr: string): string {
+  const match = addr.match(/^"?([^"<]+?)"?\s*<([^>]+)>\s*$/);
+  if (match) return `${match[1].trim()} <${match[2].trim()}>`;
+  return addr;
+}
+
 export const SENTIMENT_COLORS: Record<string, string> = {
   positive: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
   neutral: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
@@ -406,7 +414,7 @@ export function EmailListItem({
                 {log.subject}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">
-                {t.dashboard.emailHistory.from} {log.fromAddress}
+                {t.dashboard.emailHistory.from} {extractSenderDisplay(log.fromAddress)}
               </p>
               {log.emailAnalysis && (
                 <AnalysisSection
@@ -432,7 +440,7 @@ export function EmailListItem({
                 {log.subject}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-all">
-                {t.dashboard.emailHistory.from} {log.fromAddress}
+                {t.dashboard.emailHistory.from} {extractSenderDisplay(log.fromAddress)}
               </p>
               {log.emailAnalysis && (
                 <AnalysisSection

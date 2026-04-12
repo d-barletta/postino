@@ -1399,7 +1399,7 @@ export async function POST(request: NextRequest) {
       await supabase.from('email_logs').insert({
         id: skippedLogId,
         to_address: matchedRecipient,
-        from_address: sender,
+        from_address: fromHeader || sender,
         subject,
         received_at: new Date().toISOString(),
         status: 'skipped',
@@ -1446,7 +1446,7 @@ export async function POST(request: NextRequest) {
         await supabase.from('email_logs').insert({
           id: newLogId,
           to_address: matchedRecipient,
-          from_address: sender,
+          from_address: fromHeader || sender,
           subject,
           received_at: new Date().toISOString(),
           status: 'received',
@@ -1541,7 +1541,7 @@ export async function POST(request: NextRequest) {
       await supabase.from('email_logs').insert({
         id: skippedLogId,
         to_address: matchedRecipient,
-        from_address: sender,
+        from_address: fromHeader || sender,
         subject,
         received_at: new Date().toISOString(),
         status: 'skipped',
@@ -1568,7 +1568,7 @@ export async function POST(request: NextRequest) {
     await supabase.from('email_logs').insert({
       id: mainLogId,
       to_address: matchedRecipient,
-      from_address: sender,
+      from_address: fromHeader || sender,
       subject,
       received_at: new Date().toISOString(),
       status: 'received',
