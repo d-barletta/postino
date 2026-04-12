@@ -39,6 +39,47 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
+    // Replace cid: references in the HTML body with signed storage URLs so the
+    // sandboxed iframe can render inline images (logos, QR codes, etc.).
+    // Attachments that have a contentId but no matching cid: reference in the
+    // HTML (e.g. Apple Mail inline parts that lost their src after forwarding)
+    // are collected as "orphans" and appended at the bottom of the body.
+    let resolvedBody = logRow.original_body ?? null;
+    const inlineStorageAttachments = attachments.filter((a) => a.contentId && a.storagePath);
+    if (resolvedBody && inlineStorageAttachments.length > 0) {
+      const signedResults = await Promise.all(
+        inlineStorageAttachments.map(async (att) => {
+          const { data } = await supabase.storage
+            .from('email-attachments')
+            .createSignedUrl(att.storagePath!, 3600);
+          return { att, signedUrl: data?.signedUrl ?? null };
+        }),
+      );
+
+      const orphanImgTags: string[] = [];
+      for (const { att, signedUrl } of signedResults) {
+        if (!signedUrl || !att.contentId) continue;
+        const cidRef = `cid:${att.contentId}`;
+        if (resolvedBody.includes(cidRef)) {
+          resolvedBody = resolvedBody.split(cidRef).join(signedUrl);
+        } else if (att.contentType.startsWith('image/')) {
+          // Escape the URL for safe insertion as an HTML attribute value.
+          const safeUrl = signedUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+          orphanImgTags.push(
+            `<img src="${safeUrl}" alt="" style="max-width:100%;height:auto;display:inline-block;" />`,
+          );
+        }
+      }
+
+      if (orphanImgTags.length > 0) {
+        resolvedBody +=
+          `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:12px;` +
+          `border-top:1px solid #e0e0e0;">` +
+          orphanImgTags.join('') +
+          `</div>`;
+      }
+    }
+
     return NextResponse.json({
       id,
       fromAddress: logRow.from_address,
@@ -46,7 +87,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       ccAddress: logRow.cc_address ?? null,
       bccAddress: logRow.bcc_address ?? null,
       subject: logRow.subject,
-      originalBody: logRow.original_body ?? null,
+      originalBody: resolvedBody,
       receivedAt: logRow.received_at ?? null,
       attachmentCount: logRow.attachment_count ?? 0,
       attachmentNames: logRow.attachment_names ?? [],

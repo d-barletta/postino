@@ -1311,16 +1311,27 @@ export async function POST(request: NextRequest) {
           fileName || `attachment-${i}`,
           fileContentType,
         );
+        // Mailgun assigns the generic name "mime-attachment.<ext>" to inline image
+        // MIME parts that have no Content-ID and no filename in their headers (e.g.
+        // embedded logos or buttons in forwarded emails). When no CID mapping is
+        // present for such a part, treat it as inline so it is excluded from the
+        // downloadable attachment list in the UI.
+        const isMailgunAnonymousInline =
+          !contentId &&
+          /^mime-attachment\./i.test(fileName) &&
+          fileContentType.startsWith('image/');
+        const effectiveContentId =
+          contentId || (isMailgunAnonymousInline ? `inline-${fieldName}` : undefined);
         attachments.push({
           filename: resolvedName,
           content: await file.arrayBuffer(),
           contentType: fileContentType,
-          ...(contentId ? { contentId } : {}),
+          ...(effectiveContentId ? { contentId: effectiveContentId } : {}),
         });
         console.log(`[inbound] attachment-${i} pushed`, {
           resolvedName,
           fileContentType,
-          contentId: contentId ?? null,
+          contentId: effectiveContentId ?? null,
         });
       }
       console.log('[inbound] multipart attachments collected', { count: attachments.length });
