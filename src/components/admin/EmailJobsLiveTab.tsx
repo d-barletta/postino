@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
-import { RefreshCw, Play, AlertTriangle, Trash2 } from 'lucide-react';
+import { RefreshCw, Play, AlertTriangle, Trash2, Copy, Check } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -55,7 +55,7 @@ interface WebhookRequestLog {
   userAgent: string;
   emailLogId: string | null;
   jobId: string | null;
-  details: unknown;
+  payloadStoragePath: string | null;
 }
 
 const REFRESH_MS = 15000;
@@ -69,12 +69,142 @@ function compactError(message: string, maxLen = 140): string {
   return message.length > maxLen ? `${message.slice(0, maxLen)}…` : message;
 }
 
-function toPrettyJson(value: unknown): string {
-  try {
-    return JSON.stringify(value ?? {}, null, 2);
-  } catch {
-    return '{}';
-  }
+function WebhookLogRow({
+  row,
+  getIdToken,
+}: {
+  row: WebhookRequestLog;
+  getIdToken: () => Promise<string | null>;
+}) {
+  const [payload, setPayload] = useState<string | null>(null);
+  const [loadingPayload, setLoadingPayload] = useState(false);
+  const [payloadError, setPayloadError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const fetchedRef = useRef(false);
+
+  const loadPayload = useCallback(async () => {
+    if (fetchedRef.current) return;
+    if (!row.payloadStoragePath) {
+      setPayload('(no payload file stored for this log)');
+      fetchedRef.current = true;
+      return;
+    }
+    fetchedRef.current = true;
+    setLoadingPayload(true);
+    try {
+      const token = await getIdToken();
+      if (!token) {
+        setPayloadError('Not authenticated');
+        return;
+      }
+      const res = await fetch(`/api/admin/email-jobs/${row.id}/payload`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setPayloadError(body.error ?? 'Failed to load payload');
+        return;
+      }
+      setPayload(await res.text());
+    } catch {
+      setPayloadError('Failed to load payload');
+    } finally {
+      setLoadingPayload(false);
+    }
+  }, [row.id, row.payloadStoragePath, getIdToken]);
+
+  const handleCopy = useCallback(async () => {
+    if (!payload) return;
+    await navigator.clipboard.writeText(payload);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [payload]);
+
+  return (
+    <details
+      key={row.id}
+      onToggle={(e) => {
+        if ((e.currentTarget as HTMLDetailsElement).open) loadPayload();
+      }}
+      className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 dark:border-blue-900 dark:bg-blue-950/20"
+    >
+      <summary className="cursor-pointer list-none">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <Badge variant="info">{row.status}</Badge>
+          <Badge variant="secondary">{row.result}</Badge>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {formatDate(row.receivedAt)}
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            attachments: {row.attachmentCount}
+          </span>
+        </div>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {row.subject || '(no subject)'}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">from {row.sender}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">to {row.recipient}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">ip {row.ip}</p>
+        {row.reason ? (
+          <p className="mt-1 break-all text-xs text-amber-700 dark:text-amber-300">{row.reason}</p>
+        ) : null}
+      </summary>
+
+      <div className="mt-3 space-y-2 border-t border-blue-200 pt-3 dark:border-blue-900">
+        {row.emailLogId ? (
+          <a
+            className="text-xs text-blue-600 underline dark:text-blue-300"
+            href={`/email/original/${row.emailLogId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            open linked email log
+          </a>
+        ) : null}
+        {row.jobId ? (
+          <p className="break-all text-xs text-gray-500 dark:text-gray-400">job id: {row.jobId}</p>
+        ) : null}
+        {row.messageId ? (
+          <p className="break-all text-xs text-gray-500 dark:text-gray-400">
+            message id: {row.messageId}
+          </p>
+        ) : null}
+        <p className="break-all text-xs text-gray-500 dark:text-gray-400">
+          user-agent: {row.userAgent || '—'}
+        </p>
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Full Mailgun payload
+            </span>
+            {payload ? (
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                type="button"
+              >
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            ) : null}
+          </div>
+          {loadingPayload ? (
+            <p className="text-xs text-gray-400">Loading payload…</p>
+          ) : payloadError ? (
+            <p className="text-xs text-red-500">{payloadError}</p>
+          ) : (
+            <textarea
+              readOnly
+              value={payload ?? ''}
+              className="h-80 w-full resize-y rounded-md bg-gray-900 p-3 font-mono text-[11px] leading-5 text-gray-100 focus:outline-none"
+            />
+          )}
+        </div>
+      </div>
+    </details>
+  );
 }
 
 export default function EmailJobsLiveTab() {
@@ -376,63 +506,7 @@ export default function EmailJobsLiveTab() {
           ) : data && data.recentWebhookRequests.length > 0 ? (
             <div className="space-y-2">
               {data.recentWebhookRequests.map((row) => (
-                <details
-                  key={row.id}
-                  className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 dark:border-blue-900 dark:bg-blue-950/20"
-                >
-                  <summary className="cursor-pointer list-none">
-                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <Badge variant="info">{row.status}</Badge>
-                      <Badge variant="secondary">{row.result}</Badge>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDate(row.receivedAt)}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        attachments: {row.attachmentCount}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {row.subject || '(no subject)'}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">from {row.sender}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">to {row.recipient}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">ip {row.ip}</p>
-                    {row.reason ? (
-                      <p className="mt-1 break-all text-xs text-amber-700 dark:text-amber-300">
-                        {row.reason}
-                      </p>
-                    ) : null}
-                  </summary>
-
-                  <div className="mt-3 space-y-2 border-t border-blue-200 pt-3 dark:border-blue-900">
-                    {row.emailLogId ? (
-                      <a
-                        className="text-xs text-blue-600 underline dark:text-blue-300"
-                        href={`/email/original/${row.emailLogId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        open linked email log
-                      </a>
-                    ) : null}
-                    {row.jobId ? (
-                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">
-                        job id: {row.jobId}
-                      </p>
-                    ) : null}
-                    {row.messageId ? (
-                      <p className="break-all text-xs text-gray-500 dark:text-gray-400">
-                        message id: {row.messageId}
-                      </p>
-                    ) : null}
-                    <p className="break-all text-xs text-gray-500 dark:text-gray-400">
-                      user-agent: {row.userAgent || '—'}
-                    </p>
-                    <pre className="max-h-80 overflow-auto rounded-md bg-gray-900 p-3 text-[11px] leading-5 text-gray-100">
-                      {toPrettyJson(row.details)}
-                    </pre>
-                  </div>
-                </details>
+                <WebhookLogRow key={row.id} row={row} getIdToken={getIdToken} />
               ))}
             </div>
           ) : (

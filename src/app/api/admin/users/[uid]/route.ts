@@ -6,6 +6,7 @@ import {
   isEmailUsingDomain,
   resolveAssignedEmailDomain,
 } from '@/lib/email-utils';
+import { deleteWebhookLogStorageFiles } from '@/lib/inbound-processing';
 
 const IN_QUERY_LIMIT = 30;
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
@@ -92,6 +93,7 @@ async function deleteAllUserData(uid: string): Promise<{ logIds: string[] }> {
     await collectUserDataIds(uid);
 
   await deleteUserStorageArtifacts(logIds);
+  await deleteWebhookLogStorageFiles(webhookLogIds);
 
   const supabase = createAdminClient();
 

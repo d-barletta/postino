@@ -174,9 +174,8 @@ export default function DashboardPage() {
   // Search-param overrides take priority and are handled by the effect above.
   useEffect(() => {
     if (selectedEmailId || editRuleId) return;
-    const historyTab = (
-      window.history.state as Record<string, unknown> | null
-    )?.postinoDashboardTab as DashboardTab | undefined;
+    const historyTab = (window.history.state as Record<string, unknown> | null)
+      ?.postinoDashboardTab as DashboardTab | undefined;
     const localTab = localStorage.getItem('postinoDashboardActiveTab') as DashboardTab | null;
     const savedTab =
       historyTab && (DASHBOARD_TABS as ReadonlyArray<string>).includes(historyTab)
@@ -196,7 +195,7 @@ export default function DashboardPage() {
         '',
       );
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Listen for browser Back/Forward and restore the tab stored in the state.
   useEffect(() => {

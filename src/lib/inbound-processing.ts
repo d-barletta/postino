@@ -263,6 +263,26 @@ export async function deleteAttachmentFromStorage(storagePath: string): Promise<
 }
 
 /**
+ * Delete payload snapshot files for the given mailgun_webhook_logs IDs.
+ * Each log stores its payload at `mailgun-webhook-logs/{id}/payload.json`.
+ * Non-existent paths are silently ignored by Supabase Storage.
+ * Errors are logged but not re-thrown.
+ */
+export async function deleteWebhookLogStorageFiles(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  try {
+    const supabase = createAdminClient();
+    const paths = ids.map((id) => `mailgun-webhook-logs/${id}/payload.json`);
+    const BATCH = 100;
+    for (let i = 0; i < paths.length; i += BATCH) {
+      await supabase.storage.from('email-attachments').remove(paths.slice(i, i + BATCH));
+    }
+  } catch (err) {
+    console.error('Failed to delete webhook log storage files:', err);
+  }
+}
+
+/**
  * Send a web push notification to the user via OneSignal external ID targeting.
  * Errors are caught and logged so they never block the main email-processing flow.
  */

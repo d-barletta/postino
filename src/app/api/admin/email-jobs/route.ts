@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import { processEmailJobsBatch } from '@/lib/email-jobs';
+import { deleteWebhookLogStorageFiles } from '@/lib/inbound-processing';
 
 const STATUSES = ['pending', 'processing', 'retrying', 'done', 'failed'] as const;
 
@@ -23,7 +24,7 @@ interface MailgunWebhookLogSummary {
   userAgent: string;
   emailLogId: string | null;
   jobId: string | null;
-  details: unknown;
+  payloadStoragePath: string | null;
 }
 
 interface JobCounts {
@@ -148,12 +149,7 @@ export async function GET(request: NextRequest) {
         userAgent: raw.userAgent || '\u2014',
         emailLogId: linked.emailLogId || null,
         jobId: linked.jobId || null,
-        details: {
-          request: raw ?? null,
-          parsed: preview ?? null,
-          linked: linked ?? null,
-          details: null,
-        },
+        payloadStoragePath: raw.payloadStoragePath ?? null,
       };
     });
 
@@ -199,6 +195,12 @@ export async function DELETE(request: NextRequest) {
   try {
     await verifyAdminRequest(request);
     const supabase = createAdminClient();
+
+    // Collect webhook log IDs so we can delete their storage snapshots first.
+    const { data: webhookLogRows } = await supabase.from('mailgun_webhook_logs').select('id');
+    const webhookLogIds = (webhookLogRows ?? []).map((r) => r.id as string);
+    await deleteWebhookLogStorageFiles(webhookLogIds);
+
     const [logsResult, jobsResult] = await Promise.all([
       supabase.from('mailgun_webhook_logs').delete().not('id', 'is', null),
       supabase.from('email_jobs').delete().not('id', 'is', null),

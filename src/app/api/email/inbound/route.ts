@@ -675,7 +675,7 @@ export async function POST(request: NextRequest) {
 
     if (webhookLoggingEnabled) {
       const now = new Date().toISOString();
-      // Initialize local tracking state
+      // Initialize local tracking state — only metadata goes in DB; full payload is in storage.
       Object.assign(webhookPreviewFields, {
         sender: senderForLog,
         recipient: recipientForLog,
@@ -690,7 +690,6 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get('user-agent') || '',
         host: request.headers.get('host') || '',
         contentType: request.headers.get('content-type') || '',
-        headers: serializeRequestHeaders(request.headers),
         payloadStoragePath: null,
       });
 
