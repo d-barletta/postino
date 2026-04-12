@@ -21,7 +21,8 @@ export function EmailAnalysisTabContent({
   onAnalysisUpdated,
 }: EmailAnalysisTabContentProps) {
   const { t } = useI18n();
-  const { authUser, getIdToken } = useAuth();
+  const { authUser, user, getIdToken } = useAuth();
+  const isAdmin = user?.isAdmin === true;
   const [refreshingAnalysis, setRefreshingAnalysis] = useState(false);
 
   const handleRepeatAnalysis = async (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -65,19 +66,21 @@ export function EmailAnalysisTabContent({
         <EmailAnalysisPanel analysis={analysis} />
       )}
       <div className="flex justify-start">
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          loading={refreshingAnalysis}
-          disabled={!authUser}
-          onClick={handleRepeatAnalysis}
-        >
-          {!refreshingAnalysis && <RefreshCw className="h-3.5 w-3.5" />}
-          {refreshingAnalysis
-            ? t.dashboard.emailHistory.rerunningAnalysis
-            : t.dashboard.emailHistory.rerunAnalysis}
-        </Button>
+        {isAdmin && (
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            loading={refreshingAnalysis}
+            disabled={!authUser}
+            onClick={handleRepeatAnalysis}
+          >
+            {!refreshingAnalysis && <RefreshCw className="h-3.5 w-3.5" />}
+            {refreshingAnalysis
+              ? t.dashboard.emailHistory.rerunningAnalysis
+              : t.dashboard.emailHistory.rerunAnalysis}
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -21,13 +21,13 @@ import {
 } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { ComboboxChips } from '@/components/ui/ComboboxChips';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
+import { EmailDetailTabs } from '@/components/dashboard/EmailDetailTabs';
+import { useEmailExpansion } from '@/hooks/useEmailExpansion';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import {
   Drawer,
   DrawerContent,
@@ -40,26 +40,19 @@ import {
   RefreshCw,
   Mail,
   Paperclip,
-  ExternalLink,
   Search,
   X,
-  AlignLeft,
-  Brain,
   MousePointerClick,
   Trash2,
-  Maximize2,
   ChevronDown,
 } from 'lucide-react';
 import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import type { KnowledgeData } from '@/components/dashboard/KnowledgeTab';
-import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
+import { Spinner } from '@/components/ui/Spinner';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
 import { useModalHistory } from '@/hooks/useModalHistory';
-import { AttachmentList } from '@/components/dashboard/AttachmentList';
-import { Spinner } from '@/components/ui/Spinner';
 import {
   EmailListItem,
-  ExpandedEmailData,
   DEFAULT_BADGE_COLOR,
   SENTIMENT_COLORS,
   PRIORITY_COLORS,
@@ -230,8 +223,7 @@ export function EmailSearchTab({
   knowledgeData,
 }: EmailSearchTabProps) {
   const { t, locale } = useI18n();
-  const { authUser, user, getIdToken } = useAuth();
-  const isAdmin = user?.isAdmin === true;
+  const { authUser, getIdToken } = useAuth();
   const ts = t.dashboard.search;
 
   const [logs, setLogs] = useState<EmailLog[]>([]);
@@ -244,9 +236,9 @@ export function EmailSearchTab({
   const [totalEmailCount, setTotalEmailCount] = useState<number | undefined>(undefined);
   const [totalEmailCountLoading, setTotalEmailCountLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
-  const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
+  const { expandedData, fetchExpandedEmail } = useEmailExpansion();
   const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
+  const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -260,7 +252,7 @@ export function EmailSearchTab({
   const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
   useModalHistory(!!fullscreenEmailId, () => setFullscreenEmailId(null));
 
-  const fetchedExpandedIds = useRef<Set<string>>(new Set());
+  const suggestionsFetched = useRef(false);
 
   // Pending = staged in UI, not yet applied to the server
   const [pending, setPending] = useState<FilterState>(EMPTY_FILTERS);
@@ -283,7 +275,6 @@ export function EmailSearchTab({
   }
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const suggestionsFetched = useRef(false);
 
   const fetchSuggestions = useCallback(async () => {
     // Use data already fetched by the parent to avoid a duplicate API call.
@@ -526,85 +517,12 @@ export function EmailSearchTab({
     setPage(newPage);
   };
 
-  const fetchExpandedEmail = useCallback(
-    async (logId: string) => {
-      if (!authUser || fetchedExpandedIds.current.has(logId)) return;
-      fetchedExpandedIds.current.add(logId);
-      setExpandedData((prev) => ({
-        ...prev,
-        [logId]: {
-          originalBody: null,
-          toAddress: '',
-          ccAddress: null,
-          bccAddress: null,
-          attachmentCount: 0,
-          attachmentNames: [],
-          attachments: [],
-          loading: true,
-        },
-      }));
-      try {
-        const token = await getIdToken();
-        const res = await fetch(`/api/email/original/${logId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setExpandedData((prev) => ({
-            ...prev,
-            [logId]: {
-              originalBody: data.originalBody ?? null,
-              toAddress: data.toAddress || '',
-              ccAddress: data.ccAddress ?? null,
-              bccAddress: data.bccAddress ?? null,
-              attachmentCount: data.attachmentCount ?? 0,
-              attachmentNames: data.attachmentNames ?? [],
-              attachments: data.attachments ?? [],
-              loading: false,
-            },
-          }));
-        } else {
-          setExpandedData((prev) => ({
-            ...prev,
-            [logId]: {
-              originalBody: null,
-              toAddress: '',
-              ccAddress: null,
-              bccAddress: null,
-              attachmentCount: 0,
-              attachmentNames: [],
-              attachments: [],
-              loading: false,
-              error: 'Failed to load',
-            },
-          }));
-        }
-      } catch {
-        setExpandedData((prev) => ({
-          ...prev,
-          [logId]: {
-            originalBody: null,
-            toAddress: '',
-            ccAddress: null,
-            bccAddress: null,
-            attachmentCount: 0,
-            attachmentNames: [],
-            attachments: [],
-            loading: false,
-            error: 'Failed to load',
-          },
-        }));
-      }
-    },
-    [authUser],
-  );
-
   const handleToggleExpand = (logId: string) => {
     if (selectedId === logId) {
       setSelectedId(null);
     } else {
       setSelectedId(logId);
-      setActiveDetailTab('content');
+      setActiveDetailTab('summary');
       fetchExpandedEmail(logId);
     }
   };
@@ -1653,149 +1571,16 @@ export function EmailSearchTab({
                     )}
                   </div>
                   <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
-                    <Tabs
-                      value={activeDetailTab}
-                      onValueChange={setActiveDetailTab}
+                    <EmailDetailTabs
+                      log={log}
+                      emailData={emailData}
+                      activeTab={activeDetailTab}
+                      onTabChange={setActiveDetailTab}
+                      onFullscreen={() => setFullscreenEmailId(log.id)}
+                      onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
                       className="flex flex-col flex-1 overflow-hidden"
-                    >
-                      <div className="flex items-center justify-between">
-                        <TabsList>
-                          <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}>
-                            <Mail className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                            {t.dashboard.emailHistory.tabContent}
-                          </TabsTrigger>
-                          <TabsTrigger value="summary">
-                            <AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                            {t.dashboard.emailHistory.tabSummary}
-                          </TabsTrigger>
-                          <TabsTrigger value="ai">
-                            <Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                            {t.dashboard.emailHistory.tabAiAnalysis}
-                          </TabsTrigger>
-                        </TabsList>
-                        {activeDetailTab === 'content' &&
-                          emailData &&
-                          !emailData.loading &&
-                          emailData.originalBody && (
-                            <div className="flex items-center gap-1 pb-1.5 border-b border-gray-200 dark:border-gray-700">
-                              <button
-                                onClick={() => setFullscreenEmailId(log.id)}
-                                className="p-1.5 rounded text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                title={t.dashboard.emailHistory.viewFullPage}
-                                aria-label={t.dashboard.emailHistory.viewFullPage}
-                              >
-                                <Maximize2 className="h-3.5 w-3.5" />
-                              </button>
-                              {isAdmin && (
-                                <a
-                                  href={`/email/original/${log.id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1.5 rounded text-gray-400 hover:text-[#d0b53f] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                  title={t.dashboard.emailHistory.viewOriginal}
-                                  aria-label={t.dashboard.emailHistory.viewOriginal}
-                                >
-                                  <ExternalLink className="h-3.5 w-3.5" />
-                                </a>
-                              )}
-                            </div>
-                          )}
-                      </div>
-                      <TabsContent value="summary" className="mt-3 space-y-3 overflow-y-auto">
-                        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                            {t.dashboard.emailHistory.to}
-                          </dt>
-                          <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                            {log.toAddress}
-                          </dd>
-                          {emailData?.ccAddress && (
-                            <>
-                              <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                                {t.dashboard.emailHistory.cc}
-                              </dt>
-                              <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                                {emailData.ccAddress}
-                              </dd>
-                            </>
-                          )}
-                          {emailData?.bccAddress && (
-                            <>
-                              <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                                {t.dashboard.emailHistory.bcc}
-                              </dt>
-                              <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                                {emailData.bccAddress}
-                              </dd>
-                            </>
-                          )}
-                          <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                            {t.dashboard.emailHistory.attachments}
-                          </dt>
-                          <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
-                            {emailData?.loading ? (
-                              <span className="text-gray-400">{'…'}</span>
-                            ) : (emailData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-                              <AttachmentList
-                                emailId={log.id}
-                                names={emailData?.attachmentNames ?? log.attachmentNames ?? []}
-                                attachments={emailData?.attachments}
-                              />
-                            ) : (
-                              <span className="text-gray-400">
-                                {t.dashboard.emailHistory.noAttachmentsShort}
-                              </span>
-                            )}
-                          </dd>
-                        </dl>
-                        {log.ruleApplied && (
-                          <p className="text-xs text-gray-600 dark:text-gray-300">
-                            <span className="font-medium">
-                              {t.dashboard.emailHistory.ruleApplied}
-                            </span>{' '}
-                            {log.ruleApplied}
-                          </p>
-                        )}
-                        {log.tokensUsed !== undefined && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {t.dashboard.emailHistory.tokens} {log.tokensUsed} |{' '}
-                            {t.dashboard.stats.estCost}: ${(log.estimatedCost || 0).toFixed(5)}
-                          </p>
-                        )}
-                      </TabsContent>
-                      <TabsContent
-                        value="content"
-                        className="flex-1 flex flex-col overflow-hidden mt-3 min-h-0"
-                      >
-                        {emailData?.loading && (
-                          <div className="animate-pulse space-y-2 pt-1">
-                            <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                          </div>
-                        )}
-                        {emailData && !emailData.loading && emailData.originalBody && (
-                          <SafeEmailIframe
-                            html={emailData.originalBody}
-                            className="flex-1 rounded-lg min-h-0"
-                            style={{ height: '100%' }}
-                          />
-                        )}
-                        {emailData &&
-                          !emailData.loading &&
-                          !emailData.originalBody &&
-                          !emailData.error && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-                              {t.emailOriginal.noOriginalContent}
-                            </p>
-                          )}
-                      </TabsContent>
-                      <TabsContent value="ai" className="mt-3">
-                        <EmailAnalysisTabContent
-                          emailId={log.id}
-                          analysis={log.emailAnalysis}
-                          onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
-                        />
-                      </TabsContent>
-                    </Tabs>
+                      summaryClassName="overflow-y-auto"
+                    />
                   </div>
                 </>
               );

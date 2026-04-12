@@ -2,15 +2,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/Badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
-import { AttachmentList } from '@/components/dashboard/AttachmentList';
-import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
+import { EmailDetailTabs } from '@/components/dashboard/EmailDetailTabs';
 import { Spinner } from '@/components/ui/Spinner';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { useAuth } from '@/hooks/useAuth';
-import { Mail, Paperclip, ExternalLink, AlignLeft, Brain, Trash2, Eye } from 'lucide-react';
+import { Mail, Paperclip, Trash2, Eye } from 'lucide-react';
 import type { EmailAnalysis, EmailAttachmentInfo, EmailLog } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -298,8 +294,6 @@ export function EmailListItem({
   statusLayout = 'bottom',
 }: EmailListItemProps) {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
-  const isAdmin = user?.isAdmin === true;
   const ts = t.dashboard.search;
 
   const statusLabel: Record<string, string> = {
@@ -435,147 +429,14 @@ export function EmailListItem({
           className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 pl-6"
           onClick={(e) => e.stopPropagation()}
         >
-          <Tabs value={activeDetailTab} onValueChange={onTabChange}>
-            <TabsList>
-              <TabsTrigger value="content" title={t.dashboard.emailHistory.tabContent}>
-                <Mail className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                {t.dashboard.emailHistory.tabContent}
-              </TabsTrigger>
-              <TabsTrigger value="summary">
-                <AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                {t.dashboard.emailHistory.tabSummary}
-              </TabsTrigger>
-              <TabsTrigger value="ai">
-                <Brain className="h-3.5 w-3.5 shrink-0 mr-1.5" />
-                {t.dashboard.emailHistory.tabAiAnalysis}
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Summary tab */}
-            <TabsContent value="summary" className="mt-3 space-y-3">
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-                <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                  {t.dashboard.emailHistory.to}
-                </dt>
-                <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                  {log.toAddress}
-                </dd>
-                {expandedData?.ccAddress && (
-                  <>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                      {t.dashboard.emailHistory.cc}
-                    </dt>
-                    <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                      {expandedData.ccAddress}
-                    </dd>
-                  </>
-                )}
-                {expandedData?.bccAddress && (
-                  <>
-                    <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                      {t.dashboard.emailHistory.bcc}
-                    </dt>
-                    <dd className="text-gray-700 dark:text-gray-300 min-w-0 break-all">
-                      {expandedData.bccAddress}
-                    </dd>
-                  </>
-                )}
-                <dt className="text-gray-500 dark:text-gray-400 font-medium">
-                  {t.dashboard.emailHistory.attachments}
-                </dt>
-                <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
-                  {expandedData?.loading ? (
-                    <span className="text-gray-400">{'…'}</span>
-                  ) : (expandedData?.attachmentCount ?? log.attachmentCount ?? 0) > 0 ? (
-                    <AttachmentList
-                      emailId={log.id}
-                      names={expandedData?.attachmentNames ?? log.attachmentNames ?? []}
-                      attachments={expandedData?.attachments}
-                    />
-                  ) : (
-                    <span className="text-gray-400">
-                      {t.dashboard.emailHistory.noAttachmentsShort}
-                    </span>
-                  )}
-                </dd>
-              </dl>
-              {log.ruleApplied && (
-                <p className="text-xs text-gray-600 dark:text-gray-300">
-                  <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span>{' '}
-                  {log.ruleApplied}
-                </p>
-              )}
-              {log.tokensUsed !== undefined && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}:
-                  ${(log.estimatedCost || 0).toFixed(5)}
-                </p>
-              )}
-            </TabsContent>
-
-            {/* Content tab */}
-            <TabsContent value="content" className="mt-3 space-y-2">
-              {expandedData?.loading && (
-                <div className="animate-pulse space-y-2 pt-1">
-                  <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                  <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
-                </div>
-              )}
-              {expandedData && !expandedData.loading && expandedData.originalBody && (
-                <>
-                  <SafeEmailIframe
-                    html={expandedData.originalBody}
-                    className="rounded-lg"
-                    style={{ minHeight: '200px', maxHeight: '400px' }}
-                    maxAutoHeight={400}
-                  />
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onFullscreen();
-                      }}
-                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                      title={t.emailOriginal.openFullPageView}
-                    >
-                      <i className="bi bi-fullscreen text-[11px]" aria-hidden="true" />
-                      {t.dashboard.emailHistory.viewFullPage}
-                    </button>
-                    {isAdmin && (
-                      <a
-                        href={`/email/original/${log.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-[#d0b53f] hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        {t.dashboard.emailHistory.viewOriginal}
-                      </a>
-                    )}
-                  </div>
-                </>
-              )}
-              {expandedData &&
-                !expandedData.loading &&
-                !expandedData.originalBody &&
-                !expandedData.error && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 py-1">
-                    {t.emailOriginal.noOriginalContent}
-                  </p>
-                )}
-            </TabsContent>
-
-            {/* AI Analysis tab */}
-            <TabsContent value="ai" className="mt-3">
-              <EmailAnalysisTabContent
-                emailId={log.id}
-                analysis={log.emailAnalysis}
-                onAnalysisUpdated={onAnalysisUpdated}
-              />
-            </TabsContent>
-          </Tabs>
+          <EmailDetailTabs
+            log={log}
+            emailData={expandedData}
+            activeTab={activeDetailTab}
+            onTabChange={onTabChange}
+            onFullscreen={onFullscreen}
+            onAnalysisUpdated={onAnalysisUpdated}
+          />
         </div>
       )}
     </div>

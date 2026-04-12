@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,14 +21,11 @@ import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
+import { useEmailExpansion } from '@/hooks/useEmailExpansion';
 import { Mail, RefreshCw } from 'lucide-react';
 import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
-import {
-  EmailListItem,
-  EmailRowSkeleton,
-  ExpandedEmailData,
-} from '@/components/dashboard/EmailListItem';
+import { EmailListItem, EmailRowSkeleton } from '@/components/dashboard/EmailListItem';
 
 const PAGE_SIZE = 20;
 
@@ -83,8 +80,8 @@ export function ExploreEmailsModal({
   const [totalPages, setTotalPages] = useState<number | undefined>(undefined);
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [expandedData, setExpandedData] = useState<Record<string, ExpandedEmailData>>({});
-  const [activeDetailTab, setActiveDetailTab] = useState<string>('content');
+  const { expandedData, fetchExpandedEmail, resetExpanded } = useEmailExpansion();
+  const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   // When set, we're waiting for this email's body to load before opening fullscreen.
@@ -95,8 +92,6 @@ export function ExploreEmailsModal({
       prev.map((log) => (log.id === emailId ? { ...log, emailAnalysis: analysis } : log)),
     );
   }, []);
-
-  const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
   const fetchLogs = useCallback(
     async (targetPage: number) => {
@@ -181,8 +176,7 @@ export function ExploreEmailsModal({
     setLogs([]);
     setPage(1);
     setSelectedId(null);
-    setExpandedData({});
-    fetchedExpandedIds.current = new Set();
+    resetExpanded();
     fetchLogs(1);
   }, [term, fetchLogs]);
 
@@ -192,91 +186,16 @@ export function ExploreEmailsModal({
     setLogs([]);
     setPage(1);
     setSelectedId(null);
-    setExpandedData({});
-    fetchedExpandedIds.current = new Set();
+    resetExpanded();
     fetchLogsByIds(logIds);
   }, [isLogIdsMode, logIds, fetchLogsByIds]);
-
-  const fetchExpandedEmail = useCallback(
-    async (logId: string) => {
-      if (!authUser) return;
-      if (fetchedExpandedIds.current.has(logId)) return;
-      fetchedExpandedIds.current.add(logId);
-      setExpandedData((prev) => ({
-        ...prev,
-        [logId]: {
-          originalBody: null,
-          toAddress: '',
-          ccAddress: null,
-          bccAddress: null,
-          attachmentCount: 0,
-          attachmentNames: [],
-          attachments: [],
-          loading: true,
-        },
-      }));
-      try {
-        const token = await getIdToken();
-        const res = await fetch(`/api/email/original/${logId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setExpandedData((prev) => ({
-            ...prev,
-            [logId]: {
-              originalBody: data.originalBody ?? null,
-              toAddress: data.toAddress ?? '',
-              ccAddress: data.ccAddress ?? null,
-              bccAddress: data.bccAddress ?? null,
-              attachmentCount: data.attachmentCount ?? 0,
-              attachmentNames: data.attachmentNames ?? [],
-              attachments: data.attachments ?? [],
-              loading: false,
-            },
-          }));
-        } else {
-          setExpandedData((prev) => ({
-            ...prev,
-            [logId]: {
-              originalBody: null,
-              toAddress: '',
-              ccAddress: null,
-              bccAddress: null,
-              attachmentCount: 0,
-              attachmentNames: [],
-              attachments: [],
-              loading: false,
-              error: 'Failed to load',
-            },
-          }));
-        }
-      } catch {
-        setExpandedData((prev) => ({
-          ...prev,
-          [logId]: {
-            originalBody: null,
-            toAddress: '',
-            ccAddress: null,
-            bccAddress: null,
-            attachmentCount: 0,
-            attachmentNames: [],
-            attachments: [],
-            loading: false,
-            error: 'Failed to load',
-          },
-        }));
-      }
-    },
-    [authUser],
-  );
 
   const handleToggleExpand = (logId: string) => {
     if (selectedId === logId) {
       setSelectedId(null);
     } else {
       setSelectedId(logId);
-      setActiveDetailTab('content');
+      setActiveDetailTab('summary');
       fetchExpandedEmail(logId);
     }
   };

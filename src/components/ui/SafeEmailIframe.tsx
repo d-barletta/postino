@@ -167,7 +167,7 @@ export function SafeEmailIframe({
     const onDocClick = (event: MouseEvent) => {
       const link = (event.target as Element)?.closest('a');
       if (!link) {
-        console.error('[SafeEmailIframe] click: no <a> found near target');
+        console.warn('[SafeEmailIframe] click: no <a> found near target');
         return;
       }
       const href = link.getAttribute('href');
