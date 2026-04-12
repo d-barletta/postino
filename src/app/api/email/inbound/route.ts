@@ -96,11 +96,21 @@ function isLikelyMailLoop(formData: FormData, sender: string, recipientUserEmail
   }
 
   const autoSubmitted = (headers.get('auto-submitted') || '').trim().toLowerCase();
-  if (autoSubmitted && autoSubmitted !== 'no') {
+  // Many legitimate bulk senders use `auto-generated` (newsletters, campaigns, etc.).
+  // Treat only explicit auto-replies as loop-prone on this signal alone.
+  if (autoSubmitted === 'auto-replied') {
     return true;
   }
 
   const senderEmail = extractEmailAddress(sender);
+  const senderLocalPart = senderEmail.split('@')[0] || '';
+  const looksLikeSystemSender = /^(mailer-daemon|postmaster|no-reply|noreply|do-not-reply|donotreply)$/i.test(
+    senderLocalPart,
+  );
+  if (autoSubmitted === 'auto-generated' && looksLikeSystemSender) {
+    return true;
+  }
+
   const recipientEmail = extractEmailAddress(recipientUserEmail);
   return Boolean(senderEmail && recipientEmail && senderEmail === recipientEmail);
 }
