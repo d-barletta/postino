@@ -41,7 +41,6 @@ interface RelationGraphProps {
     places: string;
     events: string;
     dates: string;
-    tags: string;
     numbers: string;
     prices: string;
   };
@@ -519,9 +518,9 @@ export function RelationGraph({
 
   const isEmpty = graph && graph.nodes.length === 0;
 
-  // Tags hidden by default; toggling a legend item shows/hides that category
+  // Toggling a legend item shows/hides that category
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
-    () => new Set<EntityGraphNodeCategory>(['tags']),
+    () => new Set<EntityGraphNodeCategory>(),
   );
 
   const toggleCategory = useCallback((cat: EntityGraphNodeCategory) => {
@@ -645,13 +644,12 @@ export function RelationGraphFullPageContent({
     | 'places'
     | 'events'
     | 'dates'
-    | 'tags'
     | 'numbers'
     | 'prices'
   >;
 }) {
   const [hiddenCategories, setHiddenCategories] = useState<Set<EntityGraphNodeCategory>>(
-    () => new Set<EntityGraphNodeCategory>(['tags']),
+    () => new Set<EntityGraphNodeCategory>(),
   );
 
   const toggleCategory = useCallback((cat: EntityGraphNodeCategory) => {

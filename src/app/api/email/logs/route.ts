@@ -34,11 +34,6 @@ export async function GET(request: NextRequest) {
     const hasActionItems = searchParams.get('hasActionItems') === 'true';
     const isUrgent = searchParams.get('isUrgent') === 'true';
     const languageFilter = (searchParams.get('language') || '').trim().toLowerCase();
-    // tags – multi-value; preserve original case for matching stored values exactly.
-    const tagsFilter = searchParams
-      .getAll('tags')
-      .map((t) => t.trim())
-      .filter(Boolean);
     const statusFilter = (searchParams.get('status') || '').trim().toLowerCase();
     // entity filters – multi-value; preserve original case for matching.
     const peopleFilter = searchParams
@@ -84,7 +79,6 @@ export async function GET(request: NextRequest) {
 
     // Array filters are all handled in-memory (no server-side JSONB array-contains push).
     const hasArrayFilters = !!(
-      tagsFilter.length > 0 ||
       peopleFilter.length > 0 ||
       orgsFilter.length > 0 ||
       placesFilter.length > 0 ||
@@ -96,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     // ---------------------------------------------------------------------------
     // Build Supabase query – push scalar/boolean structured filters to the database.
-    // Array filters (tags, entities) and full-text search are applied in-memory.
+    // Array filters (entities) and full-text search are applied in-memory.
     // ---------------------------------------------------------------------------
     const structuredFiltersActive = !!(
       statusFilter ||
@@ -208,10 +202,6 @@ export async function GET(request: NextRequest) {
         (d.emailAnalysis?.summary &&
           String(d.emailAnalysis.summary).toLowerCase().includes(term)) ||
         (d.emailAnalysis?.intent && String(d.emailAnalysis.intent).toLowerCase().includes(term)) ||
-        (Array.isArray(d.emailAnalysis?.tags) &&
-          d.emailAnalysis.tags.some(
-            (tag: unknown) => typeof tag === 'string' && tag.toLowerCase().includes(term),
-          )) ||
         (Array.isArray(d.emailAnalysis?.topics) &&
           d.emailAnalysis.topics.some(
             (topic: unknown) => typeof topic === 'string' && topic.toLowerCase().includes(term),
@@ -249,18 +239,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Array filters — all applied in-memory.
-    if (tagsFilter.length > 0) {
-      docs = docs.filter((d) =>
-        tagsFilter.some(
-          (tag) =>
-            Array.isArray(d.emailAnalysis?.tags) &&
-            d.emailAnalysis.tags.some(
-              (t: unknown) => typeof t === 'string' && t.toLowerCase() === tag.toLowerCase(),
-            ),
-        ),
-      );
-    }
-
     if (peopleFilter.length > 0) {
       docs = docs.filter((d) => {
         const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;

@@ -21,7 +21,6 @@ const MIN_EDGE_WEIGHT = 1;
 /** All entity graph node categories in a fixed order for consistent processing. */
 const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'topics',
-  'tags',
   'people',
   'organizations',
   'places',
@@ -159,7 +158,6 @@ export async function POST(request: NextRequest) {
     // -------------------------------------------------------------------
     const freqs: Record<EntityGraphNodeCategory, CountMap> = {
       topics: {},
-      tags: {},
       people: {},
       organizations: {},
       places: {},
@@ -181,7 +179,6 @@ export async function POST(request: NextRequest) {
 
       const raw: PerEmailEntities = {
         topics: [],
-        tags: [],
         people: [],
         organizations: [],
         places: [],
@@ -203,7 +200,6 @@ export async function POST(request: NextRequest) {
       };
 
       collectRaw('topics', analysis.topics);
-      collectRaw('tags', analysis.tags);
       collectRaw('prices', analysis.prices);
       const entities = analysis.entities as Record<string, unknown> | undefined;
       if (entities) {

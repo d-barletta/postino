@@ -82,7 +82,6 @@ export async function GET(request: NextRequest) {
     }
 
     const topics: CountMap = {};
-    const tags: CountMap = {};
     const people: CountMap = {};
     const organizations: CountMap = {};
     const places: CountMap = {};
@@ -99,7 +98,6 @@ export async function GET(request: NextRequest) {
       if (!analysis) continue;
       totalEmails++;
       incrementAll(topics, analysis.topics);
-      incrementAll(tags, analysis.tags);
       increment(languages, analysis.language);
       incrementAll(prices, analysis.prices);
       const entities = analysis.entities as Record<string, unknown> | undefined;
@@ -115,7 +113,6 @@ export async function GET(request: NextRequest) {
 
     // Apply user-defined merges
     if (mergesByCategory.topics) applyMerges(topics, mergesByCategory.topics);
-    if (mergesByCategory.tags) applyMerges(tags, mergesByCategory.tags);
     if (mergesByCategory.people) applyMerges(people, mergesByCategory.people);
     if (mergesByCategory.organizations) applyMerges(organizations, mergesByCategory.organizations);
     if (mergesByCategory.places) applyMerges(places, mergesByCategory.places);
@@ -126,7 +123,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       topics: toSortedArray(topics),
-      tags: toSortedArray(tags),
       people: toSortedArray(people),
       organizations: toSortedArray(organizations),
       places: toSortedArray(places),

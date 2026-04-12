@@ -233,7 +233,6 @@ export function buildMemoryEntryFromAnalysis(
     ...(analysis?.language ? { language: analysis.language } : {}),
     ...(analysis?.sentiment ? { sentiment: analysis.sentiment } : {}),
     ...(analysis?.priority ? { priority: analysis.priority } : {}),
-    ...(analysis?.tags?.length ? { tags: analysis.tags } : {}),
     ...(analysis?.topics?.length ? { topics: analysis.topics } : {}),
     ...(analysis?.intent ? { intent: analysis.intent } : {}),
     ...(analysis?.senderType ? { senderType: analysis.senderType } : {}),
@@ -283,7 +282,6 @@ export async function saveToSupermemory(
   if (entry.priority) parts.push(`Priority: ${entry.priority}`);
   if (entry.intent) parts.push(`Intent: ${entry.intent}`);
   if (entry.senderType) parts.push(`Sender type: ${entry.senderType}`);
-  if (entry.tags?.length) parts.push(`Tags: ${entry.tags.join(', ')}`);
   if (entry.topics?.length) parts.push(`Topics: ${entry.topics.join(', ')}`);
   if (entry.ruleApplied) parts.push(`Rule applied: ${entry.ruleApplied}`);
   if (entry.wasSummarized) parts.push(`Was summarized: yes`);
@@ -745,11 +743,6 @@ const emailAnalysisSchema = z.object({
       'A 1-2 sentence summary of what this email is about. Focus on the actual content, not the metadata.',
     ),
   topics: z.array(z.string()).describe('Key topics or themes mentioned in the email'),
-  tags: z
-    .array(z.string())
-    .describe(
-      'Specific descriptive tags for this email, such as company name, product, event type, or other identifiers',
-    ),
   hasActionItems: z
     .boolean()
     .describe(
@@ -1089,7 +1082,7 @@ async function preAnalyzeEmail(
   const langCode = outputLanguage?.toLowerCase().trim();
   const langName = langCode ? (LANGUAGE_NAMES[langCode] ?? langCode) : null;
   const languageInstruction = langName
-    ? ` Write the summary, intent, tags, and topics fields in ${langName}.`
+    ? ` Write the summary, intent, and topics fields in ${langName}.`
     : '';
 
   try {
@@ -1143,7 +1136,6 @@ async function hydrateEmailAnalysis(
     ...rawAnalysis,
     summary: rawAnalysis.summary.trim(),
     topics: normalizeUniqueStrings(rawAnalysis.topics),
-    tags: normalizeUniqueStrings(rawAnalysis.tags),
     intent: rawAnalysis.intent.trim(),
     language: rawAnalysis.language.trim().toLowerCase(),
     entities: {
@@ -1239,9 +1231,6 @@ function buildAnalysisSection(analysis: EmailAnalysis | null): string {
 
   if (analysis.topics.length > 0) {
     lines.push(`Topics: ${analysis.topics.join(', ')}`);
-  }
-  if (analysis.tags.length > 0) {
-    lines.push(`Tags: ${analysis.tags.join(', ')}`);
   }
   lines.push(`Has action items: ${analysis.hasActionItems ? 'Yes' : 'No'}`);
   lines.push(`Is urgent: ${analysis.isUrgent ? 'Yes' : 'No'}`);

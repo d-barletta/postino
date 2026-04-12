@@ -73,8 +73,6 @@ export interface EmailAnalysis {
   summary: string;
   /** Key topics or themes mentioned in the email. */
   topics: string[];
-  /** Specific descriptive tags (e.g. company name, product, event type). */
-  tags: string[];
   /** True if this email requests or requires action from the recipient. */
   hasActionItems: boolean;
   /** True if this email is explicitly marked as urgent or time-sensitive. */
@@ -263,8 +261,6 @@ export interface EmailMemoryEntry {
   sentiment?: string;
   /** Processing priority inferred from content (low, normal, high, critical). */
   priority?: string;
-  /** Descriptive tags detected by pre-analysis. */
-  tags?: string[];
   /** Key topics or themes extracted from the email body. */
   topics?: string[];
   /** Sender's primary intent as detected by pre-analysis. */
@@ -304,7 +300,6 @@ export type EntityCategory =
   | 'places'
   | 'events'
   | 'dates'
-  | 'tags'
   | 'numbers'
   | 'prices';
 

@@ -98,7 +98,6 @@ interface FilterState {
   priority: string;
   senderType: string;
   language: string;
-  tags: string[];
   people: string[];
   orgs: string[];
   places: string[];
@@ -120,7 +119,6 @@ const EMPTY_FILTERS: FilterState = {
   priority: '',
   senderType: '',
   language: '',
-  tags: [],
   people: [],
   orgs: [],
   places: [],
@@ -150,7 +148,6 @@ function filtersEqual(a: FilterState, b: FilterState): boolean {
     a.priority === b.priority &&
     a.senderType === b.senderType &&
     a.language.trim().toLowerCase() === b.language.trim().toLowerCase() &&
-    setEq(a.tags, b.tags) &&
     setEq(a.people, b.people) &&
     setEq(a.orgs, b.orgs) &&
     setEq(a.places, b.places) &&
@@ -174,7 +171,6 @@ function hasActiveFilter(f: FilterState): boolean {
     !!f.priority ||
     !!f.senderType ||
     !!f.language ||
-    f.tags.length > 0 ||
     f.people.length > 0 ||
     f.orgs.length > 0 ||
     f.places.length > 0 ||
@@ -501,7 +497,6 @@ export function EmailSearchTab({
 
   // Lazy-loaded entity suggestions
   interface Suggestions {
-    tags: SuggestionItem[];
     people: SuggestionItem[];
     organizations: SuggestionItem[];
     places: SuggestionItem[];
@@ -520,7 +515,6 @@ export function EmailSearchTab({
     if (knowledgeData !== undefined) {
       if (knowledgeData) {
         setSuggestions({
-          tags: knowledgeData.tags ?? [],
           people: knowledgeData.people ?? [],
           organizations: knowledgeData.organizations ?? [],
           places: knowledgeData.places ?? [],
@@ -544,7 +538,6 @@ export function EmailSearchTab({
       if (res.ok) {
         const data = await res.json();
         setSuggestions({
-          tags: data.tags ?? [],
           people: data.people ?? [],
           organizations: data.organizations ?? [],
           places: data.places ?? [],
@@ -664,7 +657,6 @@ export function EmailSearchTab({
         if (applied.priority) params.set('priority', applied.priority);
         if (applied.senderType) params.set('senderType', applied.senderType);
         if (applied.language) params.set('language', applied.language.trim().toLowerCase());
-        applied.tags.forEach((tag) => params.append('tags', tag));
         applied.people.forEach((p) => params.append('people', p));
         applied.orgs.forEach((o) => params.append('orgs', o));
         applied.places.forEach((p) => params.append('places', p));
@@ -1100,22 +1092,8 @@ export function EmailSearchTab({
                         </div>
                       </div>
 
-                      {/* Entity + tag combobox chips — 2-col grid */}
+                      {/* Entity combobox chips — 2-col grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterTags}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.tags) : []}
-                            values={pending.tags}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, tags: v }))}
-                            placeholder={ts.tagsPlaceholder}
-                            searchPlaceholder={ts.tagsPlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-
                         <div className="space-y-1">
                           <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             {ts.filterPeople}
@@ -1382,22 +1360,6 @@ export function EmailSearchTab({
               </button>
             </span>
           )}
-          {applied.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
-            >
-              {ts.filterTags}: {tag}
-              <button
-                onClick={() => {
-                  setPending((p) => ({ ...p, tags: p.tags.filter((t) => t !== tag) }));
-                  setApplied((a) => ({ ...a, tags: a.tags.filter((t) => t !== tag) }));
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
           {applied.people.map((person) => (
             <span
               key={person}
@@ -1712,15 +1674,15 @@ export function EmailSearchTab({
                                       )}
                                     </div>
                                     {/* Row 2: tags */}
-                                    {log.emailAnalysis.tags &&
-                                      log.emailAnalysis.tags.length > 0 && (
+                                    {log.emailAnalysis.topics &&
+                                      log.emailAnalysis.topics.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
-                                          {log.emailAnalysis.tags.slice(0, 3).map((tag) => (
+                                          {log.emailAnalysis.topics.slice(0, 3).map((t) => (
                                             <span
-                                              key={tag}
+                                              key={t}
                                               className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
                                             >
-                                              {tag}
+                                              {t}
                                             </span>
                                           ))}
                                         </div>
@@ -2169,14 +2131,6 @@ export function EmailSearchTab({
                             {ts.isUrgent}
                           </span>
                         )}
-                        {log.emailAnalysis.tags?.slice(0, 4).map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
-                          >
-                            {tag}
-                          </span>
-                        ))}
                       </div>
                     )}
                   </div>

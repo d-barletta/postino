@@ -30,7 +30,6 @@ const ALL_CATEGORIES: EntityGraphNodeCategory[] = [
   'dates',
   'places',
   'topics',
-  'tags',
   'numbers',
   'prices',
 ];
@@ -232,7 +231,6 @@ export async function POST(request: NextRequest) {
 
       const raw: PerEmailEntities = {
         topics: [],
-        tags: [],
         people: [],
         organizations: [],
         places: [],
@@ -262,7 +260,6 @@ export async function POST(request: NextRequest) {
       };
 
       collectRaw('topics', analysis.topics);
-      collectRaw('tags', analysis.tags);
       collectRaw('prices', analysis.prices);
       const entities = analysis.entities as Record<string, unknown> | undefined;
       if (entities) {

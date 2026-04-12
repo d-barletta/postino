@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', uid);
 
     await Promise.all([
-      supabase
-        .from('email_logs')
-        .update({ tokens_used: 0, estimated_cost: 0 })
-        .eq('user_id', uid),
+      supabase.from('email_logs').update({ tokens_used: 0, estimated_cost: 0 }).eq('user_id', uid),
       supabase
         .from('users')
         .update({ memory_tokens_used: 0, memory_estimated_cost: 0 })

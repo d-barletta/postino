@@ -269,9 +269,7 @@ function parseAttachmentsFromStoredMessage(data: unknown): StoreAttachmentRef[] 
           : undefined;
 
       const strippedContentId =
-        typeof record['content-id'] === 'string'
-          ? stripContentId(record['content-id'].trim())
-          : '';
+        typeof record['content-id'] === 'string' ? stripContentId(record['content-id'].trim()) : '';
 
       return {
         url: rawUrl,

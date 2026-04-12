@@ -13,7 +13,6 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'places',
   'events',
   'dates',
-  'tags',
   'numbers',
 ];
 
@@ -154,7 +153,6 @@ export async function POST(request: NextRequest) {
 
     // Gather entity counts from email analysis
     const topics: CountMap = {};
-    const tags: CountMap = {};
     const people: CountMap = {};
     const organizations: CountMap = {};
     const places: CountMap = {};
@@ -166,7 +164,6 @@ export async function POST(request: NextRequest) {
       const analysis = row.email_analysis as Record<string, unknown> | undefined;
       if (!analysis) continue;
       incrementAll(topics, analysis.topics);
-      incrementAll(tags, analysis.tags);
       const entities = analysis.entities as Record<string, unknown> | undefined;
       if (entities) {
         incrementAll(people, entities.people);
@@ -191,7 +188,6 @@ export async function POST(request: NextRequest) {
     // Build the entity data payload for the AI prompt
     const categoryEntities: Record<string, string[]> = {
       topics: toTopN(topics),
-      tags: toTopN(tags),
       people: toTopN(people),
       organizations: toTopN(organizations),
       places: toTopN(places),
@@ -244,7 +240,7 @@ Return a JSON object with this structure:
 {
   "suggestions": [
     {
-      "category": "<category name, one of: topics, tags, people, organizations, places, events>",
+      "category": "<category name, one of: topics, people, organizations, places, events>",
       "aliases": ["<entity1>", "<entity2>", ...],
       "suggestedCanonical": "<best representative name>",
       "reason": "<brief explanation in 1 sentence${reasonLanguageNote}>"

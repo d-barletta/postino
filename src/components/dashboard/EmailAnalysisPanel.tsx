@@ -37,7 +37,6 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
   const { t } = useI18n();
   const eh = t.dashboard.emailHistory;
   const ts = t.dashboard.search;
-  const hasTags = analysis.tags && analysis.tags.length > 0;
   const hasTopics = analysis.topics && analysis.topics.length > 0;
   const { entities } = analysis;
   const placeNames = extractStoredPlaceNames(entities.places, entities.placeNames);
@@ -121,24 +120,18 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
         <p className="text-xs text-gray-600 dark:text-gray-300 italic">{analysis.summary}</p>
       )}
 
-      {hasTags && (
+
+      {hasTopics && (
         <div className="flex flex-wrap gap-1">
-          {analysis.tags.map((tag) => (
+          {analysis.topics.map((t) => (
             <span
-              key={tag}
+              key={t}
               className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
             >
-              {tag}
+              {t}
             </span>
           ))}
         </div>
-      )}
-
-      {hasTopics && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          <span className="font-medium">{eh.analysisTopics} </span>
-          {analysis.topics.join(' · ')}
-        </p>
       )}
 
       {(entities || (analysis.prices && analysis.prices.length > 0)) && (

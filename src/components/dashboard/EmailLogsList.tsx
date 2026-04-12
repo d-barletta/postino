@@ -119,9 +119,8 @@ function EmailDetailTabs({
           <dd className="text-gray-700 dark:text-gray-300 min-w-0 overflow-hidden">
             {emailData?.loading ? (
               <span className="text-gray-400">…</span>
-            ) : (emailData != null
-                ? emailData.attachments.length
-                : (log.attachmentCount ?? 0)) > 0 ? (
+            ) : (emailData != null ? emailData.attachments.length : (log.attachmentCount ?? 0)) >
+              0 ? (
               <AttachmentList
                 emailId={log.id}
                 names={emailData?.attachmentNames ?? log.attachmentNames ?? []}

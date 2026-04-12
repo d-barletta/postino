@@ -65,7 +65,7 @@ interface ExpandedEmailData {
 export interface ExploreEmailsModalProps {
   /** The term to search for (chip value). Null means the modal is closed (in term mode). */
   term: string | null;
-  /** Category key: 'tags' | 'topics' | 'people' | 'organizations' | 'places' | 'events' */
+  /** Category key: 'topics' | 'people' | 'organizations' | 'places' | 'events' */
   category: string;
   /** Human-readable label shown in the modal header */
   categoryLabel: string;
@@ -197,13 +197,11 @@ export function ExploreEmailsModal({
           pageSize: String(PAGE_SIZE),
         });
         // When aliases are provided (merged entity), use OR-matched terms search.
-        // Otherwise use tags param for the tags category, or plain text search.
+        // Otherwise use plain text search.
         if (aliases && aliases.length > 0) {
           for (const alias of aliases) {
             params.append('terms', alias.trim());
           }
-        } else if (category === 'tags') {
-          params.set('tags', term.trim().toLowerCase());
         } else {
           params.set('search', term.trim());
         }
@@ -505,18 +503,19 @@ export function ExploreEmailsModal({
                                     </span>
                                   )}
                                 </div>
-                                {log.emailAnalysis.tags && log.emailAnalysis.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {log.emailAnalysis.tags.slice(0, 3).map((tag) => (
-                                      <span
-                                        key={tag}
-                                        className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
+                                {log.emailAnalysis.topics &&
+                                  log.emailAnalysis.topics.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                      {log.emailAnalysis.topics.slice(0, 3).map((t) => (
+                                        <span
+                                          key={t}
+                                          className="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium bg-[#efd957]/20 text-[#a3891f] dark:bg-[#efd957]/10 dark:text-[#f3df79]"
+                                        >
+                                          {t}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                               </div>
                             )}
                           </div>

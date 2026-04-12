@@ -18,7 +18,6 @@ import {
   MapPin,
   Calendar,
   Clock,
-  Tag,
   Search,
   X,
   GitMerge,
@@ -55,7 +54,6 @@ export interface KnowledgeData {
   events: KnowledgeItem[];
   dates: KnowledgeItem[];
   topics: KnowledgeItem[];
-  tags: KnowledgeItem[];
   numbers: KnowledgeItem[];
   prices: KnowledgeItem[];
   languages?: KnowledgeItem[];
@@ -70,7 +68,6 @@ type CategoryKey =
   | 'events'
   | 'dates'
   | 'topics'
-  | 'tags'
   | 'numbers'
   | 'prices';
 
@@ -90,7 +87,6 @@ const CATEGORIES: CategoryConfig[] = [
   { key: 'numbers', icon: <Binary className="h-3.5 w-3.5" />, dataKey: 'numbers' },
   { key: 'prices', icon: <DollarSign className="h-3.5 w-3.5" />, dataKey: 'prices' },
   { key: 'topics', icon: <Hash className="h-3.5 w-3.5" />, dataKey: 'topics' },
-  { key: 'tags', icon: <Tag className="h-3.5 w-3.5" />, dataKey: 'tags' },
 ];
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
@@ -100,7 +96,6 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   events: <Calendar className="h-4 w-4" />,
   dates: <Clock className="h-4 w-4" />,
   topics: <Hash className="h-4 w-4" />,
-  tags: <Tag className="h-4 w-4" />,
   numbers: <Binary className="h-4 w-4" />,
   prices: <DollarSign className="h-4 w-4" />,
 };
@@ -588,7 +583,6 @@ export function KnowledgeTab({
   const hasAnyData =
     data &&
     (data.topics.length > 0 ||
-      data.tags.length > 0 ||
       data.people.length > 0 ||
       data.organizations.length > 0 ||
       data.places.length > 0 ||
@@ -788,7 +782,6 @@ export function KnowledgeTab({
                     'numbers',
                     'prices',
                     'topics',
-                    'tags',
                   ] as const
                 ).map((key) => (
                   <Section

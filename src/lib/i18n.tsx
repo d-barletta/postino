@@ -301,7 +301,6 @@ export interface Translations {
       analysisLanguage: string;
       analysisSenderType: string;
       analysisIntent: string;
-      analysisTags: string;
       analysisTopics: string;
       analysisRequiresResponse: string;
       analysisEntitiesPeople: string;
@@ -331,7 +330,6 @@ export interface Translations {
       filterPriority: string;
       filterSenderType: string;
       filterLanguage: string;
-      filterTags: string;
       filterPeople: string;
       filterOrgs: string;
       filterPlaces: string;
@@ -340,7 +338,6 @@ export interface Translations {
       filterNumbers: string;
       filterPrices: string;
       languagePlaceholder: string;
-      tagsPlaceholder: string;
       peoplePlaceholder: string;
       orgsPlaceholder: string;
       placesPlaceholder: string;
@@ -386,7 +383,6 @@ export interface Translations {
       places: string;
       events: string;
       dates: string;
-      tags: string;
       numbers: string;
       prices: string;
       emailsAnalyzed: string;
@@ -893,7 +889,7 @@ const translations: Record<Locale, Translations> = {
       analysisLanguage: {
         title: 'AI Analysis Language',
         description:
-          'Choose the language for AI-generated analysis content (summary, intent, tags, topics). Select "Auto" to use English (default).',
+          'Choose the language for AI-generated analysis content (summary, intent, topics). Select "Auto" to use English (default).',
         selectPlaceholder: 'Select language',
         autoLabel: 'Auto (English)',
       },
@@ -907,7 +903,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Delete All Entities & Merges',
         description:
-          'Permanently delete all extracted entity knowledge (people, topics, organizations, places, events, dates, tags) from your emails, all entity merges, and all AI merge suggestions. This cannot be undone.',
+          'Permanently delete all extracted entity knowledge (people, topics, organizations, places, events, dates) from your emails, all entity merges, and all AI merge suggestions. This cannot be undone.',
         buttonLabel: 'Delete All Entities & Merges',
         confirmTitle: 'Delete All Entities & Merges?',
         confirmDescription:
@@ -1015,7 +1011,6 @@ const translations: Record<Locale, Translations> = {
         analysisLanguage: 'Language:',
         analysisSenderType: 'Sender type:',
         analysisIntent: 'Intent:',
-        analysisTags: 'Tags:',
         analysisTopics: 'Topics:',
         analysisRequiresResponse: 'Requires response',
         analysisEntitiesPeople: 'People:',
@@ -1037,7 +1032,7 @@ const translations: Record<Locale, Translations> = {
       search: {
         title: 'Search Emails',
         toggleFilters: 'Toggle filters',
-        searchPlaceholder: 'Search by subject, sender, summary, tags…',
+        searchPlaceholder: 'Search by subject, sender, summary…',
         applyFilters: 'Search',
         noResults: 'No emails match your filters.',
         filterStatus: 'Status',
@@ -1046,7 +1041,6 @@ const translations: Record<Locale, Translations> = {
         filterPriority: 'Priority',
         filterSenderType: 'Sender type',
         filterLanguage: 'Language',
-        filterTags: 'Tags',
         filterPeople: 'People',
         filterOrgs: 'Organizations',
         filterPlaces: 'Places',
@@ -1055,7 +1049,6 @@ const translations: Record<Locale, Translations> = {
         filterNumbers: 'Numbers & codes',
         filterPrices: 'Prices',
         languagePlaceholder: 'Select language…',
-        tagsPlaceholder: 'Select tags…',
         peoplePlaceholder: 'Select people…',
         orgsPlaceholder: 'Select organizations…',
         placesPlaceholder: 'Select places…',
@@ -1101,7 +1094,6 @@ const translations: Record<Locale, Translations> = {
         places: 'Places',
         events: 'Events',
         dates: 'Dates',
-        tags: 'Tags',
         numbers: 'Numbers & codes',
         prices: 'Prices',
         emailsAnalyzed: '{count} emails analyzed',
@@ -1619,7 +1611,7 @@ const translations: Record<Locale, Translations> = {
       analysisLanguage: {
         title: 'Lingua analisi AI',
         description:
-          'Scegli la lingua per i contenuti generati dall\'AI (riepilogo, intento, tag, argomenti). Seleziona "Auto" per usare l\'inglese (predefinito).',
+          'Scegli la lingua per i contenuti generati dall\'AI (riepilogo, intento, argomenti). Seleziona "Auto" per usare l\'inglese (predefinito).',
         selectPlaceholder: 'Seleziona lingua',
         autoLabel: 'Auto (Inglese)',
       },
@@ -1633,7 +1625,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Elimina tutte le entità e le unioni',
         description:
-          'Elimina definitivamente tutte le entità estratte (persone, argomenti, organizzazioni, luoghi, eventi, date, tag) dalle tue email, tutte le unioni di entità e tutti i suggerimenti di unione AI. Questa azione non può essere annullata.',
+          'Elimina definitivamente tutte le entità estratte (persone, argomenti, organizzazioni, luoghi, eventi, date) dalle tue email, tutte le unioni di entità e tutti i suggerimenti di unione AI. Questa azione non può essere annullata.',
         buttonLabel: 'Elimina tutte le entità e le unioni',
         confirmTitle: 'Eliminare tutte le entità e le unioni?',
         confirmDescription:
@@ -1741,7 +1733,6 @@ const translations: Record<Locale, Translations> = {
         analysisLanguage: 'Lingua:',
         analysisSenderType: 'Tipo mittente:',
         analysisIntent: 'Intenzione:',
-        analysisTags: 'Tag:',
         analysisTopics: 'Argomenti:',
         analysisRequiresResponse: 'Richiede risposta',
         analysisEntitiesPeople: 'Persone:',
@@ -1763,7 +1754,7 @@ const translations: Record<Locale, Translations> = {
       search: {
         title: 'Cerca email',
         toggleFilters: 'Mostra/nascondi filtri',
-        searchPlaceholder: 'Cerca per oggetto, mittente, riepilogo, tag…',
+        searchPlaceholder: 'Cerca per oggetto, mittente, riepilogo…',
         applyFilters: 'Cerca',
         noResults: 'Nessuna email corrisponde ai filtri.',
         filterStatus: 'Stato',
@@ -1772,7 +1763,6 @@ const translations: Record<Locale, Translations> = {
         filterPriority: 'Priorità',
         filterSenderType: 'Tipo mittente',
         filterLanguage: 'Lingua',
-        filterTags: 'Tag',
         filterPeople: 'Persone',
         filterOrgs: 'Organizzazioni',
         filterPlaces: 'Luoghi',
@@ -1781,7 +1771,6 @@ const translations: Record<Locale, Translations> = {
         filterNumbers: 'Numeri e codici',
         filterPrices: 'Prezzi',
         languagePlaceholder: 'Seleziona lingua…',
-        tagsPlaceholder: 'Seleziona tag…',
         peoplePlaceholder: 'Seleziona persone…',
         orgsPlaceholder: 'Seleziona organizzazioni…',
         placesPlaceholder: 'Seleziona luoghi…',
@@ -1827,7 +1816,6 @@ const translations: Record<Locale, Translations> = {
         places: 'Luoghi',
         events: 'Eventi',
         dates: 'Date',
-        tags: 'Tag',
         numbers: 'Numeri e codici',
         prices: 'Prezzi',
         emailsAnalyzed: '{count} email analizzate',
@@ -2345,7 +2333,7 @@ const translations: Record<Locale, Translations> = {
       analysisLanguage: {
         title: 'Idioma del análisis IA',
         description:
-          'Elige el idioma para el contenido generado por IA (resumen, intención, etiquetas, temas). Selecciona "Auto" para usar inglés (predeterminado).',
+          'Elige el idioma para el contenido generado por IA (resumen, intención, temas). Selecciona "Auto" para usar inglés (predeterminado).',
         selectPlaceholder: 'Seleccionar idioma',
         autoLabel: 'Auto (Inglés)',
       },
@@ -2359,7 +2347,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Eliminar todas las entidades y fusiones',
         description:
-          'Elimina permanentemente todas las entidades extraídas (personas, temas, organizaciones, lugares, eventos, fechas, etiquetas) de tus correos, todas las fusiones de entidades y todas las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
+          'Elimina permanentemente todas las entidades extraídas (personas, temas, organizaciones, lugares, eventos, fechas) de tus correos, todas las fusiones de entidades y todas las sugerencias de fusión de IA. Esta acción no se puede deshacer.',
         buttonLabel: 'Eliminar todas las entidades y fusiones',
         confirmTitle: '¿Eliminar todas las entidades y fusiones?',
         confirmDescription:
@@ -2467,7 +2455,6 @@ const translations: Record<Locale, Translations> = {
         analysisLanguage: 'Idioma:',
         analysisSenderType: 'Tipo de remitente:',
         analysisIntent: 'Intención:',
-        analysisTags: 'Etiquetas:',
         analysisTopics: 'Temas:',
         analysisRequiresResponse: 'Requiere respuesta',
         analysisEntitiesPeople: 'Personas:',
@@ -2489,7 +2476,7 @@ const translations: Record<Locale, Translations> = {
       search: {
         title: 'Buscar correos',
         toggleFilters: 'Mostrar/ocultar filtros',
-        searchPlaceholder: 'Buscar por asunto, remitente, resumen, etiquetas…',
+        searchPlaceholder: 'Buscar por asunto, remitente, resumen…',
         applyFilters: 'Buscar',
         noResults: 'Ningún correo coincide con los filtros.',
         filterStatus: 'Estado',
@@ -2498,7 +2485,6 @@ const translations: Record<Locale, Translations> = {
         filterPriority: 'Prioridad',
         filterSenderType: 'Tipo de remitente',
         filterLanguage: 'Idioma',
-        filterTags: 'Etiquetas',
         filterPeople: 'Personas',
         filterOrgs: 'Organizaciones',
         filterPlaces: 'Lugares',
@@ -2507,7 +2493,6 @@ const translations: Record<Locale, Translations> = {
         filterNumbers: 'Números y códigos',
         filterPrices: 'Precios',
         languagePlaceholder: 'Seleccionar idioma…',
-        tagsPlaceholder: 'Seleccionar etiquetas…',
         peoplePlaceholder: 'Seleccionar personas…',
         orgsPlaceholder: 'Seleccionar organizaciones…',
         placesPlaceholder: 'Seleccionar lugares…',
@@ -2553,7 +2538,6 @@ const translations: Record<Locale, Translations> = {
         places: 'Lugares',
         events: 'Eventos',
         dates: 'Fechas',
-        tags: 'Etiquetas',
         numbers: 'Números y códigos',
         prices: 'Precios',
         emailsAnalyzed: '{count} correos analizados',
@@ -3073,7 +3057,7 @@ const translations: Record<Locale, Translations> = {
       analysisLanguage: {
         title: "Langue d'analyse IA",
         description:
-          "Choisissez la langue pour le contenu généré par l'IA (résumé, intention, étiquettes, sujets). Sélectionnez « Auto » pour utiliser l'anglais (par défaut).",
+          "Choisissez la langue pour le contenu généré par l'IA (résumé, intention, sujets). Sélectionnez « Auto » pour utiliser l'anglais (par défaut).",
         selectPlaceholder: 'Sélectionner la langue',
         autoLabel: 'Auto (Anglais)',
       },
@@ -3087,7 +3071,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Supprimer toutes les entités et fusions',
         description:
-          "Supprime définitivement toutes les entités extraites (personnes, sujets, organisations, lieux, événements, dates, tags) de vos e-mails, toutes les fusions d'entités et toutes les suggestions de fusion IA. Cette action est irréversible.",
+          "Supprime définitivement toutes les entités extraites (personnes, sujets, organisations, lieux, événements, dates) de vos e-mails, toutes les fusions d'entités et toutes les suggestions de fusion IA. Cette action est irréversible.",
         buttonLabel: 'Supprimer toutes les entités et fusions',
         confirmTitle: 'Supprimer toutes les entités et fusions ?',
         confirmDescription:
@@ -3195,7 +3179,6 @@ const translations: Record<Locale, Translations> = {
         analysisLanguage: 'Langue :',
         analysisSenderType: "Type d'expéditeur :",
         analysisIntent: 'Intention :',
-        analysisTags: 'Tags :',
         analysisTopics: 'Sujets :',
         analysisRequiresResponse: 'Nécessite une réponse',
         analysisEntitiesPeople: 'Personnes :',
@@ -3217,7 +3200,7 @@ const translations: Record<Locale, Translations> = {
       search: {
         title: 'Rechercher des e-mails',
         toggleFilters: 'Afficher/masquer les filtres',
-        searchPlaceholder: 'Rechercher par objet, expéditeur, résumé, tags…',
+        searchPlaceholder: 'Rechercher par objet, expéditeur, résumé…',
         applyFilters: 'Rechercher',
         noResults: 'Aucun e-mail ne correspond aux filtres.',
         filterStatus: 'Statut',
@@ -3226,7 +3209,6 @@ const translations: Record<Locale, Translations> = {
         filterPriority: 'Priorité',
         filterSenderType: "Type d'expéditeur",
         filterLanguage: 'Langue',
-        filterTags: 'Tags',
         filterPeople: 'Personnes',
         filterOrgs: 'Organisations',
         filterPlaces: 'Lieux',
@@ -3235,7 +3217,6 @@ const translations: Record<Locale, Translations> = {
         filterNumbers: 'Numéros et codes',
         filterPrices: 'Prix',
         languagePlaceholder: 'Sélectionner une langue…',
-        tagsPlaceholder: 'Sélectionner des tags…',
         peoplePlaceholder: 'Sélectionner des personnes…',
         orgsPlaceholder: 'Sélectionner des organisations…',
         placesPlaceholder: 'Sélectionner des lieux…',
@@ -3281,7 +3262,6 @@ const translations: Record<Locale, Translations> = {
         places: 'Lieux',
         events: 'Événements',
         dates: 'Dates',
-        tags: 'Étiquettes',
         numbers: 'Numéros et codes',
         prices: 'Prix',
         emailsAnalyzed: '{count} emails analysés',
@@ -3804,7 +3784,7 @@ const translations: Record<Locale, Translations> = {
       analysisLanguage: {
         title: 'Sprache der KI-Analyse',
         description:
-          'Wählen Sie die Sprache für KI-generierte Analyseinhalte (Zusammenfassung, Absicht, Tags, Themen). Wählen Sie „Auto" für Englisch (Standard).',
+          'Wählen Sie die Sprache für KI-generierte Analyseinhalte (Zusammenfassung, Absicht, Themen). Wählen Sie „Auto" für Englisch (Standard).',
         selectPlaceholder: 'Sprache auswählen',
         autoLabel: 'Auto (Englisch)',
       },
@@ -3818,7 +3798,7 @@ const translations: Record<Locale, Translations> = {
       deleteEntities: {
         title: 'Alle Entitäten und Zusammenführungen löschen',
         description:
-          'Löscht dauerhaft alle extrahierten Entitäten (Personen, Themen, Organisationen, Orte, Ereignisse, Datumsangaben, Tags) aus Ihren E-Mails, alle Entitätszusammenführungen und alle KI-Zusammenführungsvorschläge. Diese Aktion kann nicht rückgängig gemacht werden.',
+          'Löscht dauerhaft alle extrahierten Entitäten (Personen, Themen, Organisationen, Orte, Ereignisse, Datumsangaben) aus Ihren E-Mails, alle Entitätszusammenführungen und alle KI-Zusammenführungsvorschläge. Diese Aktion kann nicht rückgängig gemacht werden.',
         buttonLabel: 'Alle Entitäten und Zusammenführungen löschen',
         confirmTitle: 'Alle Entitäten und Zusammenführungen löschen?',
         confirmDescription:
@@ -3926,7 +3906,6 @@ const translations: Record<Locale, Translations> = {
         analysisLanguage: 'Sprache:',
         analysisSenderType: 'Absendertyp:',
         analysisIntent: 'Absicht:',
-        analysisTags: 'Tags:',
         analysisTopics: 'Themen:',
         analysisRequiresResponse: 'Antwort erforderlich',
         analysisEntitiesPeople: 'Personen:',
@@ -3948,7 +3927,7 @@ const translations: Record<Locale, Translations> = {
       search: {
         title: 'E-Mails suchen',
         toggleFilters: 'Filter ein-/ausblenden',
-        searchPlaceholder: 'Nach Betreff, Absender, Zusammenfassung, Tags suchen…',
+        searchPlaceholder: 'Nach Betreff, Absender, Zusammenfassung suchen…',
         applyFilters: 'Suchen',
         noResults: 'Keine E-Mails entsprechen den Filtern.',
         filterStatus: 'Status',
@@ -3957,7 +3936,6 @@ const translations: Record<Locale, Translations> = {
         filterPriority: 'Priorität',
         filterSenderType: 'Absendertyp',
         filterLanguage: 'Sprache',
-        filterTags: 'Tags',
         filterPeople: 'Personen',
         filterOrgs: 'Organisationen',
         filterPlaces: 'Orte',
@@ -3966,7 +3944,6 @@ const translations: Record<Locale, Translations> = {
         filterNumbers: 'Nummern & Codes',
         filterPrices: 'Preise',
         languagePlaceholder: 'Sprache auswählen…',
-        tagsPlaceholder: 'Tags auswählen…',
         peoplePlaceholder: 'Personen auswählen…',
         orgsPlaceholder: 'Organisationen auswählen…',
         placesPlaceholder: 'Orte auswählen…',
@@ -4012,7 +3989,6 @@ const translations: Record<Locale, Translations> = {
         places: 'Orte',
         events: 'Ereignisse',
         dates: 'Datumsangaben',
-        tags: 'Tags',
         numbers: 'Nummern & Codes',
         prices: 'Preise',
         emailsAnalyzed: '{count} E-Mails analysiert',
