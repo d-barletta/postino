@@ -6,7 +6,7 @@ import type { ExpandedEmailData } from '@/components/dashboard/EmailListItem';
 
 /**
  * Manages per-email expanded data (original body, addresses, attachments).
- * Shared by EmailLogsList, EmailSearchTab, and ExploreEmailsModal.
+ * Shared by EmailSearchTab and ExploreEmailsModal.
  */
 export function useEmailExpansion() {
   const { authUser, getIdToken } = useAuth();

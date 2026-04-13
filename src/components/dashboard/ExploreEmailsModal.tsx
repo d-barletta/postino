@@ -9,18 +9,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
+import { EmailDeleteDrawer } from '@/components/dashboard/EmailDeleteDrawer';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { useModalHistory } from '@/hooks/useModalHistory';
+import { useEmailReadActions } from '@/hooks/useEmailReadActions';
 import { useEmailExpansion } from '@/hooks/useEmailExpansion';
 import { Mail, RefreshCw } from 'lucide-react';
 import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
@@ -81,6 +75,7 @@ export function ExploreEmailsModal({
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { expandedData, fetchExpandedEmail, resetExpanded } = useEmailExpansion();
+  const { markEmailAsRead, toggleEmailRead } = useEmailReadActions(setLogs);
   const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -92,43 +87,6 @@ export function ExploreEmailsModal({
       prev.map((log) => (log.id === emailId ? { ...log, emailAnalysis: analysis } : log)),
     );
   }, []);
-
-  const markEmailAsRead = useCallback(
-    async (emailId: string) => {
-      setLogs((prev) => prev.map((log) => (log.id === emailId ? { ...log, isRead: true } : log)));
-      try {
-        const token = await getIdToken();
-        await fetch(`/api/email/${emailId}`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isRead: true }),
-        });
-      } catch {
-        // best-effort
-      }
-    },
-    [getIdToken],
-  );
-
-  const toggleEmailRead = useCallback(
-    async (emailId: string, currentIsRead: boolean) => {
-      const newIsRead = !currentIsRead;
-      setLogs((prev) =>
-        prev.map((log) => (log.id === emailId ? { ...log, isRead: newIsRead } : log)),
-      );
-      try {
-        const token = await getIdToken();
-        await fetch(`/api/email/${emailId}`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isRead: newIsRead }),
-        });
-      } catch {
-        // best-effort
-      }
-    },
-    [getIdToken],
-  );
 
   const fetchLogs = useCallback(
     async (targetPage: number) => {
@@ -403,38 +361,14 @@ export function ExploreEmailsModal({
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation drawer */}
-      <Drawer
+      <EmailDeleteDrawer
         open={!!deleteEmailId}
+        deleting={deleting}
         onOpenChange={(open) => {
           if (!open) setDeleteEmailId(null);
         }}
-      >
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>{t.dashboard.emailHistory.deleteEmail}</DrawerTitle>
-            <DrawerDescription>{t.dashboard.emailHistory.deleteEmailConfirm}</DrawerDescription>
-          </DrawerHeader>
-          <DrawerFooter className="pb-8">
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteEmailId(null)}
-              disabled={deleting}
-              className="flex-1"
-            >
-              {t.dashboard.rules.cancel}
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDeleteEmail}
-              disabled={deleting}
-              className="flex-1"
-            >
-              {deleting ? '…' : t.dashboard.emailHistory.deleteEmail}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+        onConfirm={handleDeleteEmail}
+      />
     </>
   );
 }

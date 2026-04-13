@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Card } from '@/components/ui/Card';
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/Accordion';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import {
@@ -21,38 +20,17 @@ import {
 } from '@/components/ui/Select';
 import { Combobox } from '@/components/ui/Combobox';
 import { ComboboxChips } from '@/components/ui/ComboboxChips';
-import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
-import { EmailDetailTabs } from '@/components/dashboard/EmailDetailTabs';
+import { EmailLogsBrowser } from '@/components/dashboard/EmailLogsBrowser';
 import { useEmailExpansion } from '@/hooks/useEmailExpansion';
-import { formatDate, cn } from '@/lib/utils';
+import { useEmailReadActions } from '@/hooks/useEmailReadActions';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/Drawer';
-import {
-  RefreshCw,
-  Mail,
-  Paperclip,
-  Search,
-  X,
-  MousePointerClick,
-  Trash2,
-  ChevronDown,
-} from 'lucide-react';
+import { RefreshCw, Search, X, ChevronDown } from 'lucide-react';
 import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import type { KnowledgeData } from '@/components/dashboard/KnowledgeTab';
-import { Spinner } from '@/components/ui/Spinner';
-import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
-import { useModalHistory } from '@/hooks/useModalHistory';
 import {
-  EmailListItem,
   DEFAULT_BADGE_COLOR,
   SENTIMENT_COLORS,
   PRIORITY_COLORS,
@@ -224,7 +202,7 @@ export function EmailSearchTab({
   knowledgeData,
   onCreditsUsed,
 }: EmailSearchTabProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { authUser, getIdToken } = useAuth();
   const ts = t.dashboard.search;
 
@@ -237,59 +215,14 @@ export function EmailSearchTab({
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
   const [totalEmailCount, setTotalEmailCount] = useState<number | undefined>(undefined);
   const [totalEmailCountLoading, setTotalEmailCountLoading] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const { expandedData, fetchExpandedEmail } = useEmailExpansion();
-  const [fullscreenEmailId, setFullscreenEmailId] = useState<string | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<string>('summary');
-  const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const { markEmailAsRead, toggleEmailRead } = useEmailReadActions(setLogs);
 
   const handleAnalysisUpdated = useCallback((emailId: string, analysis: EmailAnalysis) => {
     setLogs((prev) =>
       prev.map((log) => (log.id === emailId ? { ...log, emailAnalysis: analysis } : log)),
     );
   }, []);
-
-  const markEmailAsRead = useCallback(
-    async (emailId: string) => {
-      setLogs((prev) => prev.map((log) => (log.id === emailId ? { ...log, isRead: true } : log)));
-      try {
-        const token = await getIdToken();
-        await fetch(`/api/email/${emailId}`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isRead: true }),
-        });
-      } catch {
-        // best-effort
-      }
-    },
-    [getIdToken],
-  );
-
-  const toggleEmailRead = useCallback(
-    async (emailId: string, currentIsRead: boolean) => {
-      const newIsRead = !currentIsRead;
-      setLogs((prev) =>
-        prev.map((log) => (log.id === emailId ? { ...log, isRead: newIsRead } : log)),
-      );
-      try {
-        const token = await getIdToken();
-        await fetch(`/api/email/${emailId}`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isRead: newIsRead }),
-        });
-      } catch {
-        // best-effort
-      }
-    },
-    [getIdToken],
-  );
-
-  // Integrate the fullscreen email dialog with browser history.
-  const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : null;
-  useModalHistory(!!fullscreenEmailId, () => setFullscreenEmailId(null));
 
   const suggestionsFetched = useRef(false);
 
@@ -371,14 +304,6 @@ export function EmailSearchTab({
     skipped: t.dashboard.charts.skipped,
   };
 
-  const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
-    received: 'info',
-    processing: 'warning',
-    forwarded: 'success',
-    error: 'error',
-    skipped: 'default',
-  };
-
   const STATUS_OPTIONS = [
     { value: ALL_VALUE, label: t.dashboard.emailHistory.allStatuses },
     { value: 'received', label: t.dashboard.charts.received },
@@ -421,27 +346,6 @@ export function EmailSearchTab({
     { value: 'business', label: ts.senderBusiness },
     { value: 'newsletter', label: ts.senderNewsletter },
   ];
-
-  const rowTypeLabel: Record<string, string> = {
-    newsletter: ts.typeNewsletter,
-    transactional: ts.typeTransactional,
-    promotional: ts.typePromotional,
-    personal: ts.typePersonal,
-    notification: ts.typeNotification,
-    automated: ts.typeAutomated,
-    other: ts.typeOther,
-  };
-  const rowSentimentLabel: Record<string, string> = {
-    positive: ts.sentimentPositive,
-    neutral: ts.sentimentNeutral,
-    negative: ts.sentimentNegative,
-  };
-  const rowPriorityLabel: Record<string, string> = {
-    low: ts.priorityLow,
-    normal: ts.priorityNormal,
-    high: ts.priorityHigh,
-    critical: ts.priorityCritical,
-  };
 
   const fetchLogs = useCallback(
     async (targetPage: number, isRefresh = false) => {
@@ -532,14 +436,12 @@ export function EmailSearchTab({
   const handleApplyFilters = () => {
     setApplied({ ...pending });
     setPage(1);
-    setSelectedId(null);
   };
 
   const handleClearFilters = () => {
     setPending(EMPTY_FILTERS);
     setApplied(EMPTY_FILTERS);
     setPage(1);
-    setSelectedId(null);
   };
 
   const hasPendingChanges = !filtersEqual(pending, applied);
@@ -551,60 +453,38 @@ export function EmailSearchTab({
   }, [fetchLogs, fetchTotalCount, hasActive]);
 
   const handlePageChange = (newPage: number) => {
-    setSelectedId(null);
     fetchLogs(newPage);
     setPage(newPage);
   };
 
-  const handleToggleExpand = (logId: string) => {
-    if (selectedId === logId) {
-      setSelectedId(null);
-    } else {
-      setSelectedId(logId);
-      setActiveDetailTab('summary');
-      fetchExpandedEmail(logId);
-      const log = logs.find((l) => l.id === logId);
-      if (log?.isRead === false) markEmailAsRead(logId);
-    }
-  };
-
-  const handleDeleteEmail = useCallback(async () => {
-    if (!deleteEmailId || !authUser) return;
-    setDeleting(true);
-    try {
-      const token = await getIdToken();
-      const res = await fetch(`/api/email/${deleteEmailId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setLogs((prev) => prev.filter((l) => l.id !== deleteEmailId));
-        if (selectedId === deleteEmailId) setSelectedId(null);
-        if (totalCount !== undefined)
-          setTotalCount((c) => (c !== undefined ? Math.max(0, c - 1) : undefined));
-        if (totalEmailCount !== undefined)
-          setTotalEmailCount((c) => (c !== undefined ? Math.max(0, c - 1) : undefined));
-        setDeleteEmailId(null);
-      } else {
-        console.error('Failed to delete email:', await res.text());
+  const handleDeleteEmail = useCallback(
+    async (emailId: string) => {
+      if (!authUser) return;
+      try {
+        const token = await getIdToken();
+        const res = await fetch(`/api/email/${emailId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setLogs((prev) => prev.filter((log) => log.id !== emailId));
+          if (totalCount !== undefined)
+            setTotalCount((count) => (count !== undefined ? Math.max(0, count - 1) : undefined));
+          if (totalEmailCount !== undefined)
+            setTotalEmailCount((count) =>
+              count !== undefined ? Math.max(0, count - 1) : undefined,
+            );
+        } else {
+          console.error('Failed to delete email:', await res.text());
+          toast.error(t.dashboard.emailHistory.deleteEmailError);
+        }
+      } catch (err) {
+        console.error('Failed to delete email:', err);
         toast.error(t.dashboard.emailHistory.deleteEmailError);
-        setDeleteEmailId(null);
       }
-    } catch (err) {
-      console.error('Failed to delete email:', err);
-      toast.error(t.dashboard.emailHistory.deleteEmailError);
-      setDeleteEmailId(null);
-    } finally {
-      setDeleting(false);
-    }
-  }, [deleteEmailId, authUser, selectedId, t, totalCount, totalEmailCount]);
-
-  // Auto-expand when selectedEmailId prop is provided (e.g., from push notification link)
-  useEffect(() => {
-    if (!selectedEmailId) return;
-    setSelectedId(selectedEmailId);
-    fetchExpandedEmail(selectedEmailId);
-  }, [selectedEmailId, fetchExpandedEmail]);
+    },
+    [authUser, getIdToken, t, totalCount, totalEmailCount],
+  );
 
   // Refresh when refreshTrigger changes
   useEffect(() => {
@@ -614,19 +494,56 @@ export function EmailSearchTab({
     setPage(1);
   }, [refreshTrigger]);
 
-  useEffect(() => {
-    if (!fullscreenEmailId) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreenEmailId(null);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [fullscreenEmailId]);
+  const selectionResetKey = JSON.stringify(applied);
+  const resultsHeader = (
+    <div className="flex items-center justify-between">
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        {hasActive ? (
+          !logsLoading &&
+          totalCount !== undefined && (
+            <>
+              {totalCount} {t.dashboard.emailHistory.results}
+            </>
+          )
+        ) : totalEmailCountLoading ? (
+          <span className="inline-block h-4 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse align-middle" />
+        ) : totalEmailCount !== undefined ? (
+          <>
+            {totalEmailCount} {t.dashboard.emailHistory.messages}
+          </>
+        ) : null}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleRefresh}
+        disabled={refreshing}
+        title={t.dashboard.emailHistory.refresh}
+      >
+        <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
+      </Button>
+    </div>
+  );
+  const resultsEmptyState = (
+    <div className="text-center py-10 text-gray-400 dark:text-gray-500">
+      {hasActive ? (
+        <>
+          <p>{ts.noResults}</p>
+          <button
+            onClick={handleClearFilters}
+            className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline"
+          >
+            {t.dashboard.emailHistory.clearFilter}
+          </button>
+        </>
+      ) : (
+        <>
+          <p>{t.dashboard.emailHistory.noEmailsYet}</p>
+          <p className="text-sm mt-1">{t.dashboard.emailHistory.noEmailsYetDesc}</p>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -1261,438 +1178,27 @@ export function EmailSearchTab({
         </div>
       )}
 
-      {/* Results — NARROW layout (< xl): single column with inline expansion */}
-      <div className="min-[900px]:hidden">
-        <Card className="hover:translate-y-0 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-          <CardHeader className="py-2 px-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {hasActive ? (
-                  !logsLoading &&
-                  totalCount !== undefined && (
-                    <>
-                      {totalCount} {t.dashboard.emailHistory.results}
-                    </>
-                  )
-                ) : totalEmailCountLoading ? (
-                  <span className="inline-block h-4 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse align-middle" />
-                ) : totalEmailCount !== undefined ? (
-                  <>
-                    {totalEmailCount} {t.dashboard.emailHistory.messages}
-                  </>
-                ) : null}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                title={t.dashboard.emailHistory.refresh}
-              >
-                <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            {logsLoading ? (
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="px-6 py-4 animate-pulse">
-                    <div className="flex items-start gap-2">
-                      <div className="mt-1 h-4 w-4 rounded bg-gray-200 dark:bg-gray-700 shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-                        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/3" />
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                        <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800 rounded" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : logs.length === 0 ? (
-              <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-                {hasActive ? (
-                  <>
-                    <p>{ts.noResults}</p>
-                    <button
-                      onClick={handleClearFilters}
-                      className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline"
-                    >
-                      {t.dashboard.emailHistory.clearFilter}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p>{t.dashboard.emailHistory.noEmailsYet}</p>
-                    <p className="text-sm mt-1">{t.dashboard.emailHistory.noEmailsYetDesc}</p>
-                  </>
-                )}
-              </div>
-            ) : (
-              <>
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {logs.map((log) => (
-                    <EmailListItem
-                      key={log.id}
-                      log={log}
-                      expandedData={expandedData[log.id]}
-                      isSelected={selectedId === log.id}
-                      activeDetailTab={activeDetailTab}
-                      onToggleExpand={() => handleToggleExpand(log.id)}
-                      onTabChange={setActiveDetailTab}
-                      onFullscreen={() => {
-                        fetchExpandedEmail(log.id);
-                        if (log.isRead === false) markEmailAsRead(log.id);
-                        setFullscreenEmailId(log.id);
-                      }}
-                      onDelete={() => setDeleteEmailId(log.id)}
-                      onToggleRead={() => toggleEmailRead(log.id, log.isRead !== false)}
-                      onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
-                      onCreditsUsed={onCreditsUsed}
-                      statusLayout="bottom"
-                    />
-                  ))}
-                </div>
-
-                {(hasNextPage || page > 1) && (
-                  <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-                    <ResultsPagination
-                      page={page}
-                      totalPages={totalPages}
-                      hasNextPage={hasNextPage}
-                      disabled={refreshing || logsLoading}
-                      previousLabel={t.dashboard.emailHistory.previous}
-                      nextLabel={t.dashboard.emailHistory.next}
-                      onPageChange={handlePageChange}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      {/* end narrow layout */}
-
-      {/* Results — WIDE layout (≥ xl): macOS Mail split-pane */}
-      <div
-        className="hidden min-[900px]:flex glass-panel rounded-2xl border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150"
-        style={{ maxHeight: 'calc(100vh - 100px)' }}
-      >
-        {/* Left pane: list */}
-        <div className="w-100 shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700">
-          {/* Mini results header */}
-          <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {hasActive ? (
-                !logsLoading &&
-                totalCount !== undefined && (
-                  <>
-                    {totalCount} {t.dashboard.emailHistory.results}
-                  </>
-                )
-              ) : totalEmailCountLoading ? (
-                <span className="inline-block h-4 w-16 rounded bg-gray-200 dark:bg-gray-700 animate-pulse align-middle" />
-              ) : totalEmailCount !== undefined ? (
-                <>
-                  {totalEmailCount} {t.dashboard.emailHistory.messages}
-                </>
-              ) : null}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              title={t.dashboard.emailHistory.refresh}
-            >
-              <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
-            </Button>
-          </div>
-          {/* Scrollable list */}
-          <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
-            {logsLoading ? (
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="px-5 py-4 animate-pulse">
-                    <div className="flex items-start gap-2">
-                      <div className="mt-1 h-4 w-4 rounded bg-gray-200 dark:bg-gray-700 shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-                        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/3" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : logs.length === 0 ? (
-              <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-                {hasActive ? (
-                  <>
-                    <p>{ts.noResults}</p>
-                    <button
-                      onClick={handleClearFilters}
-                      className="text-sm mt-2 text-[#a3891f] dark:text-[#f3df79] hover:underline"
-                    >
-                      {t.dashboard.emailHistory.clearFilter}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p>{t.dashboard.emailHistory.noEmailsYet}</p>
-                    <p className="text-sm mt-1">{t.dashboard.emailHistory.noEmailsYetDesc}</p>
-                  </>
-                )}
-              </div>
-            ) : (
-              logs.map((log) => {
-                const hasAtt = (log.attachmentCount ?? 0) > 0;
-                const isUnread = log.isRead === false;
-                const isSelected = selectedId === log.id;
-                return (
-                  <div
-                    key={log.id}
-                    className={cn(
-                      'px-4 py-3 cursor-pointer transition-colors border-l-2 group',
-                      isSelected
-                        ? 'bg-[#efd957]/20 dark:bg-[#efd957]/10 border-l-[#efd957]'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-transparent',
-                    )}
-                    onClick={() => handleToggleExpand(log.id)}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="relative mt-0.5 shrink-0">
-                        {hasAtt ? (
-                          <Paperclip className="h-3.5 w-3.5 text-gray-400" />
-                        ) : (
-                          <Mail className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
-                        )}
-                        {isUnread && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-purple-500 dark:bg-yellow-400" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={cn(
-                            'text-sm truncate',
-                            isSelected
-                              ? 'font-semibold text-gray-900 dark:text-gray-50'
-                              : 'font-medium text-gray-800 dark:text-gray-100',
-                          )}
-                        >
-                          {log.subject}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                          {log.fromAddress}
-                        </p>
-                        {log.emailAnalysis && (
-                          <div className="mt-1.5 flex flex-wrap gap-1">
-                            {log.emailAnalysis.emailType && (
-                              <span
-                                className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR}`}
-                              >
-                                {rowTypeLabel[log.emailAnalysis.emailType] ??
-                                  log.emailAnalysis.emailType}
-                              </span>
-                            )}
-                            {log.emailAnalysis.sentiment && (
-                              <span
-                                className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}
-                              >
-                                {rowSentimentLabel[log.emailAnalysis.sentiment] ??
-                                  log.emailAnalysis.sentiment}
-                              </span>
-                            )}
-                            {log.emailAnalysis.requiresResponse && (
-                              <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                {t.dashboard.emailHistory.analysisRequiresResponse}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 mt-1.5">
-                          {log.status !== 'forwarded' && (
-                            <Badge
-                              variant={statusVariant[log.status] || 'default'}
-                              className="text-[10px] px-1.5 py-0 h-4"
-                            >
-                              {log.status === 'processing' && (
-                                <Spinner className="h-2.5 w-2.5 mr-0.5 shrink-0" />
-                              )}
-                              {statusLabel[log.status] ?? log.status}
-                            </Badge>
-                          )}
-                          <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {formatDate(log.receivedAt, locale)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-          {/* Pagination */}
-          {!logsLoading && logs.length > 0 && (hasNextPage || page > 1) && (
-            <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
-              <ResultsPagination
-                page={page}
-                totalPages={totalPages}
-                hasNextPage={hasNextPage}
-                disabled={refreshing || logsLoading}
-                compact
-                previousLabel={t.dashboard.emailHistory.previous}
-                nextLabel={t.dashboard.emailHistory.next}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Right pane: detail */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {selectedId && logs.find((l) => l.id === selectedId) ? (
-            (() => {
-              const log = logs.find((l) => l.id === selectedId)!;
-              const emailData = expandedData[selectedId];
-              return (
-                <>
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {log.subject}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                          {t.dashboard.emailHistory.from} {log.fromAddress}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setDeleteEmailId(log.id)}
-                        className="p-1.5 rounded text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
-                        title={t.dashboard.emailHistory.deleteEmail}
-                        aria-label={t.dashboard.emailHistory.deleteEmail}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    {log.emailAnalysis && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {log.emailAnalysis.emailType && (
-                          <span
-                            className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${TYPE_COLORS[log.emailAnalysis.emailType] ?? DEFAULT_BADGE_COLOR}`}
-                          >
-                            {rowTypeLabel[log.emailAnalysis.emailType] ??
-                              log.emailAnalysis.emailType}
-                          </span>
-                        )}
-                        {log.emailAnalysis.sentiment && (
-                          <span
-                            className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${SENTIMENT_COLORS[log.emailAnalysis.sentiment] ?? DEFAULT_BADGE_COLOR}`}
-                          >
-                            {rowSentimentLabel[log.emailAnalysis.sentiment] ??
-                              log.emailAnalysis.sentiment}
-                          </span>
-                        )}
-                        {log.emailAnalysis.priority && log.emailAnalysis.priority !== 'normal' && (
-                          <span
-                            className={`inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium ${PRIORITY_COLORS[log.emailAnalysis.priority] ?? DEFAULT_BADGE_COLOR}`}
-                          >
-                            {rowPriorityLabel[log.emailAnalysis.priority] ??
-                              log.emailAnalysis.priority}
-                          </span>
-                        )}
-                        {log.emailAnalysis.requiresResponse && (
-                          <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                            {t.dashboard.emailHistory.analysisRequiresResponse}
-                          </span>
-                        )}
-                        {log.emailAnalysis.isUrgent && (
-                          <span className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                            {ts.isUrgent}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
-                    <EmailDetailTabs
-                      log={log}
-                      emailData={emailData}
-                      activeTab={activeDetailTab}
-                      onTabChange={setActiveDetailTab}
-                      onFullscreen={() => {
-                        if (log.isRead === false) markEmailAsRead(log.id);
-                        setFullscreenEmailId(log.id);
-                      }}
-                      onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
-                      onCreditsUsed={onCreditsUsed}
-                      className="flex flex-col flex-1 overflow-hidden"
-                      summaryClassName="overflow-y-auto"
-                    />
-                  </div>
-                </>
-              );
-            })()
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-gray-600 select-none">
-              <MousePointerClick className="h-10 w-10" />
-              <p className="text-sm">Select an email to read</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Full email modal */}
-      <FullPageEmailDialog
-        open={!!fullscreenEmailId}
-        onClose={() => setFullscreenEmailId(null)}
-        subject={logs.find((l) => l.id === fullscreenEmailId)?.subject ?? ''}
-        body={fullscreenLog?.originalBody ?? null}
-        loading={fullscreenLog?.loading}
+      <EmailLogsBrowser
+        header={resultsHeader}
+        emptyState={resultsEmptyState}
+        logs={logs}
+        logsLoading={logsLoading}
+        page={page}
+        totalPages={totalPages}
+        hasNextPage={hasNextPage}
+        onPageChange={handlePageChange}
+        paginationDisabled={refreshing}
+        expandedData={expandedData}
+        fetchExpandedEmail={fetchExpandedEmail}
+        markEmailAsRead={markEmailAsRead}
+        onToggleRead={toggleEmailRead}
+        onDeleteEmail={handleDeleteEmail}
+        onAnalysisUpdated={handleAnalysisUpdated}
+        onCreditsUsed={onCreditsUsed}
+        selectedEmailId={selectedEmailId}
+        selectionResetKey={selectionResetKey}
+        syncFullscreenWithHistory
       />
-
-      {/* Delete confirmation drawer */}
-      <Drawer
-        open={!!deleteEmailId}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteEmailId(null);
-          }
-        }}
-      >
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>{t.dashboard.emailHistory.deleteEmail}</DrawerTitle>
-            <DrawerDescription>{t.dashboard.emailHistory.deleteEmailConfirm}</DrawerDescription>
-          </DrawerHeader>
-          <DrawerFooter className="pb-8">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setDeleteEmailId(null);
-              }}
-              disabled={deleting}
-              className="flex-1"
-            >
-              {t.dashboard.rules.cancel}
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDeleteEmail}
-              disabled={deleting}
-              className="flex-1"
-            >
-              {deleting ? '…' : t.dashboard.emailHistory.deleteEmail}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
     </div>
   );
 }
