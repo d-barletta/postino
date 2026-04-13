@@ -844,7 +844,7 @@ const translations: Record<Locale, Translations> = {
         agent: 'Memory',
       },
       address: {
-        title: 'Your Postino Address',
+        title: 'Postino Forwarding',
         active: 'Active',
         disabled: 'Disabled',
         activeDescription:
@@ -1568,7 +1568,7 @@ const translations: Record<Locale, Translations> = {
         agent: 'Memoria',
       },
       address: {
-        title: 'Il tuo indirizzo Postino',
+        title: 'Inoltro Postino',
         active: 'Attivo',
         disabled: 'Disabilitato',
         activeDescription:
@@ -2293,7 +2293,7 @@ const translations: Record<Locale, Translations> = {
         agent: 'Memoria',
       },
       address: {
-        title: 'Tu dirección Postino',
+        title: 'Reenvío Postino',
         active: 'Activa',
         disabled: 'Desactivada',
         activeDescription:
@@ -3020,7 +3020,7 @@ const translations: Record<Locale, Translations> = {
         agent: 'Mémoire',
       },
       address: {
-        title: 'Votre adresse Postino',
+        title: 'Transfert Postino',
         active: 'Active',
         disabled: 'Désactivée',
         activeDescription:
@@ -3750,7 +3750,7 @@ const translations: Record<Locale, Translations> = {
         agent: 'Speicher',
       },
       address: {
-        title: 'Ihre Postino-Adresse',
+        title: 'Postino-Weiterleitung',
         active: 'Aktiv',
         disabled: 'Deaktiviert',
         activeDescription:
