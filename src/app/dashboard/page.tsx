@@ -136,6 +136,7 @@ export default function DashboardPage() {
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [hasVisitedRelations, setHasVisitedRelations] = useState(false);
   const [, startTransition] = useTransition();
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -217,6 +218,12 @@ export default function DashboardPage() {
   useEffect(() => {
     setIsPwa(window.matchMedia('(display-mode: standalone)').matches);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'relations') {
+      setHasVisitedRelations(true);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     const ua = navigator.userAgent;
@@ -624,7 +631,11 @@ export default function DashboardPage() {
             />
           ))}
 
-        {activeTab === 'relations' && (loading ? <DashboardPanelSkeleton /> : <RelationsTab />)}
+        {(activeTab === 'relations' || hasVisitedRelations) && (
+          <div className={activeTab === 'relations' ? 'block' : 'hidden'}>
+            {loading ? <DashboardPanelSkeleton /> : <RelationsTab />}
+          </div>
+        )}
 
         {activeTab === 'settings' && renderSettingsContent()}
       </div>

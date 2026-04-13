@@ -220,6 +220,25 @@ function CytoscapeCanvas({
   }, [applyLabelThemeToCy]);
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        const cy = cyRef.current;
+        if (!cy || cy.destroyed()) return;
+        cy.resize();
+      });
+    });
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!containerRef.current || graph.nodes.length === 0) return;
 
     let destroyed = false;

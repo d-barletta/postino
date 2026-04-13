@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
@@ -64,7 +64,7 @@ const RelationMapChartFullPageContent = dynamic(
   { ssr: false },
 );
 
-export function RelationsTab() {
+export const RelationsTab = memo(function RelationsTab() {
   const { t } = useI18n();
   const { loading: authLoading } = useAuth();
   const k = t.dashboard.knowledge;
@@ -133,49 +133,58 @@ export function RelationsTab() {
     [k],
   );
 
-  const graphTranslations = {
-    ...k.relations,
-    topics: k.topics,
-    people: k.people,
-    organizations: k.organizations,
-    places: k.places,
-    events: k.events,
-    dates: k.dates,
-    numbers: k.numbers,
-    prices: k.prices,
-  };
+  const graphTranslations = useMemo(
+    () => ({
+      ...k.relations,
+      topics: k.topics,
+      people: k.people,
+      organizations: k.organizations,
+      places: k.places,
+      events: k.events,
+      dates: k.dates,
+      numbers: k.numbers,
+      prices: k.prices,
+    }),
+    [k],
+  );
 
-  const flowTranslations = {
-    legend: k.relations.legend,
-    topics: k.topics,
-    people: k.people,
-    organizations: k.organizations,
-    places: k.places,
-    events: k.events,
-    dates: k.dates,
-    numbers: k.numbers,
-    prices: k.prices,
-    flowNodeClick: k.relations.flowNodeClick,
-    flowNoGraph: k.relations.flowNoGraph,
-    flowNoGraphDesc: k.relations.flowNoGraphDesc,
-    flowGenerate: k.relations.flowGenerate,
-    flowGenerating: k.relations.flowGenerating,
-    flowRegenerate: k.relations.flowRegenerate,
-    flowGeneratedOn: k.relations.flowGeneratedOn,
-    flowTotalEmails: k.relations.flowTotalEmails,
-    openRelatedEmails: k.relations.openRelatedEmails,
-    expandFullPage: k.relations.expandFullPage,
-  };
+  const flowTranslations = useMemo(
+    () => ({
+      legend: k.relations.legend,
+      topics: k.topics,
+      people: k.people,
+      organizations: k.organizations,
+      places: k.places,
+      events: k.events,
+      dates: k.dates,
+      numbers: k.numbers,
+      prices: k.prices,
+      flowNodeClick: k.relations.flowNodeClick,
+      flowNoGraph: k.relations.flowNoGraph,
+      flowNoGraphDesc: k.relations.flowNoGraphDesc,
+      flowGenerate: k.relations.flowGenerate,
+      flowGenerating: k.relations.flowGenerating,
+      flowRegenerate: k.relations.flowRegenerate,
+      flowGeneratedOn: k.relations.flowGeneratedOn,
+      flowTotalEmails: k.relations.flowTotalEmails,
+      openRelatedEmails: k.relations.openRelatedEmails,
+      expandFullPage: k.relations.expandFullPage,
+    }),
+    [k],
+  );
 
-  const mapTranslations = {
-    mapGenerate: k.relations.mapGenerate,
-    mapNoGraph: k.relations.mapNoGraph,
-    mapNoGraphDesc: k.relations.mapNoGraphDesc,
-    mapGeneratedOn: k.relations.mapGeneratedOn,
-    mapTotalEmails: k.relations.mapTotalEmails,
-    mapPinClick: k.relations.mapPinClick,
-    openRelatedEmails: k.relations.openRelatedEmails,
-  };
+  const mapTranslations = useMemo(
+    () => ({
+      mapGenerate: k.relations.mapGenerate,
+      mapNoGraph: k.relations.mapNoGraph,
+      mapNoGraphDesc: k.relations.mapNoGraphDesc,
+      mapGeneratedOn: k.relations.mapGeneratedOn,
+      mapTotalEmails: k.relations.mapTotalEmails,
+      mapPinClick: k.relations.mapPinClick,
+      openRelatedEmails: k.relations.openRelatedEmails,
+    }),
+    [k],
+  );
 
   const isEmpty = graph && graph.nodes.length === 0;
   const flowIsEmpty = flowGraph && flowGraph.nodes.length === 0;
@@ -437,4 +446,6 @@ export function RelationsTab() {
       />
     </>
   );
-}
+});
+
+RelationsTab.displayName = 'RelationsTab';
