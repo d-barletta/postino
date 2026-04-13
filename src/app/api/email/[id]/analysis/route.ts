@@ -1,29 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { analyzeStoredEmailLog } from '@/lib/email-analysis';
 import { saveToSupermemory, buildMemoryEntryFromAnalysis } from '@/agents/email-agent';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await verifyUserRequest(request);
+    await verifyAdminRequest(request);
     const { id } = await params;
     const supabase = createAdminClient();
     const { data, error } = await supabase.from('email_logs').select('*').eq('id', id).single();
 
     if (!data || error) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-
-    if (data.user_id !== user.id) {
-      const { data: requesterData } = await supabase
-        .from('users')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-      if (!requesterData?.is_admin) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
     }
 
     if (typeof data.original_body !== 'string' || !data.original_body.trim()) {
@@ -101,6 +90,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ analysis: safeAnalysis });
   } catch (error) {
-    return handleUserError(error, 'email/[id]/analysis');
+    return handleAdminError(error, 'email/[id]/analysis');
   }
 }

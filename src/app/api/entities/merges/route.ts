@@ -12,6 +12,10 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'numbers',
 ];
 
+const MAX_CANONICAL_LENGTH = 200;
+const MAX_ALIAS_LENGTH = 200;
+const MAX_ALIASES_COUNT = 50;
+
 export async function GET(request: NextRequest) {
   let uid: string;
   try {
@@ -58,13 +62,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Canonical name is required' }, { status: 400 });
     }
 
+    if ((canonical as string).trim().length > MAX_CANONICAL_LENGTH) {
+      return NextResponse.json(
+        { error: `Canonical name must be at most ${MAX_CANONICAL_LENGTH} characters` },
+        { status: 400 },
+      );
+    }
+
     if (
       !Array.isArray(aliases) ||
       aliases.length < 2 ||
+      aliases.length > MAX_ALIASES_COUNT ||
       aliases.some((a) => typeof a !== 'string' || !a.trim())
     ) {
       return NextResponse.json(
-        { error: 'At least two non-empty aliases are required' },
+        { error: `At least two and at most ${MAX_ALIASES_COUNT} non-empty aliases are required` },
+        { status: 400 },
+      );
+    }
+
+    if (aliases.some((a) => typeof a === 'string' && a.trim().length > MAX_ALIAS_LENGTH)) {
+      return NextResponse.json(
+        { error: `Each alias must be at most ${MAX_ALIAS_LENGTH} characters` },
         { status: 400 },
       );
     }

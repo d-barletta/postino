@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getOpenRouterClient } from '@/lib/openrouter';
+import { getOpenRouterClient, withLlmRetry } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 import type { EntityCategory } from '@/types';
 import { verifyUserRequest } from '@/lib/api-auth';
@@ -24,7 +24,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   de: 'German',
 };
 
-const FETCH_LIMIT = 1000;
+const FETCH_LIMIT = 500;
 const MERGES_LIMIT = 500;
 const TOP_N = 50;
 
@@ -252,15 +252,19 @@ Return an empty array if no confident merges are found. Only include suggestions
 
     const { client, model } = await getOpenRouterClient();
 
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 2000,
-    });
+    const response = await withLlmRetry(
+      () =>
+        client.chat.completions.create({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: 2000,
+        }),
+      'entities/merge-suggestions',
+    );
 
     const content = response.choices[0]?.message?.content || '{}';
     let parsed: { suggestions?: unknown[] };
@@ -329,35 +333,37 @@ Return an empty array if no confident merges are found. Only include suggestions
     if (deleteErr)
       console.error('[entities/merge-suggestions] DELETE old suggestions failed:', deleteErr);
 
-    // Store new suggestions
+    // Store new suggestions in a single bulk insert to reduce DB round trips
     const now = new Date().toISOString();
-    const storedSuggestions = await Promise.all(
-      validSuggestions.map(async (s) => {
-        const { data: inserted } = await supabase
-          .from('entity_merge_suggestions')
-          .insert({
-            user_id: uid,
-            category: s.category,
-            aliases: s.aliases,
-            suggested_canonical: s.suggestedCanonical,
-            reason: s.reason,
-            status: 'pending',
-            created_at: now,
-          })
-          .select('id')
-          .single();
-        return {
-          id: inserted?.id,
-          userId: uid,
+    if (validSuggestions.length === 0) {
+      return NextResponse.json({ suggestions: [] }, { status: 201 });
+    }
+
+    const { data: insertedRows } = await supabase
+      .from('entity_merge_suggestions')
+      .insert(
+        validSuggestions.map((s) => ({
+          user_id: uid,
           category: s.category,
           aliases: s.aliases,
-          suggestedCanonical: s.suggestedCanonical,
+          suggested_canonical: s.suggestedCanonical,
           reason: s.reason,
           status: 'pending',
-          createdAt: now,
-        };
-      }),
-    );
+          created_at: now,
+        })),
+      )
+      .select('id, category, aliases, suggested_canonical, reason, status, created_at');
+
+    const storedSuggestions = (insertedRows ?? []).map((row) => ({
+      id: row.id,
+      userId: uid,
+      category: row.category,
+      aliases: row.aliases as string[],
+      suggestedCanonical: row.suggested_canonical,
+      reason: row.reason,
+      status: row.status,
+      createdAt: row.created_at ?? now,
+    }));
 
     return NextResponse.json({ suggestions: storedSuggestions }, { status: 201 });
   } catch (err) {

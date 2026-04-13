@@ -6,6 +6,15 @@ import { cn } from '@/lib/utils';
 
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'sms:', 'callto:']);
 
+// Static baseline styles injected into every iframe document.
+// Defined outside the component so it is never reallocated on re-renders.
+const BASE_IFRAME_CSS = [
+  // -webkit-text-size-adjust: prevents iOS Safari from auto-scaling small
+  // text it considers too small for mobile reading.
+  'html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}',
+  'body{background:#fff;color:#000;}',
+].join('');
+
 interface SafeEmailIframeProps {
   html: string;
   className?: string;
@@ -82,12 +91,7 @@ export function SafeEmailIframe({
     // Inject only a minimal baseline and fit wide content by scaling it down
     // instead of rewriting the email's layout with width overrides.
     const baseStyle = doc.createElement('style');
-    baseStyle.textContent = [
-      // -webkit-text-size-adjust: prevents iOS Safari from auto-scaling small
-      // text it considers too small for mobile reading.
-      'html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}',
-      'body{background:#fff;color:#000;}',
-    ].join('');
+    baseStyle.textContent = BASE_IFRAME_CSS;
     head.insertBefore(baseStyle, head.firstChild);
 
     const applyScaleToFit = () => {
@@ -147,6 +151,9 @@ export function SafeEmailIframe({
     doc.addEventListener('click', onDocClick);
     //console.log('[SafeEmailIframe] click listener attached');
 
+    // Snapshot the images present at effect-run time. When cleanHtml changes, the
+    // cleanup closure holds references to this exact set of nodes so they are
+    // properly cleaned up even after the nodes are detached from the document.
     const images = Array.from(doc.images);
     const onContentLoad = () => {
       applyScaleToFit();
@@ -165,7 +172,10 @@ export function SafeEmailIframe({
       applyScaleToFit();
     });
 
+    let cleanedUp = false;
     return () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
       doc.removeEventListener('click', onDocClick);
       for (const image of images) {
         image.removeEventListener('load', onContentLoad);

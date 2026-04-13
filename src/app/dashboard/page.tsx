@@ -493,7 +493,7 @@ export default function DashboardPage() {
           currentLanguage={user?.analysisOutputLanguage}
           onSave={handleAnalysisLanguageChange}
         />
-        <ResetUsageStatsCard onSuccess={handleLogsRefresh} />
+        {user?.isAdmin && <ResetUsageStatsCard onSuccess={handleLogsRefresh} />}
         <ClearMemoriesCard />
         <ClearAnalysisCard onSuccess={handleAnalysisClear} />
         <DeleteEntitiesCard onSuccess={handleEntitiesDelete} />
