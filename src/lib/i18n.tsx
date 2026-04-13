@@ -118,6 +118,10 @@ export interface Translations {
       goToDashboard: string;
       loadingDashboard: string;
     };
+    logout: {
+      title: string;
+      subtitle: string;
+    };
     verifyEmail: {
       title: string;
       subtitle: string;
@@ -816,6 +820,10 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: 'You are already signed in.',
         goToDashboard: 'Go to Dashboard',
         loadingDashboard: 'Loading dashboard…',
+      },
+      logout: {
+        title: 'Signing you out',
+        subtitle: 'Please wait while we close your session and redirect you.',
       },
       verifyEmail: {
         title: 'Verify your email',
@@ -1543,6 +1551,10 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: "Hai già effettuato l'accesso.",
         goToDashboard: 'Vai alla Dashboard',
         loadingDashboard: 'Caricamento dashboard…',
+      },
+      logout: {
+        title: 'Uscita in corso',
+        subtitle: 'Attendi mentre chiudiamo la tua sessione e ti reindirizziamo.',
       },
       verifyEmail: {
         title: 'Verifica la tua email',
@@ -2275,6 +2287,10 @@ const translations: Record<Locale, Translations> = {
         goToDashboard: 'Ir al Panel',
         loadingDashboard: 'Cargando panel…',
       },
+      logout: {
+        title: 'Cerrando sesión',
+        subtitle: 'Espera mientras cerramos tu sesión y te redirigimos.',
+      },
       verifyEmail: {
         title: 'Verifica tu correo electrónico',
         subtitle: 'Te hemos enviado un enlace de verificación al correo que usaste al registrarte.',
@@ -3003,6 +3019,10 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: 'Vous êtes déjà connecté.',
         goToDashboard: 'Aller au tableau de bord',
         loadingDashboard: 'Chargement du tableau de bord…',
+      },
+      logout: {
+        title: 'Déconnexion en cours',
+        subtitle: 'Veuillez patienter pendant la fermeture de votre session et la redirection.',
       },
       verifyEmail: {
         title: 'Vérifiez votre e-mail',
@@ -3737,6 +3757,10 @@ const translations: Record<Locale, Translations> = {
         alreadySignedIn: 'Sie sind bereits angemeldet.',
         goToDashboard: 'Zum Dashboard',
         loadingDashboard: 'Dashboard wird geladen…',
+      },
+      logout: {
+        title: 'Sie werden abgemeldet',
+        subtitle: 'Bitte warten Sie, während wir Ihre Sitzung beenden und Sie weiterleiten.',
       },
       verifyEmail: {
         title: 'Bestätigen Sie Ihre E-Mail-Adresse',

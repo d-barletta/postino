@@ -22,7 +22,6 @@ export function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,13 +70,8 @@ export function LoginForm() {
     }
   };
 
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    try {
-      await signOut();
-    } finally {
-      setSigningOut(false);
-    }
+  const handleSignOut = () => {
+    router.replace('/logout');
   };
 
   const handleGoToDashboard = () => {
@@ -103,7 +97,6 @@ export function LoginForm() {
             size="md"
             className="w-full"
             onClick={handleSignOut}
-            loading={signingOut}
             disabled={redirecting}
           >
             <LogOut className="h-4 w-4" />

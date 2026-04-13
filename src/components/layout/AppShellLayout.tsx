@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { useI18n } from '@/lib/i18n';
@@ -26,27 +25,24 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
   useEffect(() => {
     if (!loading) {
       if (!authUser) {
-        router.push('/login');
+        router.replace('/login');
       } else if (requiresAdmin && user && !user.isAdmin) {
-        router.push('/dashboard');
+        router.replace('/dashboard');
       }
     }
   }, [loading, authUser, requiresAdmin, user, router]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/login');
+  const handleSignOut = () => {
+    router.replace('/logout');
   };
 
-  if (checking) {
+  if (checking || !authUser) {
     return (
       <div className="min-h-svh flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-[#efd957] border-t-transparent rounded-full" />
       </div>
     );
   }
-
-  if (!authUser) return null;
 
   const contextLink =
     mode === 'admin'
@@ -107,9 +103,9 @@ export function AppShellLayout({ children, mode }: AppShellLayoutProps) {
               variant="ghost"
               size="sm"
               className="w-full justify-start text-gray-700 dark:text-gray-200"
-              onClick={async () => {
+              onClick={() => {
                 setMobileMenuOpen(false);
-                await handleSignOut();
+                handleSignOut();
               }}
             >
               {t.nav.signOut}

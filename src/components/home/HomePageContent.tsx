@@ -6,7 +6,6 @@ import { PostinoLogo } from '@/components/brand/PostinoLogo';
 import { useI18n } from '@/lib/i18n';
 import { ArrowRight, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { signOut } from '@/lib/auth';
 
 export function HomePageContent() {
   const { t } = useI18n();
@@ -30,9 +29,9 @@ export function HomePageContent() {
           <div className="flex items-center gap-3">
             {!loading && authUser ? (
               <>
-                <Button variant="ghost" onClick={() => signOut()}>
-                  {t.nav.signOut}
-                </Button>
+                <Link href="/logout?next=/">
+                  <Button variant="ghost">{t.nav.signOut}</Button>
+                </Link>
                 <Link href="/dashboard">
                   <Button>
                     <LayoutDashboard className="h-4 w-4" />
