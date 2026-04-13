@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { sanitizeRule } from '@/lib/openrouter';
 
 export async function GET(request: NextRequest) {
   try {
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         name: name.trim(),
-        text: text.trim(),
+        text: sanitizeRule(text.trim()),
         match_sender: matchSender?.trim() || '',
         match_subject: matchSubject?.trim() || '',
         match_body: matchBody?.trim() || '',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { sanitizeRule } from '@/lib/openrouter';
 
 const MAX_RULE_NAME_LENGTH = 100;
 const MAX_PATTERN_LENGTH = 200;
@@ -170,7 +171,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updated_at: new Date().toISOString(),
     };
     if (isActive !== undefined) updateData.is_active = Boolean(isActive);
-    if (text !== undefined) updateData.text = text.trim();
+    if (text !== undefined) updateData.text = sanitizeRule(text.trim());
     if (name !== undefined) updateData.name = name.trim();
     if (matchSender !== undefined) updateData.match_sender = matchSender?.trim() || '';
     if (matchSubject !== undefined) updateData.match_subject = matchSubject?.trim() || '';
