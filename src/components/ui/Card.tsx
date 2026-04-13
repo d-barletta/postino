@@ -37,13 +37,11 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
         {...props}
       >
         {hasStructuredContent ? (
-          <div className="flex flex-wrap items-start justify-between gap-1">
+          <div className="flex flex-wrap items-center justify-between gap-1">
             <div className="min-w-0 space-y-1">
               {heading != null ? <CardTitle>{heading}</CardTitle> : null}
             </div>
-            {actions != null ? (
-              <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
-            ) : null}
+            <div className="flex shrink-0 flex-wrap items-center gap-2 min-h-7">{actions}</div>
             {description != null ? <CardDescription>{description}</CardDescription> : null}
           </div>
         ) : null}

@@ -551,7 +551,7 @@ export function EmailSearchTab({
       <Card>
         <Accordion type="single" collapsible>
           <AccordionItem value="filters" className="border-0">
-            <AccordionTrigger className="px-6 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+            <AccordionTrigger className="px-4 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               {ts.title}
             </AccordionTrigger>
             <AccordionContent>

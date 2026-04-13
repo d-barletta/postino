@@ -264,7 +264,7 @@ export function RulesManager({
     <div className="space-y-6">
       {/* Header card with Add Rule button */}
       <Card>
-        <CardContent className="py-4">
+        <CardContent className="py-4 px-4">
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="text-md font-semibold text-gray-900 dark:text-gray-100">
