@@ -354,7 +354,7 @@ Return an empty array if no confident merges are found. Only include suggestions
       )
       .select('id, category, aliases, suggested_canonical, reason, status, created_at');
 
-    const storedSuggestions = (insertedRows ?? []).map((row, i) => ({
+    const storedSuggestions = (insertedRows ?? []).map((row) => ({
       id: row.id,
       userId: uid,
       category: row.category,
@@ -363,8 +363,6 @@ Return an empty array if no confident merges are found. Only include suggestions
       reason: row.reason,
       status: row.status,
       createdAt: row.created_at ?? now,
-      // fallback for rows where id wasn't returned
-      ...(row.id ? {} : { id: validSuggestions[i]?.suggestedCanonical }),
     }));
 
     return NextResponse.json({ suggestions: storedSuggestions }, { status: 201 });

@@ -329,7 +329,7 @@ function isRetryableLlmError(err: unknown): boolean {
   const status = (err as Record<string, unknown>).status;
   if (typeof status === 'number' && RETRYABLE_STATUS_CODES.has(status)) return true;
   // Network / timeout errors from the underlying fetch
-  const message = (err as Error).message ?? '';
+  const message = (err as Error).message || '';
   if (/ECONNRESET|ETIMEDOUT|ENOTFOUND|socket hang up|network/i.test(message)) return true;
   return false;
 }
