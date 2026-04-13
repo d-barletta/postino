@@ -216,14 +216,13 @@ export async function PATCH(
     const { uid } = await params;
     const supabase = createAdminClient();
 
-    const allowed = ['isAdmin', 'isActive'];
+    const allowed = ['isActive'];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),
     );
 
     // Map camelCase to snake_case for DB
-    const dbUpdates: { is_admin?: boolean; is_active?: boolean; suspended?: boolean } = {};
-    if ('isAdmin' in filtered) dbUpdates.is_admin = Boolean(filtered.isAdmin);
+    const dbUpdates: { is_active?: boolean; suspended?: boolean } = {};
     if ('isActive' in filtered) {
       const { data: targetRow } = await supabase
         .from('users')

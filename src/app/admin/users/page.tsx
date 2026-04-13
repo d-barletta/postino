@@ -22,7 +22,7 @@ const ANALYSIS_BATCH_SIZE = 1;
 const ANALYSIS_PARALLEL_BATCHES = 5;
 
 type ConfirmAction =
-  | { uid: string; action: 'admin' | 'active'; current: boolean }
+  | { uid: string; action: 'active'; current: boolean }
   | { uid: string; action: 'reanalyze' }
   | { uid: string; action: 'reset' }
   | { uid: string; action: 'delete' };
@@ -375,14 +375,10 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        const body =
-          confirmAction.action === 'admin'
-            ? { isAdmin: !confirmAction.current }
-            : { isActive: !confirmAction.current };
         res = await fetch(`/api/admin/users/${confirmAction.uid}`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ isActive: !confirmAction.current }),
         });
       }
 
@@ -402,13 +398,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
           ? t.admin.toasts.userDeleted
           : confirmAction.action === 'reset'
             ? t.admin.toasts.userDataReset
-            : confirmAction.action === 'admin'
-              ? confirmAction.current
-                ? t.admin.toasts.adminRemoved
-                : t.admin.toasts.adminGranted
-              : confirmAction.current
-                ? t.admin.toasts.userSuspended
-                : t.admin.toasts.userActivated;
+            : confirmAction.current
+              ? t.admin.toasts.userSuspended
+              : t.admin.toasts.userActivated;
       toast.success(label);
     } catch (error) {
       toast.error(
@@ -432,13 +424,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         ? adminUsers.rerunAnalysisTitle
         : confirmAction?.action === 'reset'
           ? adminUsers.resetDataTitle
-          : confirmAction?.action === 'admin'
-            ? confirmAction.current
-              ? 'Remove admin privileges'
-              : 'Grant admin privileges'
-            : confirmAction?.current
-              ? 'Suspend user'
-              : 'Activate user';
+          : confirmAction?.current
+            ? 'Suspend user'
+            : 'Activate user';
   const confirmDesc =
     confirmAction?.action === 'delete'
       ? `Permanently delete ${confirmUser?.email} and all their data (rules, email logs)? This cannot be undone.`
@@ -446,9 +434,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
         ? adminUsers.rerunAnalysisDesc.replace('{email}', confirmUser?.email ?? '')
         : confirmAction?.action === 'reset'
           ? adminUsers.resetDataDesc.replace('{email}', confirmUser?.email ?? '')
-          : confirmAction?.action === 'admin'
-            ? `${confirmAction.current ? 'Remove admin' : 'Grant admin'} for ${confirmUser?.email}?`
-            : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
+          : `${confirmAction?.current ? 'Suspend' : 'Activate'} account for ${confirmUser?.email}?`;
 
   const progressPercent =
     reanalysis && reanalysis.totalCount > 0
@@ -551,20 +537,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          setConfirmAction({
-                            uid: user.uid,
-                            action: 'admin',
-                            current: user.isAdmin,
-                          })
-                        }
-                      >
-                        {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
-                      </Button>
-                      <Button
+                                      <Button
                         size="sm"
                         variant="secondary"
                         onClick={() => setConfirmAction({ uid: user.uid, action: 'reanalyze' })}
