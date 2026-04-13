@@ -36,6 +36,28 @@ export async function GET(request: NextRequest) {
 const MAX_RULE_NAME_LENGTH = 100;
 const MAX_PATTERN_LENGTH = 200;
 
+/**
+ * Validates a match pattern string for ReDoS safety.
+ * Patterns are matched via String.prototype.includes() (plain-text substring), not regex.
+ * This guard rejects strings that contain nested quantifiers or other catastrophic structures
+ * that would be dangerous if the pattern were ever evaluated as a regular expression.
+ * Returns an error message string if invalid, or null if safe.
+ */
+function validateMatchPattern(pattern: string): string | null {
+  // Check the pattern compiles as a regex (catches invalid regex syntax)
+  try {
+    new RegExp(pattern);
+  } catch {
+    return 'Pattern contains invalid regular expression syntax';
+  }
+  // Reject patterns with nested quantifiers that cause catastrophic backtracking
+  // e.g. (a+)+, (a*)*, (.+)+, (a{1,10}){2,}, etc.
+  if (/\([^)]*[+*{][^)]*\)[+*{]/.test(pattern)) {
+    return 'Pattern contains nested quantifiers which could cause catastrophic backtracking';
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyUserRequest(request);
@@ -65,6 +87,12 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    if (matchSender && typeof matchSender === 'string' && matchSender.trim()) {
+      const patternErr = validateMatchPattern(matchSender.trim());
+      if (patternErr) {
+        return NextResponse.json({ error: `Sender pattern: ${patternErr}` }, { status: 400 });
+      }
+    }
 
     if (
       matchSubject !== undefined &&
@@ -75,6 +103,12 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    if (matchSubject && typeof matchSubject === 'string' && matchSubject.trim()) {
+      const patternErr = validateMatchPattern(matchSubject.trim());
+      if (patternErr) {
+        return NextResponse.json({ error: `Subject pattern: ${patternErr}` }, { status: 400 });
+      }
+    }
 
     if (
       matchBody !== undefined &&
@@ -84,6 +118,12 @@ export async function POST(request: NextRequest) {
         { error: `Body pattern must be a string of at most ${MAX_PATTERN_LENGTH} characters` },
         { status: 400 },
       );
+    }
+    if (matchBody && typeof matchBody === 'string' && matchBody.trim()) {
+      const patternErr = validateMatchPattern(matchBody.trim());
+      if (patternErr) {
+        return NextResponse.json({ error: `Body pattern: ${patternErr}` }, { status: 400 });
+      }
     }
 
     const supabase = createAdminClient();

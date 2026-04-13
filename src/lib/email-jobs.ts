@@ -55,7 +55,10 @@ const RETRY_BACKOFF_MS = [30_000, 120_000, 600_000, 1_800_000, 7_200_000] as con
 
 function computeRetryDelayMs(attempts: number): number {
   const idx = Math.max(0, Math.min(attempts - 1, RETRY_BACKOFF_MS.length - 1));
-  return RETRY_BACKOFF_MS[idx];
+  const base = RETRY_BACKOFF_MS[idx];
+  // Add ±15 % jitter to spread out retries from concurrent workers and avoid thundering herds.
+  const jitter = base * 0.15 * (Math.random() * 2 - 1);
+  return Math.round(base + jitter);
 }
 
 export async function enqueueEmailJob(

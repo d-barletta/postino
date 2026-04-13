@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+/** Cache published blog articles for 5 minutes at the CDN edge, allow stale while revalidating. */
+const BLOG_CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=60';
+
 export async function GET() {
   try {
     const supabase = createAdminClient();
@@ -22,7 +25,10 @@ export async function GET() {
       createdAt: row.created_at ?? null,
       updatedAt: row.updated_at ?? null,
     }));
-    return NextResponse.json({ articles });
+    return NextResponse.json(
+      { articles },
+      { headers: { 'Cache-Control': BLOG_CACHE_CONTROL } },
+    );
   } catch (error) {
     console.error('[blog] GET error:', error);
     return NextResponse.json({ error: 'Failed to load articles' }, { status: 500 });

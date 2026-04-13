@@ -1090,6 +1090,7 @@ async function preAnalyzeEmail(
       model: openrouterProvider(model),
       schema: emailAnalysisSchema,
       experimental_repairText: repairObjectJsonText,
+      maxRetries: 3,
       system: `You are an expert email analyst. Analyze the email and return a comprehensive structured classification. For the summary field be concise (1-2 sentences). For all other fields return accurate, consistent values. Be conservative with named-entity extraction: only include entities when they are explicitly supported by the email content, and prefer omitting uncertain entities instead of guessing. For the places field in particular, include a value only when you are confident it refers to a real physical/geographic location, not a browser, timezone, product, acronym, postal code, or other ambiguous term — timezones such as "CET", "Central European Time - Rome", "UTC+1" must never be extracted as places and should instead be captured inside the dates field as part of the date/time entry. For the numbers field, only extract numeric codes that appear in the visible human-readable text (e.g. order numbers shown to the user); never extract numbers from URLs, query-string parameters, path segments, or link hrefs — treat URLs as atomic and ignore their internal numeric content.${languageInstruction}`,
       prompt: `Analyze and classify this email in detail:
 
@@ -1353,6 +1354,7 @@ ${chunks[i]}`;
     try {
       const { text, usage } = await generateText({
         model: openrouterProvider(model),
+        maxRetries: 3,
         system:
           'You are a content extractor. Your only job is to distil the meaningful text from a section of an email, removing boilerplate. Return plain text.',
         prompt: chunkPrompt,
@@ -1453,6 +1455,7 @@ ${
         ),
     }),
     experimental_repairText: repairObjectJsonText,
+    maxRetries: 3,
     system: reduceSystemPrompt,
     prompt: reducePrompt,
     maxOutputTokens,
@@ -1761,6 +1764,7 @@ ${emailBodyForPrompt}`;
             ),
         }),
         experimental_repairText: repairObjectJsonText,
+        maxRetries: 3,
         system: systemPrompt,
         prompt: userPrompt,
         maxOutputTokens: maxTokens,
@@ -1820,6 +1824,7 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
           body: z.string().describe('The processed email body in HTML format'),
         }),
         experimental_repairText: repairObjectJsonText,
+        maxRetries: 3,
         system: systemPrompt,
         prompt: userPrompt,
         maxOutputTokens: maxTokens,
@@ -1875,6 +1880,7 @@ ${emailBodyForPrompt}`;
           body: z.string().describe('Full processed email body as HTML'),
         }),
         experimental_repairText: repairObjectJsonText,
+        maxRetries: 3,
         system: `${systemPrompt}\n\nFallback mode: keep output simple and deterministic. Return only subject and body.`,
         prompt: fallbackPrompt,
         maxOutputTokens: Math.min(maxTokens, agentRuntimeSettings.fallbackPassMaxTokens),
@@ -1925,6 +1931,7 @@ ${emailBodyForPrompt}`;
 
         const { text, usage } = await generateText({
           model: openrouterProvider(model),
+          maxRetries: 3,
           system: `${systemPrompt}\n\nReturn strictly valid JSON only.`,
           prompt: textRecoveryPrompt,
           maxOutputTokens: Math.min(maxTokens, agentRuntimeSettings.fallbackPassMaxTokens),

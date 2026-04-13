@@ -19,6 +19,10 @@ const LOOP_MARKER_HEADER = 'x-postino-processed';
 const ASYNC_TRIGGER_BATCH_SIZE = 1;
 const WEBHOOK_LOG_FIELD_MAX_CHARS = 20_000;
 const WEBHOOK_LOG_FIELDS_TOTAL_MAX_CHARS = 300_000;
+/** Maximum byte size accepted for the message-headers JSON field before parsing. */
+const MAX_MESSAGE_HEADERS_BYTES = 256 * 1024; // 256 KB
+/** Maximum byte size accepted for individual email header values subject to regex matching. */
+const MAX_HEADER_VALUE_BYTES = 8 * 1024; // 8 KB
 
 type WebhookLogFieldValue = string | string[];
 
@@ -41,8 +45,10 @@ interface StoreAttachmentRef {
 
 /** Extract a bare email address from `Name <email@example.com>` style headers. */
 function extractEmailAddress(value: string): string {
-  const match = value.match(/<([^>]+)>/);
-  return (match ? match[1] : value).trim().toLowerCase();
+  // Guard against excessively large header values to prevent regex backtracking on huge input
+  const safe = value.length > MAX_HEADER_VALUE_BYTES ? value.slice(0, MAX_HEADER_VALUE_BYTES) : value;
+  const match = safe.match(/<([^>]+)>/);
+  return (match ? match[1] : safe).trim().toLowerCase();
 }
 
 function getInboundHeaderMap(formData: FormData): Map<string, string> {
@@ -52,6 +58,16 @@ function getInboundHeaderMap(formData: FormData): Map<string, string> {
   for (const key of keys) {
     const raw = formData.get(key);
     if (typeof raw !== 'string' || !raw.trim()) continue;
+
+    // Guard against huge payloads blocking the event loop during JSON.parse
+    if (raw.length > MAX_MESSAGE_HEADERS_BYTES) {
+      console.warn('[inbound] message-headers field exceeds size limit; skipping header parse', {
+        key,
+        length: raw.length,
+        limit: MAX_MESSAGE_HEADERS_BYTES,
+      });
+      continue;
+    }
 
     try {
       const parsed = JSON.parse(raw) as unknown;
@@ -1648,9 +1664,19 @@ export async function POST(request: NextRequest) {
           failedAttachmentNumbers,
         });
 
+        // Update the email log to reflect the partial upload state so users
+        // can see which attachments are actually accessible in the dashboard.
+        const nonInlineSuccessful = uploadedSerializedAttachments.filter((a) => !a.contentId);
         await supabase
           .from('email_logs')
-          .update({ status: 'processing', processing_started_at: new Date().toISOString() })
+          .update({
+            status: 'processing',
+            processing_started_at: new Date().toISOString(),
+            // Overwrite attachment metadata with only what was successfully uploaded
+            attachment_count: nonInlineSuccessful.length,
+            attachment_names: nonInlineSuccessful.map((a) => a.filename),
+            error_message: `${failedAttachmentNumbers.length} attachment(s) failed to upload and will be processed inline`,
+          })
           .eq('id', mainLogId);
         const syncPayload: QueuedInboundPayload = {
           logId: mainLogId,

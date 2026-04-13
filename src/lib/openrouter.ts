@@ -313,6 +313,51 @@ export interface RuleForProcessing {
   text: string;
 }
 
+/** Backoff delays (ms) for transient LLM API failures. */
+const LLM_RETRY_DELAYS_MS = [1_000, 3_000, 10_000] as const;
+
+/** HTTP status codes that are considered transient and worth retrying. */
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+/**
+ * Returns true when the given error looks like a transient failure that is safe
+ * to retry (rate-limit, server error, network timeout, etc.).
+ */
+function isRetryableLlmError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  // OpenAI SDK wraps HTTP errors with a `status` property
+  const status = (err as Record<string, unknown>).status;
+  if (typeof status === 'number' && RETRYABLE_STATUS_CODES.has(status)) return true;
+  // Network / timeout errors from the underlying fetch
+  const message = (err as Error).message ?? '';
+  if (/ECONNRESET|ETIMEDOUT|ENOTFOUND|socket hang up|network/i.test(message)) return true;
+  return false;
+}
+
+/**
+ * Invokes `fn` with exponential backoff retry on transient failures.
+ * Non-transient errors are re-thrown immediately.
+ * Exported for use in other modules that call the LLM API directly.
+ */
+export async function withLlmRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= LLM_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < LLM_RETRY_DELAYS_MS.length && isRetryableLlmError(err)) {
+        const delay = LLM_RETRY_DELAYS_MS[attempt];
+        console.warn(`[openrouter] ${label} failed (attempt ${attempt + 1}), retrying in ${delay}ms`, err);
+        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
 export async function processEmailWithRules(
   emailFrom: string,
   emailSubject: string,
@@ -400,15 +445,19 @@ Respond with a JSON object containing: subject (processed subject line) and body
   let response;
 
   try {
-    response = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: maxTokens,
-    });
+    response = await withLlmRetry(
+      () =>
+        client.chat.completions.create({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: maxTokens,
+        }),
+      'processEmailWithRules',
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown OpenRouter error';
     throw new Error(`OpenRouter request failed: ${message}`);
