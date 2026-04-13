@@ -20,6 +20,7 @@ interface EmailDetailTabsProps {
   onCreditsUsed?: () => void;
   className?: string;
   summaryClassName?: string;
+  fillAvailableHeight?: boolean;
 }
 
 export function EmailDetailTabs({
@@ -32,11 +33,16 @@ export function EmailDetailTabs({
   onCreditsUsed,
   className,
   summaryClassName,
+  fillAvailableHeight = false,
 }: EmailDetailTabsProps) {
   const { t } = useI18n();
 
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className={className}>
+    <Tabs
+      value={activeTab}
+      onValueChange={onTabChange}
+      className={cn(fillAvailableHeight && 'flex min-h-0 flex-1 flex-col', className)}
+    >
       <TabsList>
         <TabsTrigger value="summary">
           <AlignLeft className="h-3.5 w-3.5 shrink-0 mr-1.5" />
@@ -49,7 +55,15 @@ export function EmailDetailTabs({
       </TabsList>
 
       {/* Details tab */}
-      <TabsContent value="summary" className={cn('mt-3 space-y-3', summaryClassName)}>
+      <TabsContent
+        value="summary"
+        className={cn(
+          fillAvailableHeight
+            ? 'mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden'
+            : 'mt-3 space-y-3',
+          summaryClassName,
+        )}
+      >
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
           <dt className="text-gray-500 dark:text-gray-400 font-medium">
             {t.dashboard.emailHistory.to}
@@ -106,12 +120,16 @@ export function EmailDetailTabs({
           </div>
         )}
         {emailData && !emailData.loading && emailData.originalBody && (
-          <div className="relative">
+          <div className={cn('relative', fillAvailableHeight && 'min-h-0 flex-1')}>
             <SafeEmailIframe
               html={emailData.originalBody}
-              className="rounded-lg"
-              style={{ minHeight: '200px', maxHeight: '400px' }}
-              maxAutoHeight={400}
+              className={cn('rounded-lg', fillAvailableHeight && 'h-full')}
+              style={
+                fillAvailableHeight
+                  ? { height: '100%' }
+                  : { minHeight: '200px', maxHeight: '400px' }
+              }
+              maxAutoHeight={fillAvailableHeight ? undefined : 400}
             />
             <button
               onClick={(e) => {

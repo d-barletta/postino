@@ -497,8 +497,8 @@ export function EmailLogsBrowser({
                       : undefined
                   }
                   onCreditsUsed={onCreditsUsed}
+                  fillAvailableHeight
                   className="flex flex-col flex-1 overflow-hidden"
-                  summaryClassName="overflow-y-auto"
                 />
               </div>
             </>
