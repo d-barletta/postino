@@ -11,9 +11,9 @@ interface MonthlyCreditsCardProps {
   onRefresh?: () => Promise<void>;
 }
 
-function toPercent(used: number, limit: number): number {
-  if (limit <= 0) return 100;
-  return Math.max(0, Math.min(100, (used / limit) * 100));
+function toPercent(remaining: number, limit: number): number {
+  if (limit <= 0) return 0;
+  return Math.max(0, Math.min(100, (remaining / limit) * 100));
 }
 
 export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps) {
@@ -22,9 +22,9 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
   const used = stats.monthlyCreditsUsed || 0;
   const limit = stats.monthlyCreditsLimit || 0;
   const remaining = Math.max(0, stats.monthlyCreditsRemaining || 0);
-  const percent = toPercent(used, limit);
+  const percent = toPercent(remaining, limit);
 
-  const barColor = percent >= 90 ? 'bg-red-500' : percent >= 75 ? 'bg-orange-500' : 'bg-green-500';
+  const barColor = percent <= 10 ? 'bg-red-500' : percent <= 25 ? 'bg-orange-500' : 'bg-green-500';
 
   const handleRefresh = async () => {
     if (!onRefresh || refreshing) return;
