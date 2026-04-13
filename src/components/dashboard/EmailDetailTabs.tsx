@@ -140,8 +140,7 @@ export function EmailDetailTabs({
         />
         {log.tokensUsed !== undefined && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {t.dashboard.emailHistory.tokens} {log.tokensUsed} | Credits:{' '}
-            {(log.estimatedCredits || 0).toFixed(2)}
+            {t.dashboard.emailHistory.credits}{' '}{Math.ceil(log.estimatedCredits || 0).toLocaleString()}
           </p>
         )}
       </TabsContent>

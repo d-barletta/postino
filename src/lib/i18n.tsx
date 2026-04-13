@@ -278,6 +278,7 @@ export interface Translations {
       noAttachmentsShort: string;
       ruleApplied: string;
       tokens: string;
+      credits: string;
       viewOriginal: string;
       viewFullPage: string;
       loadingEmail: string;
@@ -990,6 +991,7 @@ const translations: Record<Locale, Translations> = {
         noAttachmentsShort: 'None',
         ruleApplied: 'Rule applied:',
         tokens: 'Tokens:',
+        credits: 'Credits:',
         viewOriginal: 'View original email',
         viewFullPage: 'Full page',
         loadingEmail: 'Loading email…',
@@ -1714,6 +1716,7 @@ const translations: Record<Locale, Translations> = {
         noAttachmentsShort: 'Nessuno',
         ruleApplied: 'Regola applicata:',
         tokens: 'Token:',
+        credits: 'Crediti:',
         viewOriginal: 'Visualizza email originale',
         viewFullPage: 'Pagina intera',
         loadingEmail: 'Caricamento email…',
@@ -2438,6 +2441,7 @@ const translations: Record<Locale, Translations> = {
         noAttachmentsShort: 'Ninguno',
         ruleApplied: 'Regla aplicada:',
         tokens: 'Tokens:',
+        credits: 'Créditos:',
         viewOriginal: 'Ver correo original',
         viewFullPage: 'Página completa',
         loadingEmail: 'Cargando correo…',
@@ -3164,6 +3168,7 @@ const translations: Record<Locale, Translations> = {
         noAttachmentsShort: 'Aucune',
         ruleApplied: 'Règle appliquée :',
         tokens: 'Tokens :',
+        credits: 'Crédits :',
         viewOriginal: "Voir l'e-mail original",
         viewFullPage: 'Pleine page',
         loadingEmail: "Chargement de l'e-mail",
@@ -3893,6 +3898,7 @@ const translations: Record<Locale, Translations> = {
         noAttachmentsShort: 'Keine',
         ruleApplied: 'Angewendete Regel:',
         tokens: 'Tokens:',
+        credits: 'Credits:',
         viewOriginal: 'Original-E-Mail anzeigen',
         viewFullPage: 'Vollbild',
         loadingEmail: 'E-Mail wird geladen…',
