@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
-import { RefreshCw, Play, AlertTriangle, Trash2, Copy, Check } from 'lucide-react';
+import { RefreshCw, Play, AlertTriangle, Trash2, Copy, Check, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -218,6 +218,7 @@ export default function EmailJobsLiveTab() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loggingSaving, setLoggingSaving] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
+  const [retryingJobs, setRetryingJobs] = useState<Set<string>>(new Set());
 
   const fetchOverview = useCallback(
     async (silent = false) => {
@@ -347,6 +348,35 @@ export default function EmailJobsLiveTab() {
       setClearingLogs(false);
     }
   }, [clearingLogs, authUser, fetchOverview]);
+
+  const handleRetryJob = useCallback(
+    async (jobId: string) => {
+      if (!authUser || retryingJobs.has(jobId)) return;
+      setRetryingJobs((prev) => new Set(prev).add(jobId));
+      try {
+        const token = await getIdToken();
+        const res = await fetch(`/api/admin/email-jobs/${jobId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          toast.error('Failed to re-queue job');
+          return;
+        }
+        toast.success('Job re-queued for retry');
+        await fetchOverview(true);
+      } catch {
+        toast.error('Failed to re-queue job');
+      } finally {
+        setRetryingJobs((prev) => {
+          const next = new Set(prev);
+          next.delete(jobId);
+          return next;
+        });
+      }
+    },
+    [authUser, retryingJobs, fetchOverview],
+  );
 
   const cards = useMemo(() => {
     const counts = data?.counts;
@@ -549,6 +579,17 @@ export default function EmailJobsLiveTab() {
                         open email
                       </a>
                     ) : null}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ml-auto h-6 px-2 text-xs"
+                      onClick={() => handleRetryJob(row.id)}
+                      loading={retryingJobs.has(row.id)}
+                      disabled={retryingJobs.has(row.id)}
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Retry
+                    </Button>
                   </div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {row.subject}
