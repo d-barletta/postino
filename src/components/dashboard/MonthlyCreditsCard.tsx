@@ -66,7 +66,7 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
               {Math.ceil(used).toLocaleString()} / {Math.ceil(limit).toLocaleString()}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Remaining: {Math.ceil(remaining).toLocaleString()}
+              Remaining: {Math.ceil(remaining).toLocaleString()} ({Math.round(percent)}%)
             </p>
           </div>
           <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
