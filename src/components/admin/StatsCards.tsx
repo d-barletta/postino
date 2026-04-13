@@ -55,13 +55,13 @@ export function StatsCards({ stats, period, onPeriodChange }: StatsCardsProps) {
       value: stats.totalTokensUsed.toLocaleString(),
       color: 'text-[#b39623] dark:text-[#f1db72]',
     },
+    // {
+    //   label: 'Total Credits Used',
+    //   value: stats.totalCreditsUsed.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+    //   color: 'text-indigo-600 dark:text-indigo-400',
+    // },
     {
-      label: 'Total Credits Used',
-      value: stats.totalCreditsUsed.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      color: 'text-indigo-600 dark:text-indigo-400',
-    },
-    {
-      label: 'Real Total Cost',
+      label: 'Total Cost',
       value: `$${stats.totalEstimatedCost.toFixed(4)}`,
       color: 'text-gray-700 dark:text-gray-200',
     },
