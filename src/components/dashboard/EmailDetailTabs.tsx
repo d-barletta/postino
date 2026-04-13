@@ -140,8 +140,8 @@ export function EmailDetailTabs({
         />
         {log.tokensUsed !== undefined && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {t.dashboard.emailHistory.tokens} {log.tokensUsed} | {t.dashboard.stats.estCost}: $
-            {(log.estimatedCost || 0).toFixed(5)}
+            {t.dashboard.emailHistory.tokens} {log.tokensUsed} | Credits:{' '}
+            {(log.estimatedCredits || 0).toFixed(2)}
           </p>
         )}
       </TabsContent>

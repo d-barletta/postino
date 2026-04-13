@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
+import { getUtcMonthKey } from '@/lib/credits';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,10 +14,19 @@ export async function POST(request: NextRequest) {
       .eq('user_id', uid);
 
     await Promise.all([
-      supabase.from('email_logs').update({ tokens_used: 0, estimated_cost: 0 }).eq('user_id', uid),
+      supabase
+        .from('email_logs')
+        .update({ tokens_used: 0, estimated_cost: 0, estimated_credits: 0 })
+        .eq('user_id', uid),
       supabase
         .from('users')
-        .update({ memory_tokens_used: 0, memory_estimated_cost: 0 })
+        .update({
+          memory_tokens_used: 0,
+          memory_estimated_cost: 0,
+          monthly_credits_used: 0,
+          credits_usage_month: getUtcMonthKey(),
+          credits_threshold_notified: false,
+        })
         .eq('id', uid),
     ]);
 

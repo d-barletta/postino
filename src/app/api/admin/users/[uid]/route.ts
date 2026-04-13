@@ -7,6 +7,7 @@ import {
   resolveAssignedEmailDomain,
 } from '@/lib/email-utils';
 import { deleteWebhookLogStorageFiles } from '@/lib/inbound-processing';
+import { getUtcMonthKey } from '@/lib/credits';
 
 const IN_QUERY_LIMIT = 30;
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
@@ -196,6 +197,10 @@ async function provisionFreshUserProfile(uid: string, currentUserData: Record<st
     is_admin: false,
     is_active: isActive,
     suspended: false,
+    credits_usage_month: getUtcMonthKey(),
+    monthly_credits_used: 0,
+    monthly_credits_bonus: 0,
+    credits_threshold_notified: false,
     analysis_output_language: 'en',
     ...(authDisplayName ? { display_name: authDisplayName } : {}),
   });

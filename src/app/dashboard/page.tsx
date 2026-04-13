@@ -3,6 +3,7 @@
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { AssignedEmailCard } from '@/components/dashboard/AssignedEmailCard';
+import { MonthlyCreditsCard } from '@/components/dashboard/MonthlyCreditsCard';
 import { RulesManager } from '@/components/dashboard/RulesManager';
 import { EmailSearchTab } from '@/components/dashboard/EmailSearchTab';
 import { KnowledgeTab, type KnowledgeData } from '@/components/dashboard/KnowledgeTab';
@@ -45,6 +46,10 @@ const EMPTY_STATS: UserStats = {
   totalEmailsSkipped: 0,
   totalTokensUsed: 0,
   totalEstimatedCost: 0,
+  totalCreditsUsed: 0,
+  monthlyCreditsUsed: 0,
+  monthlyCreditsLimit: 0,
+  monthlyCreditsRemaining: 0,
 };
 
 type DashboardTab = 'overview' | 'rules' | 'inbox' | 'agent' | 'explore' | 'relations' | 'settings';
@@ -442,6 +447,7 @@ export default function DashboardPage() {
             onAiAnalysisOnlyToggle={handleAiAnalysisOnlyToggle}
           />
         )}
+        <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} />
         {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
           <Card className="">
             <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">

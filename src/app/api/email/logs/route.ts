@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
+import { dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -74,6 +75,14 @@ export async function GET(request: NextRequest) {
     );
 
     const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const creditSettings = resolveCreditSettings(
+      (settingsRow?.data as Record<string, unknown> | undefined) ?? {},
+    );
 
     const hasTextSearch = !!(search || termsRaw.length > 0);
 
@@ -181,7 +190,10 @@ export async function GET(request: NextRequest) {
       status: d.status,
       ruleApplied: d.rule_applied,
       tokensUsed: d.tokens_used,
-      estimatedCost: d.estimated_cost,
+      estimatedCredits: dollarsToCredits(
+        typeof d.estimated_cost === 'number' ? d.estimated_cost : 0,
+        creditSettings.creditsPerDollarFactor,
+      ),
       errorMessage: d.error_message,
       attachmentCount: (d.attachment_count as number) ?? 0,
       attachmentNames: (d.attachment_names as string[]) ?? [],

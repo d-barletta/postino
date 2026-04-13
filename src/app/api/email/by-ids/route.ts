@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
 
 const MAX_IDS = 20;
 
@@ -20,6 +21,14 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const creditSettings = resolveCreditSettings(
+      (settingsRow?.data as Record<string, unknown> | undefined) ?? {},
+    );
     const { data: rows } = await supabase
       .from('email_logs')
       .select('*')
@@ -38,7 +47,10 @@ export async function POST(request: NextRequest) {
       status: d.status,
       ruleApplied: d.rule_applied,
       tokensUsed: d.tokens_used,
-      estimatedCost: d.estimated_cost,
+      estimatedCredits: dollarsToCredits(
+        typeof d.estimated_cost === 'number' ? d.estimated_cost : 0,
+        creditSettings.creditsPerDollarFactor,
+      ),
       errorMessage: d.error_message,
       attachmentCount: (d.attachment_count as number) ?? 0,
       attachmentNames: (d.attachment_names as string[]) ?? [],

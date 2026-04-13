@@ -7,6 +7,7 @@ import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 //   • email_logs[].email_analysis    – structured AI analysis
 //   • email_logs[].tokens_used       – AI token usage
 //   • email_logs[].estimated_cost    – AI cost estimate
+//   • email_logs[].estimated_credits – user-facing credits estimate
 //   • email_logs[].processed_body    – AI-generated processed content
 //   • entity_merges                  – user-defined entity merge rules
 //   • entity_merge_suggestions       – AI merge suggestions
@@ -27,6 +28,7 @@ export async function DELETE(request: NextRequest) {
         email_analysis: null,
         tokens_used: null,
         estimated_cost: null,
+        estimated_credits: null,
         processed_body: null,
       })
       .eq('user_id', uid);

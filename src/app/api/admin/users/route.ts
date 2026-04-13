@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
+import {
+  computeMonthlyCreditsLimit,
+  getUtcMonthKey,
+  normalizeUserCreditsSnapshot,
+  resolveCreditSettings,
+} from '@/lib/credits';
 
 const MAX_PAGE_SIZE = 500;
 const DEFAULT_PAGE_SIZE = 100;
@@ -15,6 +21,15 @@ export async function GET(request: NextRequest) {
     const pageSize = Math.min(
       MAX_PAGE_SIZE,
       Math.max(1, isNaN(pageSizeParam) ? DEFAULT_PAGE_SIZE : pageSizeParam),
+    );
+    const currentMonth = getUtcMonthKey();
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const creditSettings = resolveCreditSettings(
+      (settingsRow?.data as Record<string, unknown> | undefined) ?? {},
     );
     // cursor is the last document ID from the previous page
     const cursor = searchParams.get('cursor');
@@ -42,6 +57,27 @@ export async function GET(request: NextRequest) {
     const nextCursor = hasNextPage ? pageDocs[pageDocs.length - 1].id : null;
 
     const users = pageDocs.map((d: Record<string, unknown>) => ({
+      ...(function () {
+        const monthly = normalizeUserCreditsSnapshot(
+          {
+            credits_usage_month: (d.credits_usage_month as string | null) ?? null,
+            monthly_credits_used: (d.monthly_credits_used as number | null) ?? null,
+            monthly_credits_bonus: (d.monthly_credits_bonus as number | null) ?? null,
+            credits_threshold_notified: (d.credits_threshold_notified as boolean | null) ?? null,
+          },
+          currentMonth,
+        );
+        const monthlyLimit = computeMonthlyCreditsLimit(
+          creditSettings.freeCreditsPerMonth,
+          monthly.bonus,
+        );
+        return {
+          monthlyCreditsUsed: monthly.used,
+          monthlyCreditsBonus: monthly.bonus,
+          monthlyCreditsLimit: monthlyLimit,
+          monthlyCreditsRemaining: Math.max(0, monthlyLimit - monthly.used),
+        };
+      })(),
       uid: d.id,
       email: d.email,
       assignedEmail: d.assigned_email,

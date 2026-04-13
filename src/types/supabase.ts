@@ -106,6 +106,7 @@ export type Database = {
           email_analysis: Json | null;
           error_message: string | null;
           estimated_cost: number | null;
+          estimated_credits: number | null;
           from_address: string;
           id: string;
           message_id: string | null;
@@ -131,6 +132,7 @@ export type Database = {
           email_analysis?: Json | null;
           error_message?: string | null;
           estimated_cost?: number | null;
+          estimated_credits?: number | null;
           from_address: string;
           id: string;
           message_id?: string | null;
@@ -156,6 +158,7 @@ export type Database = {
           email_analysis?: Json | null;
           error_message?: string | null;
           estimated_cost?: number | null;
+          estimated_credits?: number | null;
           from_address?: string;
           id?: string;
           message_id?: string | null;
@@ -514,6 +517,8 @@ export type Database = {
         Row: {
           analysis_output_language: string;
           assigned_email: string;
+          credits_threshold_notified: boolean;
+          credits_usage_month: string;
           created_at: string;
           display_name: string | null;
           email: string;
@@ -525,11 +530,15 @@ export type Database = {
           is_forwarding_header_enabled: boolean;
           memory_estimated_cost: number;
           memory_tokens_used: number;
+          monthly_credits_bonus: number;
+          monthly_credits_used: number;
           suspended: boolean;
         };
         Insert: {
           analysis_output_language?: string;
           assigned_email: string;
+          credits_threshold_notified?: boolean;
+          credits_usage_month?: string;
           created_at?: string;
           display_name?: string | null;
           email: string;
@@ -541,11 +550,15 @@ export type Database = {
           is_forwarding_header_enabled?: boolean;
           memory_estimated_cost?: number;
           memory_tokens_used?: number;
+          monthly_credits_bonus?: number;
+          monthly_credits_used?: number;
           suspended?: boolean;
         };
         Update: {
           analysis_output_language?: string;
           assigned_email?: string;
+          credits_threshold_notified?: boolean;
+          credits_usage_month?: string;
           created_at?: string;
           display_name?: string | null;
           email?: string;
@@ -557,6 +570,8 @@ export type Database = {
           is_forwarding_header_enabled?: boolean;
           memory_estimated_cost?: number;
           memory_tokens_used?: number;
+          monthly_credits_bonus?: number;
+          monthly_credits_used?: number;
           suspended?: boolean;
         };
         Relationships: [];

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
+import { dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
 
 type StatsPeriod = '24h' | '7d' | '30d' | 'all';
 const VALID_PERIODS = new Set<StatsPeriod>(['24h', '7d', '30d', 'all']);
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
       skippedResult,
       emailAggResult,
       memoryAggResult,
+      settingsResult,
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }),
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('is_active', true),
@@ -51,6 +53,7 @@ export async function GET(request: NextRequest) {
         from_date: from ? from.toISOString() : null,
       }),
       supabase.rpc('get_memory_stats_aggregate'),
+      supabase.from('settings').select('data').eq('id', 'global').single(),
     ]);
 
     if (emailAggResult.error) {
@@ -70,6 +73,9 @@ export async function GET(request: NextRequest) {
       total_memory_tokens?: number | null;
       total_memory_cost?: number | null;
     };
+    const settingsData = (settingsResult.data?.data as Record<string, unknown> | undefined) ?? {};
+    const creditSettings = resolveCreditSettings(settingsData);
+    const totalEstimatedCost = (aggData?.total_cost ?? 0) + (memoryAggData?.total_memory_cost ?? 0);
 
     const stats = {
       totalUsers: totalUsersResult.count ?? 0,
@@ -79,7 +85,8 @@ export async function GET(request: NextRequest) {
       totalEmailsError: errorResult.count ?? 0,
       totalEmailsSkipped: skippedResult.count ?? 0,
       totalTokensUsed: (aggData?.total_tokens ?? 0) + (memoryAggData?.total_memory_tokens ?? 0),
-      totalEstimatedCost: (aggData?.total_cost ?? 0) + (memoryAggData?.total_memory_cost ?? 0),
+      totalEstimatedCost,
+      totalCreditsUsed: dollarsToCredits(totalEstimatedCost, creditSettings.creditsPerDollarFactor),
     };
 
     return NextResponse.json({ stats });

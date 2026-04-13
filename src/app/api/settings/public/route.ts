@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { resolveAssignedEmailDomain } from '@/lib/email-utils';
+import { DEFAULT_CREDITS_PER_DOLLAR_FACTOR, DEFAULT_FREE_CREDITS_PER_MONTH } from '@/lib/credits';
 
 export async function GET() {
   try {
@@ -19,6 +20,14 @@ export async function GET() {
       ),
       signupMaintenanceMode: data?.signupMaintenanceMode === true,
       memoryEnabled: data?.memoryEnabled === true,
+      creditsPerDollarFactor:
+        typeof data?.creditsPerDollarFactor === 'number'
+          ? data.creditsPerDollarFactor
+          : DEFAULT_CREDITS_PER_DOLLAR_FACTOR,
+      freeCreditsPerMonth:
+        typeof data?.freeCreditsPerMonth === 'number'
+          ? data.freeCreditsPerMonth
+          : DEFAULT_FREE_CREDITS_PER_MONTH,
     });
   } catch (err) {
     console.warn('[settings/public] Supabase read failed, using defaults:', err);
@@ -27,6 +36,8 @@ export async function GET() {
       assignedEmailDomain: resolveAssignedEmailDomain(),
       signupMaintenanceMode: false,
       memoryEnabled: false,
+      creditsPerDollarFactor: DEFAULT_CREDITS_PER_DOLLAR_FACTOR,
+      freeCreditsPerMonth: DEFAULT_FREE_CREDITS_PER_MONTH,
     });
   }
 }

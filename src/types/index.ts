@@ -29,6 +29,14 @@ export interface User {
   displayName?: string;
   /** Preferred language for AI analysis output (summary, intent, tags, topics). ISO 639-1 code, e.g. "en", "it". When unset, defaults to English. */
   analysisOutputLanguage?: string;
+  /** Credits consumed in the current UTC month. */
+  monthlyCreditsUsed?: number;
+  /** Extra monthly credits granted manually by admins for the current UTC month. */
+  monthlyCreditsBonus?: number;
+  /** Effective monthly credit limit (free credits + manual bonus). */
+  monthlyCreditsLimit?: number;
+  /** Remaining monthly credits for the current month. */
+  monthlyCreditsRemaining?: number;
 }
 
 export interface Rule {
@@ -133,6 +141,7 @@ export interface EmailLog {
   ruleApplied?: string;
   tokensUsed?: number;
   estimatedCost?: number;
+  estimatedCredits?: number;
   userId: string;
   originalBody?: string;
   processedBody?: string;
@@ -213,6 +222,10 @@ export interface Settings {
   memoryApiKey?: string;
   /** Google Maps Geocoding API key. When set, place geocoding uses Google Maps instead of Nominatim. Falls back to GOOGLE_MAPS_API_KEY env variable. */
   googleMapsApiKey?: string;
+  /** Conversion factor from USD to credits. Credits are computed as USD * factor. Defaults to 100. */
+  creditsPerDollarFactor?: number;
+  /** Monthly free credits included for each user. Defaults to 1000. */
+  freeCreditsPerMonth?: number;
   updatedAt?: Date;
 }
 
@@ -225,6 +238,7 @@ export interface Stats {
   totalEmailsSkipped: number;
   totalTokensUsed: number;
   totalEstimatedCost: number;
+  totalCreditsUsed: number;
 }
 
 export interface UserStats {
@@ -234,6 +248,10 @@ export interface UserStats {
   totalEmailsSkipped: number;
   totalTokensUsed: number;
   totalEstimatedCost: number;
+  totalCreditsUsed: number;
+  monthlyCreditsUsed: number;
+  monthlyCreditsLimit: number;
+  monthlyCreditsRemaining: number;
 }
 
 export interface ApiResponse<T = unknown> {

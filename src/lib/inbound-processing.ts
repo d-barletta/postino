@@ -10,6 +10,7 @@ import {
 } from '@/agents/email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
+import { addUserCreditsUsage, dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
 
 /**
  * Attachment serialized for queue storage.
@@ -379,6 +380,13 @@ export async function processQueuedInboundPayload(
   attachments?: EmailAttachment[],
 ): Promise<void> {
   const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  const settings = (settingsRow?.data as Record<string, unknown> | null) ?? {};
+  const creditSettings = resolveCreditSettings(settings);
 
   // Fetch user preferences. is_forwarding_header_enabled defaults to true when unset.
   const { data: userRow } = await supabase
@@ -407,13 +415,6 @@ export async function processQueuedInboundPayload(
         getUserMemory(payload.userId),
       ]);
 
-      const { data: settingsRow } = await supabase
-        .from('settings')
-        .select('data')
-        .eq('id', 'global')
-        .single();
-      const settings = settingsRow?.data as Record<string, unknown> | null;
-
       await supabase
         .from('email_logs')
         .update({
@@ -421,6 +422,10 @@ export async function processQueuedInboundPayload(
           status: 'skipped',
           tokens_used: analysisResult.tokensUsed,
           estimated_cost: analysisResult.estimatedCost,
+          estimated_credits: dollarsToCredits(
+            analysisResult.estimatedCost,
+            creditSettings.creditsPerDollarFactor,
+          ),
           ...(analysisResult.analysis
             ? {
                 email_analysis:
@@ -505,6 +510,13 @@ export async function processQueuedInboundPayload(
           }
         }
       }
+
+      await addUserCreditsUsage({
+        userId: payload.userId,
+        userEmail: payload.userEmail,
+        estimatedCostUsd: analysisResult.estimatedCost,
+        settingsData: settings,
+      });
     } catch (err) {
       console.error('AI-analysis-only processing failed:', err);
       await supabase
@@ -790,6 +802,10 @@ export async function processQueuedInboundPayload(
       rule_applied: result.ruleApplied,
       tokens_used: result.tokensUsed,
       estimated_cost: result.estimatedCost,
+      estimated_credits: dollarsToCredits(
+        result.estimatedCost,
+        creditSettings.creditsPerDollarFactor,
+      ),
       processed_body: result.body,
       ...(result.trace
         ? { agent_trace: result.trace as unknown as import('@/types/supabase').Json }
@@ -800,6 +816,13 @@ export async function processQueuedInboundPayload(
       ...(result.parseError ? { error_message: result.parseError } : {}),
     })
     .eq('id', payload.logId);
+
+  await addUserCreditsUsage({
+    userId: payload.userId,
+    userEmail: payload.userEmail,
+    estimatedCostUsd: result.estimatedCost,
+    settingsData: settings,
+  });
 
   // Fire-and-forget push notification — runs after the log update
   // so that a notification failure never blocks or rolls back the email-processing result.

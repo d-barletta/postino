@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { DEFAULT_LLM_MODEL } from '@/lib/llm';
 import { getModelPricing, calculateCost } from '@/lib/openrouter';
+import { addUserCreditsUsage } from '@/lib/credits';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import Supermemory from 'supermemory';
@@ -13,7 +14,8 @@ function resolveMemoryApiKey(settingsApiKey?: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { id: uid } = await verifyUserRequest(request);
+    const user = await verifyUserRequest(request);
+    const uid = user.id;
 
     // Check if memory is enabled and get the API key from admin settings
     const supabase = createAdminClient();
@@ -244,6 +246,13 @@ export async function POST(request: NextRequest) {
       .then(undefined, (err: unknown) =>
         console.error('[memory/chat] Failed to update memory token stats:', err),
       );
+
+    void addUserCreditsUsage({
+      userId: uid,
+      userEmail: user.email || '',
+      estimatedCostUsd: cost,
+      settingsData,
+    });
 
     return NextResponse.json({ answer: result.text, sourceEmailIds });
   } catch (error) {

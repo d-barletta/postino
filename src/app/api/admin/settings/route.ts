@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { resolveAssignedEmailDomain } from '@/lib/email-utils';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import type { Json } from '@/types/supabase';
+import { DEFAULT_CREDITS_PER_DOLLAR_FACTOR, DEFAULT_FREE_CREDITS_PER_MONTH } from '@/lib/credits';
 
 const AGENT_LIMITS = {
   agentChunkThresholdChars: { min: 5000, max: 300000 },
@@ -16,6 +17,11 @@ const AGENT_LIMITS = {
 
 function clampInt(value: unknown, min: number, max: number): unknown {
   if (typeof value !== 'number' || !Number.isFinite(value)) return value;
+  return Math.max(min, Math.min(Math.floor(value), max));
+}
+
+function clampPositiveInt(value: unknown, fallback: number, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return Math.max(min, Math.min(Math.floor(value), max));
 }
 
@@ -46,6 +52,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       settings: {
         ...data,
+        creditsPerDollarFactor:
+          typeof data.creditsPerDollarFactor === 'number'
+            ? data.creditsPerDollarFactor
+            : DEFAULT_CREDITS_PER_DOLLAR_FACTOR,
+        freeCreditsPerMonth:
+          typeof data.freeCreditsPerMonth === 'number'
+            ? data.freeCreditsPerMonth
+            : DEFAULT_FREE_CREDITS_PER_MONTH,
         updatedAt: settingsRow.updated_at ?? null,
       },
     });
@@ -103,6 +117,8 @@ export async function PUT(request: NextRequest) {
       'memoryEnabled',
       'memoryApiKey',
       'googleMapsApiKey',
+      'creditsPerDollarFactor',
+      'freeCreditsPerMonth',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),
@@ -134,6 +150,18 @@ export async function PUT(request: NextRequest) {
 
     const normalizedWithBounds = {
       ...normalized,
+      creditsPerDollarFactor: clampPositiveInt(
+        normalized.creditsPerDollarFactor,
+        DEFAULT_CREDITS_PER_DOLLAR_FACTOR,
+        1,
+        100000,
+      ),
+      freeCreditsPerMonth: clampPositiveInt(
+        normalized.freeCreditsPerMonth,
+        DEFAULT_FREE_CREDITS_PER_MONTH,
+        0,
+        100000000,
+      ),
       agentChunkThresholdChars: clampInt(
         normalized.agentChunkThresholdChars,
         AGENT_LIMITS.agentChunkThresholdChars.min,

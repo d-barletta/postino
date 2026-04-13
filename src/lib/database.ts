@@ -7,6 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Database } from '@/types/supabase';
 import type { User, Rule, EmailLog, Settings } from '@/types';
+import { DEFAULT_CREDITS_PER_DOLLAR_FACTOR, DEFAULT_FREE_CREDITS_PER_MONTH } from '@/lib/credits';
 
 type UserUpdate = Database['public']['Tables']['users']['Update'];
 type RuleUpdate = Database['public']['Tables']['rules']['Update'];
@@ -28,6 +29,8 @@ function rowToUser(row: any): User {
     isForwardingHeaderEnabled: row.is_forwarding_header_enabled,
     displayName: row.display_name ?? undefined,
     analysisOutputLanguage: row.analysis_output_language ?? 'en',
+    monthlyCreditsUsed: row.monthly_credits_used ?? 0,
+    monthlyCreditsBonus: row.monthly_credits_bonus ?? 0,
   };
 }
 
@@ -61,6 +64,7 @@ function rowToEmailLog(row: any): EmailLog {
     ruleApplied: row.rule_applied ?? undefined,
     tokensUsed: row.tokens_used ?? undefined,
     estimatedCost: row.estimated_cost ?? undefined,
+    estimatedCredits: row.estimated_credits ?? undefined,
     userId: row.user_id,
     originalBody: row.original_body ?? undefined,
     processedBody: row.processed_body ?? undefined,
@@ -96,6 +100,8 @@ export async function createUser(uid: string, data: Omit<User, 'uid'>): Promise<
     is_forwarding_header_enabled: data.isForwardingHeaderEnabled ?? true,
     display_name: data.displayName ?? null,
     analysis_output_language: data.analysisOutputLanguage ?? 'en',
+    monthly_credits_used: data.monthlyCreditsUsed ?? 0,
+    monthly_credits_bonus: data.monthlyCreditsBonus ?? 0,
   });
   if (error) console.error('[lib/database] createUser failed:', error);
 }
@@ -116,6 +122,9 @@ export async function updateUser(uid: string, data: Partial<User>): Promise<void
   if (data.displayName !== undefined) updates.display_name = data.displayName;
   if (data.analysisOutputLanguage !== undefined)
     updates.analysis_output_language = data.analysisOutputLanguage;
+  if (data.monthlyCreditsUsed !== undefined) updates.monthly_credits_used = data.monthlyCreditsUsed;
+  if (data.monthlyCreditsBonus !== undefined)
+    updates.monthly_credits_bonus = data.monthlyCreditsBonus;
   const { error } = await supabase.from('users').update(updates).eq('id', uid);
   if (error) console.error('[lib/database] updateUser failed:', error);
 }
@@ -206,8 +215,17 @@ export async function getSettings(): Promise<Settings | null> {
     .eq('id', 'global')
     .single();
   if (!data) return null;
+  const raw = (data.data as Record<string, unknown>) ?? {};
   return {
-    ...(data.data as unknown as Settings),
+    ...(raw as unknown as Settings),
+    creditsPerDollarFactor:
+      typeof raw.creditsPerDollarFactor === 'number'
+        ? raw.creditsPerDollarFactor
+        : DEFAULT_CREDITS_PER_DOLLAR_FACTOR,
+    freeCreditsPerMonth:
+      typeof raw.freeCreditsPerMonth === 'number'
+        ? raw.freeCreditsPerMonth
+        : DEFAULT_FREE_CREDITS_PER_MONTH,
     updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
   };
 }

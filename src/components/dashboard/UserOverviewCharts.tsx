@@ -29,7 +29,7 @@ const chartColors = {
   forwarded: '#16a34a',
   error: '#dc2626',
   skipped: '#6b7280',
-  cost: '#8b5cf6',
+  credits: '#8b5cf6',
 } as const;
 
 type TimeGranularity = 'hour' | 'day';
@@ -54,7 +54,7 @@ type VolumePoint = {
   forwarded: number;
   error: number;
   skipped: number;
-  cost: number;
+  credits: number;
 };
 
 function normalizeStatus(
@@ -136,7 +136,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
     forwarded: { label: t.dashboard.charts.forwarded, color: chartColors.forwarded },
     error: { label: t.dashboard.charts.error, color: chartColors.error },
     skipped: { label: t.dashboard.charts.skipped, color: chartColors.skipped },
-    cost: { label: t.dashboard.charts.estimatedCost, color: chartColors.cost },
+    credits: { label: 'Credits', color: chartColors.credits },
   };
 
   const RANGE_LABELS: Record<TimeRange, string> = {
@@ -187,12 +187,12 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
         forwarded: 0,
         error: 0,
         skipped: 0,
-        cost: 0,
+        credits: 0,
       };
 
       const status = normalizeStatus(log.status);
       current[status] += 1;
-      current.cost += log.estimatedCost || 0;
+      current.credits += log.estimatedCredits || 0;
       buckets.set(bucketStart, current);
     }
 
@@ -200,7 +200,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
       .sort(([a], [b]) => a - b)
       .map(([, point]) => ({
         ...point,
-        cost: Number(point.cost.toFixed(5)),
+        credits: Number(point.credits.toFixed(4)),
       }));
   }, [granularity, logs, range, t]);
 
@@ -234,9 +234,9 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
         value: stats.totalEmailsSkipped,
       },
       {
-        key: 'cost' as const,
-        label: t.dashboard.charts.estCost,
-        value: `$${stats.totalEstimatedCost.toFixed(5)}`,
+        key: 'credits' as const,
+        label: 'Credits Used',
+        value: stats.totalCreditsUsed.toLocaleString(undefined, { maximumFractionDigits: 2 }),
       },
     ],
     [t, stats],
@@ -302,20 +302,20 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                     tick={{ fontSize: 12 }}
                   />
                   <YAxis
-                    yAxisId="cost"
+                    yAxisId="credits"
                     orientation="right"
                     tickLine={false}
                     axisLine={false}
                     width={54}
                     tick={{ fontSize: 12 }}
-                    tickFormatter={(v) => `$${Number(v).toFixed(3)}`}
+                    tickFormatter={(v) => Number(v).toFixed(1)}
                   />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
                         formatter={(value, name) =>
-                          String(name) === 'cost'
-                            ? `$${Number(value || 0).toFixed(5)}`
+                          String(name) === 'credits'
+                            ? Number(value || 0).toFixed(2)
                             : Number(value || 0).toLocaleString()
                         }
                       />
@@ -357,13 +357,13 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                     fill="var(--color-skipped)"
                   />
                   <Line
-                    yAxisId="cost"
+                    yAxisId="credits"
                     type="monotone"
-                    dataKey="cost"
-                    stroke={isDarkMode ? '#efd957' : 'var(--color-cost)'}
+                    dataKey="credits"
+                    stroke={isDarkMode ? '#efd957' : 'var(--color-credits)'}
                     strokeWidth={2.5}
-                    dot={{ r: 3, fill: isDarkMode ? '#efd957' : 'var(--color-cost)' }}
-                    activeDot={{ r: 5, fill: isDarkMode ? '#efd957' : 'var(--color-cost)' }}
+                    dot={{ r: 3, fill: isDarkMode ? '#efd957' : 'var(--color-credits)' }}
+                    activeDot={{ r: 5, fill: isDarkMode ? '#efd957' : 'var(--color-credits)' }}
                   />
                 </ComposedChart>
               </ChartContainer>

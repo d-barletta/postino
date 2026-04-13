@@ -100,6 +100,55 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     }
   }, [authUser, nextCursor]);
 
+  const handleResetCreditsUsage = useCallback(
+    async (uid: string) => {
+      if (!authUser) return;
+      const confirmed = window.confirm('Reset this user monthly credits usage to 0?');
+      if (!confirmed) return;
+      try {
+        const token = await getIdToken();
+        const res = await fetch(`/api/admin/users/${uid}/credits`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset_usage' }),
+        });
+        if (!res.ok) throw new Error('Failed to reset credits usage');
+        toast.success('Credits usage reset');
+        await fetchUsers();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to reset credits usage');
+      }
+    },
+    [authUser, fetchUsers],
+  );
+
+  const handleAddCredits = useCallback(
+    async (uid: string) => {
+      if (!authUser) return;
+      const raw = window.prompt('How many bonus credits do you want to add?', '1000');
+      if (!raw) return;
+      const value = Number.parseFloat(raw);
+      if (!Number.isFinite(value) || value <= 0) {
+        toast.error('Please enter a positive credit amount');
+        return;
+      }
+      try {
+        const token = await getIdToken();
+        const res = await fetch(`/api/admin/users/${uid}/credits`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'add_bonus', credits: value }),
+        });
+        if (!res.ok) throw new Error('Failed to add bonus credits');
+        toast.success('Bonus credits added');
+        await fetchUsers();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to add bonus credits');
+      }
+    },
+    [authUser, fetchUsers],
+  );
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -459,6 +508,47 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         Joined {formatDate(user.createdAt)}
                       </p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Credits:{' '}
+                          {(user.monthlyCreditsUsed || 0).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}{' '}
+                          /{' '}
+                          {(user.monthlyCreditsLimit || 0).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                        <div className="h-1.5 w-full max-w-xs rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                          <div
+                            className={`h-1.5 rounded-full ${
+                              (user.monthlyCreditsLimit || 0) > 0 &&
+                              (user.monthlyCreditsUsed || 0) / (user.monthlyCreditsLimit || 1) >=
+                                0.9
+                                ? 'bg-red-500'
+                                : (user.monthlyCreditsLimit || 0) > 0 &&
+                                    (user.monthlyCreditsUsed || 0) /
+                                      (user.monthlyCreditsLimit || 1) >=
+                                      0.75
+                                  ? 'bg-orange-500'
+                                  : 'bg-green-500'
+                            }`}
+                            style={{
+                              width: `${Math.max(
+                                0,
+                                Math.min(
+                                  100,
+                                  (user.monthlyCreditsLimit || 0) <= 0
+                                    ? 100
+                                    : ((user.monthlyCreditsUsed || 0) /
+                                        (user.monthlyCreditsLimit || 1)) *
+                                        100,
+                                ),
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
@@ -494,6 +584,24 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                           }
                         >
                           {user.isActive ? 'Suspend' : 'Activate'}
+                        </Button>
+                      )}
+                      {!user.isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleResetCreditsUsage(user.uid)}
+                        >
+                          Reset Credits Usage
+                        </Button>
+                      )}
+                      {!user.isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleAddCredits(user.uid)}
+                        >
+                          Add Credits
                         </Button>
                       )}
                       {!user.isAdmin && (

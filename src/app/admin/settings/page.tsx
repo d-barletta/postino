@@ -106,6 +106,8 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     rulesExecutionMode: 'parallel',
     memoryEnabled: true,
     memoryApiKey: '',
+    creditsPerDollarFactor: 100,
+    freeCreditsPerMonth: 1000,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -273,6 +275,12 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
 
     const normalizedForSave: Partial<Settings> = {
       ...settings,
+      creditsPerDollarFactor: normalizeOptionalInteger(settings.creditsPerDollarFactor, {
+        min: 1,
+      }),
+      freeCreditsPerMonth: normalizeOptionalInteger(settings.freeCreditsPerMonth, {
+        min: 0,
+      }),
       maxRuleLength: normalizeOptionalInteger(settings.maxRuleLength, { min: 1 }),
       maxActiveRules: normalizeOptionalInteger(settings.maxActiveRules, { min: 1 }),
       llmMaxTokens: normalizeOptionalInteger(settings.llmMaxTokens, { min: 1 }),
@@ -901,6 +909,62 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     onChange={(e) => setSettings((p) => ({ ...p, smtpFromEmail: e.target.value }))}
                     placeholder="noreply@postino.pro"
                     hint="The email address shown in the From field. Replaces the legacy From Address setting when provided."
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="costs-tiers">
+              <AccordionTrigger>Costs &amp; Tiers</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <Input
+                    label="Cost to Credits Factor"
+                    type="number"
+                    min={1}
+                    value={settings.creditsPerDollarFactor ?? ''}
+                    onChange={(e) => {
+                      setSettings((p) => ({
+                        ...p,
+                        creditsPerDollarFactor: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.creditsPerDollarFactor,
+                        ),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        creditsPerDollarFactor: normalizeOptionalInteger(p.creditsPerDollarFactor, {
+                          min: 1,
+                        }),
+                      }));
+                    }}
+                    hint="User credits are computed as USD cost multiplied by this factor."
+                  />
+                  <Input
+                    label="Free Credits Per User / Month"
+                    type="number"
+                    min={0}
+                    value={settings.freeCreditsPerMonth ?? ''}
+                    onChange={(e) => {
+                      setSettings((p) => ({
+                        ...p,
+                        freeCreditsPerMonth: parseOptionalIntegerInput(
+                          e.target.value,
+                          p.freeCreditsPerMonth,
+                        ),
+                      }));
+                    }}
+                    onBlur={() => {
+                      setSettings((p) => ({
+                        ...p,
+                        freeCreditsPerMonth: normalizeOptionalInteger(p.freeCreditsPerMonth, {
+                          min: 0,
+                        }),
+                      }));
+                    }}
+                    hint="Monthly free credits included for each user before overage alerts."
                   />
                 </div>
               </AccordionContent>
