@@ -235,7 +235,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
       },
       {
         key: 'credits' as const,
-        label: 'Credits Used',
+        label: t.dashboard.charts.creditsUsed,
         value: Math.ceil(stats.totalCreditsUsed).toLocaleString(),
       },
     ],
