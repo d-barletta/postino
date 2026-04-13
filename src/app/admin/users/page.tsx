@@ -15,6 +15,14 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/Drawer';
+import { MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/DropdownMenu';
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/types';
 
@@ -536,14 +544,7 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setConfirmAction({ uid: user.uid, action: 'reanalyze' })}
-                      >
-                        {adminUsers.rerunAnalysis}
-                      </Button>
+                    <div className="flex items-center gap-2">
                       {!user.isAdmin && (
                         <Button
                           size="sm"
@@ -559,37 +560,45 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                           {user.isActive ? 'Suspend' : 'Activate'}
                         </Button>
                       )}
-                      <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleResetCreditsUsage(user.uid)}
-                        >
-                          Reset Credits Usage
-                        </Button>
-                      <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleAddCredits(user.uid)}
-                        >
-                          Add Credits
-                        </Button>
-                      <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => setConfirmAction({ uid: user.uid, action: 'reset' })}
-                        >
-                          {adminUsers.resetData}
-                        </Button>
-                      {!user.isAdmin && (
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => setConfirmAction({ uid: user.uid, action: 'delete' })}
-                        >
-                          <i className="bi bi-trash" aria-hidden="true" />
-                          Delete
-                        </Button>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="secondary" aria-label="More actions">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setConfirmAction({ uid: user.uid, action: 'reanalyze' })}
+                          >
+                            {adminUsers.rerunAnalysis}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleResetCreditsUsage(user.uid)}>
+                            Reset Credits Usage
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleAddCredits(user.uid)}>
+                            Add Credits
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setConfirmAction({ uid: user.uid, action: 'reset' })}
+                          >
+                            {adminUsers.resetData}
+                          </DropdownMenuItem>
+                          {!user.isAdmin && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() =>
+                                  setConfirmAction({ uid: user.uid, action: 'delete' })
+                                }
+                              >
+                                <i className="bi bi-trash" aria-hidden="true" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
