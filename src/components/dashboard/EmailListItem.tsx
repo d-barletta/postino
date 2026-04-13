@@ -304,6 +304,8 @@ export interface EmailListItemProps {
   onToggleRead?: () => void;
   /** Called when AI analysis is updated for this email */
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
+  /** Called when AI analysis uses credits (triggers stats refresh) */
+  onCreditsUsed?: () => void;
   /**
    * 'side'   — status + date on the right of the top row (modal style)
    * 'bottom' — status + date in a separate bottom row (narrow list style, default)
@@ -322,6 +324,7 @@ export function EmailListItem({
   onDelete,
   onToggleRead,
   onAnalysisUpdated,
+  onCreditsUsed,
   statusLayout = 'bottom',
 }: EmailListItemProps) {
   const { t, locale } = useI18n();
@@ -473,6 +476,7 @@ export function EmailListItem({
             onTabChange={onTabChange}
             onFullscreen={onFullscreen}
             onAnalysisUpdated={onAnalysisUpdated}
+            onCreditsUsed={onCreditsUsed}
           />
         </div>
       )}

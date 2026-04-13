@@ -215,12 +215,14 @@ interface EmailSearchTabProps {
   selectedEmailId?: string;
   refreshTrigger?: number;
   knowledgeData?: KnowledgeData | null;
+  onCreditsUsed?: () => void;
 }
 
 export function EmailSearchTab({
   selectedEmailId,
   refreshTrigger,
   knowledgeData,
+  onCreditsUsed,
 }: EmailSearchTabProps) {
   const { t, locale } = useI18n();
   const { authUser, getIdToken } = useAuth();
@@ -1350,6 +1352,7 @@ export function EmailSearchTab({
                       onDelete={() => setDeleteEmailId(log.id)}
                       onToggleRead={() => toggleEmailRead(log.id, log.isRead !== false)}
                       onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
+                      onCreditsUsed={onCreditsUsed}
                       statusLayout="bottom"
                     />
                   ))}
@@ -1628,6 +1631,7 @@ export function EmailSearchTab({
                         setFullscreenEmailId(log.id);
                       }}
                       onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}
+                      onCreditsUsed={onCreditsUsed}
                       className="flex flex-col flex-1 overflow-hidden"
                       summaryClassName="overflow-y-auto"
                     />

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { analyzeStoredEmailLog } from '@/lib/email-analysis';
+import { analyzeStoredEmailLogWithDebug } from '@/lib/email-analysis';
+import { addUserCreditsUsage, dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
 import { saveToSupermemory, buildMemoryEntryFromAnalysis } from '@/agents/email-agent';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,9 +34,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           : undefined;
     }
 
-    let safeAnalysis;
+    let analysisResult;
     try {
-      safeAnalysis = await analyzeStoredEmailLog({
+      analysisResult = await analyzeStoredEmailLogWithDebug({
         fromAddress: typeof data.from_address === 'string' ? data.from_address : '',
         subject: typeof data.subject === 'string' ? data.subject : '',
         originalBody: data.original_body,
@@ -48,18 +49,48 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw error;
     }
 
-    await supabase
-      .from('email_logs')
-      .update({ email_analysis: safeAnalysis as unknown as import('@/types/supabase').Json })
-      .eq('id', id);
+    const safeAnalysis = analysisResult.analysis;
 
-    // Optionally persist the updated analysis to Supermemory.
+    // Fetch settings for credit resolution
     const { data: settingsRow } = await supabase
       .from('settings')
       .select('data')
       .eq('id', 'global')
       .single();
     const settingsData = (settingsRow?.data as Record<string, unknown>) ?? {};
+
+    // Compute credits for this analysis
+    const creditSettings = resolveCreditSettings(settingsData);
+    const estimatedCredits = dollarsToCredits(
+      analysisResult.estimatedCost,
+      creditSettings.creditsPerDollarFactor,
+    );
+
+    await supabase
+      .from('email_logs')
+      .update({
+        email_analysis: safeAnalysis as unknown as import('@/types/supabase').Json,
+        tokens_used: analysisResult.tokensUsed,
+        estimated_cost: analysisResult.estimatedCost,
+        estimated_credits: estimatedCredits,
+      })
+      .eq('id', id);
+
+    // Charge credits to the email owner
+    if (ownerId) {
+      const { data: ownerRow } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', ownerId)
+        .single();
+      const ownerEmail = typeof ownerRow?.email === 'string' ? ownerRow.email : '';
+      await addUserCreditsUsage({
+        userId: ownerId,
+        userEmail: ownerEmail,
+        estimatedCostUsd: analysisResult.estimatedCost,
+        settingsData,
+      });
+    }
     if (settingsData?.memoryEnabled === true) {
       const supermemoryApiKey = (
         (settingsData?.memoryApiKey as string | undefined) ||

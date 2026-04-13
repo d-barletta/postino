@@ -17,6 +17,7 @@ interface EmailDetailTabsProps {
   onTabChange: (tab: string) => void;
   onFullscreen: () => void;
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
+  onCreditsUsed?: () => void;
   className?: string;
   summaryClassName?: string;
 }
@@ -28,6 +29,7 @@ export function EmailDetailTabs({
   onTabChange,
   onFullscreen,
   onAnalysisUpdated,
+  onCreditsUsed,
   className,
   summaryClassName,
 }: EmailDetailTabsProps) {
@@ -137,10 +139,12 @@ export function EmailDetailTabs({
           emailId={log.id}
           analysis={log.emailAnalysis}
           onAnalysisUpdated={onAnalysisUpdated}
+          onCreditsUsed={onCreditsUsed}
         />
         {log.tokensUsed !== undefined && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {t.dashboard.emailHistory.credits}{' '}{Math.ceil(log.estimatedCredits || 0).toLocaleString()}
+            {t.dashboard.emailHistory.credits}{' '}
+            {Math.ceil(log.estimatedCredits || 0).toLocaleString()}
           </p>
         )}
       </TabsContent>

@@ -604,12 +604,17 @@ export default function DashboardPage() {
               selectedEmailId={selectedEmailId ?? undefined}
               refreshTrigger={emailListRefreshTrigger}
               knowledgeData={knowledgeData}
+              onCreditsUsed={fetchStats}
             />
           ))}
 
         {activeTab === 'agent' &&
           (memoryEnabled || loading || settingsLoading) &&
-          (loading || settingsLoading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab onCreditsUsed={fetchStats} />)}
+          (loading || settingsLoading ? (
+            <DashboardPanelSkeleton cards={2} />
+          ) : (
+            <AgentTab onCreditsUsed={fetchStats} />
+          ))}
 
         {activeTab === 'explore' &&
           (loading ? (

@@ -13,12 +13,14 @@ interface EmailAnalysisTabContentProps {
   emailId: string;
   analysis?: EmailAnalysis | null;
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
+  onCreditsUsed?: () => void;
 }
 
 export function EmailAnalysisTabContent({
   emailId,
   analysis,
   onAnalysisUpdated,
+  onCreditsUsed,
 }: EmailAnalysisTabContentProps) {
   const { t } = useI18n();
   const { authUser, user, getIdToken } = useAuth();
@@ -47,6 +49,7 @@ export function EmailAnalysisTabContent({
       }
 
       onAnalysisUpdated?.(data.analysis);
+      onCreditsUsed?.();
       toast.success(t.dashboard.toasts.analysisRefreshed);
     } catch (error) {
       console.error('Failed to refresh email analysis:', error);
