@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { EmailDeleteDrawer } from '@/components/dashboard/EmailDeleteDrawer';
 import { EmailDetailTabs } from '@/components/dashboard/EmailDetailTabs';
-import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import {
   DEFAULT_BADGE_COLOR,
   EmailListItem,
@@ -18,8 +17,8 @@ import {
 } from '@/components/dashboard/EmailListItem';
 import { ResultsPagination } from '@/components/dashboard/ResultsPagination';
 import { Spinner } from '@/components/ui/Spinner';
-import { useModalHistory } from '@/hooks/useModalHistory';
 import { useI18n } from '@/lib/i18n';
+import { useGlobalModals } from '@/lib/modals';
 import { cn, formatDate } from '@/lib/utils';
 import type { EmailAnalysis, EmailLog } from '@/types';
 
@@ -69,7 +68,7 @@ export function EmailLogsBrowser({
   onCreditsUsed,
   selectedEmailId,
   selectionResetKey,
-  syncFullscreenWithHistory = false,
+  syncFullscreenWithHistory: _syncFullscreenWithHistory = false,
   narrowCardClassName = 'hover:translate-y-0 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]',
   narrowHeaderClassName = 'py-2 px-4',
   wideContainerClassName = 'glass-panel rounded-2xl border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150',
@@ -78,6 +77,7 @@ export function EmailLogsBrowser({
 }: EmailLogsBrowserProps) {
   const { t, locale } = useI18n();
   const ts = t.dashboard.search;
+  const { openFullPageEmail, updateFullPageEmail, fullPageEmailOpen } = useGlobalModals();
 
   const [selectedId, setSelectedId] = useState<string | null>(selectedEmailId ?? null);
   const [activeDetailTab, setActiveDetailTab] = useState('summary');
@@ -85,10 +85,6 @@ export function EmailLogsBrowser({
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const hasInitializedSelectionReset = useRef(false);
-
-  useModalHistory(syncFullscreenWithHistory && !!fullscreenEmailId, () =>
-    setFullscreenEmailId(null),
-  );
 
   useEffect(() => {
     if (!selectedEmailId) return;
@@ -106,19 +102,20 @@ export function EmailLogsBrowser({
     setActiveDetailTab('summary');
   }, [selectionResetKey]);
 
+  // Update the global modal body/loading state as expandedData loads for the fullscreen email
   useEffect(() => {
     if (!fullscreenEmailId) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setFullscreenEmailId(null);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [fullscreenEmailId]);
+    const expanded = expandedData[fullscreenEmailId];
+    if (!expanded) return;
+    updateFullPageEmail({ body: expanded.originalBody ?? null, loading: expanded.loading ?? false });
+  }, [fullscreenEmailId, expandedData, updateFullPageEmail]);
+
+  // When the global modal is closed (close button / Escape), reset local tracking state
+  useEffect(() => {
+    if (!fullPageEmailOpen) {
+      setFullscreenEmailId(null);
+    }
+  }, [fullPageEmailOpen]);
 
   const statusLabel: Record<string, string> = {
     received: t.dashboard.charts.received,
@@ -159,7 +156,6 @@ export function EmailLogsBrowser({
     critical: ts.priorityCritical,
   };
 
-  const fullscreenLog = fullscreenEmailId ? expandedData[fullscreenEmailId] : undefined;
   const selectedLog = selectedId ? (logs.find((log) => log.id === selectedId) ?? null) : null;
   const selectedEmailData = selectedId ? expandedData[selectedId] : undefined;
   const showPagination = !logsLoading && logs.length > 0 && (hasNextPage || page > 1);
@@ -190,7 +186,13 @@ export function EmailLogsBrowser({
     if (log.isRead === false) {
       void markEmailAsRead?.(log.id);
     }
+    const expanded = expandedData[log.id];
     setFullscreenEmailId(log.id);
+    openFullPageEmail({
+      subject: log.subject,
+      body: expanded?.originalBody ?? null,
+      loading: !expanded || (expanded.loading ?? false),
+    });
   };
 
   const handleDeleteEmail = async () => {
@@ -510,14 +512,6 @@ export function EmailLogsBrowser({
           )}
         </div>
       </div>
-
-      <FullPageEmailDialog
-        open={!!fullscreenEmailId}
-        onClose={() => setFullscreenEmailId(null)}
-        subject={logs.find((log) => log.id === fullscreenEmailId)?.subject ?? ''}
-        body={fullscreenLog?.originalBody ?? null}
-        loading={fullscreenLog?.loading ?? fullscreenEmailId !== null}
-      />
 
       {onDeleteEmail && (
         <EmailDeleteDrawer
