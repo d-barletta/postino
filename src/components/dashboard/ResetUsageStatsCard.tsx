@@ -54,9 +54,7 @@ export function ResetUsageStatsCard({ onSuccess }: ResetUsageStatsCardProps) {
   return (
     <>
       <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{s.title}</h2>
-        </CardHeader>
+        <CardHeader heading={s.title} />
         <CardContent>
           <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{s.description}</p>
           <div className="flex justify-end">

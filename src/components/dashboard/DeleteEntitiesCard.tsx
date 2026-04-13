@@ -50,9 +50,7 @@ export function DeleteEntitiesCard({ onSuccess }: { onSuccess?: () => Promise<vo
   return (
     <>
       <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{s.title}</h2>
-        </CardHeader>
+        <CardHeader heading={s.title} />
         <CardContent>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{s.description}</p>
           <div className="flex justify-end">

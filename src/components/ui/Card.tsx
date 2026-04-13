@@ -1,6 +1,12 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
+interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  heading?: React.ReactNode;
+  description?: React.ReactNode;
+  actions?: React.ReactNode;
+}
+
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
@@ -15,17 +21,36 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
 );
 Card.displayName = 'Card';
 
-const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'flex flex-col space-y-1.5 px-6 py-4 border-b border-gray-200 dark:border-gray-700',
-        className,
-      )}
-      {...props}
-    />
-  ),
+const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
+  ({ className, heading, description, actions, children, ...props }, ref) => {
+    const hasStructuredContent =
+      heading !== undefined || description !== undefined || actions !== undefined;
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'px-4 py-4 border-b border-gray-200 dark:border-gray-700',
+          hasStructuredContent ? 'space-y-1.5' : 'flex flex-col space-y-1.5',
+          className,
+        )}
+        {...props}
+      >
+        {hasStructuredContent ? (
+          <div className="flex flex-wrap items-start justify-between gap-1">
+            <div className="min-w-0 space-y-1">
+              {heading != null ? <CardTitle>{heading}</CardTitle> : null}
+            </div>
+            {actions != null ? (
+              <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+            ) : null}
+            {description != null ? <CardDescription>{description}</CardDescription> : null}
+          </div>
+        ) : null}
+        {children}
+      </div>
+    );
+  },
 );
 CardHeader.displayName = 'CardHeader';
 
@@ -34,7 +59,7 @@ const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivE
     <div
       ref={ref}
       className={cn(
-        'font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100',
+        'text-md font-semibold leading-none tracking-tight text-gray-900 dark:text-gray-100',
         className,
       )}
       {...props}

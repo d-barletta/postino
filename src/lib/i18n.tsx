@@ -889,7 +889,7 @@ const translations: Record<Locale, Translations> = {
           "Notifications are blocked by your browser. Open your browser's site settings and allow notifications for this site to enable this feature.",
       },
       forwardingHeader: {
-        title: 'Postino Header in Forwarded Emails',
+        title: 'Forwarded Badge',
         enabledDescription:
           'A Postino summary box is appended to the bottom of every forwarded email.',
         disabledDescription: 'The Postino summary box is not appended to forwarded emails.',
@@ -1618,7 +1618,7 @@ const translations: Record<Locale, Translations> = {
           'Le notifiche sono bloccate dal browser. Apri le impostazioni del sito nel browser e consenti le notifiche per abilitare questa funzione.',
       },
       forwardingHeader: {
-        title: 'Intestazione Postino nelle email inoltrate',
+        title: 'Badge di inoltro',
         enabledDescription:
           'Un riquadro di riepilogo Postino viene aggiunto in fondo a ogni email inoltrata.',
         disabledDescription:
@@ -4356,8 +4356,6 @@ const translations: Record<Locale, Translations> = {
 };
 
 // ---------------------------------------------------------------------------
-// Helper: detect browser locale → supported Locale
-// ---------------------------------------------------------------------------
 function detectLocale(): Locale {
   if (typeof navigator === 'undefined') return 'en';
   const lang = navigator.language || '';
@@ -4376,8 +4374,6 @@ function getStoredLocale(): Locale | null {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Context
 // ---------------------------------------------------------------------------
 interface I18nContextValue {
   locale: Locale;
@@ -4399,7 +4395,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = getStoredLocale();
-
     setLocaleState(stored ?? detectLocale());
   }, []);
 
@@ -4413,7 +4408,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t: translations[locale] }}>
+    <I18nContext.Provider value={{ locale, setLocale, t: translations[locale] ?? translations.en }}>
       {children}
     </I18nContext.Provider>
   );

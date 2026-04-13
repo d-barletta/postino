@@ -267,7 +267,7 @@ export function RulesManager({
         <CardContent className="py-4">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h2 className="text-md font-semibold text-gray-900 dark:text-gray-100">
                 {t.dashboard.rules.yourRules}
               </h2>
             </div>

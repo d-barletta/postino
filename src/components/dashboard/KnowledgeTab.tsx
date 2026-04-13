@@ -602,17 +602,11 @@ export function KnowledgeTab({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{k.title}</h2>
-            {/* {data && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                {k.emailsAnalyzed.replace('{count}', String(data.totalEmails))}
-              </p>
-            )} */}
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+      <CardHeader
+        heading={k.title}
+        description={k.subtitle}
+        actions={
+          <>
             <Button
               variant="ghost"
               size="sm"
@@ -635,10 +629,9 @@ export function KnowledgeTab({
             >
               <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             </Button>
-          </div>
-        </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{k.subtitle}</p>
-      </CardHeader>
+          </>
+        }
+      />
 
       {/* Sticky merge mode status bar (visible while scrolling through chips) */}
       {mergeMode && (

@@ -57,10 +57,10 @@ export function AssignedEmailCard({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{tr.title}</h2>
-          <div className="flex items-center gap-2">
+      <CardHeader
+        heading={tr.title}
+        actions={
+          <>
             <Switch
               checked={isAddressEnabled}
               onCheckedChange={handleToggle}
@@ -70,9 +70,9 @@ export function AssignedEmailCard({
             <Badge variant={isAddressEnabled ? 'success' : 'default'}>
               {isAddressEnabled ? tr.active : tr.disabled}
             </Badge>
-          </div>
-        </div>
-      </CardHeader>
+          </>
+        }
+      />
       <CardContent>
         <p className="text-sm text-gray-500 mb-3">
           {isAddressEnabled ? (

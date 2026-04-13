@@ -70,12 +70,10 @@ export function PushNotificationButton() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {t.dashboard.pushNotifications.title}
-          </h2>
-          <div className="flex items-center gap-2">
+      <CardHeader
+        heading={t.dashboard.pushNotifications.title}
+        actions={
+          <>
             <Switch
               checked={subscribed}
               onCheckedChange={(checked) => (checked ? handleEnable() : handleDisable())}
@@ -85,9 +83,9 @@ export function PushNotificationButton() {
             <Badge variant={subscribed ? 'success' : 'default'}>
               {subscribed ? t.dashboard.address.active : t.dashboard.address.disabled}
             </Badge>
-          </div>
-        </div>
-      </CardHeader>
+          </>
+        }
+      />
       <CardContent>
         {denied ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">

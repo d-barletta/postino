@@ -3,7 +3,7 @@
 import { Fragment, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { EmailLogsCharts } from '@/components/admin/EmailLogsCharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
@@ -245,92 +245,88 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
 
         <div className="order-1 md:order-2">
           <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-3">
-                {/* Row 1: Title + Refresh */}
-                <div className="flex items-center justify-between">
-                  <CardTitle>Processed Emails</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleRefresh}
-                    disabled={refreshing}
-                    title="Refresh"
-                  >
-                    <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
-                  </Button>
+            <CardHeader
+              heading="Processed Emails"
+              actions={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh"
+                >
+                  <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
+                </Button>
+              }
+              className="space-y-3"
+            >
+              {/* Row 2: Search input + Apply button */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="search"
+                    value={pendingSearch}
+                    onChange={(e) => setPendingSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
+                    }}
+                    placeholder="Search subject, from, user..."
+                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
+                  />
                 </div>
+                <Button
+                  size="sm"
+                  onClick={handleApplyFilters}
+                  disabled={!hasPendingChanges || loading || refreshing}
+                  className="shrink-0"
+                >
+                  Apply
+                </Button>
+              </div>
 
-                {/* Row 2: Search input + Apply button */}
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                    <input
-                      type="search"
-                      value={pendingSearch}
-                      onChange={(e) => setPendingSearch(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
-                      }}
-                      placeholder="Search subject, from, user..."
-                      className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleApplyFilters}
-                    disabled={!hasPendingChanges || loading || refreshing}
-                    className="shrink-0"
+              {/* Row 3: Status filter + Attachments toggle + Count + Clear */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="w-44">
+                  <Select
+                    value={pendingStatus || ALL_STATUS_VALUE}
+                    onValueChange={(v) => setPendingStatus(v === ALL_STATUS_VALUE ? '' : v)}
                   >
-                    Apply
-                  </Button>
+                    <SelectTrigger aria-label="Filter by status">
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {STATUS_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
-
-                {/* Row 3: Status filter + Attachments toggle + Count + Clear */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="w-44">
-                    <Select
-                      value={pendingStatus || ALL_STATUS_VALUE}
-                      onValueChange={(v) => setPendingStatus(v === ALL_STATUS_VALUE ? '' : v)}
-                    >
-                      <SelectTrigger aria-label="Filter by status">
-                        <SelectValue placeholder="All statuses" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {STATUS_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={pendingAttachments}
-                      onCheckedChange={setPendingAttachments}
-                      aria-label="With attachments"
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      With attachments
-                    </span>
-                  </div>
-                  {!loading && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
-                      {totalCount != null ? totalCount : logs.length} results
-                    </span>
-                  )}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={handleClearFilters}
-                      className="ml-auto text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
-                    >
-                      Clear filters
-                    </button>
-                  )}
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={pendingAttachments}
+                    onCheckedChange={setPendingAttachments}
+                    aria-label="With attachments"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">With attachments</span>
                 </div>
+                {!loading && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {totalCount != null ? totalCount : logs.length} results
+                  </span>
+                )}
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="ml-auto text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="p-0">

@@ -41,19 +41,21 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{tr.title}</h2>
-        {onRefresh && (
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            aria-label={tr.refreshAriaLabel}
-            className="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-          </button>
-        )}
-      </CardHeader>
+      <CardHeader
+        heading={tr.title}
+        actions={
+          onRefresh ? (
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label={tr.refreshAriaLabel}
+              className="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50 transition-colors"
+            >
+              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+            </button>
+          ) : null
+        }
+      />
       {refreshing ? (
         <CardContent className="space-y-3 animate-pulse">
           <div className="flex items-baseline justify-between gap-3">

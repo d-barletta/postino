@@ -348,12 +348,10 @@ export function AgentTab({ onCreditsUsed }: AgentTabProps) {
     <div className="space-y-4">
       <Card>
         {/* Header */}
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{a.title}</h2>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
+        <CardHeader
+          heading={a.title}
+          actions={
+            <>
               <Button
                 variant="ghost"
                 size="sm"
@@ -371,10 +369,9 @@ export function AgentTab({ onCreditsUsed }: AgentTabProps) {
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-            </div>
-          </div>
-          {/* <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{a.subtitle}</p> */}
-        </CardHeader>
+            </>
+          }
+        />
 
         <CardContent className="flex flex-col gap-3 px-3 py-3 sm:px-4">
           <ChatContent

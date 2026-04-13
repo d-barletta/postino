@@ -492,11 +492,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         {(isPwa || canShowInstallCard) && (
           <Card>
-            <CardHeader>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {t.dashboard.installApp.title}
-              </h2>
-            </CardHeader>
+            <CardHeader heading={t.dashboard.installApp.title} />
             <CardContent>
               <div className="flex items-start gap-4">
                 <div

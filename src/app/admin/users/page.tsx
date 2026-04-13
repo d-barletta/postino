@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/lib/i18n';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import {
@@ -461,13 +461,15 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>All Users</CardTitle>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {users.length}
-            {hasNextPage ? '+' : ''} total users
-          </p>
-        </CardHeader>
+        <CardHeader
+          heading="All Users"
+          actions={
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {users.length}
+              {hasNextPage ? '+' : ''} total users
+            </p>
+          }
+        />
         <CardContent className="p-0">
           {loading ? (
             <div className="animate-pulse divide-y divide-gray-100 dark:divide-gray-800">

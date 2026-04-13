@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { RefreshCw, Play, AlertTriangle, Trash2, Copy, Check, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
@@ -423,15 +423,11 @@ export default function EmailJobsLiveTab() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <CardTitle>Email Jobs Queue</CardTitle>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Real-time queue visibility every {Math.round(REFRESH_MS / 1000)}s.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
+        <CardHeader
+          heading="Email Jobs Queue"
+          description={`Real-time queue visibility every ${Math.round(REFRESH_MS / 1000)}s.`}
+          actions={
+            <>
               <Button
                 variant="outline"
                 size="sm"
@@ -448,9 +444,9 @@ export default function EmailJobsLiveTab() {
                 <Play />
                 Process now
               </Button>
-            </div>
-          </div>
-        </CardHeader>
+            </>
+          }
+        />
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <label
@@ -494,42 +490,42 @@ export default function EmailJobsLiveTab() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <CardTitle>Mailgun Inbound Webhook Requests</CardTitle>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Raw inbound request snapshots from Mailgun webhook calls.
-              </p>
-            </div>
-            <label
-              htmlFor="mailgun-webhook-logging-toggle"
-              className="inline-flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300"
-            >
-              <Switch
-                id="mailgun-webhook-logging-toggle"
-                checked={Boolean(data?.webhookLoggingEnabled)}
-                onCheckedChange={handleToggleWebhookLogging}
-                aria-label="Enable Mailgun webhook request logging"
-                disabled={loading || loggingSaving}
-              />
-              <span>
-                Save webhook logs: {data?.webhookLoggingEnabled ? 'ON' : 'OFF'}
-                {loggingSaving ? ' (saving...)' : ''}
-              </span>
-            </label>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearWebhookLogs}
-              disabled={loading || clearingLogs || !data || data.recentWebhookRequests.length === 0}
-              loading={clearingLogs}
-            >
-              <Trash2 />
-              Clear all logs
-            </Button>
-          </div>
-        </CardHeader>
+        <CardHeader
+          heading="Mailgun Inbound Webhook Requests"
+          description="Raw inbound request snapshots from Mailgun webhook calls."
+          actions={
+            <>
+              <label
+                htmlFor="mailgun-webhook-logging-toggle"
+                className="inline-flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300"
+              >
+                <Switch
+                  id="mailgun-webhook-logging-toggle"
+                  checked={Boolean(data?.webhookLoggingEnabled)}
+                  onCheckedChange={handleToggleWebhookLogging}
+                  aria-label="Enable Mailgun webhook request logging"
+                  disabled={loading || loggingSaving}
+                />
+                <span>
+                  Save webhook logs: {data?.webhookLoggingEnabled ? 'ON' : 'OFF'}
+                  {loggingSaving ? ' (saving...)' : ''}
+                </span>
+              </label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearWebhookLogs}
+                disabled={
+                  loading || clearingLogs || !data || data.recentWebhookRequests.length === 0
+                }
+                loading={clearingLogs}
+              >
+                <Trash2 />
+                Clear all logs
+              </Button>
+            </>
+          }
+        />
         <CardContent>
           {loading ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">Loading webhook requests…</p>
@@ -548,9 +544,7 @@ export default function EmailJobsLiveTab() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Failed Jobs</CardTitle>
-        </CardHeader>
+        <CardHeader heading="Recent Failed Jobs" />
         <CardContent>
           {loading ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">Loading queue details…</p>

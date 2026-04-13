@@ -26,12 +26,10 @@ export function ForwardingHeaderCard({ isEnabled, onToggle }: ForwardingHeaderCa
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {t.dashboard.forwardingHeader.title}
-          </h2>
-          <div className="flex items-center gap-2">
+      <CardHeader
+        heading={t.dashboard.forwardingHeader.title}
+        actions={
+          <>
             <Switch
               checked={isEnabled}
               onCheckedChange={handleToggle}
@@ -41,9 +39,9 @@ export function ForwardingHeaderCard({ isEnabled, onToggle }: ForwardingHeaderCa
             <Badge variant={isEnabled ? 'success' : 'default'}>
               {isEnabled ? t.dashboard.address.active : t.dashboard.address.disabled}
             </Badge>
-          </div>
-        </div>
-      </CardHeader>
+          </>
+        }
+      />
       <CardContent>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {isEnabled

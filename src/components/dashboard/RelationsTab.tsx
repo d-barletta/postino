@@ -184,14 +184,11 @@ export function RelationsTab() {
   return (
     <>
       <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {k.relations.title}
-              </h2>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+        <CardHeader
+          heading={k.relations.title}
+          description={k.relations.subtitle}
+          actions={
+            <>
               {activeSubTab === 'graph' && graph && !isEmpty && (
                 <Button
                   variant="ghost"
@@ -255,10 +252,9 @@ export function RelationsTab() {
                   <RefreshCw className={cn('h-4 w-4', mapGenerating && 'animate-spin')} />
                 </Button>
               )}
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{k.relations.subtitle}</p>
-        </CardHeader>
+            </>
+          }
+        />
 
         <CardContent className="space-y-0 p-2">
           <Tabs
