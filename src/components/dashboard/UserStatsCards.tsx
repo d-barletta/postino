@@ -44,16 +44,6 @@ export function UserStatsCards({ stats, period, onPeriodChange }: UserStatsCards
       value: stats.totalEmailsSkipped,
       color: 'text-gray-500 dark:text-gray-400',
     },
-    {
-      label: s.tokensUsed,
-      value: stats.totalTokensUsed.toLocaleString(),
-      color: 'text-[#b39623] dark:text-[#f1db72]',
-    },
-    {
-      label: 'Credits Used',
-      value: stats.totalCreditsUsed.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      color: 'text-gray-700 dark:text-gray-200',
-    },
   ];
 
   return (
@@ -75,7 +65,7 @@ export function UserStatsCards({ stats, period, onPeriodChange }: UserStatsCards
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {cards.map((card) => (
           <Card key={card.label}>
             <CardContent className="py-4">
