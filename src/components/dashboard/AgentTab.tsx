@@ -238,7 +238,7 @@ interface AgentTabProps {
   onCreditsUsed?: () => void;
 }
 
-export function AgentTab({ onCreditsUsed }: AgentTabProps = {}) {
+export function AgentTab({ onCreditsUsed }: AgentTabProps) {
   const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>(_persistedMessages);
