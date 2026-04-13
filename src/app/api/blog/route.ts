@@ -25,10 +25,7 @@ export async function GET() {
       createdAt: row.created_at ?? null,
       updatedAt: row.updated_at ?? null,
     }));
-    return NextResponse.json(
-      { articles },
-      { headers: { 'Cache-Control': BLOG_CACHE_CONTROL } },
-    );
+    return NextResponse.json({ articles }, { headers: { 'Cache-Control': BLOG_CACHE_CONTROL } });
   } catch (error) {
     console.error('[blog] GET error:', error);
     return NextResponse.json({ error: 'Failed to load articles' }, { status: 500 });

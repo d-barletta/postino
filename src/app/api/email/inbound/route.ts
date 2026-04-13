@@ -46,7 +46,8 @@ interface StoreAttachmentRef {
 /** Extract a bare email address from `Name <email@example.com>` style headers. */
 function extractEmailAddress(value: string): string {
   // Guard against excessively large header values to prevent regex backtracking on huge input
-  const safe = value.length > MAX_HEADER_VALUE_BYTES ? value.slice(0, MAX_HEADER_VALUE_BYTES) : value;
+  const safe =
+    value.length > MAX_HEADER_VALUE_BYTES ? value.slice(0, MAX_HEADER_VALUE_BYTES) : value;
   const match = safe.match(/<([^>]+)>/);
   return (match ? match[1] : safe).trim().toLowerCase();
 }

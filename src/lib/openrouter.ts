@@ -348,7 +348,10 @@ export async function withLlmRetry<T>(fn: () => Promise<T>, label: string): Prom
       lastErr = err;
       if (attempt < LLM_RETRY_DELAYS_MS.length && isRetryableLlmError(err)) {
         const delay = LLM_RETRY_DELAYS_MS[attempt];
-        console.warn(`[openrouter] ${label} failed (attempt ${attempt + 1}), retrying in ${delay}ms`, err);
+        console.warn(
+          `[openrouter] ${label} failed (attempt ${attempt + 1}), retrying in ${delay}ms`,
+          err,
+        );
         await new Promise<void>((resolve) => setTimeout(resolve, delay));
         continue;
       }

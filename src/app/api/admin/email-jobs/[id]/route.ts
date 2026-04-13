@@ -7,10 +7,7 @@ import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
  * Re-queues a permanently failed email job by resetting it back to pending.
  * Only jobs in 'failed' status can be retried.
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await verifyAdminRequest(request);
 
