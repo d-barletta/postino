@@ -41,7 +41,6 @@ interface EmailLogsBrowserProps {
   onCreditsUsed?: () => void;
   selectedEmailId?: string;
   selectionResetKey?: string | number;
-  syncFullscreenWithHistory?: boolean;
   narrowCardClassName?: string;
   narrowHeaderClassName?: string;
   wideContainerClassName?: string;
@@ -68,7 +67,6 @@ export function EmailLogsBrowser({
   onCreditsUsed,
   selectedEmailId,
   selectionResetKey,
-  syncFullscreenWithHistory: _syncFullscreenWithHistory = false,
   narrowCardClassName = 'hover:translate-y-0 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]',
   narrowHeaderClassName = 'py-2 px-4',
   wideContainerClassName = 'glass-panel rounded-2xl border-gray-200 dark:border-gray-700 overflow-y-auto shadow-sm bg-white dark:bg-gray-900 min-h-150',

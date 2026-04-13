@@ -132,15 +132,18 @@ export function AgentChatContent({
                 {/* Source emails link */}
                 {msg.role === 'assistant' &&
                   msg.sourceEmailIds &&
-                  msg.sourceEmailIds.length > 0 && (
-                    <button
-                      onClick={() => handleOpenSourceEmails(msg.sourceEmailIds!)}
-                      className="flex items-center gap-1.5 self-start text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors px-1"
-                    >
-                      <Mail className="h-3 w-3 shrink-0" />
-                      {a.sourceEmails}
-                    </button>
-                  )}
+                  msg.sourceEmailIds.length > 0 && (() => {
+                    const ids = msg.sourceEmailIds;
+                    return (
+                      <button
+                        onClick={() => handleOpenSourceEmails(ids)}
+                        className="flex items-center gap-1.5 self-start text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors px-1"
+                      >
+                        <Mail className="h-3 w-3 shrink-0" />
+                        {a.sourceEmails}
+                      </button>
+                    );
+                  })()}
               </div>
             </div>
           ))
