@@ -198,6 +198,11 @@ export interface Translations {
       buttonLabel: string;
       alreadyInstalled: string;
     };
+    monthlyCredits: {
+      title: string;
+      refreshAriaLabel: string;
+      remaining: string;
+    };
     deleteEntities: {
       title: string;
       description: string;
@@ -902,6 +907,11 @@ const translations: Record<Locale, Translations> = {
           'Install Postino as an app on your device for a faster, native-like experience.',
         buttonLabel: 'Install App',
         alreadyInstalled: 'Already Installed',
+      },
+      monthlyCredits: {
+        title: 'Monthly Credits',
+        refreshAriaLabel: 'Refresh credits',
+        remaining: 'Remaining',
       },
       deleteEntities: {
         title: 'Delete All Entities & Merges',
@@ -1628,6 +1638,11 @@ const translations: Record<Locale, Translations> = {
         buttonLabel: 'Installa app',
         alreadyInstalled: 'Già installata',
       },
+      monthlyCredits: {
+        title: 'Crediti mensili',
+        refreshAriaLabel: 'Aggiorna crediti',
+        remaining: 'Rimanenti',
+      },
       deleteEntities: {
         title: 'Elimina tutte le entità e le unioni',
         description:
@@ -2352,6 +2367,11 @@ const translations: Record<Locale, Translations> = {
           'Instala Postino como una app en tu dispositivo para una experiencia más rápida y nativa.',
         buttonLabel: 'Instalar app',
         alreadyInstalled: 'Ya instalada',
+      },
+      monthlyCredits: {
+        title: 'Créditos mensuales',
+        refreshAriaLabel: 'Actualizar créditos',
+        remaining: 'Restantes',
       },
       deleteEntities: {
         title: 'Eliminar todas las entidades y fusiones',
@@ -3079,6 +3099,11 @@ const translations: Record<Locale, Translations> = {
           'Installez Postino comme application sur votre appareil pour une expérience plus rapide et native.',
         buttonLabel: "Installer l'application",
         alreadyInstalled: 'Déjà installée',
+      },
+      monthlyCredits: {
+        title: 'Crédits mensuels',
+        refreshAriaLabel: 'Actualiser les crédits',
+        remaining: 'Restants',
       },
       deleteEntities: {
         title: 'Supprimer toutes les entités et fusions',
@@ -3809,6 +3834,11 @@ const translations: Record<Locale, Translations> = {
           'Installieren Sie Postino als App auf Ihrem Gerät für ein schnelleres, natives Erlebnis.',
         buttonLabel: 'App installieren',
         alreadyInstalled: 'Bereits installiert',
+      },
+      monthlyCredits: {
+        title: 'Monatliche Credits',
+        refreshAriaLabel: 'Credits aktualisieren',
+        remaining: 'Verbleibend',
       },
       deleteEntities: {
         title: 'Alle Entitäten und Zusammenführungen löschen',

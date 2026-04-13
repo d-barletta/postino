@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import type { UserStats } from '@/types';
 
 interface MonthlyCreditsCardProps {
@@ -18,6 +19,8 @@ function toPercent(remaining: number, limit: number): number {
 
 export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps) {
   const [refreshing, setRefreshing] = useState(false);
+  const { t } = useI18n();
+  const tr = t.dashboard.monthlyCredits;
 
   const used = stats.monthlyCreditsUsed || 0;
   const limit = stats.monthlyCreditsLimit || 0;
@@ -39,12 +42,12 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Monthly Credits</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{tr.title}</h2>
         {onRefresh && (
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            aria-label="Refresh credits"
+            aria-label={tr.refreshAriaLabel}
             className="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
@@ -66,7 +69,7 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
               {Math.ceil(used).toLocaleString()} / {Math.ceil(limit).toLocaleString()}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Remaining: {Math.round(percent)}%
+              {tr.remaining}: {Math.round(percent)}%
             </p>
           </div>
           <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
