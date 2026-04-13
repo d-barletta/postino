@@ -490,19 +490,6 @@ export default function DashboardPage() {
 
     return (
       <div className="space-y-6">
-        <PushNotificationButton />
-        <ForwardingHeaderCard
-          isEnabled={user?.isForwardingHeaderEnabled !== false}
-          onToggle={handleForwardingHeaderToggle}
-        />
-        <AnalysisLanguageCard
-          currentLanguage={user?.analysisOutputLanguage}
-          onSave={handleAnalysisLanguageChange}
-        />
-        {user?.isAdmin && <ResetUsageStatsCard onSuccess={handleLogsRefresh} />}
-        <ClearMemoriesCard />
-        <ClearAnalysisCard onSuccess={handleAnalysisClear} />
-        <DeleteEntitiesCard onSuccess={handleEntitiesDelete} />
         {(isPwa || canShowInstallCard) && (
           <Card>
             <CardHeader>
@@ -539,6 +526,19 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         )}
+        <PushNotificationButton />
+        <ForwardingHeaderCard
+          isEnabled={user?.isForwardingHeaderEnabled !== false}
+          onToggle={handleForwardingHeaderToggle}
+        />
+        <AnalysisLanguageCard
+          currentLanguage={user?.analysisOutputLanguage}
+          onSave={handleAnalysisLanguageChange}
+        />
+        <ClearMemoriesCard />
+        <ClearAnalysisCard onSuccess={handleAnalysisClear} />
+        <DeleteEntitiesCard onSuccess={handleEntitiesDelete} />
+        {user?.isAdmin && <ResetUsageStatsCard onSuccess={handleLogsRefresh} />}
       </div>
     );
   };

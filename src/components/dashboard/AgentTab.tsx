@@ -68,7 +68,7 @@ function ChatContent({
   bottomRef,
   chatContainerRef,
   a,
-  heightClass = 'h-80 sm:h-105 lg:h-130',
+  heightClass = 'h-89',
   wrapperClass = '',
   onOpenSourceEmails,
 }: ChatContentProps) {
@@ -373,7 +373,7 @@ export function AgentTab({ onCreditsUsed }: AgentTabProps) {
               </Button>
             </div>
           </div>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{a.subtitle}</p>
+          {/* <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{a.subtitle}</p> */}
         </CardHeader>
 
         <CardContent className="flex flex-col gap-3 px-3 py-3 sm:px-4">
