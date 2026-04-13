@@ -258,6 +258,7 @@ export interface Translations {
       forwarded: string;
       error: string;
       skipped: string;
+      creditsUsed: string;
       estimatedCost: string;
       estCost: string;
       last24h: string;
@@ -980,6 +981,7 @@ const translations: Record<Locale, Translations> = {
         forwarded: 'Forwarded',
         error: 'Error',
         skipped: 'Skipped',
+        creditsUsed: 'Credits Used',
         estimatedCost: 'Estimated Cost',
         estCost: 'Est. Cost',
         last24h: 'Last 24h',
@@ -1714,6 +1716,7 @@ const translations: Record<Locale, Translations> = {
         forwarded: 'Inoltrate',
         error: 'Errore',
         skipped: 'Saltate',
+        creditsUsed: 'Crediti usati',
         estimatedCost: 'Costo stimato',
         estCost: 'Costo stimato',
         last24h: 'Ultime 24h',
@@ -2448,6 +2451,7 @@ const translations: Record<Locale, Translations> = {
         forwarded: 'Reenviados',
         error: 'Error',
         skipped: 'Omitidos',
+        creditsUsed: 'Créditos usados',
         estimatedCost: 'Coste estimado',
         estCost: 'Coste est.',
         last24h: 'Últimas 24h',
@@ -3184,6 +3188,7 @@ const translations: Record<Locale, Translations> = {
         forwarded: 'Transmis',
         error: 'Erreur',
         skipped: 'Ignorés',
+        creditsUsed: 'Crédits utilisés',
         estimatedCost: 'Coût estimé',
         estCost: 'Coût est.',
         last24h: 'Dernières 24h',
@@ -3923,6 +3928,7 @@ const translations: Record<Locale, Translations> = {
         forwarded: 'Weitergeleitet',
         error: 'Fehler',
         skipped: 'Übersprungen',
+        creditsUsed: 'Verwendete Credits',
         estimatedCost: 'Geschätzte Kosten',
         estCost: 'Gesch. Kosten',
         last24h: 'Letzte 24h',
