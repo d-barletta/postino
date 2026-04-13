@@ -234,7 +234,11 @@ function ChatContent({
   );
 }
 
-export function AgentTab() {
+interface AgentTabProps {
+  onCreditsUsed?: () => void;
+}
+
+export function AgentTab({ onCreditsUsed }: AgentTabProps = {}) {
   const { authUser, getIdToken } = useAuth();
   const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>(_persistedMessages);
@@ -307,6 +311,9 @@ export function AgentTab() {
               : undefined,
         },
       ]);
+      if (res.ok) {
+        onCreditsUsed?.();
+      }
     } catch {
       setMessages((prev) => [
         ...prev,

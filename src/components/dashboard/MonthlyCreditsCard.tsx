@@ -28,11 +28,10 @@ export function MonthlyCreditsCard({ stats }: MonthlyCreditsCardProps) {
       <CardContent className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {used.toLocaleString(undefined, { maximumFractionDigits: 2 })} /{' '}
-            {limit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {Math.ceil(used).toLocaleString()} / {Math.ceil(limit).toLocaleString()}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Remaining: {remaining.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            Remaining: {Math.ceil(remaining).toLocaleString()}
           </p>
         </div>
         <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">

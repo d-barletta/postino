@@ -609,7 +609,7 @@ export default function DashboardPage() {
 
         {activeTab === 'agent' &&
           (memoryEnabled || loading || settingsLoading) &&
-          (loading || settingsLoading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab />)}
+          (loading || settingsLoading ? <DashboardPanelSkeleton cards={2} /> : <AgentTab onCreditsUsed={fetchStats} />)}
 
         {activeTab === 'explore' &&
           (loading ? (
