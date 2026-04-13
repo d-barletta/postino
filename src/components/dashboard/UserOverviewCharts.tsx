@@ -200,7 +200,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
       .sort(([a], [b]) => a - b)
       .map(([, point]) => ({
         ...point,
-        credits: Number(point.credits.toFixed(4)),
+        credits: Math.ceil(point.credits),
       }));
   }, [granularity, logs, range, t]);
 
@@ -236,7 +236,7 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
       {
         key: 'credits' as const,
         label: 'Credits Used',
-        value: stats.totalCreditsUsed.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+        value: Math.ceil(stats.totalCreditsUsed).toLocaleString(),
       },
     ],
     [t, stats],
@@ -308,14 +308,14 @@ export function UserOverviewCharts({ stats, logs }: UserOverviewChartsProps) {
                     axisLine={false}
                     width={54}
                     tick={{ fontSize: 12 }}
-                    tickFormatter={(v) => Number(v).toFixed(1)}
+                    tickFormatter={(v) => Math.ceil(Number(v)).toLocaleString()}
                   />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
                         formatter={(value, name) =>
                           String(name) === 'credits'
-                            ? Number(value || 0).toFixed(2)
+                            ? Math.ceil(Number(value || 0)).toLocaleString()
                             : Number(value || 0).toLocaleString()
                         }
                       />

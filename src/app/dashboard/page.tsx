@@ -447,7 +447,7 @@ export default function DashboardPage() {
             onAiAnalysisOnlyToggle={handleAiAnalysisOnlyToggle}
           />
         )}
-        <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} />
+        <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} onRefresh={fetchStats} />
         {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
           <Card className="">
             <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
