@@ -559,33 +559,27 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                           {user.isActive ? 'Suspend' : 'Activate'}
                         </Button>
                       )}
-                      {!user.isAdmin && (
-                        <Button
+                      <Button
                           size="sm"
                           variant="secondary"
                           onClick={() => handleResetCreditsUsage(user.uid)}
                         >
                           Reset Credits Usage
                         </Button>
-                      )}
-                      {!user.isAdmin && (
-                        <Button
+                      <Button
                           size="sm"
                           variant="secondary"
                           onClick={() => handleAddCredits(user.uid)}
                         >
                           Add Credits
                         </Button>
-                      )}
-                      {!user.isAdmin && (
-                        <Button
+                      <Button
                           size="sm"
                           variant="secondary"
                           onClick={() => setConfirmAction({ uid: user.uid, action: 'reset' })}
                         >
                           {adminUsers.resetData}
                         </Button>
-                      )}
                       {!user.isAdmin && (
                         <Button
                           size="sm"

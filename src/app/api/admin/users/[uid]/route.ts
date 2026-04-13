@@ -257,9 +257,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!targetRow) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    if (targetRow.is_admin) {
-      return NextResponse.json({ error: 'Cannot reset an admin user' }, { status: 400 });
-    }
 
     await deleteAllUserData(uid);
     await provisionFreshUserProfile(uid, targetRow as Record<string, unknown>);
