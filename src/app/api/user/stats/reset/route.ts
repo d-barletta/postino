@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { id: uid } = await verifyUserRequest(request);
+    const { id: uid } = await verifyAdminRequest(request);
     const supabase = createAdminClient();
 
     const { count: logCount } = await supabase
@@ -22,6 +22,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, updatedCount: logCount ?? 0 });
   } catch (err) {
-    return handleUserError(err, 'user/stats/reset POST');
+    return handleAdminError(err, 'user/stats/reset POST');
   }
 }
