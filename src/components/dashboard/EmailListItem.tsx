@@ -50,6 +50,8 @@ export const TYPE_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 export interface ExpandedEmailData {
   originalBody: string | null;
+  /** AI-rewritten body produced by a rule. Present only when a rule rewrote the email. */
+  processedBody?: string | null;
   toAddress: string;
   ccAddress?: string | null;
   bccAddress?: string | null;
@@ -298,6 +300,8 @@ export interface EmailListItemProps {
   onTabChange: (tab: string) => void;
   /** Called when user clicks "view full page" button or swipes to open */
   onFullscreen: () => void;
+  /** Called from the eye button with the currently-displayed body (original or rewritten). */
+  onViewFullscreen?: (body: string | null) => void;
   /** If provided, enables swipe-to-delete and the swipe delete action */
   onDelete?: () => void;
   /** If provided, enables swipe-to-toggle-read and the swipe toggle action */
@@ -321,6 +325,7 @@ export function EmailListItem({
   onToggleExpand,
   onTabChange,
   onFullscreen,
+  onViewFullscreen,
   onDelete,
   onToggleRead,
   onAnalysisUpdated,
@@ -483,6 +488,7 @@ export function EmailListItem({
             activeTab={activeDetailTab}
             onTabChange={onTabChange}
             onFullscreen={onFullscreen}
+            onViewFullscreen={onViewFullscreen}
             onAnalysisUpdated={onAnalysisUpdated}
             onCreditsUsed={onCreditsUsed}
           />

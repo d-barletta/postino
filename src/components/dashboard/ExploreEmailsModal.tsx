@@ -309,6 +309,11 @@ export function ExploreEmailsModal({
                       onRequestFullscreen({ subject: log.subject, body: null, loading: true });
                       setPendingFullscreenId(log.id);
                     }}
+                    onViewFullscreen={(body) => {
+                      fetchExpandedEmail(log.id);
+                      if (log.isRead === false) markEmailAsRead(log.id);
+                      onRequestFullscreen({ subject: log.subject, body, loading: false });
+                    }}
                     onDelete={() => setDeleteEmailId(log.id)}
                     onToggleRead={() => toggleEmailRead(log.id, log.isRead !== false)}
                     onAnalysisUpdated={(analysis) => handleAnalysisUpdated(log.id, analysis)}

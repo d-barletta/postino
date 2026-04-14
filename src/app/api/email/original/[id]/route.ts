@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { data: logRow } = await supabase
       .from('email_logs')
       .select(
-        'user_id, from_address, to_address, cc_address, bcc_address, subject, original_body, received_at, attachment_count, attachment_names, attachments, email_analysis',
+        'user_id, from_address, to_address, cc_address, bcc_address, subject, original_body, processed_body, rule_applied, received_at, attachment_count, attachment_names, attachments, email_analysis',
       )
       .eq('id', id)
       .single();
@@ -88,6 +88,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       bccAddress: logRow.bcc_address ?? null,
       subject: logRow.subject,
       originalBody: resolvedBody,
+      processedBody: logRow.processed_body ?? null,
+      ruleApplied: logRow.rule_applied ?? null,
       receivedAt: logRow.received_at ?? null,
       attachmentCount: logRow.attachment_count ?? 0,
       attachmentNames: logRow.attachment_names ?? [],

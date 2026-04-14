@@ -623,6 +623,8 @@ export interface Translations {
     openFullPageView: string;
     openFullPageViewAria: string;
     noOriginalContent: string;
+    viewOriginal: string;
+    viewRewritten: string;
     closeFullPageView: string;
     attachments: string;
     noAttachments: string;

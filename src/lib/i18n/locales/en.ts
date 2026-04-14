@@ -665,6 +665,8 @@ const en: Translations = {
     openFullPageView: 'Full page',
     openFullPageViewAria: 'Open email in full page view',
     noOriginalContent: 'No original content stored.',
+    viewOriginal: 'Original',
+    viewRewritten: 'Rewritten',
     closeFullPageView: 'Close full page view',
     attachments: 'Attachments:',
     noAttachments: 'No attachments.',

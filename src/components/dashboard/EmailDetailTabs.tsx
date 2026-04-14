@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Eye, AlignLeft, Brain } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
@@ -16,6 +17,9 @@ interface EmailDetailTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onFullscreen: () => void;
+  /** Called with the currently-displayed body when the eye button is clicked.
+   *  When provided this takes precedence over `onFullscreen` for the eye button. */
+  onViewFullscreen?: (body: string | null) => void;
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
   onCreditsUsed?: () => void;
   className?: string;
@@ -29,6 +33,7 @@ export function EmailDetailTabs({
   activeTab,
   onTabChange,
   onFullscreen,
+  onViewFullscreen,
   onAnalysisUpdated,
   onCreditsUsed,
   className,
@@ -36,6 +41,21 @@ export function EmailDetailTabs({
   fillAvailableHeight = false,
 }: EmailDetailTabsProps) {
   const { t } = useI18n();
+  const hasRewritten = Boolean(emailData?.processedBody);
+  const [showRewritten, setShowRewritten] = useState(false);
+
+  // The body currently displayed in the iframe
+  const displayBody =
+    hasRewritten && showRewritten ? (emailData?.processedBody ?? null) : (emailData?.originalBody ?? null);
+
+  const handleEyeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onViewFullscreen) {
+      onViewFullscreen(displayBody);
+    } else {
+      onFullscreen();
+    }
+  };
 
   return (
     <Tabs
@@ -120,29 +140,54 @@ export function EmailDetailTabs({
           </div>
         )}
         {emailData && !emailData.loading && emailData.originalBody && (
-          <div className={cn('relative', fillAvailableHeight && 'min-h-0 flex-1')}>
-            <SafeEmailIframe
-              html={emailData.originalBody}
-              autoResize={!fillAvailableHeight}
-              className={cn('rounded-lg', fillAvailableHeight && 'h-full')}
-              style={
-                fillAvailableHeight
-                  ? { height: '100%' }
-                  : { minHeight: '200px', maxHeight: '400px' }
-              }
-              maxAutoHeight={fillAvailableHeight ? undefined : 400}
-            />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onFullscreen();
-              }}
-              className="absolute top-2 left-2 p-1.5 rounded bg-[#efd957] text-black hover:bg-[#e4cf53] shadow-sm transition-colors"
-              title={t.emailOriginal.openFullPageView}
-              aria-label={t.emailOriginal.openFullPageView}
-            >
-              <Eye className="h-3.5 w-3.5" />
-            </button>
+          <div className={cn(fillAvailableHeight && 'min-h-0 flex-1 flex flex-col')}>
+            {hasRewritten && (
+              <div className="flex items-center gap-1 mb-2 shrink-0">
+                <button
+                  onClick={() => setShowRewritten(false)}
+                  className={cn(
+                    'px-2 py-0.5 rounded text-xs font-medium transition-colors',
+                    !showRewritten
+                      ? 'bg-[#efd957] text-black'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+                  )}
+                >
+                  {t.emailOriginal.viewOriginal}
+                </button>
+                <button
+                  onClick={() => setShowRewritten(true)}
+                  className={cn(
+                    'px-2 py-0.5 rounded text-xs font-medium transition-colors',
+                    showRewritten
+                      ? 'bg-[#efd957] text-black'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+                  )}
+                >
+                  {t.emailOriginal.viewRewritten}
+                </button>
+              </div>
+            )}
+            <div className={cn('relative', fillAvailableHeight && 'min-h-0 flex-1')}>
+              <SafeEmailIframe
+                html={displayBody ?? ''}
+                autoResize={!fillAvailableHeight}
+                className={cn('rounded-lg', fillAvailableHeight && 'h-full')}
+                style={
+                  fillAvailableHeight
+                    ? { height: '100%' }
+                    : { minHeight: '200px', maxHeight: '400px' }
+                }
+                maxAutoHeight={fillAvailableHeight ? undefined : 400}
+              />
+              <button
+                onClick={handleEyeClick}
+                className="absolute top-2 right-2 p-1.5 rounded bg-[#efd957] text-black hover:bg-[#e4cf53] shadow-sm transition-colors"
+                title={t.emailOriginal.openFullPageView}
+                aria-label={t.emailOriginal.openFullPageView}
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         )}
         {emailData && !emailData.loading && !emailData.originalBody && !emailData.error && (

@@ -676,6 +676,8 @@ const fr: Translations = {
     openFullPageView: 'Pleine page',
     openFullPageViewAria: "Ouvrir l'e-mail en pleine page",
     noOriginalContent: 'Aucun contenu original enregistré.',
+    viewOriginal: 'Original',
+    viewRewritten: 'Réécrit',
     closeFullPageView: 'Fermer la vue pleine page',
     attachments: 'Pièces jointes :',
     noAttachments: 'Aucune pièce jointe.',

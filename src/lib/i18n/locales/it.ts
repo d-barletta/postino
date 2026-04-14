@@ -672,6 +672,8 @@ const it: Translations = {
     openFullPageView: 'Pagina intera',
     openFullPageViewAria: 'Apri email a pagina intera',
     noOriginalContent: 'Nessun contenuto originale salvato.',
+    viewOriginal: 'Originale',
+    viewRewritten: 'Rielaborata',
     closeFullPageView: 'Chiudi vista a pagina intera',
     attachments: 'Allegati:',
     noAttachments: 'Nessun allegato.',
