@@ -52,7 +52,7 @@ export function FullPageEmailDialog({
     if (open) setShowRewritten(false);
   }, [open]);
 
-  const displayBody = hasRewritten && showRewritten ? processedBody! : body;
+  const displayBody = hasRewritten && showRewritten ? (processedBody ?? body) : body;
 
   useModalHistory(open, onClose);
 
