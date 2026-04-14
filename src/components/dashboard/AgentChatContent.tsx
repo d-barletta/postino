@@ -92,7 +92,12 @@ export function AgentChatContent({
                 )}
               </div>
               {/* Bubble */}
-              <div className={cn('max-w-[85%] flex flex-col gap-1.5')}>
+              <div
+                className={cn(
+                  'flex flex-col gap-1.5',
+                  msg.role === 'user' ? 'max-w-[85%]' : 'max-w-[75%]',
+                )}
+              >
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <div
