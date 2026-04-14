@@ -38,6 +38,7 @@ import {
   Compass,
   Share2,
   Bot,
+  ChevronRight,
 } from 'lucide-react';
 
 const EMPTY_STATS: UserStats = {
@@ -459,7 +460,7 @@ export default function DashboardPage() {
         <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} onRefresh={fetchStats} />
         {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
           <Card
-            className="cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]"
+            className="group cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]"
             role="button"
             tabIndex={0}
             onClick={openAgentFullPage}
@@ -471,12 +472,12 @@ export default function DashboardPage() {
             }}
             aria-label={t.dashboard.agent.cta.button}
           >
-            <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
+            <CardContent className="flex items-center justify-between gap-4 py-6">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#efd957]/40 dark:bg-white">
                   <PostinoLogo className="h-5 w-5" title={t.dashboard.agent.cta.title} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-gray-900 dark:text-gray-100">
                     {t.dashboard.agent.cta.title}
                   </p>
@@ -485,12 +486,10 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
-              <span
-                aria-hidden
-                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#efd957] px-4 py-2 text-sm font-medium text-[#171717] hover:bg-[#d6c043]"
-              >
-                {t.dashboard.agent.cta.button}
-              </span>
+              <ChevronRight
+                className="h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 group-hover:translate-x-0.5 dark:text-gray-500"
+                aria-hidden="true"
+              />
             </CardContent>
           </Card>
         )}
