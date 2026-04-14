@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { RefreshCw, Search, X, ChevronDown, BotMessageSquare, Brain, BrainCircuit, BrainCircuitIcon } from 'lucide-react';
+import { RefreshCw, Search, X, ChevronDown, Brain } from 'lucide-react';
 import { useGlobalModals } from '@/lib/modals';
 import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import type { KnowledgeData } from '@/components/dashboard/KnowledgeTab';

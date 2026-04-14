@@ -29,13 +29,34 @@ export async function GET(request: NextRequest) {
     const languageFilter = searchParams.get('language')?.trim() || null;
     const statusFilter = searchParams.get('status')?.trim() || null;
     // entity filters – multi-value
-    const peopleFilter = searchParams.getAll('people').map((v) => v.trim()).filter(Boolean);
-    const orgsFilter = searchParams.getAll('orgs').map((v) => v.trim()).filter(Boolean);
-    const placesFilter = searchParams.getAll('places').map((v) => v.trim()).filter(Boolean);
-    const eventsFilter = searchParams.getAll('events').map((v) => v.trim()).filter(Boolean);
-    const numbersFilter = searchParams.getAll('numbers').map((v) => v.trim()).filter(Boolean);
-    const datesFilter = searchParams.getAll('dates').map((v) => v.trim()).filter(Boolean);
-    const pricesFilter = searchParams.getAll('prices').map((v) => v.trim()).filter(Boolean);
+    const peopleFilter = searchParams
+      .getAll('people')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const orgsFilter = searchParams
+      .getAll('orgs')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const placesFilter = searchParams
+      .getAll('places')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const eventsFilter = searchParams
+      .getAll('events')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const numbersFilter = searchParams
+      .getAll('numbers')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const datesFilter = searchParams
+      .getAll('dates')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const pricesFilter = searchParams
+      .getAll('prices')
+      .map((v) => v.trim())
+      .filter(Boolean);
     // cursor-based pagination
     const cursor = searchParams.get('cursor') || null;
 
