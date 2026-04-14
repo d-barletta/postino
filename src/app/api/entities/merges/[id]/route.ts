@@ -9,6 +9,7 @@ const VALID_CATEGORIES: EntityCategory[] = [
   'organizations',
   'places',
   'events',
+  'dates',
   'numbers',
 ];
 
