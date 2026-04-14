@@ -399,8 +399,16 @@ export function EmailListItem({
     </>
   );
 
+  const itemRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (isSelected && itemRef.current) {
+      itemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [isSelected]);
+
   const rowContent = (
     <div
+      ref={itemRef}
       className={cn(
         'px-6 py-4 hover:bg-yellow-50/70 dark:hover:bg-yellow-900/10 cursor-pointer transition-colors',
         isSelected && 'bg-yellow-50/70 dark:bg-yellow-900/10',

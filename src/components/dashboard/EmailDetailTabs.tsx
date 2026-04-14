@@ -123,6 +123,7 @@ export function EmailDetailTabs({
           <div className={cn('relative', fillAvailableHeight && 'min-h-0 flex-1')}>
             <SafeEmailIframe
               html={emailData.originalBody}
+              autoResize={!fillAvailableHeight}
               className={cn('rounded-lg', fillAvailableHeight && 'h-full')}
               style={
                 fillAvailableHeight

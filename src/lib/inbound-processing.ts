@@ -317,11 +317,11 @@ async function sendEmailPushNotification(
     const relativeEmailUrl = `/dashboard?tab=emails&selectedEmail=${encodeURIComponent(logId)}`;
     const absoluteEmailUrl = appUrl ? `${appUrl}${relativeEmailUrl}` : '';
 
-    const titleByStatus: Record<'forwarded' | 'error' | 'skipped', string> = {
-      forwarded: `Email forwarded from ${sender}`,
-      error: `Email processing failed for ${sender}`,
-      skipped: `Email skipped from ${sender}`,
-    };
+    // Extract the human-readable display name from the sender header, e.g.
+    // "John Doe <john@example.com>" → "John Doe"
+    // "john@example.com" → "john@example.com"
+    const senderMatch = sender.match(/^"?([^"<]+?)"?\s*<[^>]+>\s*$/);
+    const senderDisplay = senderMatch ? senderMatch[1].trim() : sender.trim();
 
     const payload = {
       app_id: oneSignalAppId,
@@ -330,7 +330,7 @@ async function sendEmailPushNotification(
         external_id: [userId],
       },
       headings: {
-        en: titleByStatus[status],
+        en: `Got an email from ${senderDisplay}`,
       },
       contents: {
         en: subject,

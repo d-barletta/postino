@@ -83,12 +83,25 @@ export function EmailLogsBrowser({
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const hasInitializedSelectionReset = useRef(false);
+  const selectedRowRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll the selected row into view in the wide list whenever selection changes
+  useEffect(() => {
+    if (selectedId && selectedRowRef.current) {
+      selectedRowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedId]);
 
   useEffect(() => {
     if (!selectedEmailId) return;
     setSelectedId(selectedEmailId);
     fetchExpandedEmail(selectedEmailId);
-  }, [selectedEmailId, fetchExpandedEmail]);
+    if (!markEmailAsRead) return;
+    const timer = setTimeout(() => {
+      void markEmailAsRead(selectedEmailId);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [selectedEmailId, fetchExpandedEmail, markEmailAsRead]);
 
   useEffect(() => {
     if (selectionResetKey === undefined) return;
@@ -307,6 +320,7 @@ export function EmailLogsBrowser({
                 return (
                   <div
                     key={log.id}
+                    ref={isSelected ? (el) => { selectedRowRef.current = el; } : undefined}
                     className={cn(
                       'px-4 py-3 cursor-pointer transition-colors border-l-2 group',
                       isSelected
