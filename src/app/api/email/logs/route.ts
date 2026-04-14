@@ -76,7 +76,30 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     const row = Array.isArray(data) ? data[0] : data;
-    const logs = row?.logs ?? [];
+    // RPC returns row_to_json (snake_case); map to the camelCase shape the frontend expects.
+    const rawLogs: Record<string, unknown>[] = Array.isArray(row?.logs)
+      ? (row.logs as Record<string, unknown>[])
+      : [];
+    const logs = rawLogs.map((d) => ({
+      id: d.id,
+      toAddress: (d.to_address as string) || '',
+      fromAddress: (d.from_address as string) || '',
+      ccAddress: (d.cc_address as string | undefined) || undefined,
+      bccAddress: (d.bcc_address as string | undefined) || undefined,
+      subject: (d.subject as string) || '',
+      receivedAt: (d.received_at as string) ?? null,
+      processedAt: (d.processed_at as string) ?? null,
+      status: d.status,
+      ruleApplied: d.rule_applied,
+      tokensUsed: d.tokens_used,
+      estimatedCredits: d.estimated_credits,
+      errorMessage: d.error_message,
+      attachmentCount: (d.attachment_count as number) ?? 0,
+      attachmentNames: (d.attachment_names as string[]) ?? [],
+      userId: d.user_id,
+      emailAnalysis: (d.email_analysis as Record<string, unknown> | null) ?? null,
+      isRead: d.is_read !== false,
+    }));
     const totalCount = Number(row?.total_count ?? 0);
     const hasNextPage = Boolean(row?.has_next_page);
     const nextCursor = row?.next_cursor ?? null;
