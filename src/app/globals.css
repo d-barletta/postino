@@ -221,13 +221,7 @@ textarea::placeholder {
   width: 3.25rem;
   height: 3.25rem;
   align-items: center;
-  background: radial-gradient(
-    circle at 35% 30%,
-    #fff8c2 0%,
-    #f6e883 30%,
-    #efd957 65%,
-    #d6c043 100%
-  );
+  background: #d6c043;
   border: 2px solid rgb(255 255 255 / 0.96);
   border-radius: 9999px;
   box-shadow:
