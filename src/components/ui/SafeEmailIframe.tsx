@@ -79,7 +79,13 @@ export function SafeEmailIframe({
     if (!doc.querySelector('meta[name="viewport"]')) {
       const viewport = doc.createElement('meta');
       viewport.name = 'viewport';
-      viewport.content = 'width=device-width, initial-scale=1, user-scalable=yes';
+      // Use width=600 as a minimum so emails designed for desktop (typically
+      // 600 px wide) render at their intended layout width before being scaled
+      // down by `zoom` in applyScaleToFit.  Using `width=device-width` on a
+      // narrow iframe causes the email to reflow into a single column with
+      // oversized text, which is what makes the inline preview look different
+      // from the full-page view.  user-scalable=yes preserves pinch-to-zoom.
+      viewport.content = 'width=600, initial-scale=1, user-scalable=yes';
       head.insertBefore(viewport, head.firstChild);
     }
 
