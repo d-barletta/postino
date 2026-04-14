@@ -27,6 +27,7 @@ import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { EmailLog, UserStats } from '@/types';
 import { useI18n } from '@/lib/i18n';
+import { useGlobalModals } from '@/lib/modals';
 import {
   Home,
   ListFilter,
@@ -132,6 +133,7 @@ function DashboardPanelSkeleton({ cards = 3 }: { cards?: number }) {
 export default function DashboardPage() {
   const { user, loading, authUser, refreshUser, getIdToken } = useAuth();
   const { t } = useI18n();
+  const { openAgentFullPage } = useGlobalModals();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -456,7 +458,19 @@ export default function DashboardPage() {
         )}
         <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} onRefresh={fetchStats} />
         {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
-          <Card className="">
+          <Card
+            className="cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]"
+            role="button"
+            tabIndex={0}
+            onClick={openAgentFullPage}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openAgentFullPage();
+              }
+            }}
+            aria-label={t.dashboard.agent.cta.button}
+          >
             <CardContent className="flex flex-col items-start gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#efd957]/40 dark:bg-white">
@@ -471,12 +485,12 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
-              <Button
-                onClick={() => handleTabChange('agent')}
-                className="shrink-0 bg-[#efd957] text-[#171717] hover:bg-[#d6c043]"
+              <span
+                aria-hidden
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#efd957] px-4 py-2 text-sm font-medium text-[#171717] hover:bg-[#d6c043]"
               >
                 {t.dashboard.agent.cta.button}
-              </Button>
+              </span>
             </CardContent>
           </Card>
         )}
