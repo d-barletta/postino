@@ -120,6 +120,7 @@ export function EmailLogsBrowser({
     if (!expanded) return;
     updateFullPageEmail({
       body: expanded.originalBody ?? null,
+      processedBody: expanded.processedBody ?? null,
       loading: expanded.loading ?? false,
     });
   }, [fullscreenEmailId, expandedData, updateFullPageEmail]);
@@ -205,6 +206,7 @@ export function EmailLogsBrowser({
     openFullPageEmail({
       subject: log.subject,
       body: expanded?.originalBody ?? null,
+      processedBody: expanded?.processedBody ?? null,
       loading: !expanded || (expanded.loading ?? false),
     });
   };
@@ -214,10 +216,12 @@ export function EmailLogsBrowser({
     if (log.isRead === false) {
       void markEmailAsRead?.(log.id);
     }
+    const expanded = expandedData[log.id];
     setFullscreenEmailId(log.id);
     openFullPageEmail({
       subject: log.subject,
-      body,
+      body: expanded?.originalBody ?? body,
+      processedBody: expanded?.processedBody ?? null,
       loading: false,
     });
   };
