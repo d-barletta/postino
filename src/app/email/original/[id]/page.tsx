@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/Accordion';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
-import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
+import { useGlobalModals } from '@/lib/modals';
 import type { EmailAnalysis, EmailAttachmentInfo } from '@/types';
 
 interface OriginalEmail {
@@ -59,10 +59,10 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { authUser, user, loading: authLoading, getIdToken } = useAuth();
   const { t } = useI18n();
+  const { openFullPageEmail } = useGlobalModals();
   const [email, setEmail] = useState<OriginalEmail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessResult, setReprocessResult] = useState<ReprocessResult | null>(null);
   const [reprocessError, setReprocessError] = useState('');
@@ -73,8 +73,10 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
 
-  const toggleFullscreen = () => {
-    setIsFullscreen((prev) => !prev);
+  const handleOpenFullscreen = () => {
+    if (email?.originalBody) {
+      openFullPageEmail({ subject: email.subject, body: email.originalBody });
+    }
   };
 
   // Load available models for admin users
@@ -339,19 +341,17 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
                 <CardContent className="p-0 pb-5">
                   {email.originalBody ? (
                     <div className="relative space-y-2">
-                      {!isFullscreen && (
-                        <div className="flex justify-end">
-                          <button
-                            onClick={toggleFullscreen}
-                            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            title={t.emailOriginal.openFullPageView}
-                            aria-label={t.emailOriginal.openFullPageViewAria}
-                          >
-                            <i className="bi bi-fullscreen" aria-hidden="true" />
-                            {t.emailOriginal.openFullPageView}
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex justify-end">
+                        <button
+                          onClick={handleOpenFullscreen}
+                          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                          title={t.emailOriginal.openFullPageView}
+                          aria-label={t.emailOriginal.openFullPageViewAria}
+                        >
+                          <i className="bi bi-fullscreen" aria-hidden="true" />
+                          {t.emailOriginal.openFullPageView}
+                        </button>
+                      </div>
                       <SafeEmailIframe
                         html={email.originalBody}
                         className="rounded-xl"
@@ -522,14 +522,6 @@ export default function OriginalEmailPage({ params }: { params: Promise<{ id: st
           </Card>
         )}
       </div>
-
-      {/* Full email modal */}
-      <FullPageEmailDialog
-        open={!!(isFullscreen && email.originalBody)}
-        onClose={() => setIsFullscreen(false)}
-        subject={email.subject}
-        body={email.originalBody}
-      />
     </div>
   );
 }

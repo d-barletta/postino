@@ -6,12 +6,11 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
-import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
-import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { useRelationGraph } from '@/components/dashboard/useRelationGraph';
 import { useFlowGraph } from '@/components/dashboard/useFlowGraph';
 import { usePlaceMapGraph } from '@/components/dashboard/usePlaceMapGraph';
 import { useModalHistory } from '@/hooks/useModalHistory';
+import { useGlobalModals } from '@/lib/modals';
 import {
   Dialog,
   DialogContent,
@@ -103,21 +102,12 @@ export const RelationsTab = memo(function RelationsTab() {
   }, [fetchPlaceMap]);
 
   const [activeSubTab, setActiveSubTab] = useState<'graph' | 'flow' | 'map'>('graph');
+  const { openExploreEmails } = useGlobalModals();
 
-  const [modalChip, setModalChip] = useState<{
-    value: string;
-    category: string;
-    label: string;
-  } | null>(null);
-  const [fullscreenEmail, setFullscreenEmail] = useState<{
-    subject: string;
-    body: string;
-  } | null>(null);
   const [fullPageGraphOpen, setFullPageGraphOpen] = useState(false);
   const [fullPageFlowOpen, setFullPageFlowOpen] = useState(false);
   const [fullPageMapOpen, setFullPageMapOpen] = useState(false);
 
-  useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
   useModalHistory(fullPageGraphOpen, () => setFullPageGraphOpen(false));
   useModalHistory(fullPageFlowOpen, () => setFullPageFlowOpen(false));
   useModalHistory(fullPageMapOpen, () => setFullPageMapOpen(false));
@@ -128,9 +118,9 @@ export const RelationsTab = memo(function RelationsTab() {
         category in k && typeof k[category as keyof typeof k] === 'string'
           ? (k[category as keyof typeof k] as string)
           : category;
-      setModalChip({ value: label, category, label: catLabel });
+      openExploreEmails({ term: label, category, categoryLabel: catLabel });
     },
-    [k],
+    [k, openExploreEmails],
   );
 
   const graphTranslations = useMemo(
@@ -426,24 +416,6 @@ export const RelationsTab = memo(function RelationsTab() {
         </DialogContent>
       </Dialog>
 
-      {modalChip && (
-        <ExploreEmailsModal
-          term={modalChip.value}
-          category={modalChip.category}
-          categoryLabel={modalChip.label}
-          onClose={() => setModalChip(null)}
-          onRequestFullscreen={setFullscreenEmail}
-        />
-      )}
-
-      <FullPageEmailDialog
-        open={!!fullscreenEmail}
-        onClose={() => setFullscreenEmail(null)}
-        subject={fullscreenEmail?.subject ?? ''}
-        body={fullscreenEmail?.body ?? null}
-        overlayClassName="z-[100]"
-        contentClassName="z-[100]"
-      />
     </>
   );
 });

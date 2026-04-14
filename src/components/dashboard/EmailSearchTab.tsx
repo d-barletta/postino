@@ -1197,7 +1197,6 @@ export function EmailSearchTab({
         onCreditsUsed={onCreditsUsed}
         selectedEmailId={selectedEmailId}
         selectionResetKey={selectionResetKey}
-        syncFullscreenWithHistory
       />
     </div>
   );

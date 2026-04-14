@@ -36,10 +36,8 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from '@/components/ui/Drawer';
-import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
-import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { EntityMergeDialog } from '@/components/dashboard/EntityMergeDialog';
-import { useModalHistory } from '@/hooks/useModalHistory';
+import { useGlobalModals } from '@/lib/modals';
 import type { EntityMerge, EntityMergeSuggestion, EntityCategory } from '@/types';
 
 export interface KnowledgeItem {
@@ -271,18 +269,10 @@ export function KnowledgeTab({
 }: KnowledgeTabProps) {
   const { t } = useI18n();
   const { authUser, getIdToken } = useAuth();
+  const { openExploreEmails } = useGlobalModals();
   const k = t.dashboard.knowledge;
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [modalChip, setModalChip] = useState<{
-    value: string;
-    category: string;
-    label: string;
-    aliases?: string[];
-  } | null>(null);
-  const [fullscreenEmail, setFullscreenEmail] = useState<{ subject: string; body: string } | null>(
-    null,
-  );
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Entity merges
@@ -301,9 +291,6 @@ export function KnowledgeTab({
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
   const [pendingAcceptSuggestion, setPendingAcceptSuggestion] =
     useState<EntityMergeSuggestion | null>(null);
-
-  // Integrate the fullscreen email dialog with browser history.
-  useModalHistory(!!fullscreenEmail, () => setFullscreenEmail(null));
 
   const fetchMerges = useCallback(async () => {
     if (!authUser) return;
@@ -499,7 +486,7 @@ export function KnowledgeTab({
       const label = catKey === 'all' ? k.allCategories : (k[catKey] ?? category);
       const mergeKey = `${category}:${value}`;
       const aliases = mergeAliasMap.get(mergeKey);
-      setModalChip({ value, category, label, aliases });
+      openExploreEmails({ term: value, category, categoryLabel: label, aliases });
     },
     [mergeMode, k, mergeAliasMap],
   );
@@ -1013,27 +1000,6 @@ export function KnowledgeTab({
           </TabsContent>
         </Tabs>
       </CardContent>
-
-      {modalChip && (
-        <ExploreEmailsModal
-          term={modalChip.value}
-          category={modalChip.category}
-          categoryLabel={modalChip.label}
-          aliases={modalChip.aliases}
-          onClose={() => setModalChip(null)}
-          onRequestFullscreen={setFullscreenEmail}
-        />
-      )}
-
-      {/* Full email modal — stacked above ExploreEmailsModal with higher z-index */}
-      <FullPageEmailDialog
-        open={!!fullscreenEmail}
-        onClose={() => setFullscreenEmail(null)}
-        subject={fullscreenEmail?.subject ?? ''}
-        body={fullscreenEmail?.body ?? null}
-        overlayClassName="z-[100]"
-        contentClassName="z-[100]"
-      />
 
       {/* Entity merge dialog */}
       {showMergeDialog && selectedChips.length >= 2 && selectedCategory && (

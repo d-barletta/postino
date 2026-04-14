@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { I18nProvider } from '@/lib/i18n';
+import { AgentChatProvider } from '@/lib/agent-chat';
+import { GlobalModalsProvider } from '@/lib/modals';
 import { cleanupLegacyPushArtifacts, initOneSignal } from '@/lib/push-notifications';
 
 const AuthProvider = dynamic(() => import('./AuthProvider').then((m) => m.AuthProvider), {
@@ -20,7 +22,11 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <I18nProvider>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <AgentChatProvider>
+          <GlobalModalsProvider>{children}</GlobalModalsProvider>
+        </AgentChatProvider>
+      </AuthProvider>
     </I18nProvider>
   );
 }

@@ -12,6 +12,7 @@ import {
   DialogClose,
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
+import { useModalHistory } from '@/hooks/useModalHistory';
 
 interface FullPageEmailDialogProps {
   open: boolean;
@@ -39,6 +40,8 @@ export function FullPageEmailDialog({
   overlayClassName,
 }: FullPageEmailDialogProps) {
   const { t } = useI18n();
+
+  useModalHistory(open, onClose);
 
   return (
     <Dialog
