@@ -65,7 +65,7 @@ const DialogContent = React.forwardRef<
         className={cn(
           'fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]',
           'grid w-full max-w-lg gap-4 bg-white dark:bg-gray-900 p-6 shadow-xl',
-          'rounded-2xl border border-gray-200 dark:border-gray-700',
+          'sm:rounded-2xl rounded-t-2xl border border-gray-200 dark:border-gray-700',
           animation === 'default' && [
             'duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
