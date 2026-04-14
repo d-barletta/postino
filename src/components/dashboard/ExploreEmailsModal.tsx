@@ -254,7 +254,7 @@ export function ExploreEmailsModal({
       >
         <DialogContent
           animation="slide-from-bottom"
-          className="w-[95vw] max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden gap-0"
+          className="w-[99vw] h-[99vh] max-w-10xl flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
           hideCloseButton
         >
@@ -319,7 +319,7 @@ export function ExploreEmailsModal({
           </div>
 
           {/* Footer: result count + optional pagination + close button */}
-          <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <div className="shrink-0 flex items-center justify-between gap-2 px-6 py-6 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
             {/* Left: result count */}
             <span
               role="status"

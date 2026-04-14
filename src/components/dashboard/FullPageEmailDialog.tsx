@@ -55,7 +55,7 @@ export function FullPageEmailDialog({
         animation="slide-from-bottom"
         overlayClassName={overlayClassName}
         className={cn(
-          'w-[99vw] max-w-5xl h-[99vh] flex flex-col p-0 overflow-hidden gap-0',
+          'w-[99vw] h-[99vh] max-w-5xl flex flex-col p-0 overflow-hidden gap-0',
           contentClassName,
         )}
         aria-describedby={undefined}
@@ -71,7 +71,7 @@ export function FullPageEmailDialog({
             {t.emailOriginal.noOriginalContent}
           </div>
         )}
-        <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
+        <DialogFooter className="shrink-0 px-6 py-6 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
           <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
             {subject}
           </DialogTitle>
