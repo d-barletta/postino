@@ -320,7 +320,13 @@ export function EmailLogsBrowser({
                 return (
                   <div
                     key={log.id}
-                    ref={isSelected ? (el) => { selectedRowRef.current = el; } : undefined}
+                    ref={
+                      isSelected
+                        ? (el) => {
+                            selectedRowRef.current = el;
+                          }
+                        : undefined
+                    }
                     className={cn(
                       'px-4 py-3 cursor-pointer transition-colors border-l-2 group',
                       isSelected
