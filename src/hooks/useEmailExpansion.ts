@@ -42,6 +42,7 @@ export function useEmailExpansion() {
             ...prev,
             [logId]: {
               originalBody: data.originalBody ?? null,
+              processedBody: data.processedBody ?? null,
               toAddress: data.toAddress ?? '',
               ccAddress: data.ccAddress ?? null,
               bccAddress: data.bccAddress ?? null,

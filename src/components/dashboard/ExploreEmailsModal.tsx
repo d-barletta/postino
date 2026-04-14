@@ -32,9 +32,9 @@ export interface ExploreEmailsModalProps {
   categoryLabel: string;
   onClose: () => void;
   /** Called immediately when user requests fullscreen view of an email (may be called with loading=true before body is ready) */
-  onRequestFullscreen: (email: { subject: string; body: string | null; loading?: boolean }) => void;
+  onRequestFullscreen: (email: { subject: string; body: string | null; processedBody?: string | null; loading?: boolean }) => void;
   /** Called once the email body has loaded to update the fullscreen dialog opened by onRequestFullscreen */
-  onUpdateFullscreen?: (update: Partial<{ body: string | null; loading: boolean }>) => void;
+  onUpdateFullscreen?: (update: Partial<{ body: string | null; processedBody: string | null; loading: boolean }>) => void;
   /**
    * Optional list of alias values that the term was merged from.
    * When provided, the search will match any of these aliases instead of the term alone.
@@ -205,7 +205,7 @@ export function ExploreEmailsModal({
     if (!pendingFullscreenId) return;
     const data = expandedData[pendingFullscreenId];
     if (!data || data.loading) return;
-    onUpdateFullscreen?.({ body: data.originalBody ?? null, loading: false });
+    onUpdateFullscreen?.({ body: data.originalBody ?? null, processedBody: data.processedBody ?? null, loading: false });
     setPendingFullscreenId(null);
   }, [pendingFullscreenId, expandedData, onUpdateFullscreen]);
 
@@ -308,6 +308,17 @@ export function ExploreEmailsModal({
                       if (log.isRead === false) markEmailAsRead(log.id);
                       onRequestFullscreen({ subject: log.subject, body: null, loading: true });
                       setPendingFullscreenId(log.id);
+                    }}
+                    onViewFullscreen={(body) => {
+                      fetchExpandedEmail(log.id);
+                      if (log.isRead === false) markEmailAsRead(log.id);
+                      const expanded = expandedData[log.id];
+                      onRequestFullscreen({
+                        subject: log.subject,
+                        body: expanded?.originalBody ?? body,
+                        processedBody: expanded?.processedBody ?? null,
+                        loading: false,
+                      });
                     }}
                     onDelete={() => setDeleteEmailId(log.id)}
                     onToggleRead={() => toggleEmailRead(log.id, log.isRead !== false)}

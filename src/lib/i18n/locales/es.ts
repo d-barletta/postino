@@ -671,6 +671,8 @@ const es: Translations = {
     openFullPageView: 'Página completa',
     openFullPageViewAria: 'Abrir correo en página completa',
     noOriginalContent: 'No hay contenido original almacenado.',
+    viewOriginal: 'Original',
+    viewRewritten: 'Reescrito',
     closeFullPageView: 'Cerrar vista de página completa',
     attachments: 'Archivos adjuntos:',
     noAttachments: 'Sin archivos adjuntos.',

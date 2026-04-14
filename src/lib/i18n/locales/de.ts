@@ -679,6 +679,8 @@ const de: Translations = {
     openFullPageView: 'Vollbild',
     openFullPageViewAria: 'E-Mail im Vollbild öffnen',
     noOriginalContent: 'Kein Originalinhalt gespeichert.',
+    viewOriginal: 'Original',
+    viewRewritten: 'Umgeschrieben',
     closeFullPageView: 'Vollbildansicht schließen',
     attachments: 'Anhänge:',
     noAttachments: 'Keine Anhänge.',
