@@ -599,6 +599,9 @@ export interface Translations {
       expandFullPage: string;
       closeFullPage: string;
       sourceEmails: string;
+      copyLabel: string;
+      copyMessage: string;
+      repeatMessage: string;
       cta: {
         title: string;
         description: string;

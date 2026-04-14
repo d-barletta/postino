@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useAgentChat } from '@/lib/agent-chat';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,7 @@ interface ClearMemoriesCardProps {
 
 export function ClearMemoriesCard({ onSuccess }: ClearMemoriesCardProps) {
   const { authUser, getIdToken } = useAuth();
+  const { clearMessages } = useAgentChat();
   const { t } = useI18n();
   const s = t.dashboard.clearMemories;
   const [open, setOpen] = useState(false);
@@ -37,6 +39,7 @@ export function ClearMemoriesCard({ onSuccess }: ClearMemoriesCardProps) {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error();
+      clearMessages();
       await onSuccess?.();
       setOpen(false);
       toast.success(s.successToast);

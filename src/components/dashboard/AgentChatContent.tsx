@@ -1,8 +1,15 @@
 'use client';
 
 import ReactMarkdown from 'react-markdown';
-import { Mail, Send, User } from 'lucide-react';
+import { Copy, Mail, RotateCcw, Send, User } from 'lucide-react';
+import { toast } from 'sonner';
 import { PostinoLogo } from '@/components/brand/PostinoLogo';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/DropdownMenu';
 import {
   InputGroup,
   InputGroupAddon,
@@ -34,7 +41,8 @@ export function AgentChatContent({
   heightClass = 'h-89',
   wrapperClass = '',
 }: AgentChatContentProps) {
-  const { messages, loading, query, setQuery, handleSubmit, handleKeyDown } = useAgentChat();
+  const { messages, loading, query, setQuery, handleSubmit, handleKeyDown, repeatMessage } =
+    useAgentChat();
   const { openExploreEmails } = useGlobalModals();
   const { t } = useI18n();
   const a = t.dashboard.agent;
@@ -85,50 +93,75 @@ export function AgentChatContent({
               </div>
               {/* Bubble */}
               <div className={cn('max-w-[85%] flex flex-col gap-1.5')}>
-                <div
-                  className={cn(
-                    'rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
-                    msg.role === 'user'
-                      ? 'rounded-tr-sm bg-[#efd957] whitespace-pre-wrap'
-                      : 'rounded-tl-sm border border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100',
-                  )}
-                  style={msg.role === 'user' ? { color: '#171717' } : undefined}
-                >
-                  {msg.role === 'assistant' ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-1 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-xs">
-                      <ReactMarkdown
-                        components={{
-                          a: ({
-                            href,
-                            children,
-                          }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
-                            if (href?.startsWith('email-ref:')) {
-                              const logId = href.slice('email-ref:'.length);
-                              return (
-                                <button
-                                  onClick={() => handleOpenSourceEmails([logId])}
-                                  className="inline-flex items-center gap-1 text-[#b8991a] dark:text-[#efd957] underline underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer not-prose"
-                                >
-                                  <Mail className="inline h-3 w-3 shrink-0" />
-                                  {children}
-                                </button>
-                              );
-                            }
-                            return (
-                              <a href={href} target="_blank" rel="noopener noreferrer">
-                                {children}
-                              </a>
-                            );
-                          },
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div
+                      className={cn(
+                        'rounded-2xl px-4 py-2.5 text-sm leading-relaxed cursor-pointer select-text',
+                        msg.role === 'user'
+                          ? 'rounded-tr-sm bg-[#efd957] whitespace-pre-wrap'
+                          : 'rounded-tl-sm border border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100',
+                      )}
+                      style={msg.role === 'user' ? { color: '#171717' } : undefined}
+                    >
+                      {msg.role === 'assistant' ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-1 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-xs">
+                          <ReactMarkdown
+                            components={{
+                              a: ({
+                                href,
+                                children,
+                              }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
+                                if (href?.startsWith('email-ref:')) {
+                                  const logId = href.slice('email-ref:'.length);
+                                  return (
+                                    <button
+                                      onClick={() => handleOpenSourceEmails([logId])}
+                                      className="inline-flex items-center gap-1 text-[#b8991a] dark:text-[#efd957] underline underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer not-prose"
+                                    >
+                                      <Mail className="inline h-3 w-3 shrink-0" />
+                                      {children}
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <a href={href} target="_blank" rel="noopener noreferrer">
+                                    {children}
+                                  </a>
+                                );
+                              },
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content
+                      )}
                     </div>
-                  ) : (
-                    msg.content
-                  )}
-                </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align={msg.role === 'user' ? 'end' : 'start'}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        navigator.clipboard
+                          .writeText(msg.content)
+                          .then(() => toast.success(a.copyMessage))
+                      }
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      {a.copyLabel}
+                    </DropdownMenuItem>
+                    {msg.role === 'user' && (
+                      <DropdownMenuItem
+                        onClick={() => repeatMessage(msg.content)}
+                        disabled={loading}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        {a.repeatMessage}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {/* Source emails link */}
                 {msg.role === 'assistant' &&
                   msg.sourceEmailIds &&

@@ -652,6 +652,9 @@ const fr: Translations = {
       expandFullPage: 'Pleine page',
       closeFullPage: 'Fermer',
       sourceEmails: 'E-mails sources',
+      copyLabel: 'Copier',
+      copyMessage: 'Copié dans le presse-papiers',
+      repeatMessage: 'Demander à nouveau',
       cta: {
         title: 'Votre agent IA est prêt',
         description: 'Demandez-moi à propos de vos e-mails.',

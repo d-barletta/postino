@@ -648,6 +648,9 @@ const it: Translations = {
       expandFullPage: 'Pagina intera',
       closeFullPage: 'Chiudi',
       sourceEmails: 'Email di riferimento',
+      copyLabel: 'Copia',
+      copyMessage: 'Copiato negli appunti',
+      repeatMessage: 'Chiedi di nuovo',
       cta: {
         title: 'Il tuo agente AI è pronto',
         description: 'Chiedimi delle tue email.',

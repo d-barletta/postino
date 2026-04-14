@@ -655,6 +655,9 @@ const de: Translations = {
       expandFullPage: 'Vollbild',
       closeFullPage: 'Schließen',
       sourceEmails: 'Quell-E-Mails',
+      copyLabel: 'Kopieren',
+      copyMessage: 'In die Zwischenablage kopiert',
+      repeatMessage: 'Erneut fragen',
       cta: {
         title: 'Ihr KI-E-Mail-Agent ist bereit',
         description: 'Fragen Sie mich zu Ihren E-Mails.',

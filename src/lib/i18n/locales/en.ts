@@ -641,6 +641,9 @@ const en: Translations = {
       expandFullPage: 'Full page',
       closeFullPage: 'Close',
       sourceEmails: 'Source emails',
+      copyLabel: 'Copy',
+      copyMessage: 'Copied to clipboard',
+      repeatMessage: 'Ask again',
       cta: {
         title: 'Your AI email agent is ready',
         description: 'Ask me about your emails.',
