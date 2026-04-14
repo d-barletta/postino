@@ -408,6 +408,7 @@ const it: Translations = {
       senderAutomated: 'Automatizzato',
       senderBusiness: 'Azienda',
       senderNewsletter: 'Newsletter',
+      askAI: 'Chiedi alla IA',
     },
     knowledge: {
       title: 'Esplora email',

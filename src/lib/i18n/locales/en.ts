@@ -404,6 +404,7 @@ const en: Translations = {
       senderAutomated: 'Automated',
       senderBusiness: 'Business',
       senderNewsletter: 'Newsletter',
+      askAI: 'Ask to AI',
     },
     knowledge: {
       title: 'Explore emails',

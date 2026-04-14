@@ -163,7 +163,7 @@ function Chip({
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border transition-all',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
+        'focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-[#efd957]',
         freqClass,
         mergeMode && selected
           ? 'border-[#efd957] bg-[#efd957]/20 text-[#a3891f] dark:text-[#efd957] ring-2 ring-[#efd957]/40'
@@ -690,7 +690,7 @@ export function KnowledgeTab({
                   onClick={() => setActiveCategory(cat.key)}
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium shrink-0 transition-all',
-                    'border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]',
+                    'border focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-[#efd957]',
                     activeCategory === cat.key
                       ? 'bg-[#efd957] border-[#efd957] text-black shadow-sm'
                       : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#efd957]/60',
@@ -713,7 +713,7 @@ export function KnowledgeTab({
                 className={cn(
                   'flex h-8 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-8 pr-8 py-1 text-sm shadow-sm',
                   'transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500',
-                  'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#efd957] focus-visible:border-[#efd957]',
+                  'focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-[#efd957] focus-visible:border-[#efd957]',
                   'dark:bg-gray-800 dark:text-gray-100',
                 )}
               />

@@ -27,7 +27,8 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { RefreshCw, Search, X, ChevronDown } from 'lucide-react';
+import { RefreshCw, Search, X, ChevronDown, BotMessageSquare, Brain, BrainCircuit, BrainCircuitIcon } from 'lucide-react';
+import { useGlobalModals } from '@/lib/modals';
 import type { EmailAnalysis, EmailLog, LogsResponse } from '@/types';
 import type { KnowledgeData } from '@/components/dashboard/KnowledgeTab';
 import {
@@ -204,6 +205,7 @@ export function EmailSearchTab({
 }: EmailSearchTabProps) {
   const { t } = useI18n();
   const { authUser, getIdToken } = useAuth();
+  const { openAgentFullPage } = useGlobalModals();
   const ts = t.dashboard.search;
 
   const [logs, setLogs] = useState<EmailLog[]>([]);
@@ -568,18 +570,30 @@ export function EmailSearchTab({
                 )}
 
                 {/* Text search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  <input
-                    type="search"
-                    value={pending.search}
-                    onChange={(e) => setPending((p) => ({ ...p, search: e.target.value }))}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
-                    }}
-                    placeholder={ts.searchPlaceholder}
-                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#efd957]/50"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="search"
+                      value={pending.search}
+                      onChange={(e) => setPending((p) => ({ ...p, search: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
+                      }}
+                      placeholder={ts.searchPlaceholder}
+                      className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-inset focus:ring-1 focus:ring-[#efd957] focus:border-[#efd957]"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={openAgentFullPage}
+                    className="shrink-0 gap-1.5 hover:translate-y-0"
+                    title={ts.askAI}
+                  >
+                    <Brain className="h-4 w-4" />
+                    {ts.askAI}
+                  </Button>
                 </div>
 
                 {/* Advanced filters — collapsible sub-section */}

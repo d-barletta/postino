@@ -50,7 +50,7 @@ const InputGroup = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
       data-slot="input-group"
       className={cn(
         'group/input-group flex min-w-0 w-full flex-wrap items-stretch overflow-hidden rounded-lg border border-gray-300 bg-transparent shadow-sm transition-[border-color,box-shadow]',
-        'focus-within:border-[#efd957] focus-within:ring-1 focus-within:ring-[#efd957]',
+        'focus-within:border-[#efd957] focus-within:ring-inset focus-within:ring-1 focus-within:ring-[#efd957]',
         'dark:border-gray-600 dark:bg-[color:var(--surface)]',
         className,
       )}

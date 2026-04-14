@@ -411,6 +411,7 @@ const fr: Translations = {
       senderAutomated: 'Automatisé',
       senderBusiness: 'Entreprise',
       senderNewsletter: 'Newsletter',
+      askAI: "Demander à l'IA",
     },
     knowledge: {
       title: 'Explorer les emails',

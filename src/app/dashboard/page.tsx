@@ -37,8 +37,8 @@ import {
   CheckCircle,
   Compass,
   Share2,
-  Bot,
   ChevronRight,
+  Brain,
 } from 'lucide-react';
 
 const EMPTY_STATS: UserStats = {
@@ -460,7 +460,7 @@ export default function DashboardPage() {
         <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} onRefresh={fetchStats} />
         {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
           <Card
-            className="group cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd957]"
+            className="group cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-[#efd957]"
             role="button"
             tabIndex={0}
             onClick={openAgentFullPage}
@@ -582,7 +582,7 @@ export default function DashboardPage() {
           </TabsTrigger>
           {(memoryEnabled || loading || settingsLoading) && (
             <TabsTrigger value="agent">
-              <Bot className="h-4 w-4 shrink-0" />
+              <Brain className="h-4 w-4 shrink-0" />
               <span>{t.dashboard.tabs.agent}</span>
             </TabsTrigger>
           )}

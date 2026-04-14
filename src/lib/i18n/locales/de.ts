@@ -413,6 +413,7 @@ const de: Translations = {
       senderAutomated: 'Automatisiert',
       senderBusiness: 'Unternehmen',
       senderNewsletter: 'Newsletter',
+      askAI: 'KI fragen',
     },
     knowledge: {
       title: 'E-Mails erkunden',

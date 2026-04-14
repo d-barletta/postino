@@ -366,6 +366,7 @@ export interface Translations {
       senderAutomated: string;
       senderBusiness: string;
       senderNewsletter: string;
+      askAI: string;
     };
     knowledge: {
       title: string;
