@@ -79,7 +79,7 @@ export function SafeEmailIframe({
     if (!doc.querySelector('meta[name="viewport"]')) {
       const viewport = doc.createElement('meta');
       viewport.name = 'viewport';
-      viewport.content = 'width=device-width, initial-scale=1';
+      viewport.content = 'width=device-width, initial-scale=1, user-scalable=yes';
       head.insertBefore(viewport, head.firstChild);
     }
 
@@ -99,6 +99,8 @@ export function SafeEmailIframe({
       const root = doc.documentElement;
       if (!body || !root) return;
 
+      // Reset previously applied styles before measuring natural dimensions.
+      body.style.zoom = '';
       body.style.transform = '';
       body.style.transformOrigin = '';
       body.style.width = '';
@@ -110,15 +112,19 @@ export function SafeEmailIframe({
       if (!naturalWidth || !viewportWidth) return;
 
       const scale = naturalWidth > viewportWidth ? viewportWidth / naturalWidth : 1;
+
+      // Use `zoom` instead of `transform: scale` so that layout dimensions
+      // shrink proportionally — this eliminates the dead whitespace that
+      // `transform` leaves below the visible content (transform does not
+      // affect layout flow). `zoom` is baseline-available in all modern
+      // browsers and has always been supported in Safari/iOS.
       if (scale < 1) {
-        body.style.width = `${naturalWidth}px`;
-        body.style.transformOrigin = 'top left';
-        body.style.transform = `scale(${scale})`;
+        body.style.zoom = String(scale);
       }
 
       if (autoResize) {
-        const naturalHeight = Math.max(body.scrollHeight, root.scrollHeight);
-        const scaledHeight = scale < 1 ? naturalHeight * scale : naturalHeight;
+        // scrollHeight is now zoom-adjusted; no need to multiply by scale.
+        const scaledHeight = Math.max(body.scrollHeight, root.scrollHeight);
         const nextHeight = maxAutoHeight
           ? Math.min(scaledHeight + 20, maxAutoHeight)
           : scaledHeight + 20;
