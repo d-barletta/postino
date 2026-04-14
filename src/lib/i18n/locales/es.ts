@@ -54,8 +54,7 @@ const es: Translations = {
       backToBlog: 'Volver al Blog',
       cta: {
         title: 'Lee nuestro Blog',
-        subtitle:
-          'Descubre consejos, guías y actualizaciones sobre la gestión de correos con IA.',
+        subtitle: 'Descubre consejos, guías y actualizaciones sobre la gestión de correos con IA.',
         button: 'Explorar artículos',
       },
     },
@@ -138,8 +137,7 @@ const es: Translations = {
       errors: {
         missingEmail:
           'No pudimos encontrar el correo usado en el registro. Vuelve atrás e inténtalo de nuevo.',
-        tooManyRequests:
-          'Espera unos 60 segundos antes de solicitar otro correo de verificación.',
+        tooManyRequests: 'Espera unos 60 segundos antes de solicitar otro correo de verificación.',
         failed: 'No se pudo reenviar el correo de verificación. Inténtalo de nuevo.',
       },
     },
@@ -201,8 +199,7 @@ const es: Translations = {
       title: 'Encabezado Postino en correos reenviados',
       enabledDescription:
         'Un cuadro de resumen de Postino se añade al final de cada correo reenviado.',
-      disabledDescription:
-        'El cuadro de resumen de Postino no se añade a los correos reenviados.',
+      disabledDescription: 'El cuadro de resumen de Postino no se añade a los correos reenviados.',
     },
     analysisLanguage: {
       title: 'Idioma del análisis IA',
@@ -443,8 +440,7 @@ const es: Translations = {
       canonicalNamePlaceholder: 'Nombre a mostrar',
       mergeChipHint: 'Haz clic en un nombre para usarlo como nombre canónico',
       createMerge: 'Crear fusión',
-      mergeSameCategoryWarning:
-        'Selecciona 2 o más entidades de la misma categoría para fusionar.',
+      mergeSameCategoryWarning: 'Selecciona 2 o más entidades de la misma categoría para fusionar.',
       manageMerges: 'Gestionar fusiones',
       noMerges: 'No hay fusiones definidas.',
       deleteMerge: 'Eliminar fusión',

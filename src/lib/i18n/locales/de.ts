@@ -72,8 +72,7 @@ const de: Translations = {
       signUp: 'Registrieren',
       errors: {
         invalidCredential: 'Ungültige E-Mail oder ungültiges Passwort',
-        tooManyRequests:
-          'Zu viele fehlgeschlagene Versuche. Bitte versuchen Sie es später erneut.',
+        tooManyRequests: 'Zu viele fehlgeschlagene Versuche. Bitte versuchen Sie es später erneut.',
         failed: 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
         suspended: 'Ihr Konto wurde gesperrt. Bitte kontaktieren Sie den Support.',
         emailNotVerified: 'Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.',
@@ -429,8 +428,7 @@ const de: Translations = {
       prices: 'Preise',
       emailsAnalyzed: '{count} E-Mails analysiert',
       noData: 'Keine Wissensdaten vorhanden',
-      noDataDesc:
-        'Senden Sie E-Mails an Ihre Postino-Adresse, um Ihren Wissensgraphen aufzubauen.',
+      noDataDesc: 'Senden Sie E-Mails an Ihre Postino-Adresse, um Ihren Wissensgraphen aufzubauen.',
       searchInInbox: 'In Posteingang suchen',
       loading: 'Laden…',
       mentions: 'Erwähnungen',

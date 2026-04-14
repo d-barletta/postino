@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { FullPageEmailDialog } from '@/components/dashboard/FullPageEmailDialog';
 import { ExploreEmailsModal } from '@/components/dashboard/ExploreEmailsModal';
 import { AgentFullPageModal } from '@/components/dashboard/AgentFullPageModal';
@@ -33,7 +27,9 @@ export interface ExploreEmailsOptions {
 interface ModalsContextValue {
   // FullPageEmailDialog
   openFullPageEmail: (opts: { subject: string; body: string | null; loading?: boolean }) => void;
-  updateFullPageEmail: (opts: Partial<{ subject: string; body: string | null; loading: boolean }>) => void;
+  updateFullPageEmail: (
+    opts: Partial<{ subject: string; body: string | null; loading: boolean }>,
+  ) => void;
   closeFullPageEmail: () => void;
   fullPageEmailOpen: boolean;
 

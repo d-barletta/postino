@@ -203,8 +203,7 @@ const fr: Translations = {
       title: 'En-tête Postino dans les e-mails transmis',
       enabledDescription:
         'Un encadré récapitulatif Postino est ajouté au bas de chaque e-mail transmis.',
-      disabledDescription:
-        "L'encadré récapitulatif Postino n'est pas ajouté aux e-mails transmis.",
+      disabledDescription: "L'encadré récapitulatif Postino n'est pas ajouté aux e-mails transmis.",
     },
     analysisLanguage: {
       title: "Langue d'analyse IA",
@@ -469,8 +468,7 @@ const fr: Translations = {
       suggestionsEmptyDesc: "Cliquez sur le bouton pour demander à l'IA de suggérer des fusions.",
       suggestionsAccept: 'Accepter',
       suggestionsReject: 'Rejeter',
-      suggestionsCompleteFirst:
-        "Terminez toutes les suggestions avant d'en générer de nouvelles.",
+      suggestionsCompleteFirst: "Terminez toutes les suggestions avant d'en générer de nouvelles.",
       suggestionsError: 'Échec de la génération des suggestions. Veuillez réessayer.',
       failedToLoad: 'Échec du chargement des données',
       failedToLoadMerges: 'Échec du chargement des fusions',

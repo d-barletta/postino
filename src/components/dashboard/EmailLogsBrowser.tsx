@@ -105,7 +105,10 @@ export function EmailLogsBrowser({
     if (!fullscreenEmailId) return;
     const expanded = expandedData[fullscreenEmailId];
     if (!expanded) return;
-    updateFullPageEmail({ body: expanded.originalBody ?? null, loading: expanded.loading ?? false });
+    updateFullPageEmail({
+      body: expanded.originalBody ?? null,
+      loading: expanded.loading ?? false,
+    });
   }, [fullscreenEmailId, expandedData, updateFullPageEmail]);
 
   // When the global modal is closed (close button / Escape), reset local tracking state

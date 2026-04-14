@@ -208,8 +208,7 @@ const en: Translations = {
     },
     installApp: {
       title: 'Install Postino App',
-      description:
-        'Install Postino as an app on your device for a faster, native-like experience.',
+      description: 'Install Postino as an app on your device for a faster, native-like experience.',
       buttonLabel: 'Install App',
       alreadyInstalled: 'Already Installed',
     },
@@ -504,8 +503,7 @@ const en: Translations = {
         flowGenerated: 'Flow chart updated',
         flowGeneratedOn: 'Generated on {date}',
         flowTotalEmails: 'Based on {count} emails',
-        mapPinClick:
-          'Click a pin to select a place, then use the button to explore related emails',
+        mapPinClick: 'Click a pin to select a place, then use the button to explore related emails',
         mapGenerate: 'Generate Map',
         mapRegenerate: 'Regenerate Map',
         mapNoGraph: 'No place map yet',

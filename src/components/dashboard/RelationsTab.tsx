@@ -415,7 +415,6 @@ export const RelationsTab = memo(function RelationsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </>
   );
 });

@@ -137,8 +137,7 @@ const it: Translations = {
       errors: {
         missingEmail:
           "Non riusciamo a trovare l'email usata per la registrazione. Torna indietro e riprova.",
-        tooManyRequests:
-          "Attendi circa 60 secondi prima di richiedere un'altra email di verifica.",
+        tooManyRequests: "Attendi circa 60 secondi prima di richiedere un'altra email di verifica.",
         failed: "Invio dell'email di verifica non riuscito. Riprova.",
       },
     },
@@ -448,8 +447,7 @@ const it: Translations = {
       deleteMerge: 'Elimina unione',
       deleteConfirm: 'Sei sicuro di voler eliminare',
       mergesTitle: 'Unioni di entità',
-      mergesDesc:
-        'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
+      mergesDesc: 'Le entità unite vengono mostrate come un unico elemento nella vista conoscenza.',
       listTab: 'Lista',
       mergedTab: 'Uniti',
       suggestionsTab: 'Suggerimenti',
