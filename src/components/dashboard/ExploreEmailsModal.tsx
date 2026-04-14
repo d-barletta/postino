@@ -31,8 +31,10 @@ export interface ExploreEmailsModalProps {
   /** Human-readable label shown in the modal header */
   categoryLabel: string;
   onClose: () => void;
-  /** Called when user requests fullscreen view of an email */
-  onRequestFullscreen: (email: { subject: string; body: string }) => void;
+  /** Called immediately when user requests fullscreen view of an email (may be called with loading=true before body is ready) */
+  onRequestFullscreen: (email: { subject: string; body: string | null; loading?: boolean }) => void;
+  /** Called once the email body has loaded to update the fullscreen dialog opened by onRequestFullscreen */
+  onUpdateFullscreen?: (update: Partial<{ body: string | null; loading: boolean }>) => void;
   /**
    * Optional list of alias values that the term was merged from.
    * When provided, the search will match any of these aliases instead of the term alone.
@@ -53,6 +55,7 @@ export function ExploreEmailsModal({
   categoryLabel,
   onClose,
   onRequestFullscreen,
+  onUpdateFullscreen,
   aliases,
   logIds,
   sourceTitle,
@@ -197,17 +200,14 @@ export function ExploreEmailsModal({
     }
   };
 
-  // Once pending fullscreen email body is loaded, fire the callback.
+  // Once pending fullscreen email body is loaded, update the already-open fullscreen dialog.
   useEffect(() => {
     if (!pendingFullscreenId) return;
     const data = expandedData[pendingFullscreenId];
     if (!data || data.loading) return;
-    if (data.originalBody) {
-      const log = logs.find((l) => l.id === pendingFullscreenId);
-      if (log) onRequestFullscreen({ subject: log.subject, body: data.originalBody });
-    }
+    onUpdateFullscreen?.({ body: data.originalBody ?? null, loading: false });
     setPendingFullscreenId(null);
-  }, [pendingFullscreenId, expandedData, logs, onRequestFullscreen]);
+  }, [pendingFullscreenId, expandedData, onUpdateFullscreen]);
 
   const handleDeleteEmail = useCallback(async () => {
     if (!deleteEmailId || !authUser) return;
@@ -306,6 +306,7 @@ export function ExploreEmailsModal({
                     onFullscreen={() => {
                       fetchExpandedEmail(log.id);
                       if (log.isRead === false) markEmailAsRead(log.id);
+                      onRequestFullscreen({ subject: log.subject, body: null, loading: true });
                       setPendingFullscreenId(log.id);
                     }}
                     onDelete={() => setDeleteEmailId(log.id)}

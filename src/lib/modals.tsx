@@ -142,8 +142,9 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
           sourceTitle={exploreEmails.sourceTitle}
           onClose={closeExploreEmails}
           onRequestFullscreen={(email) =>
-            openFullPageEmail({ subject: email.subject, body: email.body, loading: false })
+            openFullPageEmail({ subject: email.subject, body: email.body, loading: email.loading ?? false })
           }
+          onUpdateFullscreen={(update) => updateFullPageEmail(update)}
         />
       )}
 
