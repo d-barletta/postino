@@ -221,6 +221,13 @@ export async function GET(request: NextRequest) {
           ))
       )
         return true;
+      if (
+        Array.isArray(d.emailAnalysis?.prices) &&
+        d.emailAnalysis.prices.some(
+          (v: unknown) => typeof v === 'string' && v.toLowerCase().includes(term),
+        )
+      )
+        return true;
       const entities = d.emailAnalysis?.entities as Record<string, unknown> | undefined;
       if (entities) {
         const placeNames = extractStoredPlaceNames(entities.places, entities.placeNames);
