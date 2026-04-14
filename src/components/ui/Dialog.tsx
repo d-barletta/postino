@@ -31,7 +31,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
  *  Intended for large full-page email modals.
  * @deprecated Pass `animation="slide-from-bottom"` to DialogContent instead. */
 export const dialogSlideFromBottomClassName =
-  'duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8';
+  'duration-650 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full';
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -74,10 +74,10 @@ const DialogContent = React.forwardRef<
             'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
           ],
           animation === 'slide-from-bottom' && [
-            'duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out',
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            'data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-left-1/2',
-            'data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8',
+            'left-0 right-0 bottom-0 top-auto translate-x-0 translate-y-0',
+            'sm:left-[50%] sm:right-auto sm:bottom-auto sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]',
+            'duration-650 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full',
           ],
           className,
         )}
