@@ -49,7 +49,7 @@ export function AgentFullPageModal({ open, onClose }: AgentFullPageModalProps) {
       <DialogContent
         hideCloseButton
         animation="slide-from-bottom"
-        className="w-[99vw] h-[99vh] max-w-5xl flex flex-col p-0 overflow-hidden gap-0"
+        className="w-screen h-screen max-w-5xl flex flex-col p-0 overflow-hidden gap-0"
         aria-describedby={undefined}
       >
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 pt-4 pb-0 gap-0">

@@ -322,7 +322,7 @@ export const RelationsTab = memo(function RelationsTab() {
         <DialogContent
           hideCloseButton
           animation="slide-from-bottom"
-          className="w-[95vw] max-w-7xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
+          className="w-screen h-screen max-w-5xl flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
         >
           <div className="flex-1 min-h-0">
@@ -334,7 +334,7 @@ export const RelationsTab = memo(function RelationsTab() {
               />
             )}
           </div>
-          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
+          <DialogFooter className="shrink-0 px-6 py-6 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
               {k.relations.title}
             </DialogTitle>
@@ -357,7 +357,7 @@ export const RelationsTab = memo(function RelationsTab() {
         <DialogContent
           hideCloseButton
           animation="slide-from-bottom"
-          className="w-[95vw] max-w-7xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
+          className="w-screen h-screen max-w-5xl flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
         >
           <div className="flex-1 min-h-0">
@@ -369,7 +369,7 @@ export const RelationsTab = memo(function RelationsTab() {
               />
             )}
           </div>
-          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
+          <DialogFooter className="shrink-0 px-6 py-6 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
               {k.relations.title}
             </DialogTitle>
@@ -391,7 +391,7 @@ export const RelationsTab = memo(function RelationsTab() {
         <DialogContent
           hideCloseButton
           animation="slide-from-bottom"
-          className="w-[95vw] max-w-7xl h-[92vh] flex flex-col p-0 overflow-hidden gap-0"
+          className="w-screen h-screen max-w-5xl flex flex-col p-0 overflow-hidden gap-0"
           aria-describedby={undefined}
         >
           <div className="flex-1 min-h-0">
@@ -403,7 +403,7 @@ export const RelationsTab = memo(function RelationsTab() {
               />
             )}
           </div>
-          <DialogFooter className="shrink-0 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
+          <DialogFooter className="shrink-0 px-6 py-6 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-row items-center justify-between gap-2">
             <DialogTitle className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
               {k.relations.title}
             </DialogTitle>

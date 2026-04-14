@@ -254,7 +254,7 @@ export function ExploreEmailsModal({
       >
         <DialogContent
           animation="slide-from-bottom"
-          className="w-[99vw] h-[99vh] max-w-10xl flex flex-col p-0 overflow-hidden gap-0 z-52"
+          className="w-screen h-screen max-w-10xl flex flex-col p-0 overflow-hidden gap-0 z-52"
           aria-describedby={undefined}
           hideCloseButton
         >
