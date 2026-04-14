@@ -41,17 +41,13 @@ export function LanguageSelector() {
         <span aria-hidden="true" className="text-base leading-none">
           {current.flag}
         </span>
-        <i
-          className={cn('bi bi-chevron-up text-[10px] transition-transform', !open && 'rotate-180')}
-          aria-hidden="true"
-        />
       </button>
 
       {open && (
         <div
           role="listbox"
           aria-label={t.language.select}
-          className="absolute bottom-full right-0 mb-1 z-50 min-w-[150px] rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg py-1"
+          className="absolute bottom-full right-0 mb-1 z-50 min-w-37.5 rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg py-0"
         >
           {SUPPORTED_LOCALES.map((loc) => (
             <button
