@@ -526,7 +526,7 @@ export async function processQueuedInboundPayload(
     }
     await sendEmailPushNotification(
       payload.userId,
-      payload.sender,
+      payload.fromHeader || payload.sender,
       payload.subject,
       payload.logId,
       'skipped',
@@ -828,7 +828,7 @@ export async function processQueuedInboundPayload(
   // so that a notification failure never blocks or rolls back the email-processing result.
   await sendEmailPushNotification(
     payload.userId,
-    payload.sender,
+    payload.fromHeader || payload.sender,
     result.subject,
     payload.logId,
     finalStatus,
