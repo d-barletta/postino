@@ -55,7 +55,7 @@ export function FullPageEmailDialog({
         animation="slide-from-bottom"
         overlayClassName={overlayClassName}
         className={cn(
-          'w-[99vw] h-[99vh] max-w-5xl flex flex-col p-0 overflow-hidden gap-0',
+          'w-[99vw] h-[99vh] max-w-5xl flex flex-col p-0 overflow-hidden gap-0 z-53',
           contentClassName,
         )}
         aria-describedby={undefined}

@@ -31,7 +31,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
  *  Intended for large full-page email modals.
  * @deprecated Pass `animation="slide-from-bottom"` to DialogContent instead. */
 export const dialogSlideFromBottomClassName =
-  'duration-300 data-[state=open]:slide-in-from-bottom-8 data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-bottom-8 data-[state=closed]:slide-out-to-left-0';
+  'duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8';
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -65,7 +65,7 @@ const DialogContent = React.forwardRef<
         className={cn(
           'fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]',
           'grid w-full max-w-lg gap-4 bg-white dark:bg-gray-900 p-6 shadow-xl',
-          'border border-gray-200 dark:border-gray-700',
+          'rounded-2xl border border-gray-200 dark:border-gray-700',
           animation === 'default' && [
             'duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -76,8 +76,8 @@ const DialogContent = React.forwardRef<
           animation === 'slide-from-bottom' && [
             'duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            'data-[state=open]:slide-in-from-bottom-[8%]',
-            'data-[state=closed]:slide-out-to-bottom-[8%]',
+            'data-[state=open]:slide-in-from-left-1/2 data-[state=closed]:slide-out-to-left-1/2',
+            'data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-bottom-8',
           ],
           className,
         )}

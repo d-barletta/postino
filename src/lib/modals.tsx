@@ -62,6 +62,7 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
 
   // ExploreEmailsModal state
   const [exploreEmails, setExploreEmails] = useState<ExploreEmailsOptions | null>(null);
+  const [exploreClosing, setExploreClosing] = useState(false);
 
   // Agent full-page modal state
   const [agentFullPageOpen, setAgentFullPageOpen] = useState(false);
@@ -97,7 +98,13 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const closeExploreEmails = useCallback(() => {
-    setExploreEmails(null);
+    // Set closing flag to trigger the slide-out animation in the modal while keeping it mounted.
+    // After the animation completes (500ms), unmount the component entirely.
+    setExploreClosing(true);
+    setTimeout(() => {
+      setExploreEmails(null);
+      setExploreClosing(false);
+    }, 520);
   }, []);
 
   // -----------------------------------------------------------------------
@@ -110,10 +117,6 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
   // -----------------------------------------------------------------------
   // Derive ExploreEmailsModal props
   // -----------------------------------------------------------------------
-
-  const exploreOpen =
-    !!exploreEmails &&
-    (!!exploreEmails.term || (!!exploreEmails.logIds && exploreEmails.logIds.length > 0));
 
   return (
     <ModalsContext.Provider
@@ -133,13 +136,13 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
       {/* ------------------------------------------------------------------ */}
       {/* Global modal: ExploreEmailsModal (email log list)                   */}
       {/* ------------------------------------------------------------------ */}
-      {exploreOpen && exploreEmails && (
+      {exploreEmails && (
         <ExploreEmailsModal
-          term={exploreEmails.term ?? null}
+          term={exploreClosing ? null : (exploreEmails.term ?? null)}
           category={exploreEmails.category ?? ''}
           categoryLabel={exploreEmails.categoryLabel ?? ''}
           aliases={exploreEmails.aliases}
-          logIds={exploreEmails.logIds}
+          logIds={exploreClosing ? undefined : exploreEmails.logIds}
           sourceTitle={exploreEmails.sourceTitle}
           onClose={closeExploreEmails}
           onRequestFullscreen={(email) =>
