@@ -606,6 +606,39 @@ export type Database = {
         Args: { log_ids: string[] };
         Returns: undefined;
       };
+      search_email_logs: {
+        Args: {
+          p_user_id: string;
+          p_search?: string | null;
+          p_terms?: string[] | null;
+          p_status?: string | null;
+          p_sentiment?: string | null;
+          p_email_type?: string | null;
+          p_priority?: string | null;
+          p_sender_type?: string | null;
+          p_language?: string | null;
+          p_requires_response?: boolean | null;
+          p_has_action_items?: boolean | null;
+          p_is_urgent?: boolean | null;
+          p_has_attachments?: boolean | null;
+          p_people?: string[] | null;
+          p_orgs?: string[] | null;
+          p_places?: string[] | null;
+          p_events?: string[] | null;
+          p_numbers?: string[] | null;
+          p_dates?: string[] | null;
+          p_prices?: string[] | null;
+          p_page?: number | null;
+          p_page_size?: number | null;
+          p_cursor?: string | null;
+        };
+        Returns: {
+          logs: Json;
+          total_count: number;
+          has_next_page: boolean;
+          next_cursor: string | null;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
