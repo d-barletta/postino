@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, AlignLeft, Brain } from 'lucide-react';
+import { Eye, AlignLeft, Brain, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
@@ -42,6 +42,7 @@ export function EmailDetailTabs({
 }: EmailDetailTabsProps) {
   const { t } = useI18n();
   const hasRewritten = Boolean(emailData?.processedBody);
+  const showRewriteWarning = Boolean(log.ruleApplied && log.status === 'error' && log.errorMessage);
   const [showRewritten, setShowRewritten] = useState(false);
 
   // The body currently displayed in the iframe
@@ -132,6 +133,15 @@ export function EmailDetailTabs({
           <p className="text-xs text-gray-600 dark:text-gray-300">
             <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span>{' '}
             {log.ruleApplied}
+            {showRewriteWarning && (
+              <span
+                className="ml-1 inline-flex align-text-bottom text-amber-500"
+                title={t.dashboard.emailHistory.rewriteFailedWarning}
+                aria-label={t.dashboard.emailHistory.rewriteFailedWarning}
+              >
+                <AlertTriangle className="h-3.5 w-3.5" />
+              </span>
+            )}
           </p>
         )}
         {log.status === 'skipped' && log.errorMessage && (

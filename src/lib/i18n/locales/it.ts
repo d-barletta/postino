@@ -309,6 +309,7 @@ const it: Translations = {
       downloadAttachment: 'Scarica allegato',
       noAttachmentsShort: 'Nessuno',
       ruleApplied: 'Regola applicata:',
+      rewriteFailedWarning: "Riscrittura non riuscita; è stato inoltrato il contenuto originale",
       skipReason: 'Motivo salto:',
       tokens: 'Token:',
       credits: 'Crediti:',
