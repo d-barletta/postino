@@ -268,6 +268,7 @@ export interface Translations {
       downloadAttachment: string;
       noAttachmentsShort: string;
       ruleApplied: string;
+      skipReason: string;
       tokens: string;
       credits: string;
       viewOriginal: string;

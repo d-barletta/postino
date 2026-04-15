@@ -452,9 +452,9 @@ export function EmailSearchTab({
   const hasActive = hasActiveFilter(applied);
 
   const handleRefresh = useCallback(() => {
-    fetchLogs(1, true);
+    fetchLogs(page, true);
     if (!hasActive) fetchTotalCount();
-  }, [fetchLogs, fetchTotalCount, hasActive]);
+  }, [fetchLogs, fetchTotalCount, hasActive, page]);
 
   const handlePageChange = (newPage: number) => {
     fetchLogs(newPage);
@@ -493,10 +493,9 @@ export function EmailSearchTab({
   // Refresh when refreshTrigger changes
   useEffect(() => {
     if (refreshTrigger === undefined || refreshTrigger === 0) return;
-    fetchLogs(1, true);
+    fetchLogs(page, true);
     if (!hasActive) fetchTotalCount();
-    setPage(1);
-  }, [refreshTrigger]);
+  }, [refreshTrigger, fetchLogs, fetchTotalCount, hasActive, page]);
 
   useEffect(() => {
     if (!authUser) return;

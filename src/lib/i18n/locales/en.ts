@@ -305,6 +305,7 @@ const en: Translations = {
       downloadAttachment: 'Download attachment',
       noAttachmentsShort: 'None',
       ruleApplied: 'Rule applied:',
+      skipReason: 'Skip reason:',
       tokens: 'Tokens:',
       credits: 'Credits:',
       viewOriginal: 'View original email',

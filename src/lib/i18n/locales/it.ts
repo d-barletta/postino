@@ -309,6 +309,7 @@ const it: Translations = {
       downloadAttachment: 'Scarica allegato',
       noAttachmentsShort: 'Nessuno',
       ruleApplied: 'Regola applicata:',
+      skipReason: 'Motivo salto:',
       tokens: 'Token:',
       credits: 'Crediti:',
       viewOriginal: 'Visualizza email originale',

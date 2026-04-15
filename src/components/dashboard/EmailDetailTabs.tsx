@@ -134,6 +134,12 @@ export function EmailDetailTabs({
             {log.ruleApplied}
           </p>
         )}
+        {log.status === 'skipped' && log.errorMessage && (
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            <span className="font-medium">{t.dashboard.emailHistory.skipReason}</span>{' '}
+            {log.errorMessage}
+          </p>
+        )}
         {emailData?.loading && (
           <div className="animate-pulse space-y-2 pt-1">
             <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />

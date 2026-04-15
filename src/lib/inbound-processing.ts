@@ -420,6 +420,7 @@ export async function processQueuedInboundPayload(
         .update({
           processed_at: new Date().toISOString(),
           status: 'skipped',
+          error_message: 'Forwarding is disabled (AI-analysis-only mode enabled)',
           tokens_used: analysisResult.tokensUsed,
           estimated_cost: analysisResult.estimatedCost,
           estimated_credits: dollarsToCredits(
@@ -521,7 +522,11 @@ export async function processQueuedInboundPayload(
       console.error('AI-analysis-only processing failed:', err);
       await supabase
         .from('email_logs')
-        .update({ status: 'skipped', processed_at: new Date().toISOString() })
+        .update({
+          status: 'skipped',
+          processed_at: new Date().toISOString(),
+          error_message: 'Forwarding is disabled (AI-analysis-only mode enabled)',
+        })
         .eq('id', payload.logId);
     }
     await sendEmailPushNotification(

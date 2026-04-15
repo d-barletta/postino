@@ -312,6 +312,7 @@ const fr: Translations = {
       downloadAttachment: 'Télécharger la pièce jointe',
       noAttachmentsShort: 'Aucune',
       ruleApplied: 'Règle appliquée :',
+      skipReason: 'Raison du saut :',
       tokens: 'Tokens :',
       credits: 'Crédits :',
       viewOriginal: "Voir l'e-mail original",
