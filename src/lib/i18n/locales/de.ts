@@ -314,7 +314,7 @@ const de: Translations = {
       downloadAttachment: 'Anhang herunterladen',
       noAttachmentsShort: 'Keine',
       ruleApplied: 'Angewendete Regel:',
-      skipReason: 'Übersprungen-Grund:',
+      skipReason: 'Grund für Überspringen:',
       tokens: 'Tokens:',
       credits: 'Credits:',
       viewOriginal: 'Original-E-Mail anzeigen',
