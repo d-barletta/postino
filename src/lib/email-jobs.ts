@@ -290,6 +290,7 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
       'id, status, attempts, max_attempts, payload, lock_until, not_before, locked_by, last_error, created_at, updated_at, completed_at',
     )
     .in('status', ['pending', 'retrying', 'processing'])
+    .order('created_at', { ascending: true })
     .limit(Math.max(batchSize * 3, 15));
 
   let claimed = 0;
