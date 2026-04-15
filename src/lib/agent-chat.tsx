@@ -265,52 +265,38 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
             return;
           }
 
+          const rawIds = res.headers.get('X-Source-Email-Ids');
+          let sourceEmailIds: string[] | undefined;
+          try {
+            const parsed: unknown = rawIds ? JSON.parse(rawIds) : [];
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              sourceEmailIds = parsed as string[];
+            }
+          } catch {
+            // ignore malformed header
+          }
+
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
-          let buffer = '';
           let streamedContent = '';
-          let sourceEmailIds: string[] | undefined;
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() ?? '';
-            for (const line of lines) {
-              if (line.startsWith('0:')) {
-                streamedContent += JSON.parse(line.slice(2)) as string;
-                setMessages((prev) => {
-                  const msgs = [...prev];
-                  msgs[msgs.length - 1] = { role: 'assistant', content: streamedContent };
-                  return msgs;
-                });
-              } else if (line.startsWith('2:')) {
-                try {
-                  const items = JSON.parse(line.slice(2)) as unknown[];
-                  for (const item of items) {
-                    if (
-                      item !== null &&
-                      typeof item === 'object' &&
-                      Array.isArray((item as { sourceEmailIds?: unknown }).sourceEmailIds)
-                    ) {
-                      sourceEmailIds = (item as { sourceEmailIds: string[] }).sourceEmailIds;
-                    }
-                  }
-                } catch {
-                  // ignore malformed data annotations
-                }
-              }
-            }
+            streamedContent += decoder.decode(value, { stream: true });
+            setMessages((prev) => {
+              const msgs = [...prev];
+              msgs[msgs.length - 1] = { role: 'assistant', content: streamedContent };
+              return msgs;
+            });
           }
 
           setMessages((prev) => {
             const msgs = [...prev];
-            const last = msgs[msgs.length - 1];
             msgs[msgs.length - 1] = {
-              ...last,
+              role: 'assistant',
               content: streamedContent || t.dashboard.agent.noAnswer,
-              ...(sourceEmailIds && sourceEmailIds.length > 0 ? { sourceEmailIds } : {}),
+              ...(sourceEmailIds ? { sourceEmailIds } : {}),
             };
             return msgs;
           });
