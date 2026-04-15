@@ -113,6 +113,31 @@ interface AnalyzeEmailContentResult {
   model: string;
 }
 
+function normalizeUsageTotals(
+  usage:
+    | {
+        totalTokens?: number | undefined;
+        inputTokens?: number | undefined;
+        outputTokens?: number | undefined;
+      }
+    | null
+    | undefined,
+): { totalTokens: number; promptTokens: number; completionTokens: number } {
+  const totalTokens = usage?.totalTokens ?? 0;
+  let promptTokens = usage?.inputTokens ?? 0;
+  let completionTokens = usage?.outputTokens ?? 0;
+
+  if (totalTokens > 0 && promptTokens + completionTokens === 0) {
+    promptTokens = totalTokens;
+  } else if (totalTokens > 0 && promptTokens + completionTokens < totalTokens) {
+    const missing = totalTokens - (promptTokens + completionTokens);
+    if (promptTokens <= completionTokens) promptTokens += missing;
+    else completionTokens += missing;
+  }
+
+  return { totalTokens, promptTokens, completionTokens };
+}
+
 type RawEmailAnalysis = Omit<EmailAnalysis, 'entities'> & {
   entities: Omit<EmailAnalysis['entities'], 'places' | 'placeNames'> & {
     places: string[];
@@ -1104,13 +1129,14 @@ BODY${isHtml ? ' (Markdown, converted from HTML)' : ' (excerpt)'}:
 ${bodyExcerpt}`,
       maxOutputTokens: agentRuntimeSettings.analysisMaxTokens,
     });
+    const normalizedUsage = normalizeUsageTotals(usage);
 
     return {
       analysis: object as RawEmailAnalysis,
       extractedBody: bodyExcerpt,
-      tokensUsed: usage?.totalTokens ?? 0,
-      promptTokens: usage?.inputTokens ?? 0,
-      completionTokens: usage?.outputTokens ?? 0,
+      tokensUsed: normalizedUsage.totalTokens,
+      promptTokens: normalizedUsage.promptTokens,
+      completionTokens: normalizedUsage.completionTokens,
     };
   } catch (err) {
     console.warn('Email pre-analysis failed, continuing without analysis context:', err);
@@ -1419,13 +1445,14 @@ Return the updated subject and body as JSON.`;
     prompt: userPrompt,
     maxOutputTokens,
   });
+  const normalizedUsage = normalizeUsageTotals(usage);
 
   return {
     subject: object.subject !== undefined ? object.subject || fallbackSubject : fallbackSubject,
     body: object.body !== undefined ? object.body || prevBody : prevBody,
-    tokensUsed: usage?.totalTokens ?? 0,
-    promptTokens: usage?.inputTokens ?? 0,
-    completionTokens: usage?.outputTokens ?? 0,
+    tokensUsed: normalizedUsage.totalTokens,
+    promptTokens: normalizedUsage.promptTokens,
+    completionTokens: normalizedUsage.completionTokens,
   };
 }
 
@@ -1496,9 +1523,10 @@ ${chunks[i]}`;
         maxOutputTokens: agentRuntimeSettings.chunkExtractMaxTokens,
       });
       extractions.push(text.trim());
-      totalTokens += usage?.totalTokens ?? 0;
-      totalPromptTokens += usage?.inputTokens ?? 0;
-      totalCompletionTokens += usage?.outputTokens ?? 0;
+      const normalizedUsage = normalizeUsageTotals(usage);
+      totalTokens += normalizedUsage.totalTokens;
+      totalPromptTokens += normalizedUsage.promptTokens;
+      totalCompletionTokens += normalizedUsage.completionTokens;
     } catch (err) {
       // If a single chunk fails, fall back to raw (truncated) text so we
       // still have something to pass to the reduce phase.
@@ -1887,9 +1915,10 @@ ${emailBodyForPrompt}`;
           ? applyDomPatches(emailBody, object.patches as DomPatch[])
           : emailBody
         : object.replacementBody || emailBody;
-      tokensUsed = usage?.totalTokens ?? 0;
-      promptTokens = usage?.inputTokens ?? 0;
-      completionTokens = usage?.outputTokens ?? 0;
+      const normalizedUsage = normalizeUsageTotals(usage);
+      tokensUsed = normalizedUsage.totalTokens;
+      promptTokens = normalizedUsage.promptTokens;
+      completionTokens = normalizedUsage.completionTokens;
       pushStep('html_llm_response', 'ok', 'HTML pass completed', {
         requiresFullBodyReplacement: object.requiresFullBodyReplacement,
         patchesCount: object.patches.length,
@@ -1943,9 +1972,10 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
 
       subject = object.subject || fallbackSubject;
       body = object.body || emailBody;
-      tokensUsed = usage?.totalTokens ?? 0;
-      promptTokens = usage?.inputTokens ?? 0;
-      completionTokens = usage?.outputTokens ?? 0;
+      const normalizedUsage = normalizeUsageTotals(usage);
+      tokensUsed = normalizedUsage.totalTokens;
+      promptTokens = normalizedUsage.promptTokens;
+      completionTokens = normalizedUsage.completionTokens;
       pushStep('text_llm_response', 'ok', 'Plain-text pass completed', {
         subjectPreview: (subject || '').slice(0, 120),
         tokensUsed,
@@ -1999,9 +2029,10 @@ ${emailBodyForPrompt}`;
 
       subject = object.subject || fallbackSubject;
       body = object.body || emailBody;
-      tokensUsed += usage?.totalTokens ?? 0;
-      promptTokens += usage?.inputTokens ?? 0;
-      completionTokens += usage?.outputTokens ?? 0;
+      const normalizedUsage = normalizeUsageTotals(usage);
+      tokensUsed += normalizedUsage.totalTokens;
+      promptTokens += normalizedUsage.promptTokens;
+      completionTokens += normalizedUsage.completionTokens;
       parseError = `Primary pass failed (${message}); recovered with low-complexity fallback`;
       pushStep('fallback_pass', 'ok', 'Recovered with low-complexity fallback', {
         subjectPreview: (subject || '').slice(0, 120),
@@ -2055,9 +2086,10 @@ ${emailBodyForPrompt}`;
 
         subject = recovered.subject || fallbackSubject;
         body = recovered.body || emailBody;
-        tokensUsed += usage?.totalTokens ?? 0;
-        promptTokens += usage?.inputTokens ?? 0;
-        completionTokens += usage?.outputTokens ?? 0;
+        const normalizedUsage = normalizeUsageTotals(usage);
+        tokensUsed += normalizedUsage.totalTokens;
+        promptTokens += normalizedUsage.promptTokens;
+        completionTokens += normalizedUsage.completionTokens;
         parseError = `Primary pass failed (${message}); object fallback failed (${fallbackMessage}); recovered via text JSON repair fallback`;
         pushStep('text_recovery_fallback', 'ok', 'Recovered via text fallback + JSON repair', {
           subjectPreview: subject.slice(0, 120),
@@ -2195,7 +2227,8 @@ export async function processEmailWithAgent(
 
   // 3. Run pre-analysis and load user memory in parallel — neither depends on
   //    the other, so launching both concurrently reduces overall latency.
-  const [preAnalysisResult, memory] = await Promise.all([
+  //    Failures are tolerated so forwarding still proceeds with safe defaults.
+  const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
     preAnalyzeEmail(
       emailFrom,
       emailSubject,
@@ -2208,6 +2241,34 @@ export async function processEmailWithAgent(
     ),
     getUserMemory(userId),
   ]);
+  const preAnalysisResult =
+    preAnalysisOutcome.status === 'fulfilled'
+      ? preAnalysisOutcome.value
+      : {
+          analysis: null,
+          extractedBody: '',
+          tokensUsed: 0,
+          promptTokens: 0,
+          completionTokens: 0,
+        };
+  if (preAnalysisOutcome.status === 'rejected') {
+    const preAnalysisError =
+      preAnalysisOutcome.reason instanceof Error
+        ? preAnalysisOutcome.reason.message
+        : String(preAnalysisOutcome.reason);
+    pushTrace('pre_analysis_failed', 'warning', preAnalysisError);
+  }
+  const memory =
+    memoryOutcome.status === 'fulfilled'
+      ? memoryOutcome.value
+      : { userId, entries: [], updatedAt: new Date() };
+  if (memoryOutcome.status === 'rejected') {
+    const memoryError =
+      memoryOutcome.reason instanceof Error
+        ? memoryOutcome.reason.message
+        : String(memoryOutcome.reason);
+    pushTrace('memory_load_failed', 'warning', memoryError);
+  }
   const analysis = await hydrateEmailAnalysis(preAnalysisResult.analysis, googleMapsApiKey);
   const {
     tokensUsed: analysisTotalTokens,

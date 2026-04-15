@@ -14,9 +14,9 @@ export function useEmailExpansion() {
   const fetchedExpandedIds = useRef<Set<string>>(new Set());
 
   const fetchExpandedEmail = useCallback(
-    async (logId: string) => {
+    async (logId: string, options?: { force?: boolean }) => {
       if (!authUser) return;
-      if (fetchedExpandedIds.current.has(logId)) return;
+      if (!options?.force && fetchedExpandedIds.current.has(logId)) return;
       fetchedExpandedIds.current.add(logId);
       setExpandedData((prev) => ({
         ...prev,

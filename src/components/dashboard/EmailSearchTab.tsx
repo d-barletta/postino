@@ -39,6 +39,7 @@ import {
 } from '@/components/dashboard/EmailListItem';
 
 const PAGE_SIZE = 20;
+const PROCESSING_REFRESH_INTERVAL_MS = 30_000;
 const ALL_VALUE = '__all__';
 
 // ---------------------------------------------------------------------------
@@ -495,6 +496,15 @@ export function EmailSearchTab({
     if (!hasActive) fetchTotalCount();
     setPage(1);
   }, [refreshTrigger]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    if (!logs.some((log) => log.status === 'processing')) return;
+    const timer = setInterval(() => {
+      void fetchLogs(page, true);
+    }, PROCESSING_REFRESH_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [authUser, logs, page, fetchLogs]);
 
   const selectionResetKey = JSON.stringify(applied);
   const resultsHeader = (
