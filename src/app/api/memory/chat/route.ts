@@ -5,7 +5,7 @@ import { DEFAULT_LLM_MODEL } from '@/lib/llm';
 import { getModelPricing, calculateCost } from '@/lib/openrouter';
 import { addUserCreditsUsage } from '@/lib/credits';
 import { createOpenAI } from '@ai-sdk/openai';
-import { generateText } from 'ai';
+import { streamText } from 'ai';
 import Supermemory from 'supermemory';
 
 function resolveMemoryApiKey(settingsApiKey?: string): string {
@@ -217,44 +217,51 @@ export async function POST(request: NextRequest) {
       apiKey: llmApiKey,
     });
 
-    const result = await generateText({
+    const result = streamText({
       model: openrouter.chat(llmModel),
       system: systemPrompt,
       messages: [...history, { role: 'user', content: query }],
+      onFinish: async ({ usage }) => {
+        // Track token usage on the user document (fire-and-forget).
+        const inputTokens = usage.inputTokens ?? 0;
+        const outputTokens = usage.outputTokens ?? 0;
+        const pricing = await getModelPricing(llmModel, llmApiKey).catch(() => null);
+        const cost = calculateCost(inputTokens, outputTokens, pricing);
+
+        const { data: currentUser } = await supabase
+          .from('users')
+          .select('memory_tokens_used, memory_estimated_cost')
+          .eq('id', uid)
+          .single();
+        supabase
+          .from('users')
+          .update({
+            memory_tokens_used:
+              ((currentUser?.memory_tokens_used as number) ?? 0) + inputTokens + outputTokens,
+            memory_estimated_cost:
+              ((currentUser?.memory_estimated_cost as number) ?? 0) + cost,
+          })
+          .eq('id', uid)
+          .then(undefined, (err: unknown) =>
+            console.error('[memory/chat] Failed to update memory token stats:', err),
+          );
+
+        void addUserCreditsUsage({
+          userId: uid,
+          userEmail: user.email || '',
+          estimatedCostUsd: cost,
+          settingsData,
+        });
+      },
     });
 
-    // Track token usage on the user document (fire-and-forget).
-    const inputTokens = result.usage.inputTokens ?? 0;
-    const outputTokens = result.usage.outputTokens ?? 0;
-    const pricing = await getModelPricing(llmModel, llmApiKey).catch(() => null);
-    const cost = calculateCost(inputTokens, outputTokens, pricing);
-
-    // Read-modify-write for token counters
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('memory_tokens_used, memory_estimated_cost')
-      .eq('id', uid)
-      .single();
-    supabase
-      .from('users')
-      .update({
-        memory_tokens_used:
-          ((currentUser?.memory_tokens_used as number) ?? 0) + inputTokens + outputTokens,
-        memory_estimated_cost: ((currentUser?.memory_estimated_cost as number) ?? 0) + cost,
-      })
-      .eq('id', uid)
-      .then(undefined, (err: unknown) =>
-        console.error('[memory/chat] Failed to update memory token stats:', err),
-      );
-
-    void addUserCreditsUsage({
-      userId: uid,
-      userEmail: user.email || '',
-      estimatedCostUsd: cost,
-      settingsData,
+    // Source email IDs are known before the stream starts; send them as a
+    // response header so the client can read them immediately.
+    return result.toTextStreamResponse({
+      headers: {
+        'X-Source-Email-Ids': JSON.stringify(sourceEmailIds),
+      },
     });
-
-    return NextResponse.json({ answer: result.text, sourceEmailIds });
   } catch (error) {
     return handleUserError(error, 'memory/chat POST');
   }
