@@ -1458,16 +1458,34 @@ ${isFinalStep ? 'This is the FINAL part.' : 'More parts will follow.'}`;
   };
 }
 
+/**
+ * Appends a newly generated body segment to the running body while removing any
+ * exact duplicated boundary text between the previous tail and the new head.
+ * Falls back to a newline join when no overlap is found.
+ */
 function mergeSegmentsWithOverlap(accumulated: string, nextSegment: string): string {
   if (!nextSegment) return accumulated;
   if (!accumulated) return nextSegment;
 
-  const maxOverlap = Math.min(accumulated.length, nextSegment.length, 1_000);
-  for (let overlap = maxOverlap; overlap > 0; overlap--) {
+  const maxOverlap = Math.min(
+    accumulated.length,
+    nextSegment.length,
+    CHUNK_FOLD_OVERLAP_CHARS,
+  );
+  const coarseStep = 16;
+
+  for (let overlap = maxOverlap; overlap >= coarseStep; overlap -= coarseStep) {
     if (accumulated.slice(-overlap) === nextSegment.slice(0, overlap)) {
       return accumulated + nextSegment.slice(overlap);
     }
   }
+
+  for (let overlap = Math.min(maxOverlap, coarseStep - 1); overlap > 0; overlap--) {
+    if (accumulated.slice(-overlap) === nextSegment.slice(0, overlap)) {
+      return accumulated + nextSegment.slice(overlap);
+    }
+  }
+
   return `${accumulated}\n${nextSegment}`;
 }
 
