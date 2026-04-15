@@ -12,6 +12,30 @@ function resolveMemoryApiKey(settingsApiKey?: string): string {
   return (settingsApiKey || process.env.SUPERMEMORY_API_KEY || '').trim();
 }
 
+function normalizeUsageForCost(
+  usage:
+    | {
+        inputTokens?: number | undefined;
+        outputTokens?: number | undefined;
+        totalTokens?: number | undefined;
+      }
+    | undefined,
+): { inputTokens: number; outputTokens: number } {
+  let inputTokens = usage?.inputTokens ?? 0;
+  let outputTokens = usage?.outputTokens ?? 0;
+  const totalTokens = usage?.totalTokens ?? 0;
+
+  if (totalTokens > 0 && inputTokens + outputTokens === 0) {
+    inputTokens = totalTokens;
+  } else if (totalTokens > 0 && inputTokens + outputTokens < totalTokens) {
+    const missing = totalTokens - (inputTokens + outputTokens);
+    if (inputTokens <= outputTokens) inputTokens += missing;
+    else outputTokens += missing;
+  }
+
+  return { inputTokens, outputTokens };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyUserRequest(request);
@@ -223,8 +247,7 @@ export async function POST(request: NextRequest) {
       messages: [...history, { role: 'user', content: query }],
       onFinish: async ({ usage }) => {
         // Track token usage on the user document (fire-and-forget).
-        const inputTokens = usage.inputTokens ?? 0;
-        const outputTokens = usage.outputTokens ?? 0;
+        const { inputTokens, outputTokens } = normalizeUsageForCost(usage);
         const pricing = await getModelPricing(llmModel, llmApiKey).catch(() => null);
         const cost = calculateCost(inputTokens, outputTokens, pricing);
 

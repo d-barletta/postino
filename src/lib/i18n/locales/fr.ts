@@ -312,6 +312,8 @@ const fr: Translations = {
       downloadAttachment: 'Télécharger la pièce jointe',
       noAttachmentsShort: 'Aucune',
       ruleApplied: 'Règle appliquée :',
+      rewriteFailedWarning: "La réécriture a échoué ; le contenu d'origine a été transféré",
+      skipReason: 'Raison du saut :',
       tokens: 'Tokens :',
       credits: 'Crédits :',
       viewOriginal: "Voir l'e-mail original",

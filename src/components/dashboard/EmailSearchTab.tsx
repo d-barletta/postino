@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import {
   Accordion,
@@ -39,6 +39,7 @@ import {
 } from '@/components/dashboard/EmailListItem';
 
 const PAGE_SIZE = 20;
+const PROCESSING_REFRESH_INTERVAL_MS = 30_000;
 const ALL_VALUE = '__all__';
 
 // ---------------------------------------------------------------------------
@@ -217,6 +218,7 @@ export function EmailSearchTab({
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
   const [totalEmailCount, setTotalEmailCount] = useState<number | undefined>(undefined);
   const [totalEmailCountLoading, setTotalEmailCountLoading] = useState(false);
+  const hasProcessingEmails = useMemo(() => logs.some((log) => log.status === 'processing'), [logs]);
   const { expandedData, fetchExpandedEmail } = useEmailExpansion();
   const { markEmailAsRead, toggleEmailRead } = useEmailReadActions(setLogs);
 
@@ -450,9 +452,9 @@ export function EmailSearchTab({
   const hasActive = hasActiveFilter(applied);
 
   const handleRefresh = useCallback(() => {
-    fetchLogs(1, true);
+    fetchLogs(page, true);
     if (!hasActive) fetchTotalCount();
-  }, [fetchLogs, fetchTotalCount, hasActive]);
+  }, [fetchLogs, fetchTotalCount, hasActive, page]);
 
   const handlePageChange = (newPage: number) => {
     fetchLogs(newPage);
@@ -491,10 +493,18 @@ export function EmailSearchTab({
   // Refresh when refreshTrigger changes
   useEffect(() => {
     if (refreshTrigger === undefined || refreshTrigger === 0) return;
-    fetchLogs(1, true);
+    fetchLogs(page, true);
     if (!hasActive) fetchTotalCount();
-    setPage(1);
-  }, [refreshTrigger]);
+  }, [refreshTrigger, fetchLogs, fetchTotalCount, hasActive, page]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    if (!hasProcessingEmails) return;
+    const timer = setInterval(() => {
+      void fetchLogs(page, true);
+    }, PROCESSING_REFRESH_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [authUser, hasProcessingEmails, page, fetchLogs]);
 
   const selectionResetKey = JSON.stringify(applied);
   const resultsHeader = (

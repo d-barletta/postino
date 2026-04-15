@@ -308,6 +308,8 @@ const es: Translations = {
       downloadAttachment: 'Descargar adjunto',
       noAttachmentsShort: 'Ninguno',
       ruleApplied: 'Regla aplicada:',
+      rewriteFailedWarning: 'La reescritura falló; se reenvió el contenido original',
+      skipReason: 'Motivo del omitido:',
       tokens: 'Tokens:',
       credits: 'Créditos:',
       viewOriginal: 'Ver correo original',

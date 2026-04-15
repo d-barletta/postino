@@ -33,7 +33,7 @@ interface EmailLogsBrowserProps {
   onPageChange: (page: number) => void;
   paginationDisabled?: boolean;
   expandedData: Record<string, ExpandedEmailData | undefined>;
-  fetchExpandedEmail: (logId: string) => void | Promise<void>;
+  fetchExpandedEmail: (logId: string, options?: { force?: boolean }) => void | Promise<void>;
   markEmailAsRead?: (emailId: string) => void | Promise<void>;
   onToggleRead?: (emailId: string, currentIsRead: boolean) => void | Promise<void>;
   onDeleteEmail?: (emailId: string) => void | Promise<void>;
@@ -174,6 +174,19 @@ export function EmailLogsBrowser({
   const selectedLog = selectedId ? (logs.find((log) => log.id === selectedId) ?? null) : null;
   const selectedEmailData = selectedId ? expandedData[selectedId] : undefined;
   const showPagination = !logsLoading && logs.length > 0 && (hasNextPage || page > 1);
+  const previousSelectedStatusRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedLog) {
+      previousSelectedStatusRef.current = null;
+      return;
+    }
+    const previousStatus = previousSelectedStatusRef.current;
+    previousSelectedStatusRef.current = selectedLog.status;
+    if (previousStatus === 'processing' && selectedLog.status !== 'processing') {
+      void fetchExpandedEmail(selectedLog.id, { force: true });
+    }
+  }, [selectedLog, fetchExpandedEmail]);
 
   const handleToggleExpand = (logId: string) => {
     if (selectedId === logId) {

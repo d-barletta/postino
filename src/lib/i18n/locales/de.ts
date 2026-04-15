@@ -314,6 +314,8 @@ const de: Translations = {
       downloadAttachment: 'Anhang herunterladen',
       noAttachmentsShort: 'Keine',
       ruleApplied: 'Angewendete Regel:',
+      rewriteFailedWarning: 'Umschreiben fehlgeschlagen; Originalinhalt wurde weitergeleitet',
+      skipReason: 'Grund für Überspringen:',
       tokens: 'Tokens:',
       credits: 'Credits:',
       viewOriginal: 'Original-E-Mail anzeigen',

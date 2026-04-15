@@ -1564,6 +1564,7 @@ export async function POST(request: NextRequest) {
         status: 'skipped',
         user_id: userId,
         original_body: emailBody,
+        error_message: 'Forwarding is disabled because your Postino address is turned off',
         ...(messageId ? { message_id: messageId } : {}),
       });
       await sendEmailCompletionPushNotification(userId, sender, subject, skippedLogId, 'skipped');
