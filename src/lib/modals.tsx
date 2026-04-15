@@ -27,9 +27,19 @@ export interface ExploreEmailsOptions {
 
 interface ModalsContextValue {
   // FullPageEmailDialog
-  openFullPageEmail: (opts: { subject: string; body: string | null; processedBody?: string | null; loading?: boolean }) => void;
+  openFullPageEmail: (opts: {
+    subject: string;
+    body: string | null;
+    processedBody?: string | null;
+    loading?: boolean;
+  }) => void;
   updateFullPageEmail: (
-    opts: Partial<{ subject: string; body: string | null; processedBody: string | null; loading: boolean }>,
+    opts: Partial<{
+      subject: string;
+      body: string | null;
+      processedBody: string | null;
+      loading: boolean;
+    }>,
   ) => void;
   closeFullPageEmail: () => void;
   fullPageEmailOpen: boolean;
@@ -69,8 +79,18 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
   // -----------------------------------------------------------------------
 
   const openFullPageEmail = useCallback(
-    (opts: { subject: string; body: string | null; processedBody?: string | null; loading?: boolean }) => {
-      setFullPageEmail({ subject: opts.subject, body: opts.body, processedBody: opts.processedBody, loading: opts.loading ?? false });
+    (opts: {
+      subject: string;
+      body: string | null;
+      processedBody?: string | null;
+      loading?: boolean;
+    }) => {
+      setFullPageEmail({
+        subject: opts.subject,
+        body: opts.body,
+        processedBody: opts.processedBody,
+        loading: opts.loading ?? false,
+      });
     },
     [],
   );
