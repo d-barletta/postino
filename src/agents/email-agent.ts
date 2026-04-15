@@ -68,6 +68,9 @@ const CHUNK_SIZE_CHARS = 15_000;
 /** Default max output tokens for each chunk extraction call. */
 const CHUNK_EXTRACT_MAX_TOKENS = 1_000;
 
+/** Number of trailing characters from prior output passed as fold overlap context. */
+const CHUNK_FOLD_OVERLAP_CHARS = 4_000;
+
 /** Default max output tokens for the pre-analysis classification call. */
 const ANALYSIS_MAX_TOKENS = 2_000;
 
@@ -1355,7 +1358,7 @@ async function runFoldStep(
   totalChunks: number,
   extraction: string,
   prevSubject: string,
-  prevBody: string,
+  prevBodyOverlap: string,
   emailFrom: string,
   emailSubject: string,
   rules: RuleForProcessing[],
@@ -1365,10 +1368,9 @@ async function runFoldStep(
   maxOutputTokens: number,
   fallbackSubject: string,
   attachmentNames?: string[],
-  originalHtmlBody?: string,
 ): Promise<{
   subject: string;
-  body: string;
+  bodySegment: string;
   tokensUsed: number;
   promptTokens: number;
   completionTokens: number;
@@ -1394,50 +1396,50 @@ IMPORTANT: Apply each rule only when the transformation is actually needed. For 
   const isFinalStep = chunkIndex === totalChunks - 1;
   const chunkLabel = totalChunks > 1 ? ` (part ${chunkIndex + 1} of ${totalChunks})` : '';
 
-  // For the first step of an HTML email, include the original HTML body so the
-  // LLM can preserve its structure. For subsequent steps the running body already
-  // contains the correctly structured HTML from the previous fold step.
-  const originalHtmlSection =
-    isFirstStep && originalHtmlBody
-      ? `\nORIGINAL HTML BODY (preserve this structure; only modify where a rule explicitly requires it):\n${originalHtmlBody}\n`
-      : '';
-
   const userPrompt = isFirstStep
     ? `Process this incoming email${chunkLabel}.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-${attachmentsLine}${originalHtmlSection}
+${attachmentsLine}
 EXTRACTED CONTENT${chunkLabel} (plain-text summary of the email body):
 ${extraction}
 
 ${rulesBlock}
 
-Apply the user rules to the SUBJECT and, when rules require it, to the BODY.${originalHtmlBody ? ' Return the original HTML body unchanged unless a rule explicitly requires a content change (e.g. translate, summarize, rewrite, add content). If no such transformation is needed, return the original HTML body as-is.' : ' Return the processed result as JSON with "subject" (string) and "body" (full HTML string).'}
+Apply the user rules to the SUBJECT and to this current part's content.
+Return JSON with:
+- "subject": current running subject
+- "bodySegment": HTML fragment for ONLY this part (do not include prior parts)
 ${totalChunks > 1 ? 'More content will follow in subsequent steps.' : ''}`
     : `Continue processing this email (part ${chunkIndex + 1} of ${totalChunks}).
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
 ${attachmentsLine}
-CURRENT RESULT (accumulated from parts 1–${chunkIndex}):
+CURRENT RESULT (accumulated from parts 1–${chunkIndex}, overlap tail only to keep token usage bounded):
 SUBJECT: ${sanitizeEmailField(prevSubject)}
-BODY:
-${prevBody}
+BODY OVERLAP (last ${CHUNK_FOLD_OVERLAP_CHARS} chars):
+${prevBodyOverlap}
 
 ADDITIONAL CONTENT (part ${chunkIndex + 1}/${totalChunks}):
 ${extraction}
 
 ${rulesBlock}
 
-Incorporate this additional content into your running result, applying the same rules throughout. Preserve the existing HTML structure in the body unless rules require a change. ${isFinalStep ? 'This is the FINAL part — return the complete, finalized result.' : 'More parts will follow.'}
-Return the updated subject and body as JSON.`;
+Incorporate this additional content into the running result, applying the same rules throughout.
+Return JSON with:
+- "subject": updated running subject
+- "bodySegment": HTML fragment for ONLY this new part (avoid repeating prior overlap content)
+${isFinalStep ? 'This is the FINAL part.' : 'More parts will follow.'}`;
 
   const { object, usage } = await generateObject({
     model: openrouterProvider(model),
     schema: z.object({
       subject: z.string().describe('The processed email subject line'),
-      body: z.string().describe('The processed email body in HTML format'),
+      bodySegment: z
+        .string()
+        .describe('Processed HTML fragment for only the current part of the email body'),
     }),
     experimental_repairText: repairObjectJsonText,
     maxRetries: 3,
@@ -1449,11 +1451,24 @@ Return the updated subject and body as JSON.`;
 
   return {
     subject: object.subject !== undefined ? object.subject || fallbackSubject : fallbackSubject,
-    body: object.body !== undefined ? object.body || prevBody : prevBody,
+    bodySegment: object.bodySegment !== undefined ? object.bodySegment : '',
     tokensUsed: normalizedUsage.totalTokens,
     promptTokens: normalizedUsage.promptTokens,
     completionTokens: normalizedUsage.completionTokens,
   };
+}
+
+function mergeSegmentsWithOverlap(accumulated: string, nextSegment: string): string {
+  if (!nextSegment) return accumulated;
+  if (!accumulated) return nextSegment;
+
+  const maxOverlap = Math.min(accumulated.length, nextSegment.length, 1_000);
+  for (let overlap = maxOverlap; overlap > 0; overlap--) {
+    if (accumulated.slice(-overlap) === nextSegment.slice(0, overlap)) {
+      return accumulated + nextSegment.slice(overlap);
+    }
+  }
+  return `${accumulated}\n${nextSegment}`;
 }
 
 /**
@@ -1485,8 +1500,6 @@ async function processEmailInChunks(
   agentRuntimeSettings: AgentRuntimeSettings,
   attachmentNames?: string[],
   onPartialResult?: PartialResultCallback,
-  /** Original HTML body to preserve structure across fold steps. */
-  originalHtmlBody?: string,
 ): Promise<{
   subject: string;
   body: string;
@@ -1540,9 +1553,7 @@ ${chunks[i]}`;
   // them one at a time.  Each step receives the running partial result plus the
   // next extraction so that no single call ever contains the full email body.
   let currentSubject = fallbackSubject;
-  // Initialise with the original HTML body (when available) so fold steps can
-  // preserve the source structure rather than regenerating HTML from scratch.
-  let currentBody = originalHtmlBody ?? '';
+  let currentBody = '';
   const foldSteps: AgentTraceStep[] = [];
 
   for (let i = 0; i < extractions.length; i++) {
@@ -1552,7 +1563,7 @@ ${chunks[i]}`;
         extractions.length,
         extractions[i],
         currentSubject,
-        currentBody,
+        currentBody.slice(-CHUNK_FOLD_OVERLAP_CHARS),
         emailFrom,
         emailSubject,
         rules,
@@ -1562,10 +1573,9 @@ ${chunks[i]}`;
         maxOutputTokens,
         fallbackSubject,
         attachmentNames,
-        originalHtmlBody,
       );
       currentSubject = step.subject !== undefined ? step.subject || currentSubject : currentSubject;
-      currentBody = step.body !== undefined ? step.body : currentBody;
+      currentBody = mergeSegmentsWithOverlap(currentBody, step.bodySegment);
       totalTokens += step.tokensUsed;
       totalPromptTokens += step.promptTokens;
       totalCompletionTokens += step.completionTokens;
@@ -1835,7 +1845,6 @@ IMPORTANT: Apply each rule only when the transformation is actually needed. For 
         agentRuntimeSettings,
         attachmentNames,
         onPartialResult,
-        isHtml ? sanitizeHtmlBodyForPrompt(emailBody) : undefined,
       );
       subject = result.subject;
       body = result.body;
