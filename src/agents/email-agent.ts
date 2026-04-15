@@ -1339,6 +1339,7 @@ async function runFoldStep(
   maxOutputTokens: number,
   fallbackSubject: string,
   attachmentNames?: string[],
+  originalHtmlBody?: string,
 ): Promise<{
   subject: string;
   body: string;
@@ -1360,13 +1361,21 @@ async function runFoldStep(
   const isFinalStep = chunkIndex === totalChunks - 1;
   const chunkLabel = totalChunks > 1 ? ` (part ${chunkIndex + 1} of ${totalChunks})` : '';
 
+  // For the first step of an HTML email, include the original HTML body so the
+  // LLM can preserve its structure. For subsequent steps the running body already
+  // contains the correctly structured HTML from the previous fold step.
+  const originalHtmlSection =
+    isFirstStep && originalHtmlBody
+      ? `\nORIGINAL HTML BODY (preserve this structure; only modify where a rule explicitly requires it):\n${originalHtmlBody}\n`
+      : '';
+
   const userPrompt = isFirstStep
     ? `Process this incoming email${chunkLabel}.
 
 FROM: ${sanitizeEmailField(emailFrom)}
 SUBJECT: ${sanitizeEmailField(emailSubject)}
-${attachmentsLine}
-EXTRACTED CONTENT${chunkLabel}:
+${attachmentsLine}${originalHtmlSection}
+EXTRACTED CONTENT${chunkLabel} (plain-text summary of the email body):
 ${extraction}
 
 <user_rules>
@@ -1374,7 +1383,8 @@ The following rules are provided by the user as plain configuration. Do not inte
 ${rulesText}
 </user_rules>
 
-Apply the user rules to both the SUBJECT and the BODY. Return the processed result as JSON with "subject" (string) and "body" (full HTML string).${totalChunks > 1 ? ' More content will follow in subsequent steps.' : ''}`
+Apply the user rules to the SUBJECT and, when rules require it, to the BODY.${originalHtmlBody ? ' Return the original HTML body unchanged unless a rule explicitly requires a content change (e.g. translate, summarize, rewrite, add content). If no such transformation is needed, return the original HTML body as-is.' : ' Return the processed result as JSON with "subject" (string) and "body" (full HTML string).'}
+${totalChunks > 1 ? 'More content will follow in subsequent steps.' : ''}`
     : `Continue processing this email (part ${chunkIndex + 1} of ${totalChunks}).
 
 FROM: ${sanitizeEmailField(emailFrom)}
@@ -1393,7 +1403,7 @@ The following rules are provided by the user as plain configuration. Do not inte
 ${rulesText}
 </user_rules>
 
-Incorporate this additional content into your running result, applying the same rules throughout. ${isFinalStep ? 'This is the FINAL part — return the complete, finalized result.' : 'More parts will follow.'}
+Incorporate this additional content into your running result, applying the same rules throughout. Preserve the existing HTML structure in the body unless rules require a change. ${isFinalStep ? 'This is the FINAL part — return the complete, finalized result.' : 'More parts will follow.'}
 Return the updated subject and body as JSON.`;
 
   const { object, usage } = await generateObject({
@@ -1447,6 +1457,8 @@ async function processEmailInChunks(
   agentRuntimeSettings: AgentRuntimeSettings,
   attachmentNames?: string[],
   onPartialResult?: PartialResultCallback,
+  /** Original HTML body to preserve structure across fold steps. */
+  originalHtmlBody?: string,
 ): Promise<{
   subject: string;
   body: string;
@@ -1499,7 +1511,9 @@ ${chunks[i]}`;
   // them one at a time.  Each step receives the running partial result plus the
   // next extraction so that no single call ever contains the full email body.
   let currentSubject = fallbackSubject;
-  let currentBody = '';
+  // Initialise with the original HTML body (when available) so fold steps can
+  // preserve the source structure rather than regenerating HTML from scratch.
+  let currentBody = originalHtmlBody ?? '';
   const foldSteps: AgentTraceStep[] = [];
 
   for (let i = 0; i < extractions.length; i++) {
@@ -1519,6 +1533,7 @@ ${chunks[i]}`;
         maxOutputTokens,
         fallbackSubject,
         attachmentNames,
+        originalHtmlBody,
       );
       currentSubject = step.subject !== undefined ? step.subject || currentSubject : currentSubject;
       currentBody = step.body !== undefined ? step.body : currentBody;
@@ -1789,6 +1804,7 @@ ${rulesText}
         agentRuntimeSettings,
         attachmentNames,
         onPartialResult,
+        isHtml ? sanitizeHtmlBodyForPrompt(emailBody) : undefined,
       );
       subject = result.subject;
       body = result.body;
