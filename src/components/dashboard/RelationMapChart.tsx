@@ -265,7 +265,7 @@ function LeafletCanvas({
   return (
     <div className="relative h-full w-full">
       {selectedPin ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-1000 flex justify-center px-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-8 z-1000 flex justify-center px-3">
           <Button
             type="button"
             size="sm"

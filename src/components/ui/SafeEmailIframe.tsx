@@ -100,6 +100,15 @@ export function SafeEmailIframe({
     baseStyle.textContent = BASE_IFRAME_CSS;
     head.insertBefore(baseStyle, head.firstChild);
 
+    // Appended after email styles so it wins the cascade for same-specificity
+    // !important declarations. Some HTML emails set `line-height:100% !important`
+    // on body/ExternalClass which makes text look cramped; override with a
+    // readable value while leaving higher-specificity rules (e.g. .bodyContent
+    // div) untouched.
+    const lineHeightFix = doc.createElement('style');
+    lineHeightFix.textContent = 'body{line-height:1.5!important;}';
+    head.appendChild(lineHeightFix);
+
     const applyScaleToFit = () => {
       const body = doc.body;
       const root = doc.documentElement;
