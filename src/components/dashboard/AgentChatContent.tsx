@@ -41,8 +41,16 @@ export function AgentChatContent({
   heightClass = 'h-89',
   wrapperClass = '',
 }: AgentChatContentProps) {
-  const { messages, loading, query, setQuery, handleSubmit, handleKeyDown, repeatMessage } =
-    useAgentChat();
+  const {
+    messages,
+    loading,
+    streamingContent,
+    query,
+    setQuery,
+    handleSubmit,
+    handleKeyDown,
+    repeatMessage,
+  } = useAgentChat();
   const { openExploreEmails } = useGlobalModals();
   const { t } = useI18n();
   const a = t.dashboard.agent;
@@ -184,13 +192,18 @@ export function AgentChatContent({
           ))
         )}
 
-        {/* Typing indicator */}
+        {/* Typing indicator — shows streamed text above dots while loading */}
         {loading && (
           <div className="flex items-start gap-2">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
               <PostinoLogo className="h-4 w-4" title={a.title} />
             </div>
-            <div className="rounded-2xl rounded-tl-sm border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+            <div className="rounded-2xl rounded-tl-sm border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 max-w-[75%]">
+              {streamingContent ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-1 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-xs text-gray-900 dark:text-gray-100 mb-2">
+                  <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                </div>
+              ) : null}
               <div className="flex items-center gap-1">
                 <span
                   className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"

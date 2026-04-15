@@ -35,7 +35,7 @@ interface AgentFullPageModalProps {
 export function AgentFullPageModal({ open, onClose }: AgentFullPageModalProps) {
   const { t } = useI18n();
   const a = t.dashboard.agent;
-  const { messages, loading, clearMessages } = useAgentChat();
+  const { messages, loading, clearMessages, streamingContent } = useAgentChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [clearDrawerOpen, setClearDrawerOpen] = useState(false);
@@ -47,12 +47,12 @@ export function AgentFullPageModal({ open, onClose }: AgentFullPageModalProps) {
 
   useModalHistory(open, onClose);
 
-  // Scroll to bottom in the full-page container when messages change
+  // Scroll to bottom in the full-page container when messages or streaming content change
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages, loading]);
+  }, [messages, loading, streamingContent]);
 
   return (
     <>

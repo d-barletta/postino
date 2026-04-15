@@ -86,6 +86,8 @@ function clearFromStorage(userId: string) {
 interface AgentChatContextValue {
   messages: AgentMessage[];
   loading: boolean;
+  /** Partial text streamed so far during an in-flight response. Empty when not loading. */
+  streamingContent: string;
   query: string;
   setQuery: (q: string) => void;
   handleSubmit: () => void;
@@ -105,6 +107,7 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<AgentMessage[]>(_persistedMessages);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
   const creditsCallbackRef = useRef<(() => void) | undefined>(undefined);
   const storageInitializedRef = useRef(false);
 
@@ -134,9 +137,10 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
 
     const userMessage: AgentMessage = { role: 'user', content: trimmed };
     const currentMessages = messages;
-    setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
+    setMessages((prev) => [...prev, userMessage]);
     setQuery('');
     setLoading(true);
+    setStreamingContent('');
 
     try {
       const token = await getIdToken();
@@ -154,14 +158,13 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
 
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
-        setMessages((prev) => {
-          const msgs = [...prev];
-          msgs[msgs.length - 1] = {
+        setMessages((prev) => [
+          ...prev,
+          {
             role: 'assistant',
             content: (data as { error?: string }).error || t.dashboard.agent.errorFallback,
-          };
-          return msgs;
-        });
+          },
+        ]);
         return;
       }
 
@@ -185,29 +188,25 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
         const { done, value } = await reader.read();
         if (done) break;
         content += decoder.decode(value, { stream: true });
-        setMessages((prev) => {
-          const msgs = [...prev];
-          msgs[msgs.length - 1] = { role: 'assistant', content };
-          return msgs;
-        });
+        setStreamingContent(content);
       }
 
-      setMessages((prev) => {
-        const msgs = [...prev];
-        msgs[msgs.length - 1] = {
+      setStreamingContent('');
+      setMessages((prev) => [
+        ...prev,
+        {
           role: 'assistant',
           content: content || t.dashboard.agent.noAnswer,
           ...(sourceEmailIds ? { sourceEmailIds } : {}),
-        };
-        return msgs;
-      });
+        },
+      ]);
       creditsCallbackRef.current?.();
     } catch {
-      setMessages((prev) => {
-        const msgs = [...prev];
-        msgs[msgs.length - 1] = { role: 'assistant', content: t.dashboard.agent.errorFallback };
-        return msgs;
-      });
+      setStreamingContent('');
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: t.dashboard.agent.errorFallback },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -236,8 +235,9 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
       if (!content.trim() || loading) return;
       const userMessage: AgentMessage = { role: 'user', content: content.trim() };
       const currentMessages = _persistedMessages;
-      setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
+      setMessages((prev) => [...prev, userMessage]);
       setLoading(true);
+      setStreamingContent('');
       getIdToken()
         .then(async (token) => {
           const res = await fetch('/api/memory/chat', {
@@ -254,14 +254,14 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
 
           if (!res.ok || !res.body) {
             const data = await res.json().catch(() => ({}));
-            setMessages((prev) => {
-              const msgs = [...prev];
-              msgs[msgs.length - 1] = {
+            setStreamingContent('');
+            setMessages((prev) => [
+              ...prev,
+              {
                 role: 'assistant',
                 content: (data as { error?: string }).error || t.dashboard.agent.errorFallback,
-              };
-              return msgs;
-            });
+              },
+            ]);
             return;
           }
 
@@ -284,33 +284,26 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
             const { done, value } = await reader.read();
             if (done) break;
             streamedContent += decoder.decode(value, { stream: true });
-            setMessages((prev) => {
-              const msgs = [...prev];
-              msgs[msgs.length - 1] = { role: 'assistant', content: streamedContent };
-              return msgs;
-            });
+            setStreamingContent(streamedContent);
           }
 
-          setMessages((prev) => {
-            const msgs = [...prev];
-            msgs[msgs.length - 1] = {
+          setStreamingContent('');
+          setMessages((prev) => [
+            ...prev,
+            {
               role: 'assistant',
               content: streamedContent || t.dashboard.agent.noAnswer,
               ...(sourceEmailIds ? { sourceEmailIds } : {}),
-            };
-            return msgs;
-          });
+            },
+          ]);
           creditsCallbackRef.current?.();
         })
         .catch(() => {
-          setMessages((prev) => {
-            const msgs = [...prev];
-            msgs[msgs.length - 1] = {
-              role: 'assistant',
-              content: t.dashboard.agent.errorFallback,
-            };
-            return msgs;
-          });
+          setStreamingContent('');
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: t.dashboard.agent.errorFallback },
+          ]);
         })
         .finally(() => setLoading(false));
     },
@@ -326,6 +319,7 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
       value={{
         messages,
         loading,
+        streamingContent,
         query,
         setQuery,
         handleSubmit,
