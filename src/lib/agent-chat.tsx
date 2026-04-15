@@ -134,7 +134,7 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
 
     const userMessage: AgentMessage = { role: 'user', content: trimmed };
     const currentMessages = messages;
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
     setQuery('');
     setLoading(true);
 
@@ -151,28 +151,63 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
           history: currentMessages.map(({ role, content }) => ({ role, content })),
         }),
       });
-      const data = await res.json();
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: res.ok
-            ? data.answer || t.dashboard.agent.noAnswer
-            : data.error || t.dashboard.agent.errorFallback,
-          sourceEmailIds:
-            res.ok && Array.isArray(data.sourceEmailIds) && data.sourceEmailIds.length > 0
-              ? (data.sourceEmailIds as string[])
-              : undefined,
-        },
-      ]);
-      if (res.ok) {
-        creditsCallbackRef.current?.();
+
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        setMessages((prev) => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = {
+            role: 'assistant',
+            content: (data as { error?: string }).error || t.dashboard.agent.errorFallback,
+          };
+          return msgs;
+        });
+        return;
       }
+
+      // Source email IDs are sent in a header before any body bytes arrive.
+      const rawIds = res.headers.get('X-Source-Email-Ids');
+      let sourceEmailIds: string[] | undefined;
+      try {
+        const parsed: unknown = rawIds ? JSON.parse(rawIds) : [];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          sourceEmailIds = parsed as string[];
+        }
+      } catch {
+        // ignore malformed header
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let content = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        content += decoder.decode(value, { stream: true });
+        setMessages((prev) => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = { role: 'assistant', content };
+          return msgs;
+        });
+      }
+
+      setMessages((prev) => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = {
+          role: 'assistant',
+          content: content || t.dashboard.agent.noAnswer,
+          ...(sourceEmailIds ? { sourceEmailIds } : {}),
+        };
+        return msgs;
+      });
+      creditsCallbackRef.current?.();
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: t.dashboard.agent.errorFallback },
-      ]);
+      setMessages((prev) => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = { role: 'assistant', content: t.dashboard.agent.errorFallback };
+        return msgs;
+      });
     } finally {
       setLoading(false);
     }
@@ -201,11 +236,11 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
       if (!content.trim() || loading) return;
       const userMessage: AgentMessage = { role: 'user', content: content.trim() };
       const currentMessages = _persistedMessages;
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
       setLoading(true);
       getIdToken()
-        .then((token) =>
-          fetch('/api/memory/chat', {
+        .then(async (token) => {
+          const res = await fetch('/api/memory/chat', {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -215,30 +250,81 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
               query: content.trim(),
               history: currentMessages.map(({ role, content: c }) => ({ role, content: c })),
             }),
-          }),
-        )
-        .then(async (res) => {
-          const data = await res.json();
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              content: res.ok
-                ? data.answer || t.dashboard.agent.noAnswer
-                : data.error || t.dashboard.agent.errorFallback,
-              sourceEmailIds:
-                res.ok && Array.isArray(data.sourceEmailIds) && data.sourceEmailIds.length > 0
-                  ? (data.sourceEmailIds as string[])
-                  : undefined,
-            },
-          ]);
-          if (res.ok) creditsCallbackRef.current?.();
+          });
+
+          if (!res.ok || !res.body) {
+            const data = await res.json().catch(() => ({}));
+            setMessages((prev) => {
+              const msgs = [...prev];
+              msgs[msgs.length - 1] = {
+                role: 'assistant',
+                content: (data as { error?: string }).error || t.dashboard.agent.errorFallback,
+              };
+              return msgs;
+            });
+            return;
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let streamedContent = '';
+          let sourceEmailIds: string[] | undefined;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() ?? '';
+            for (const line of lines) {
+              if (line.startsWith('0:')) {
+                streamedContent += JSON.parse(line.slice(2)) as string;
+                setMessages((prev) => {
+                  const msgs = [...prev];
+                  msgs[msgs.length - 1] = { role: 'assistant', content: streamedContent };
+                  return msgs;
+                });
+              } else if (line.startsWith('2:')) {
+                try {
+                  const items = JSON.parse(line.slice(2)) as unknown[];
+                  for (const item of items) {
+                    if (
+                      item !== null &&
+                      typeof item === 'object' &&
+                      Array.isArray((item as { sourceEmailIds?: unknown }).sourceEmailIds)
+                    ) {
+                      sourceEmailIds = (item as { sourceEmailIds: string[] }).sourceEmailIds;
+                    }
+                  }
+                } catch {
+                  // ignore malformed data annotations
+                }
+              }
+            }
+          }
+
+          setMessages((prev) => {
+            const msgs = [...prev];
+            const last = msgs[msgs.length - 1];
+            msgs[msgs.length - 1] = {
+              ...last,
+              content: streamedContent || t.dashboard.agent.noAnswer,
+              ...(sourceEmailIds && sourceEmailIds.length > 0 ? { sourceEmailIds } : {}),
+            };
+            return msgs;
+          });
+          creditsCallbackRef.current?.();
         })
         .catch(() => {
-          setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: t.dashboard.agent.errorFallback },
-          ]);
+          setMessages((prev) => {
+            const msgs = [...prev];
+            msgs[msgs.length - 1] = {
+              role: 'assistant',
+              content: t.dashboard.agent.errorFallback,
+            };
+            return msgs;
+          });
         })
         .finally(() => setLoading(false));
     },
