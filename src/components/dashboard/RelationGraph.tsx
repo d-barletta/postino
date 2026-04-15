@@ -498,7 +498,7 @@ function CytoscapeCanvas({
         </div>
       )}
       {selectedNode ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 flex justify-center px-3">
           <Button
             type="button"
             size="sm"
