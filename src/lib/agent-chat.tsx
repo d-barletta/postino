@@ -86,6 +86,8 @@ function clearFromStorage(userId: string) {
 interface AgentChatContextValue {
   messages: AgentMessage[];
   loading: boolean;
+  /** Partial text streamed so far during an in-flight response. Empty when not loading. */
+  streamingContent: string;
   query: string;
   setQuery: (q: string) => void;
   handleSubmit: () => void;
@@ -105,6 +107,7 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<AgentMessage[]>(_persistedMessages);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
   const creditsCallbackRef = useRef<(() => void) | undefined>(undefined);
   const storageInitializedRef = useRef(false);
 
@@ -137,6 +140,7 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
     setMessages((prev) => [...prev, userMessage]);
     setQuery('');
     setLoading(true);
+    setStreamingContent('');
 
     try {
       const token = await getIdToken();
@@ -151,24 +155,54 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
           history: currentMessages.map(({ role, content }) => ({ role, content })),
         }),
       });
-      const data = await res.json();
+
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: (data as { error?: string }).error || t.dashboard.agent.errorFallback,
+          },
+        ]);
+        return;
+      }
+
+      // Source email IDs are sent in a header before any body bytes arrive.
+      const rawIds = res.headers.get('X-Source-Email-Ids');
+      let sourceEmailIds: string[] | undefined;
+      try {
+        const parsed: unknown = rawIds ? JSON.parse(rawIds) : [];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          sourceEmailIds = parsed as string[];
+        }
+      } catch {
+        // ignore malformed header
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let content = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        content += decoder.decode(value, { stream: true });
+        setStreamingContent(content);
+      }
+
+      setStreamingContent('');
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: res.ok
-            ? data.answer || t.dashboard.agent.noAnswer
-            : data.error || t.dashboard.agent.errorFallback,
-          sourceEmailIds:
-            res.ok && Array.isArray(data.sourceEmailIds) && data.sourceEmailIds.length > 0
-              ? (data.sourceEmailIds as string[])
-              : undefined,
+          content: content || t.dashboard.agent.noAnswer,
+          ...(sourceEmailIds ? { sourceEmailIds } : {}),
         },
       ]);
-      if (res.ok) {
-        creditsCallbackRef.current?.();
-      }
+      creditsCallbackRef.current?.();
     } catch {
+      setStreamingContent('');
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: t.dashboard.agent.errorFallback },
@@ -203,9 +237,10 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
       const currentMessages = _persistedMessages;
       setMessages((prev) => [...prev, userMessage]);
       setLoading(true);
+      setStreamingContent('');
       getIdToken()
-        .then((token) =>
-          fetch('/api/memory/chat', {
+        .then(async (token) => {
+          const res = await fetch('/api/memory/chat', {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -215,26 +250,56 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
               query: content.trim(),
               history: currentMessages.map(({ role, content: c }) => ({ role, content: c })),
             }),
-          }),
-        )
-        .then(async (res) => {
-          const data = await res.json();
+          });
+
+          if (!res.ok || !res.body) {
+            const data = await res.json().catch(() => ({}));
+            setStreamingContent('');
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: (data as { error?: string }).error || t.dashboard.agent.errorFallback,
+              },
+            ]);
+            return;
+          }
+
+          const rawIds = res.headers.get('X-Source-Email-Ids');
+          let sourceEmailIds: string[] | undefined;
+          try {
+            const parsed: unknown = rawIds ? JSON.parse(rawIds) : [];
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              sourceEmailIds = parsed as string[];
+            }
+          } catch {
+            // ignore malformed header
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let streamedContent = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            streamedContent += decoder.decode(value, { stream: true });
+            setStreamingContent(streamedContent);
+          }
+
+          setStreamingContent('');
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
-              content: res.ok
-                ? data.answer || t.dashboard.agent.noAnswer
-                : data.error || t.dashboard.agent.errorFallback,
-              sourceEmailIds:
-                res.ok && Array.isArray(data.sourceEmailIds) && data.sourceEmailIds.length > 0
-                  ? (data.sourceEmailIds as string[])
-                  : undefined,
+              content: streamedContent || t.dashboard.agent.noAnswer,
+              ...(sourceEmailIds ? { sourceEmailIds } : {}),
             },
           ]);
-          if (res.ok) creditsCallbackRef.current?.();
+          creditsCallbackRef.current?.();
         })
         .catch(() => {
+          setStreamingContent('');
           setMessages((prev) => [
             ...prev,
             { role: 'assistant', content: t.dashboard.agent.errorFallback },
@@ -254,6 +319,7 @@ export function AgentChatProvider({ children }: { children: ReactNode }) {
       value={{
         messages,
         loading,
+        streamingContent,
         query,
         setQuery,
         handleSubmit,

@@ -23,7 +23,7 @@ interface AgentTabProps {
 
 export function AgentTab({ onCreditsUsed }: AgentTabProps) {
   const { t } = useI18n();
-  const { messages, clearMessages, registerCreditsCallback } = useAgentChat();
+  const { messages, clearMessages, registerCreditsCallback, streamingContent } = useAgentChat();
   const { openAgentFullPage } = useGlobalModals();
   const [clearDrawerOpen, setClearDrawerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -34,12 +34,12 @@ export function AgentTab({ onCreditsUsed }: AgentTabProps) {
     if (onCreditsUsed) registerCreditsCallback(onCreditsUsed);
   }, [onCreditsUsed, registerCreditsCallback]);
 
-  // Scroll within the card container when messages change
+  // Scroll within the card container when messages or streaming content change
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   const handleClearConfirm = () => {
     clearMessages();
