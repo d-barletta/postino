@@ -238,8 +238,7 @@ export async function POST(request: NextRequest) {
           .update({
             memory_tokens_used:
               ((currentUser?.memory_tokens_used as number) ?? 0) + inputTokens + outputTokens,
-            memory_estimated_cost:
-              ((currentUser?.memory_estimated_cost as number) ?? 0) + cost,
+            memory_estimated_cost: ((currentUser?.memory_estimated_cost as number) ?? 0) + cost,
           })
           .eq('id', uid)
           .then(undefined, (err: unknown) =>
