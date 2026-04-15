@@ -2225,9 +2225,9 @@ export async function processEmailWithAgent(
     },
   });
 
-  // 3. Run pre-analysis and load user memory in parallel — neither depends on
-  //    the other, so launching both concurrently reduces overall latency.
-  //    Failures are tolerated so forwarding still proceeds with safe defaults.
+  // 3. Run pre-analysis and load user memory in parallel. They are independent
+  //    operations, and failures are tolerated so forwarding can continue with
+  //    safe defaults.
   const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
     preAnalyzeEmail(
       emailFrom,
