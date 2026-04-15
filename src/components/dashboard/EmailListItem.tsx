@@ -386,7 +386,7 @@ export function EmailListItem({
       ) : (
         <MailOpen className="h-4 w-4 text-gray-200 dark:text-gray-700 opacity-60" />
       )}
-      {isUnread && <span className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-blue-500" />}
+      {isUnread && <span className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-blue-500" />}
     </div>
   );
 
