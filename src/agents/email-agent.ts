@@ -1358,8 +1358,7 @@ async function runFoldStep(
 
   const isFirstStep = chunkIndex === 0;
   const isFinalStep = chunkIndex === totalChunks - 1;
-  const chunkLabel =
-    totalChunks > 1 ? ` (part ${chunkIndex + 1} of ${totalChunks})` : '';
+  const chunkLabel = totalChunks > 1 ? ` (part ${chunkIndex + 1} of ${totalChunks})` : '';
 
   const userPrompt = isFirstStep
     ? `Process this incoming email${chunkLabel}.
@@ -2250,7 +2249,12 @@ export async function processEmailWithAgent(
   // subject + body to the email log row so that progress is not lost even
   // if the process is interrupted before it fully completes.
   const supabaseAdmin = createAdminClient();
-  const onPartialResult: PartialResultCallback = async (step, total, partialSubject, partialBody) => {
+  const onPartialResult: PartialResultCallback = async (
+    step,
+    total,
+    partialSubject,
+    partialBody,
+  ) => {
     const { error } = await supabaseAdmin
       .from('email_logs')
       .update({ processed_body: partialBody })

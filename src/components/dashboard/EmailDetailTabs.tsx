@@ -46,7 +46,9 @@ export function EmailDetailTabs({
 
   // The body currently displayed in the iframe
   const displayBody =
-    hasRewritten && showRewritten ? (emailData?.processedBody ?? null) : (emailData?.originalBody ?? null);
+    hasRewritten && showRewritten
+      ? (emailData?.processedBody ?? null)
+      : (emailData?.originalBody ?? null);
 
   const handleEyeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
