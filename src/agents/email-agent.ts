@@ -71,6 +71,9 @@ const CHUNK_EXTRACT_MAX_TOKENS = 1_000;
 /** Number of trailing characters from prior output passed as fold overlap context. */
 const CHUNK_FOLD_OVERLAP_CHARS = 4_000;
 
+/** Coarse decrement step when scanning overlap candidates (balances quality vs speed). */
+const CHUNK_FOLD_OVERLAP_SCAN_STEP = 16;
+
 /** Default max output tokens for the pre-analysis classification call. */
 const ANALYSIS_MAX_TOKENS = 2_000;
 
@@ -1472,16 +1475,32 @@ function mergeSegmentsWithOverlap(accumulated: string, nextSegment: string): str
     nextSegment.length,
     CHUNK_FOLD_OVERLAP_CHARS,
   );
-  const coarseStep = 16;
+  const hasExactOverlap = (overlap: number): boolean => {
+    const accStart = accumulated.length - overlap;
+    for (let i = 0; i < overlap; i++) {
+      if (accumulated.charCodeAt(accStart + i) !== nextSegment.charCodeAt(i)) {
+        return false;
+      }
+    }
+    return true;
+  };
 
-  for (let overlap = maxOverlap; overlap >= coarseStep; overlap -= coarseStep) {
-    if (accumulated.slice(-overlap) === nextSegment.slice(0, overlap)) {
+  for (
+    let overlap = maxOverlap;
+    overlap >= CHUNK_FOLD_OVERLAP_SCAN_STEP;
+    overlap -= CHUNK_FOLD_OVERLAP_SCAN_STEP
+  ) {
+    if (hasExactOverlap(overlap)) {
       return accumulated + nextSegment.slice(overlap);
     }
   }
 
-  for (let overlap = Math.min(maxOverlap, coarseStep - 1); overlap > 0; overlap--) {
-    if (accumulated.slice(-overlap) === nextSegment.slice(0, overlap)) {
+  for (
+    let overlap = Math.min(maxOverlap, CHUNK_FOLD_OVERLAP_SCAN_STEP - 1);
+    overlap > 0;
+    overlap--
+  ) {
+    if (hasExactOverlap(overlap)) {
       return accumulated + nextSegment.slice(overlap);
     }
   }
