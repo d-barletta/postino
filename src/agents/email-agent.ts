@@ -1360,6 +1360,7 @@ async function runFoldStep(
   chunkIndex: number,
   totalChunks: number,
   extraction: string,
+  sourceChunkWithFormatting: string,
   prevSubject: string,
   prevBodyOverlap: string,
   emailFrom: string,
@@ -1408,9 +1409,13 @@ ${attachmentsLine}
 EXTRACTED CONTENT${chunkLabel} (plain-text summary of the email body):
 ${extraction}
 
+ORIGINAL CONTENT${chunkLabel} WITH FORMATTING/STYLING (preserve unless a rule requires changing it):
+${sourceChunkWithFormatting}
+
 ${rulesBlock}
 
 Apply the user rules to the SUBJECT and to this current part's content.
+IMPORTANT: Keep the original email structure, HTML formatting, and styling for this part exactly as-is unless a rule explicitly requires a change.
 Return JSON with:
 - "subject": current running subject
 - "bodySegment": HTML fragment for ONLY this part (do not include prior parts)
@@ -1428,9 +1433,13 @@ ${prevBodyOverlap}
 ADDITIONAL CONTENT (part ${chunkIndex + 1}/${totalChunks}):
 ${extraction}
 
+ORIGINAL CONTENT FOR THIS PART WITH FORMATTING/STYLING (preserve unless a rule requires changing it):
+${sourceChunkWithFormatting}
+
 ${rulesBlock}
 
 Incorporate this additional content into the running result, applying the same rules throughout.
+IMPORTANT: Keep the original email structure, HTML formatting, and styling for this part exactly as-is unless a rule explicitly requires a change.
 Return JSON with:
 - "subject": updated running subject
 - "bodySegment": HTML fragment for ONLY this new part (avoid repeating prior overlap content)
@@ -1528,6 +1537,8 @@ async function processEmailInChunks(
   emailSubject: string,
   /** Plain-text version used for chunking and extraction in the map phase. */
   plainTextBody: string,
+  /** Source body preserving original formatting for each fold step. */
+  sourceBodyForStructure: string,
   rules: RuleForProcessing[],
   systemPrompt: string,
   openrouterProvider: ReturnType<typeof createOpenAI>,
@@ -1546,6 +1557,7 @@ async function processEmailInChunks(
   foldSteps: AgentTraceStep[];
 }> {
   const chunks = splitIntoChunks(plainTextBody, agentRuntimeSettings.chunkSizeChars);
+  const sourceChunks = splitIntoChunks(sourceBodyForStructure, agentRuntimeSettings.chunkSizeChars);
   let totalTokens = 0;
   let totalPromptTokens = 0;
   let totalCompletionTokens = 0;
@@ -1599,6 +1611,7 @@ ${chunks[i]}`;
         i,
         extractions.length,
         extractions[i],
+        sourceChunks[i] ?? '',
         currentSubject,
         currentBody.slice(-CHUNK_FOLD_OVERLAP_CHARS),
         emailFrom,
@@ -1873,6 +1886,7 @@ IMPORTANT: Apply each rule only when the transformation is actually needed. For 
         emailFrom,
         emailSubject,
         plainBody,
+        emailBodyForPrompt,
         rules,
         systemPrompt,
         openrouterProvider,
