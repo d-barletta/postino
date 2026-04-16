@@ -115,12 +115,61 @@ async function sendCreditsThresholdPushNotification(
 }
 
 async function sendCreditsThresholdEmail(userEmail: string, usagePercent: number): Promise<void> {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+  const dashboardUrl = appUrl ? `${appUrl}/dashboard` : 'https://postino.pro/dashboard';
+  const supabase = createAdminClient();
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('id', 'global')
+    .single();
+  const settings = (settingsRow?.data as Record<string, unknown> | null) ?? null;
+  const smtpFromEmail =
+    typeof settings?.smtpFromEmail === 'string' ? settings.smtpFromEmail.trim() : '';
+  const smtpFrom = typeof settings?.smtpFrom === 'string' ? settings.smtpFrom.trim() : '';
+  const smtpFromMatch = smtpFrom.match(/<([^>]+)>/);
+  const fallbackDomain =
+    (typeof settings?.mailgunSandboxEmail === 'string' ? settings.mailgunSandboxEmail : '') ||
+    (typeof settings?.mailgunDomain === 'string' ? settings.mailgunDomain : '') ||
+    process.env.MAILGUN_SANDBOX_EMAIL ||
+    '';
+  const senderEmail = smtpFromEmail || smtpFromMatch?.[1] || `noreply@${fallbackDomain || 'postino.pro'}`;
+  const fromAddress = `📬 Postino <${senderEmail}>`;
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Postino monthly credits warning</title>
+  </head>
+  <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background-color:#f8f9fa;">
+    <div style="max-width:500px;margin:0 auto;padding:24px 12px;box-sizing:border-box;">
+      <div style="text-align:center;margin-bottom:20px;font-size:24px;">📬</div>
+      <div style="background:white;border-radius:8px;padding:25px 18px;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,0.1);text-align:center;">
+        <h1 style="margin:0 0 20px 0;font-size:28px;font-weight:600;color:#171717;">Monthly credits warning</h1>
+        <p style="margin:0 0 16px 0;font-size:16px;color:#6b7280;line-height:1.5;">
+          You have used <strong>${usagePercent}%</strong> of your monthly Postino credits.
+        </p>
+        <p style="margin:0 0 28px 0;font-size:16px;color:#6b7280;line-height:1.5;">
+          Open your dashboard to review your usage.
+        </p>
+        <a href="${dashboardUrl}" style="display:inline-block;padding:12px 32px;background-color:#efd957;color:#171717;text-decoration:none;border-radius:6px;font-weight:600;font-size:16px;">Open dashboard</a>
+      </div>
+      <div style="text-align:center;margin-top:30px;font-size:12px;color:#9ca3af;">
+        <p style="margin:0">© 2026 Postino. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>`;
+  const text = `You have used ${usagePercent}% of your monthly Postino credits.\nOpen your dashboard to review your usage: ${dashboardUrl}`;
+
   try {
     await sendEmail({
       to: userEmail,
+      from: fromAddress,
       subject: 'Postino monthly credits warning',
-      html: `<p>You have used <strong>${usagePercent}%</strong> of your monthly Postino credits.</p><p>Open your dashboard to review your usage.</p>`,
-      text: `You have used ${usagePercent}% of your monthly Postino credits. Open your dashboard to review your usage.`,
+      html,
+      text,
     });
   } catch (error) {
     console.error('[credits] Failed to send threshold email:', error);
