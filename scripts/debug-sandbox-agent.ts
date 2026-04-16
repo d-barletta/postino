@@ -88,13 +88,14 @@ IMPORTANT:
 - If a rule asks to translate into a language the email already uses, skip translation and preserve the original content unchanged.
 
 INSTRUCTIONS:
-1. Read the file /vercel/sandbox/email.html
-2. Apply the rules above to both the subject and body.
-3. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
-4. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
-5. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
-6. Write the subject line to /vercel/sandbox/subject.txt (overwrite). ALWAYS write this file even if the subject did not change — write the original subject as-is in that case.
-7. Do NOT create any other files.`;
+1. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${emailSubject}"
+2. Read the file /vercel/sandbox/email.html
+3. Apply the rules above to both the subject and body.
+4. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
+5. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
+6. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
+7. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
+8. Do NOT create any other files.`;
 }
 
 function parseOpencodeSessionId(stdout: string): string | null {
