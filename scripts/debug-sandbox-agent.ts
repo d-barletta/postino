@@ -128,16 +128,22 @@ function parseOpencodeSessionId(stdout: string): string | null {
 
 function readOpencodeTokenPair(
   value: unknown,
-): { promptTokens: number; completionTokens: number } | null {
+): { promptTokens: number; completionTokens: number; totalTokens: number } | null {
   if (!value || typeof value !== 'object') return null;
 
   const tokens = value as Record<string, unknown>;
+  const cache =
+    tokens.cache && typeof tokens.cache === 'object'
+      ? (tokens.cache as Record<string, unknown>)
+      : null;
+
   const promptCandidates = [
     tokens.input,
     tokens.inputTokens,
     tokens.tokensIn,
     tokens.tokens_in,
     tokens.prompt_tokens,
+    tokens.promptTokens,
   ];
   const completionCandidates = [
     tokens.output,
@@ -145,17 +151,57 @@ function readOpencodeTokenPair(
     tokens.tokensOut,
     tokens.tokens_out,
     tokens.completion_tokens,
+    tokens.completionTokens,
+  ];
+  const totalCandidates = [
+    tokens.total,
+    tokens.totalTokens,
+    tokens.total_tokens,
+  ];
+
+  const cacheWriteCandidates = [
+    cache?.write,
+    cache?.write_tokens,
+    cache?.writeTokens,
+    tokens.cache_write,
+    tokens.cacheWrite,
+    tokens.cached_input_tokens,
+    tokens.cachedInputTokens,
+  ];
+  const cacheReadCandidates = [
+    cache?.read,
+    cache?.read_tokens,
+    cache?.readTokens,
+    tokens.cache_read,
+    tokens.cacheRead,
   ];
 
   const promptTokens = promptCandidates.find((candidate) => typeof candidate === 'number');
   const completionTokens = completionCandidates.find((candidate) => typeof candidate === 'number');
-  if (typeof promptTokens !== 'number' && typeof completionTokens !== 'number') {
+  const totalTokens = totalCandidates.find((candidate) => typeof candidate === 'number');
+  const cacheWriteTokens = cacheWriteCandidates.find((candidate) => typeof candidate === 'number');
+  const cacheReadTokens = cacheReadCandidates.find((candidate) => typeof candidate === 'number');
+  if (
+    typeof promptTokens !== 'number' &&
+    typeof completionTokens !== 'number' &&
+    typeof cacheWriteTokens !== 'number' &&
+    typeof cacheReadTokens !== 'number'
+  ) {
     return null;
   }
 
+  const promptBase = typeof promptTokens === 'number' ? promptTokens : 0;
+  const cacheWrite = typeof cacheWriteTokens === 'number' ? cacheWriteTokens : 0;
+  const cacheRead = typeof cacheReadTokens === 'number' ? cacheReadTokens : 0;
+  const completion = typeof completionTokens === 'number' ? completionTokens : 0;
+  const total =
+    typeof totalTokens === 'number' ? totalTokens : promptBase + cacheWrite + cacheRead + completion;
+
   return {
-    promptTokens: typeof promptTokens === 'number' ? promptTokens : 0,
-    completionTokens: typeof completionTokens === 'number' ? completionTokens : 0,
+    // OpenCode export can move most prompt usage into cache write/read fields.
+    promptTokens: promptBase + cacheWrite + cacheRead,
+    completionTokens: completion,
+    totalTokens: total,
   };
 }
 
@@ -193,6 +239,8 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
 
   let promptTokens = 0;
   let completionTokens = 0;
+  const usageRecords: Array<{ promptTokens: number; completionTokens: number; totalTokens: number }> =
+    [];
   const messages = sessionData.messages as Array<Record<string, unknown>> | undefined;
 
   if (Array.isArray(messages)) {
@@ -204,8 +252,7 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
         readOpencodeTokenPair(message.usage);
 
       if (messageTokens) {
-        promptTokens += messageTokens.promptTokens;
-        completionTokens += messageTokens.completionTokens;
+        usageRecords.push(messageTokens);
         continue;
       }
 
@@ -215,10 +262,27 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
       for (const part of parts) {
         const partTokens = readOpencodeTokenPair(part.tokens) ?? readOpencodeTokenPair(part.usage);
         if (!partTokens) continue;
-        promptTokens += partTokens.promptTokens;
-        completionTokens += partTokens.completionTokens;
+        usageRecords.push(partTokens);
       }
     }
+  }
+
+  const recordsWithTotal = usageRecords.filter((record) => record.totalTokens > 0);
+
+  if (recordsWithTotal.length > 0) {
+    const best = recordsWithTotal.reduce((maxRecord, record) =>
+      record.totalTokens > maxRecord.totalTokens ? record : maxRecord,
+    );
+    return {
+      sessionId,
+      promptTokens: best.promptTokens,
+      completionTokens: best.completionTokens,
+    };
+  }
+
+  for (const record of usageRecords) {
+    promptTokens += record.promptTokens;
+    completionTokens += record.completionTokens;
   }
 
   return { sessionId, promptTokens, completionTokens };
@@ -294,6 +358,7 @@ async function main() {
   const userIdArg = getArgValue('--user-id');
   const rulesFileArg = getArgValue('--rules-file');
   const directRuleArgs = getArgValues('--rule');
+  const defaultRulesFilePath = nodePath.join(process.cwd(), 'scripts', 'rules.json');
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -380,6 +445,8 @@ async function main() {
       name: `Rule ${index + 1}`,
       text,
     }));
+  } else {
+    rules = await loadRulesFromFile(defaultRulesFilePath);
   }
 
   const prompt = buildPrompt(emailFrom, emailSubject, rules);

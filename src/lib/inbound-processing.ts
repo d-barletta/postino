@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   processEmailWithAgent,
@@ -775,6 +776,61 @@ export async function processQueuedInboundPayload(
       notificationBox +
       result.body.slice(lastBodyClose.index)
     : result.body + notificationBox;
+
+  // Last-mile dedupe guard: when duplicate webhook deliveries slip through with
+  // different nonces, ensure only one forwarded email is actually sent for a
+  // given user + Message-Id pair.
+  if (payload.messageId) {
+    const forwardNonce = `forward:${crypto
+      .createHash('sha256')
+      .update(`${payload.userId}:${payload.messageId}`)
+      .digest('hex')}`;
+
+    const { error: nonceErr } = await supabase.from('mailgun_webhook_nonces').insert({
+      id: forwardNonce,
+      created_at: new Date().toISOString(),
+    });
+
+    if (nonceErr) {
+      console.warn('[processing] duplicate forward prevented', {
+        logId: payload.logId,
+        userId: payload.userId,
+        messageId: payload.messageId,
+      });
+
+      await supabase
+        .from('email_logs')
+        .update({
+          processed_at: new Date().toISOString(),
+          status: 'skipped',
+          rule_applied: result.ruleApplied,
+          tokens_used: result.tokensUsed,
+          estimated_cost: result.estimatedCost,
+          estimated_credits: dollarsToCredits(
+            result.estimatedCost,
+            creditSettings.creditsPerDollarFactor,
+          ),
+          processed_body: result.body,
+          error_message: `Duplicate forward prevented for Message-Id: ${payload.messageId}`,
+          ...(result.trace
+            ? { agent_trace: result.trace as unknown as import('@/types/supabase').Json }
+            : {}),
+          ...(result.analysis
+            ? { email_analysis: result.analysis as unknown as import('@/types/supabase').Json }
+            : {}),
+        })
+        .eq('id', payload.logId);
+
+      await sendEmailPushNotification(
+        payload.userId,
+        payload.fromHeader || payload.sender,
+        result.subject,
+        payload.logId,
+        'skipped',
+      );
+      return;
+    }
+  }
 
   if (effectiveAttachments && effectiveAttachments.length > 0) {
     console.log(
