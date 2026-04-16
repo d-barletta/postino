@@ -1,220 +1,2387 @@
-<html style="overflow-x: hidden;"><head><style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}body{background:#fff;color:#000;}</style><base target="_blank"><meta name="viewport" content="width=600, initial-scale=1, user-scalable=yes"><style>body{line-height:1.5!important;}</style></head><body><div dir="ltr"></div><div dir="ltr"><br><br><br>Inizio messaggio inoltrato:<br><br></div><div dir="ltr"><b>Da:</b> React Status &lt;react@cooperpress.com&gt;<br><b>Data:</b> 10 aprile 2026 alle ore 19:12:20 CEST<br><b>A:</b> woody_7891@yahoo.it<br><b>Oggetto:</b> <b>A React optimization case study from GitHub</b><br><br></div><div dir="ltr">﻿
+<html style="overflow-x: hidden">
+  <head>
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      body {
+        background: #fff;
+        color: #000;
+      }
+    </style>
+    <base target="_blank" />
+    <meta name="viewport" content="width=600, initial-scale=1, user-scalable=yes" />
+    <style>
+      body {
+        line-height: 1.5 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div dir="ltr"></div>
+    <div dir="ltr"><br /><br /><br />Inizio messaggio inoltrato:<br /><br /></div>
+    <div dir="ltr">
+      <b>Da:</b> React Status &lt;react@cooperpress.com&gt;<br /><b>Data:</b> 10 aprile 2026 alle
+      ore 19:12:20 CEST<br /><b>A:</b> woody_7891@yahoo.it<br /><b>Oggetto:</b>
+      <b>A React optimization case study from GitHub</b><br /><br />
+    </div>
+    <div dir="ltr">
+      ﻿
 
+      <style>
+        body {
+          margin: 0px;
+          padding: 0px;
+          width: 100%;
+          background-color: white;
+          -webkit-text-size-adjust: 100%;
+          text-rendering: optimizelegibility;
+          direction: ltr;
+        }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+          font-size: 15px;
+          line-height: 1.48em;
+        }
+        img {
+          border: 0px;
+          outline: medium;
+          height: auto;
+          text-decoration: none;
+          max-width: 100%;
+          line-height: 100%;
+        }
+        table[id='main'] {
+          max-width: 600px !important;
+          width: 100% !important;
+          min-width: 100% !important;
+        }
+        .nomob {
+          display: none !important;
+        }
+        .onlymob {
+          display: inline-block !important;
+        }
+        .rightifmob {
+          text-align: right !important;
+        }
+        .som {
+          max-width: 33% !important;
+        }
+        div.footer p {
+          text-align: left !important;
+        }
+        div.footer td {
+          text-align: left !important;
+        }
+        .el-columns .column {
+          width: 100% !important;
+        }
+      </style>
 
-
-
-
-
-
-
-  <style>body { margin: 0px; padding: 0px; width: 100%; background-color: white; -webkit-text-size-adjust: 100%; text-rendering: optimizelegibility; direction: ltr; }
-body { font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif; font-size: 15px; line-height: 1.48em; }
-img { border: 0px; outline: medium; height: auto; text-decoration: none; max-width: 100%; line-height: 100%; }
-table[id="main"] { max-width: 600px !important; width: 100% !important; min-width: 100% !important; }
-.nomob { display: none !important; }
-.onlymob { display: inline-block !important; }
-.rightifmob { text-align: right !important; }
-.som { max-width: 33% !important; }
-div.footer p { text-align: left !important; }
-div.footer td { text-align: left !important; }
-.el-columns .column { width: 100% !important; }</style>
-
-
-<div id="preview" class="preheader noarchive" style="border-top-width: 0px; border-right-width: 0px; border-bottom-width: 0px; border-left-width: 0px; color: white; font-family: helvetica, arial; line-height: 0px; height: 0px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; overflow-y: hidden; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">Plus React Native 0.85, React 19.2.5, a primer to TanStack Start, and how MDN switched out React for Lit and web components. </div>
-
-<table align="center" border="0" cellpadding="0" cellspacing="0" id="main" width="100%" style="table-layout: fixed; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; max-width: 600px; height: 100% !important; direction: ltr; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px;">
-  <tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;">
-  <div id="content">
-    <table class="el-splitbar" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr>
-<td width="50%" align="left" style="padding-left: 4px; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;"><p style="font-size: 12px; color: #999999; text-transform: uppercase; line-height: 1.0em; margin-top: 0.8em; margin-bottom: 0.8em;">#​469 — April 10, 2026</p></td>
-<td width="50%" align="right" style="padding-right: 4px; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;"><p style="font-size: 12px; text-transform: uppercase; line-height: 1.0em; margin-top: 0.8em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/issues/469" style="text-decoration: none; color: #3c2584;">Read on the Web</a></p></td>
-</tr></tbody></table>
-
-<table width="100%" cellpadding="0" cellspacing="0" class="content el-content top" style="color: #222; border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;"><p style="margin-top: 0.8em; margin-bottom: 0.8em; line-height: 1.4em; font-size: 0.9em;">🐣 <strong style="font-weight: 600;">We're back</strong> after a little Easter break, so we have two weeks of updates to catch up on – hold on&nbsp;tight!&nbsp;😅<br>__<br><em>Peter Cooper, your editor</em></p></td></tr></tbody></table>
-<table class="norss" id="together" width="100%" align="center" style="text-align: center; border-collapse: collapse; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;">
-  <tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
-    <table align="center" style="margin-top: 4px; margin-bottom: 4px; border-collapse: collapse;">
-      <tbody><tr>
-<td style="vertical-align: middle; text-align: right; text-transform: uppercase; letter-spacing: -0.2px; font-weight: 500; color: #222; font-size: 0.9em; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; line-height: 1.48em; border-collapse: collapse;">Together with&nbsp;</td>
-        <td style="vertical-align: middle; text-align: left; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;">
-          <a href="https://react.statuscode.com/link/183557/4bd00893df" style="outline: none; text-decoration: none; color: #3c2584; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;">
-          <img src="https://res.cloudinary.com/cpress/image/upload/c_fill,g_auto,w_300,h_70/e_make_transparent/co_white,e_outline:5/nk0tfdvalivacz8rw7rt.png" style="max-width: 150px; outline: none; height: auto; text-decoration: none; line-height: 100%; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;" width="150" alt="Frontend Masters logo" data-unique-identifier="">
-          </a>
-        </td>
-      </tr>
-    </tbody></table>
-  </td></tr>
-</tbody></table>
-      <div style="color: #333; border-bottom-width: 3px; border-bottom-color: #3c2584; border-bottom-style: solid;" class="masthead">
-        <div style="font-size: 2.7em; font-weight: 400; line-height: 1.3em; margin-bottom: 0px;">&nbsp;React Status</div>
+      <div
+        id="preview"
+        class="preheader noarchive"
+        style="
+          border-top-width: 0px;
+          border-right-width: 0px;
+          border-bottom-width: 0px;
+          border-left-width: 0px;
+          color: white;
+          font-family: helvetica, arial;
+          line-height: 0px;
+          height: 0px;
+          margin-top: 0;
+          margin-right: 0;
+          margin-bottom: 0;
+          margin-left: 0;
+          overflow-y: hidden;
+          padding-top: 0;
+          padding-right: 0;
+          padding-bottom: 0;
+          padding-left: 0;
+        "
+      >
+        Plus React Native 0.85, React 19.2.5, a primer to TanStack Start, and how MDN switched out
+        React for Lit and web components.
       </div>
-    <table width="100%" class="el-fullwidthimage" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;">
-  <a href="https://react.statuscode.com/link/183558/4bd00893df" style="text-decoration: none; color: #3c2584;"><img src="https://res.cloudinary.com/cpress/image/upload/w_1280,e_sharpen:60,q_auto/aarhoheuf4wh0qxn1wge.jpg" alt="" width="640" style="outline: none; height: auto; text-decoration: none; max-width: 100%; line-height: 100%; width: 100%; border-bottom-color: #3c2584; border-bottom-style: solid; border-top-width: 0; border-right-width: 0; border-bottom-width: 3px; border-left-width: 0;" data-unique-identifier=""></a>
-</td></tr></tbody></table>
 
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
+      <table
+        align="center"
+        border="0"
+        cellpadding="0"
+        cellspacing="0"
+        id="main"
+        width="100%"
+        style="
+          table-layout: fixed;
+          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+          font-size: 15px;
+          line-height: 1.48em;
+          border-collapse: collapse;
+          max-width: 600px;
+          height: 100% !important;
+          direction: ltr;
+          padding-top: 0px;
+          padding-right: 0px;
+          padding-bottom: 0px;
+          padding-left: 0px;
+        "
+      >
+        <tbody>
+          <tr>
+            <td
+              style="
+                font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                font-size: 15px;
+                line-height: 1.48em;
+                border-collapse: collapse;
+              "
+            >
+              <div id="content">
+                <table
+                  class="el-splitbar"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        width="50%"
+                        align="left"
+                        style="
+                          padding-left: 4px;
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      >
+                        <p
+                          style="
+                            font-size: 12px;
+                            color: #999999;
+                            text-transform: uppercase;
+                            line-height: 1em;
+                            margin-top: 0.8em;
+                            margin-bottom: 0.8em;
+                          "
+                        >
+                          #​469 — April 10, 2026
+                        </p>
+                      </td>
+                      <td
+                        width="50%"
+                        align="right"
+                        style="
+                          padding-right: 4px;
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      >
+                        <p
+                          style="
+                            font-size: 12px;
+                            text-transform: uppercase;
+                            line-height: 1em;
+                            margin-top: 0.8em;
+                            margin-bottom: 0.8em;
+                          "
+                        >
+                          <a
+                            href="https://react.statuscode.com/issues/469"
+                            style="text-decoration: none; color: #3c2584"
+                            >Read on the Web</a
+                          >
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><a href="https://react.statuscode.com/link/183558/4bd00893df" title="github.blog" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.1em; line-height: 1.4em;">The Uphill Climb of Making Diff Lines Performant on GitHub</a></span> — A practical breakdown of how GitHub’s team cut memory usage and interaction latency in their new React-powered PR diff view. If you’re intrigued by how component tree depth, event handler sprawl, and <code>useEffect</code> overuse can eat away at your app’s performance, this is useful&nbsp;reading.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">Ghenco and Shwert (GitHub) </p>
-</td></tr></tbody></table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="content el-content top"
+                  style="color: #222; border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p
+                          style="
+                            margin-top: 0.8em;
+                            margin-bottom: 0.8em;
+                            line-height: 1.4em;
+                            font-size: 0.9em;
+                          "
+                        >
+                          🐣 <strong style="font-weight: 600">We're back</strong> after a little
+                          Easter break, so we have two weeks of updates to catch up on – hold
+                          on&nbsp;tight!&nbsp;😅<br />__<br /><em>Peter Cooper, your editor</em>
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  class="norss"
+                  id="together"
+                  width="100%"
+                  align="center"
+                  style="
+                    text-align: center;
+                    border-collapse: collapse;
+                    margin-top: 0;
+                    margin-right: 0;
+                    margin-bottom: 0;
+                    margin-left: 0;
+                  "
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          margin-top: 0;
+                          margin-right: 0;
+                          margin-bottom: 0;
+                          margin-left: 0;
+                          padding-top: 0;
+                          padding-right: 0;
+                          padding-bottom: 0;
+                          padding-left: 0;
+                        "
+                      >
+                        <table
+                          align="center"
+                          style="margin-top: 4px; margin-bottom: 4px; border-collapse: collapse"
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style="
+                                  vertical-align: middle;
+                                  text-align: right;
+                                  text-transform: uppercase;
+                                  letter-spacing: -0.2px;
+                                  font-weight: 500;
+                                  color: #222;
+                                  font-size: 0.9em;
+                                  font-family:
+                                    -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                                  line-height: 1.48em;
+                                  border-collapse: collapse;
+                                "
+                              >
+                                Together with&nbsp;
+                              </td>
+                              <td
+                                style="
+                                  vertical-align: middle;
+                                  text-align: left;
+                                  font-family:
+                                    -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                                  font-size: 15px;
+                                  line-height: 1.48em;
+                                  border-collapse: collapse;
+                                "
+                              >
+                                <a
+                                  href="https://react.statuscode.com/link/183557/4bd00893df"
+                                  style="
+                                    outline: none;
+                                    text-decoration: none;
+                                    color: #3c2584;
+                                    border-top-width: 0;
+                                    border-right-width: 0;
+                                    border-bottom-width: 0;
+                                    border-left-width: 0;
+                                  "
+                                >
+                                  <img
+                                    src="https://res.cloudinary.com/cpress/image/upload/c_fill,g_auto,w_300,h_70/e_make_transparent/co_white,e_outline:5/nk0tfdvalivacz8rw7rt.png"
+                                    style="
+                                      max-width: 150px;
+                                      outline: none;
+                                      height: auto;
+                                      text-decoration: none;
+                                      line-height: 100%;
+                                      border-top-width: 0;
+                                      border-right-width: 0;
+                                      border-bottom-width: 0;
+                                      border-left-width: 0;
+                                    "
+                                    width="150"
+                                    alt="Frontend Masters logo"
+                                    data-unique-identifier=""
+                                  />
+                                </a>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div
+                  style="
+                    color: #333;
+                    border-bottom-width: 3px;
+                    border-bottom-color: #3c2584;
+                    border-bottom-style: solid;
+                  "
+                  class="masthead"
+                >
+                  <div
+                    style="
+                      font-size: 2.7em;
+                      font-weight: 400;
+                      line-height: 1.3em;
+                      margin-bottom: 0px;
+                    "
+                  >
+                    &nbsp;React Status
+                  </div>
+                </div>
+                <table
+                  width="100%"
+                  class="el-fullwidthimage"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      >
+                        <a
+                          href="https://react.statuscode.com/link/183558/4bd00893df"
+                          style="text-decoration: none; color: #3c2584"
+                          ><img
+                            src="https://res.cloudinary.com/cpress/image/upload/w_1280,e_sharpen:60,q_auto/aarhoheuf4wh0qxn1wge.jpg"
+                            alt=""
+                            width="640"
+                            style="
+                              outline: none;
+                              height: auto;
+                              text-decoration: none;
+                              max-width: 100%;
+                              line-height: 100%;
+                              width: 100%;
+                              border-bottom-color: #3c2584;
+                              border-bottom-style: solid;
+                              border-top-width: 0;
+                              border-right-width: 0;
+                              border-bottom-width: 3px;
+                              border-left-width: 0;
+                            "
+                            data-unique-identifier=""
+                        /></a>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-  <a href="https://react.statuscode.com/link/183557/4bd00893df" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important;"><img src="https://res.cloudinary.com/cpress/image/upload/c_limit,w_480,h_480,q_auto/copm/8534bab8.jpg" width="110" height="110" style="padding-top: 12px; padding-left: 12px; outline: none; height: auto; text-decoration: none; max-width: 100%; line-height: 100%; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;" align="right" alt="" class="som" data-unique-identifier=""></a>
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><a href="https://react.statuscode.com/link/183557/4bd00893df" title="www.addevent.com" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">Free Workshop: Claude Code Deep Dive — April 21</a></span> — Lydia Hallie from Anthropic teaches a full-day Claude Code workshop at Frontend Masters on April 21. Free to attend. No subscription&nbsp;required.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">Frontend Masters <span style="text-transform: uppercase; margin-left: 4px; font-size: 0.9em; border-radius: 2px; background-color: #ffc; color: #997 !important; padding-top: 1px; padding-right: 4px; padding-bottom: 1px; padding-left: 4px; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-color: #eeb; border-right-color: #eeb; border-bottom-color: #eeb; border-left-color: #eeb; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid;" class="tag-sponsor">sponsor</span></p>
-</td></tr></tbody></table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><a
+                              href="https://react.statuscode.com/link/183558/4bd00893df"
+                              title="github.blog"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.1em;
+                                line-height: 1.4em;
+                              "
+                              >The Uphill Climb of Making Diff Lines Performant on GitHub</a
+                            ></span
+                          >
+                          — A practical breakdown of how GitHub’s team cut memory usage and
+                          interaction latency in their new React-powered PR diff view. If you’re
+                          intrigued by how component tree depth, event handler sprawl, and
+                          <code>useEffect</code> overuse can eat away at your app’s performance,
+                          this is useful&nbsp;reading.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          Ghenco and Shwert (GitHub)
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <a
+                          href="https://react.statuscode.com/link/183557/4bd00893df"
+                          style="
+                            text-decoration: none;
+                            color: #3c2584;
+                            border-bottom-width: 1px !important;
+                            border-bottom-color: #ddd !important;
+                            border-bottom-style: solid !important;
+                          "
+                          ><img
+                            src="https://res.cloudinary.com/cpress/image/upload/c_limit,w_480,h_480,q_auto/copm/8534bab8.jpg"
+                            width="110"
+                            height="110"
+                            style="
+                              padding-top: 12px;
+                              padding-left: 12px;
+                              outline: none;
+                              height: auto;
+                              text-decoration: none;
+                              max-width: 100%;
+                              line-height: 100%;
+                              border-top-width: 0;
+                              border-right-width: 0;
+                              border-bottom-width: 0;
+                              border-left-width: 0;
+                            "
+                            align="right"
+                            alt=""
+                            class="som"
+                            data-unique-identifier=""
+                        /></a>
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><a
+                              href="https://react.statuscode.com/link/183557/4bd00893df"
+                              title="www.addevent.com"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >Free Workshop: Claude Code Deep Dive — April 21</a
+                            ></span
+                          >
+                          — Lydia Hallie from Anthropic teaches a full-day Claude Code workshop at
+                          Frontend Masters on April 21. Free to attend. No
+                          subscription&nbsp;required.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          Frontend Masters
+                          <span
+                            style="
+                              text-transform: uppercase;
+                              margin-left: 4px;
+                              font-size: 0.9em;
+                              border-radius: 2px;
+                              background-color: #ffc;
+                              color: #997 !important;
+                              padding-top: 1px;
+                              padding-right: 4px;
+                              padding-bottom: 1px;
+                              padding-left: 4px;
+                              border-top-width: 1px;
+                              border-right-width: 1px;
+                              border-bottom-width: 1px;
+                              border-left-width: 1px;
+                              border-top-color: #eeb;
+                              border-right-color: #eeb;
+                              border-bottom-color: #eeb;
+                              border-left-color: #eeb;
+                              border-top-style: solid;
+                              border-right-style: solid;
+                              border-bottom-style: solid;
+                              border-left-style: solid;
+                            "
+                            class="tag-sponsor"
+                            >sponsor</span
+                          >
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><a href="https://react.statuscode.com/link/183559/4bd00893df" title="github.com" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">Ink 7.0: Use React to Build TUIs and Command Line Apps</a></span> — A great example of <em>‘right place, right time’</em>, Ink now powers <a href="https://react.statuscode.com/link/183560/4bd00893df" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important;">tons of apps</a>, especially in the agentic AI ecosystem. v7.0 now leans on React 19.2, uses <code>useEffectEvent</code> internally for added efficiency, and brings many new hooks and&nbsp;settings.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">Vadim Demedes </p>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="content el-md" style="border-collapse: collapse; color: #444444;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><strong style="font-weight: 600;">IN BRIEF:</strong></p>
-<ul>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">⚠️ <a href="https://react.statuscode.com/link/183561/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">React 19.2.5</a>, <a href="https://react.statuscode.com/link/183562/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">19.1.6</a> and <a href="https://react.statuscode.com/link/183563/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">19.0.5</a> have been released to deploy a fix for a React Server Components&nbsp;vulnerability.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183565/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">Mantine 9.0</a> is a major update for the popular component suite with a focus on a new calendar scheduling package (<a href="https://react.statuscode.com/link/183566/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">lots of demos</a>) along with a new <a href="https://react.statuscode.com/link/183568/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">marquee component</a>, and a huge variety of other enhancements.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">📺 🇫🇷 <a href="https://react.statuscode.com/link/183569/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">23 talks to enjoy from <em>React Paris 2026</em></a>, now on YouTube.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183570/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">React Native 0.85</a> has shipped with a new animation backend and devtools&nbsp;improvements.</p>
-</li>
-</ul>
-</td></tr></tbody></table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><a
+                              href="https://react.statuscode.com/link/183559/4bd00893df"
+                              title="github.com"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >Ink 7.0: Use React to Build TUIs and Command Line Apps</a
+                            ></span
+                          >
+                          — A great example of <em>‘right place, right time’</em>, Ink now powers
+                          <a
+                            href="https://react.statuscode.com/link/183560/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              border-bottom-width: 1px !important;
+                              border-bottom-color: #ddd !important;
+                              border-bottom-style: solid !important;
+                            "
+                            >tons of apps</a
+                          >, especially in the agentic AI ecosystem. v7.0 now leans on React 19.2,
+                          uses <code>useEffectEvent</code> internally for added efficiency, and
+                          brings many new hooks and&nbsp;settings.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          Vadim Demedes
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="content el-md"
+                  style="border-collapse: collapse; color: #444444"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                          <strong style="font-weight: 600">IN BRIEF:</strong>
+                        </p>
+                        <ul>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              ⚠️
+                              <a
+                                href="https://react.statuscode.com/link/183561/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >React 19.2.5</a
+                              >,
+                              <a
+                                href="https://react.statuscode.com/link/183562/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >19.1.6</a
+                              >
+                              and
+                              <a
+                                href="https://react.statuscode.com/link/183563/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >19.0.5</a
+                              >
+                              have been released to deploy a fix for a React Server
+                              Components&nbsp;vulnerability.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              <a
+                                href="https://react.statuscode.com/link/183565/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >Mantine 9.0</a
+                              >
+                              is a major update for the popular component suite with a focus on a
+                              new calendar scheduling package (<a
+                                href="https://react.statuscode.com/link/183566/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >lots of demos</a
+                              >) along with a new
+                              <a
+                                href="https://react.statuscode.com/link/183568/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >marquee component</a
+                              >, and a huge variety of other enhancements.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              📺 🇫🇷
+                              <a
+                                href="https://react.statuscode.com/link/183569/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >23 talks to enjoy from <em>React Paris 2026</em></a
+                              >, now on YouTube.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              <a
+                                href="https://react.statuscode.com/link/183570/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >React Native 0.85</a
+                              >
+                              has shipped with a new animation backend and
+                              devtools&nbsp;improvements.
+                            </p>
+                          </li>
+                        </ul>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item  video" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item video"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            >▶&nbsp;&nbsp;<a
+                              href="https://react.statuscode.com/link/183571/4bd00893df"
+                              title="www.youtube.com"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >TanStack Start: A Client-First Web Framework</a
+                            ></span
+                          >
+                          — A 30 minute talk from TanStack’s founder showcasing
+                          <a
+                            href="https://react.statuscode.com/link/183572/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              border-bottom-width: 1px !important;
+                              border-bottom-color: #ddd !important;
+                              border-bottom-style: solid !important;
+                            "
+                            >TanStack Start</a
+                          >’s value proposition for both React and Solid developers looking for a
+                          complete SSR&nbsp;framework.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          Tanner Linsley
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink">▶&nbsp;&nbsp;<a href="https://react.statuscode.com/link/183571/4bd00893df" title="www.youtube.com" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">TanStack Start: A Client-First Web Framework</a></span> — A 30 minute talk from TanStack’s founder showcasing <a href="https://react.statuscode.com/link/183572/4bd00893df" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important;">TanStack Start</a>’s value proposition for both React and Solid developers looking for a complete SSR&nbsp;framework.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">Tanner Linsley </p>
-</td></tr></tbody></table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><a
+                              href="https://react.statuscode.com/link/183573/4bd00893df"
+                              title="developer.mozilla.org"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >Under the Hood of MDN's New Frontend</a
+                            ></span
+                          >
+                          —
+                          <a
+                            href="https://react.statuscode.com/link/183574/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              border-bottom-width: 1px !important;
+                              border-bottom-color: #ddd !important;
+                              border-bottom-style: solid !important;
+                            "
+                            >MDN</a
+                          >
+                          remains one of the most useful resources for frontend developers and it
+                          has a new frontend. This case study digs deep into how they replaced an
+                          ejected <em>Create React App</em> based app with one driven by
+                          <a
+                            href="https://react.statuscode.com/link/183575/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              border-bottom-width: 1px !important;
+                              border-bottom-color: #ddd !important;
+                              border-bottom-style: solid !important;
+                            "
+                            >Lit</a
+                          >-based web&nbsp;components.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          Leo McArdle (MDN)
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><a
+                              href="https://react.statuscode.com/link/183576/4bd00893df"
+                              title="sentry.io"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >Sentry - A Guide To Fixing Slow Checkout Flows In React Native</a
+                            ></span
+                          >
+                          — Find slow checkout requests, fix them, and set up alerts before users
+                          notice. Step-by-step&nbsp;guide.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          Sentry
+                          <span
+                            style="
+                              text-transform: uppercase;
+                              margin-left: 4px;
+                              font-size: 0.9em;
+                              border-radius: 2px;
+                              background-color: #ffc;
+                              color: #997 !important;
+                              padding-top: 1px;
+                              padding-right: 4px;
+                              padding-bottom: 1px;
+                              padding-left: 4px;
+                              border-top-width: 1px;
+                              border-right-width: 1px;
+                              border-bottom-width: 1px;
+                              border-left-width: 1px;
+                              border-top-color: #eeb;
+                              border-right-color: #eeb;
+                              border-bottom-color: #eeb;
+                              border-left-color: #eeb;
+                              border-top-style: solid;
+                              border-right-style: solid;
+                              border-bottom-style: solid;
+                              border-left-style: solid;
+                            "
+                            class="tag-sponsor"
+                            >sponsor</span
+                          >
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="content el-md"
+                  style="border-collapse: collapse; color: #444444"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                          📄
+                          <a
+                            href="https://react.statuscode.com/link/183578/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              font-weight: 500 !important;
+                              border-bottom-width: 1px;
+                              border-bottom-color: #dddddd;
+                              border-bottom-style: solid;
+                            "
+                            >Signals: The Push-Pull Based Algorithm</a
+                          >
+                          – A ground-up explanation of how signals work, as seen at the core of
+                          reactivity in Solid, Vue, Preact, and Angular. A handy intro to compare
+                          against React.
+                          <cite
+                            style="
+                              color: #444;
+                              text-transform: uppercase;
+                              font-size: 0.8em;
+                              font-style: normal;
+                              white-space: nowrap;
+                              line-height: 1.4em;
+                            "
+                            >Willy Brauner</cite
+                          >
+                        </p>
+                        <p style="margin-top: 0.8em; margin-bottom: 0.8em">
+                          📄
+                          <a
+                            href="https://react.statuscode.com/link/183579/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              font-weight: 500 !important;
+                              border-bottom-width: 1px;
+                              border-bottom-color: #dddddd;
+                              border-bottom-style: solid;
+                            "
+                            >Moving Railway's Frontend Off Next.js</a
+                          >
+                          – Another Next.js to Vite + TanStack Router&nbsp;migration.
+                          <cite
+                            style="
+                              color: #444;
+                              text-transform: uppercase;
+                              font-size: 0.8em;
+                              font-style: normal;
+                              white-space: nowrap;
+                              line-height: 1.4em;
+                            "
+                            >Victor Ramirez</cite
+                          >
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-heading"
+                  style="
+                    background-color: none !important;
+                    text-align: left;
+                    margin-top: 15px;
+                    color: #333333;
+                    border-collapse: collapse;
+                  "
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0;
+                          padding-right: 0;
+                          padding-bottom: 0;
+                          padding-left: 0;
+                        "
+                      >
+                        <p
+                          style="
+                            font-size: 1.7em !important;
+                            font-weight: 500 !important;
+                            text-transform: none !important;
+                            line-height: 1.4em;
+                            border-bottom-width: 3px;
+                            border-bottom-color: #3c2584;
+                            border-bottom-style: solid;
+                            margin-top: 0.5em;
+                            margin-right: 0;
+                            margin-bottom: 0.5em;
+                            margin-left: 0;
+                          "
+                        >
+                          🛠&nbsp; Code, Tools &amp; Libraries
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  class="el-fullwidthimage"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      >
+                        <a
+                          href="https://react.statuscode.com/link/183580/4bd00893df"
+                          style="text-decoration: none; color: #3c2584"
+                          ><img
+                            src="https://res.cloudinary.com/cpress/image/upload/w_1280,e_sharpen:60,q_auto/pdwhlienrxklgkzikszi.jpg"
+                            alt=""
+                            width="640"
+                            style="
+                              border-top-color: #dddddd;
+                              border-top-style: solid;
+                              border-bottom-color: #dddddd;
+                              border-bottom-style: solid;
+                              outline: none;
+                              height: auto;
+                              text-decoration: none;
+                              max-width: 100%;
+                              line-height: 100%;
+                              width: 100%;
+                              border-top-width: 3px;
+                              border-right-width: 0;
+                              border-bottom-width: 3px;
+                              border-left-width: 0;
+                            "
+                            data-unique-identifier=""
+                        /></a>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><a href="https://react.statuscode.com/link/183573/4bd00893df" title="developer.mozilla.org" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">Under the Hood of MDN's New Frontend</a></span> — <a href="https://react.statuscode.com/link/183574/4bd00893df" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important;">MDN</a> remains one of the most useful resources for frontend developers and it has a new frontend. This case study digs deep into how they replaced an ejected <em>Create React App</em> based app with one driven by <a href="https://react.statuscode.com/link/183575/4bd00893df" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important;">Lit</a>-based web&nbsp;components.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">Leo McArdle (MDN) </p>
-</td></tr></tbody></table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><span class="pretitle">🎨</span>&nbsp;<a
+                              href="https://react.statuscode.com/link/183580/4bd00893df"
+                              title="uiwjs.github.io"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >React Color: Flexible Color Picker Components</a
+                            ></span
+                          >
+                          — There’s a wide array of options here for all sorts of freeform or
+                          curated color selection.
+                          <a
+                            href="https://react.statuscode.com/link/183581/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              border-bottom-width: 1px !important;
+                              border-bottom-color: #ddd !important;
+                              border-bottom-style: solid !important;
+                            "
+                            >GitHub&nbsp;repo.</a
+                          >
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          uiw and contributors
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><a
+                              href="https://react.statuscode.com/link/183582/4bd00893df"
+                              title="boneyard.vercel.app"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >Boneyard: Auto-Generated Skeleton Screens for Your UI</a
+                            ></span
+                          >
+                          — Snapshots your real UI and captures a flat list of skeleton ‘bones’
+                          which are positioned, sized rectangles that mirror the page exactly. Also
+                          supports Vue, Svelte, and&nbsp;Angular.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          0xGF
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><a href="https://react.statuscode.com/link/183576/4bd00893df" title="sentry.io" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">Sentry - A Guide To Fixing Slow Checkout Flows In React Native</a></span> — Find slow checkout requests, fix them, and set up alerts before users notice. Step-by-step&nbsp;guide.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">Sentry <span style="text-transform: uppercase; margin-left: 4px; font-size: 0.9em; border-radius: 2px; background-color: #ffc; color: #997 !important; padding-top: 1px; padding-right: 4px; padding-bottom: 1px; padding-left: 4px; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-color: #eeb; border-right-color: #eeb; border-bottom-color: #eeb; border-left-color: #eeb; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid;" class="tag-sponsor">sponsor</span></p>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="content el-md" style="border-collapse: collapse; color: #444444;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">📄 <a href="https://react.statuscode.com/link/183578/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #dddddd; border-bottom-style: solid;">Signals: The Push-Pull Based Algorithm</a> – A ground-up explanation of how signals work, as seen at the core of reactivity in Solid, Vue, Preact, and Angular. A handy intro to compare against React. <cite style="color: #444; text-transform: uppercase; font-size: 0.8em; font-style: normal; white-space: nowrap; line-height: 1.4em;">Willy Brauner</cite></p>
-<p style="margin-top: 0.8em; margin-bottom: 0.8em;">📄 <a href="https://react.statuscode.com/link/183579/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #dddddd; border-bottom-style: solid;">Moving Railway's Frontend Off Next.js</a> – Another Next.js to Vite + TanStack Router&nbsp;migration. <cite style="color: #444; text-transform: uppercase; font-size: 0.8em; font-style: normal; white-space: nowrap; line-height: 1.4em;">Victor Ramirez</cite></p>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="el-heading" style="background-color: none !important; text-align: left; margin-top: 15px; color: #333333; border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;"><p style="font-size: 1.7em !important; font-weight: 500 !important; text-transform: none !important; line-height: 1.4em; border-bottom-width: 3px; border-bottom-color: #3c2584; border-bottom-style: solid; margin-top: 0.5em; margin-right: 0; margin-bottom: 0.5em; margin-left: 0;">🛠&nbsp; Code, Tools &amp; Libraries</p></td></tr></tbody></table>
-<table width="100%" class="el-fullwidthimage" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;">
-  <a href="https://react.statuscode.com/link/183580/4bd00893df" style="text-decoration: none; color: #3c2584;"><img src="https://res.cloudinary.com/cpress/image/upload/w_1280,e_sharpen:60,q_auto/pdwhlienrxklgkzikszi.jpg" alt="" width="640" style="border-top-color: #dddddd; border-top-style: solid; border-bottom-color: #dddddd; border-bottom-style: solid; outline: none; height: auto; text-decoration: none; max-width: 100%; line-height: 100%; width: 100%; border-top-width: 3px; border-right-width: 0; border-bottom-width: 3px; border-left-width: 0;" data-unique-identifier=""></a>
-</td></tr></tbody></table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-item item"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0">
+                          <span
+                            style="font-weight: 600; font-size: 1.1em; color: #000"
+                            class="mainlink"
+                            ><a
+                              href="https://react.statuscode.com/link/183613/4bd00893df"
+                              title="docusaurus.io"
+                              style="
+                                text-decoration: none;
+                                color: #3c2584;
+                                border-bottom-width: 1px !important;
+                                border-bottom-color: #ddd !important;
+                                border-bottom-style: solid !important;
+                                font-size: 1.05em;
+                              "
+                              >Docusaurus 3.10: The React-Powered Site Builder</a
+                            ></span
+                          >
+                          — The popular MDX-powered site generator lands its final 3.x release with
+                          a focus on helping you prepare for Docusaurus 4 by opting into future
+                          settings and the faster, and now stable, <em>Docusaurus Faster</em> build
+                          tooling.
+                          <a
+                            href="https://react.statuscode.com/link/183584/4bd00893df"
+                            style="
+                              text-decoration: none;
+                              color: #3c2584;
+                              border-bottom-width: 1px !important;
+                              border-bottom-color: #ddd !important;
+                              border-bottom-style: solid !important;
+                            "
+                            >This showcase</a
+                          >
+                          shows off the potential of the long-standing&nbsp;framework.
+                        </p>
+                        <p
+                          class="name"
+                          style="
+                            color: #5a5a5a;
+                            margin-top: 4px;
+                            margin-bottom: 0.8em;
+                            text-transform: uppercase;
+                            font-size: 12px;
+                            line-height: 1.2em;
+                          "
+                        >
+                          Sébastien Lorber / Meta
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          height: 12px;
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      ></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  class="el-fullwidthimage bordered"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      >
+                        <a
+                          href="https://react.statuscode.com/link/183585/4bd00893df"
+                          style="text-decoration: none; color: #3c2584"
+                          ><img
+                            src="https://res.cloudinary.com/cpress/image/upload/w_1280,e_sharpen:60,q_auto/mihjebeui2chdiix433d.jpg"
+                            alt=""
+                            width="640"
+                            style="
+                              outline: none;
+                              height: auto;
+                              text-decoration: none;
+                              max-width: 100%;
+                              line-height: 100%;
+                              width: 100%;
+                              border-top-color: #ddd;
+                              border-top-style: solid;
+                              border-bottom-color: #ddd;
+                              border-bottom-style: solid;
+                              border-top-width: 3px;
+                              border-right-width: 0;
+                              border-bottom-width: 3px;
+                              border-left-width: 0;
+                            "
+                            data-unique-identifier=""
+                        /></a>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="content el-md flat"
+                  style="border-collapse: collapse; color: #444444"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <ul
+                          style="
+                            padding-left: 0;
+                            margin-left: 0px;
+                            list-style-type: none;
+                            list-style-position: inside;
+                          "
+                        >
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              <a
+                                href="https://react.statuscode.com/link/183585/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >Markdown Editor 4.1</a
+                              >
+                              <em>(above)</em> – Simple Markdown editor component with preview and
+                              syntax highlighting support.
+                              <a
+                                href="https://react.statuscode.com/link/183586/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >Live demo of the latest version.</a
+                              >
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              <a
+                                href="https://react.statuscode.com/link/183587/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >react-infinite-scroll-component 7.0</a
+                              >
+                              –
+                              <em
+                                >"An infinite-scroll that actually works and super-simple to
+                                integrate!"</em
+                              >
+                              The 8 year old component has
+                              <a
+                                href="https://react.statuscode.com/link/183588/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >been modernized.</a
+                              >
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              📳
+                              <a
+                                href="https://react.statuscode.com/link/183589/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >react-native-haptic-feedback 3.0</a
+                              >
+                              – Haptic feedback integration for React Native on iOS and Android.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              🖼️
+                              <a
+                                href="https://react.statuscode.com/link/183590/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >react-inlinesvg v4.3.0</a
+                              >
+                              – Load inline, local, or remote SVGs in React components.&nbsp;(<a
+                                href="https://react.statuscode.com/link/183591/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >Demo.</a
+                              >)
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              <a
+                                href="https://react.statuscode.com/link/183592/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >html-react-parser 6.0</a
+                              >
+                              – HTML to React parser that converts HTML strings into
+                              React&nbsp;elements.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              <a
+                                href="https://react.statuscode.com/link/183593/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >Wasp 0.22.0</a
+                              >
+                              – Full framework for building full-stack React + Node&nbsp;webapps.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              🗓️
+                              <a
+                                href="https://react.statuscode.com/link/183594/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >React-Calendar 6.0</a
+                              >
+                              – Popular date picker control. Now ESM only.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              <a
+                                href="https://react.statuscode.com/link/183595/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >React Native Skia 2.6</a
+                              >
+                              – High-performance 2D graphics library.
+                            </p>
+                          </li>
+                        </ul>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-subtable classifieds"
+                  style="
+                    background-color: #ffffee;
+                    margin-top: 15px;
+                    box-shadow: 6px 6px 0px #eee;
+                    border-collapse: collapse;
+                    border-top-width: 1px;
+                    border-right-width: 1px;
+                    border-bottom-width: 1px;
+                    border-left-width: 1px;
+                    border-top-color: #eec;
+                    border-right-color: #eec;
+                    border-bottom-color: #eec;
+                    border-left-color: #eec;
+                    border-top-style: solid;
+                    border-right-style: solid;
+                    border-bottom-style: solid;
+                    border-left-style: solid;
+                  "
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 0px;
+                          padding-bottom: 0px;
+                          padding-left: 0px;
+                        "
+                      >
+                        <table
+                          width="100%"
+                          cellpadding="0"
+                          cellspacing="0"
+                          style="border-collapse: collapse; margin-top: 0 !important"
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style="
+                                  height: 4px;
+                                  font-family:
+                                    -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                                  font-size: 15px;
+                                  line-height: 1.48em;
+                                  border-collapse: collapse;
+                                "
+                              ></td>
+                            </tr>
+                          </tbody>
+                        </table>
 
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
+                        <table
+                          width="100%"
+                          cellpadding="0"
+                          cellspacing="0"
+                          class="content el-content"
+                          style="color: #222; border-collapse: collapse"
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style="
+                                  font-family:
+                                    -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                                  font-size: 15px;
+                                  line-height: 1.48em;
+                                  border-collapse: collapse;
+                                  padding-top: 0px;
+                                  padding-right: 15px;
+                                  padding-bottom: 0px;
+                                  padding-left: 15px;
+                                "
+                              >
+                                <p
+                                  style="
+                                    font-size: 1.2em;
+                                    text-transform: uppercase;
+                                    font-weight: 600;
+                                    display: inline-block;
+                                    margin-bottom: 8px;
+                                    margin-top: 0.8em;
+                                  "
+                                >
+                                  📰&nbsp;Classifieds
+                                </p>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <table
+                          width="100%"
+                          cellpadding="0"
+                          cellspacing="0"
+                          class="content el-md"
+                          style="border-collapse: collapse; color: #444444"
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style="
+                                  font-family:
+                                    -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                                  font-size: 15px;
+                                  line-height: 1.48em;
+                                  border-collapse: collapse;
+                                  padding-top: 0px;
+                                  padding-right: 15px;
+                                  padding-bottom: 0px;
+                                  padding-left: 15px;
+                                "
+                              >
+                                <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                                  Flaky tests slowing down dev?
+                                  <a
+                                    href="https://react.statuscode.com/link/183614/4bd00893df"
+                                    style="
+                                      text-decoration: none;
+                                      color: #3c2584;
+                                      font-weight: 500 !important;
+                                      border-bottom-width: 1px;
+                                      border-bottom-color: #dddddd;
+                                      border-bottom-style: solid;
+                                    "
+                                    >Meticulous</a
+                                  >
+                                  gives engineers confidence to ship faster by autonomously testing
+                                  every edge case of your web&nbsp;app.
+                                </p>
+                                <hr />
+                                <p style="margin-top: 0.8em; margin-bottom: 0.8em">
+                                  Seat-limited org plans are live in
+                                  <a
+                                    href="https://react.statuscode.com/link/183597/4bd00893df"
+                                    style="
+                                      text-decoration: none;
+                                      color: #3c2584;
+                                      font-weight: 500 !important;
+                                      border-bottom-width: 1px;
+                                      border-bottom-color: #dddddd;
+                                      border-bottom-style: solid;
+                                    "
+                                    >Clerk</a
+                                  >
+                                  Billing. Set size caps per tier, enforce&nbsp;automatically.
+                                </p>
+                                <hr />
+                                <p style="margin-top: 0.8em; margin-bottom: 0.8em">
+                                  <a
+                                    href="https://react.statuscode.com/link/183598/4bd00893df"
+                                    style="
+                                      text-decoration: none;
+                                      color: #3c2584;
+                                      font-weight: 500 !important;
+                                      border-bottom-width: 1px;
+                                      border-bottom-color: #dddddd;
+                                      border-bottom-style: solid;
+                                    "
+                                    >Build apps with real-time search data</a
+                                  >
+                                  from Google, Maps, Shopping, and&nbsp;more.
+                                </p>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <table
+                          width="100%"
+                          cellpadding="0"
+                          cellspacing="0"
+                          style="border-collapse: collapse"
+                        >
+                          <tbody>
+                            <tr>
+                              <td
+                                style="
+                                  height: 12px;
+                                  font-family:
+                                    -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                                  font-size: 15px;
+                                  line-height: 1.48em;
+                                  border-collapse: collapse;
+                                "
+                              ></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          height: 12px;
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      ></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="el-heading"
+                  style="
+                    background-color: none !important;
+                    text-align: left;
+                    margin-top: 15px;
+                    color: #333333;
+                    border-collapse: collapse;
+                  "
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0;
+                          padding-right: 0;
+                          padding-bottom: 0;
+                          padding-left: 0;
+                        "
+                      >
+                        <p
+                          style="
+                            font-size: 1.7em !important;
+                            font-weight: 500 !important;
+                            text-transform: none !important;
+                            line-height: 1.4em;
+                            border-bottom-width: 3px;
+                            border-bottom-color: #3c2584;
+                            border-bottom-style: solid;
+                            margin-top: 0.5em;
+                            margin-right: 0;
+                            margin-bottom: 0.5em;
+                            margin-left: 0;
+                          "
+                        >
+                          📢&nbsp; Elsewhere in the ecosystem
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  class="content el-md"
+                  style="border-collapse: collapse; color: #444444"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                          padding-top: 0px;
+                          padding-right: 15px;
+                          padding-bottom: 0px;
+                          padding-left: 15px;
+                        "
+                      >
+                        <ul>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              Chris Coyier's
+                              <a
+                                href="https://react.statuscode.com/link/183599/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >What To Know in JavaScript (2026 Edition)</a
+                              >
+                              provides a handy refresher of the latest in language features, as well
+                              as the state of various frameworks and build&nbsp;tools.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              🔊 If you've got code that uses the
+                              <a
+                                href="https://react.statuscode.com/link/183600/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >Web Audio API</a
+                              >
+                              and you'd like to generate that audio on the <em>server</em> (with
+                              Node or Bun) too,
+                              <a
+                                href="https://react.statuscode.com/link/183601/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >web-audio-api 1.x</a
+                              >
+                              makes it&nbsp;possible.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              Ally Piechowski shares
+                              <a
+                                href="https://react.statuscode.com/link/183602/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >the
+                                <code
+                                  style="
+                                    font-family: menlo, monaco, 'Ubuntu Mono', courier, monospace;
+                                    font-weight: normal;
+                                    background-color: inherit;
+                                  "
+                                  >git</code
+                                >
+                                commands she runs before reading any code</a
+                              >. They provide a handy way to get a quick grasp on what's happening
+                              in larger, multi-contributor&nbsp;repos.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              📊 WebKit, Google and Mozilla have
+                              <a
+                                href="https://react.statuscode.com/link/183604/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >unveiled <em>JetStream 3</em></a
+                              >, the latest version of a popular browser-oriented JS and WASM
+                              performance benchmark&nbsp;suite.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              🗳️ The
+                              <a
+                                href="https://react.statuscode.com/link/183615/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                >second annual 'State of AI' survey is now live</a
+                              >, seeking responses on AI usage within web development.
+                            </p>
+                          </li>
+                          <li
+                            style="
+                              color: #222;
+                              line-height: 1.4em;
+                              margin-bottom: 12px;
+                              margin-left: 0px !important;
+                            "
+                          >
+                            <p style="margin-top: 0.5em; margin-bottom: 0.8em">
+                              🇷🇴 The popular
+                              <a
+                                href="https://react.statuscode.com/link/183609/4bd00893df"
+                                style="
+                                  text-decoration: none;
+                                  color: #3c2584;
+                                  font-weight: 500 !important;
+                                  border-bottom-width: 1px;
+                                  border-bottom-color: #ddd;
+                                  border-bottom-style: solid;
+                                "
+                                ><em>JSHeroes</em> conference</a
+                              >
+                              is back this May 14-15 in Romania.
+                            </p>
+                          </li>
+                        </ul>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border-collapse: collapse"
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style="
+                          height: 16px;
+                          font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                          font-size: 15px;
+                          line-height: 1.48em;
+                          border-collapse: collapse;
+                        "
+                      ></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><span class="pretitle">🎨</span>&nbsp;<a href="https://react.statuscode.com/link/183580/4bd00893df" title="uiwjs.github.io" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">React Color: Flexible Color Picker Components</a></span> — There’s a wide array of options here for all sorts of freeform or curated color selection. <a href="https://react.statuscode.com/link/183581/4bd00893df" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important;">GitHub&nbsp;repo.</a></p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">uiw and contributors </p>
-</td></tr></tbody></table>
-
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><a href="https://react.statuscode.com/link/183582/4bd00893df" title="boneyard.vercel.app" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">Boneyard: Auto-Generated Skeleton Screens for Your UI</a></span> — Snapshots your real UI and captures a flat list of skeleton ‘bones’ which are positioned, sized rectangles that mirror the page exactly. Also supports Vue, Svelte, and&nbsp;Angular.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">0xGF </p>
-</td></tr></tbody></table>
-
-<table width="100%" cellpadding="0" cellspacing="0" class="el-item item" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-
-  <p class="desc" style="color: #222; margin-top: 0.8em; margin-bottom: 0;"><span style="font-weight: 600; font-size: 1.1em; color: #000;" class="mainlink"><a href="https://react.statuscode.com/link/183613/4bd00893df" title="docusaurus.io" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important; font-size: 1.05em;">Docusaurus 3.10: The React-Powered Site Builder</a></span> — The popular MDX-powered site generator lands its final 3.x release with a focus on helping you prepare for Docusaurus 4 by opting into future settings and the faster, and now stable, <em>Docusaurus Faster</em> build tooling. <a href="https://react.statuscode.com/link/183584/4bd00893df" style="text-decoration: none; color: #3c2584; border-bottom-width: 1px !important; border-bottom-color: #ddd !important; border-bottom-style: solid !important;">This showcase</a> shows off the potential of the long-standing&nbsp;framework.</p>
-  <p class="name" style="color: #5a5a5a; margin-top: 4px; margin-bottom: 0.8em; text-transform: uppercase; font-size: 12px; line-height: 1.2em;">Sébastien Lorber / Meta </p>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr><td style="height: 12px; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;"></td></tr></tbody></table>
-<table width="100%" class="el-fullwidthimage bordered" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;">
-  <a href="https://react.statuscode.com/link/183585/4bd00893df" style="text-decoration: none; color: #3c2584;"><img src="https://res.cloudinary.com/cpress/image/upload/w_1280,e_sharpen:60,q_auto/mihjebeui2chdiix433d.jpg" alt="" width="640" style="outline: none; height: auto; text-decoration: none; max-width: 100%; line-height: 100%; width: 100%; border-top-color: #ddd; border-top-style: solid; border-bottom-color: #ddd; border-bottom-style: solid; border-top-width: 3px; border-right-width: 0; border-bottom-width: 3px; border-left-width: 0;" data-unique-identifier=""></a>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="content el-md flat" style="border-collapse: collapse; color: #444444;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-<ul style="padding-left: 0; margin-left: 0px; list-style-type: none; list-style-position: inside;">
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183585/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">Markdown Editor 4.1</a> <em>(above)</em> – Simple Markdown editor component with preview and syntax highlighting support. <a href="https://react.statuscode.com/link/183586/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">Live demo of the latest version.</a></p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183587/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">react-infinite-scroll-component 7.0</a> – <em>"An infinite-scroll that actually works and super-simple to integrate!"</em> The 8 year old component has <a href="https://react.statuscode.com/link/183588/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">been modernized.</a></p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">📳 <a href="https://react.statuscode.com/link/183589/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">react-native-haptic-feedback 3.0</a> – Haptic feedback integration for React Native on iOS and Android.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">🖼️ <a href="https://react.statuscode.com/link/183590/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">react-inlinesvg v4.3.0</a> – Load inline, local, or remote SVGs in React components.&nbsp;(<a href="https://react.statuscode.com/link/183591/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">Demo.</a>)</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183592/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">html-react-parser 6.0</a> – HTML to React parser that converts HTML strings into React&nbsp;elements.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183593/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">Wasp 0.22.0</a> – Full framework for building full-stack React + Node&nbsp;webapps.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">🗓️ <a href="https://react.statuscode.com/link/183594/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">React-Calendar 6.0</a> – Popular date picker control. Now ESM only.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183595/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">React Native Skia 2.6</a> – High-performance 2D graphics library.</p>
-</li>
-</ul>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="el-subtable classifieds" style="background-color: #ffffee; margin-top: 15px; box-shadow: 6px 6px 0px #eee; border-collapse: collapse; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-color: #eec; border-right-color: #eec; border-bottom-color: #eec; border-left-color: #eec; border-top-style: solid; border-right-style: solid; border-bottom-style: solid; border-left-style: solid;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px;">
-<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-top: 0 !important;"><tbody><tr><td style="height: 4px; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;"></td></tr></tbody></table>
-
-<table width="100%" cellpadding="0" cellspacing="0" class="content el-content" style="color: #222; border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-    <p style="font-size: 1.2em; text-transform: uppercase; font-weight: 600; display: inline-block; margin-bottom: 8px; margin-top: 0.8em;">📰&nbsp;Classifieds</p>
-  </td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="content el-md" style="border-collapse: collapse; color: #444444;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">Flaky tests slowing down dev? <a href="https://react.statuscode.com/link/183614/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #dddddd; border-bottom-style: solid;">Meticulous</a> gives engineers confidence to ship faster by autonomously testing every edge case of your web&nbsp;app.</p>
-<hr>
-<p style="margin-top: 0.8em; margin-bottom: 0.8em;">Seat-limited org plans are live in <a href="https://react.statuscode.com/link/183597/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #dddddd; border-bottom-style: solid;">Clerk</a> Billing. Set size caps per tier, enforce&nbsp;automatically.</p>
-<hr>
-<p style="margin-top: 0.8em; margin-bottom: 0.8em;"><a href="https://react.statuscode.com/link/183598/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #dddddd; border-bottom-style: solid;">Build apps with real-time search data</a> from Google, Maps, Shopping, and&nbsp;more.</p>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr><td style="height: 12px; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;"></td></tr></tbody></table>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr><td style="height: 12px; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;"></td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="el-heading" style="background-color: none !important; text-align: left; margin-top: 15px; color: #333333; border-collapse: collapse;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;"><p style="font-size: 1.7em !important; font-weight: 500 !important; text-transform: none !important; line-height: 1.4em; border-bottom-width: 3px; border-bottom-color: #3c2584; border-bottom-style: solid; margin-top: 0.5em; margin-right: 0; margin-bottom: 0.5em; margin-left: 0;">📢&nbsp; Elsewhere in the ecosystem</p></td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" class="content el-md" style="border-collapse: collapse; color: #444444;"><tbody><tr><td style="font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 0px; padding-right: 15px; padding-bottom: 0px; padding-left: 15px;">
-<ul>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">Chris Coyier's <a href="https://react.statuscode.com/link/183599/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">What To Know in JavaScript (2026 Edition)</a> provides a handy refresher of the latest in language features, as well as the state of various frameworks and build&nbsp;tools.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">🔊 If you've got code that uses the <a href="https://react.statuscode.com/link/183600/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">Web Audio API</a> and you'd like to generate that audio on the <em>server</em> (with Node or Bun) too, <a href="https://react.statuscode.com/link/183601/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">web-audio-api 1.x</a> makes it&nbsp;possible.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">Ally Piechowski shares <a href="https://react.statuscode.com/link/183602/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">the <code style="font-family: menlo, monaco, &quot;Ubuntu Mono&quot;, courier, monospace; font-weight: normal; background-color: inherit;">git</code> commands she runs before reading any code</a>. They provide a handy way to get a quick grasp on what's happening in larger, multi-contributor&nbsp;repos.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">📊 WebKit, Google and Mozilla have <a href="https://react.statuscode.com/link/183604/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">unveiled <em>JetStream 3</em></a>, the latest version of a popular browser-oriented JS and WASM performance benchmark&nbsp;suite.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">🗳️ The <a href="https://react.statuscode.com/link/183615/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;">second annual 'State of AI' survey is now live</a>, seeking responses on AI usage within web development.</p>
-</li>
-<li style="color: #222; line-height: 1.4em; margin-bottom: 12px; margin-left: 0px !important;">
-<p style="margin-top: 0.5em; margin-bottom: 0.8em;">🇷🇴 The popular <a href="https://react.statuscode.com/link/183609/4bd00893df" style="text-decoration: none; color: #3c2584; font-weight: 500 !important; border-bottom-width: 1px; border-bottom-color: #ddd; border-bottom-style: solid;"><em>JSHeroes</em> conference</a> is back this May 14-15 in Romania.</p>
-</li>
-</ul>
-</td></tr></tbody></table>
-<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;"><tbody><tr><td style="height: 16px; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse;"></td></tr></tbody></table>
-</div>
-  </td></tr>
-</tbody></table>
-
-<div id="footer" class="noarchive">
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-top-width: 1px; border-top-color: #dddddd; border-top-style: solid; border-collapse: collapse;"><tbody><tr><td style="text-align: center; font-family: -apple-system,BlinkMacSystemFont,Helvetica,sans-serif; font-size: 15px; line-height: 1.48em; border-collapse: collapse; padding-top: 20px; padding-right: 15px; padding-bottom: 20px; padding-left: 15px;">
-      <p style="font-size: 12px; line-height: 1.5em; margin-top: 0.8em; margin-bottom: 0.8em;">Curated by Peter Cooper and Terence C. Gannon.</p>
-      <p style="font-size: 12px; line-height: 1.5em; margin-top: 0.8em; margin-bottom: 0.8em;">A <strong style="font-weight: 600;"><a href="https://cooperpress.com/" style="text-decoration: none; color: #3c2584;">Cooperpress</a></strong> publication.</p>
-      <p style="font-size: 0.9em; margin-top: 0.8em; margin-bottom: 0.8em;"><span class="nomob"><a href="https://react.statuscode.com/edit_subscription/4bd00893df" style="text-decoration: underline; color: #3c2584;">Change your email address</a> or </span><a href="https://react.statuscode.com/leave/4bd00893df" style="text-decoration: underline; color: #3c2584;">Stop getting this newsletter</a></p>
-      <p style="font-size: 12px; margin-top: 0.8em; margin-bottom: 0.8em;">© Cooper Press Ltd · Fairfield Enterprise Centre, Louth, LN11 0LS, United&nbsp;Kingdom</p>
-    </td></tr></tbody></table>
-  </div>
-<img src="https://react.statuscode.com/open/469/4bd00893df" width="3" height="1" alt="n" data-unique-identifier="">
-
-</div>
-</body></html>
+      <div id="footer" class="noarchive">
+        <table
+          width="100%"
+          cellpadding="0"
+          cellspacing="0"
+          style="
+            border-top-width: 1px;
+            border-top-color: #dddddd;
+            border-top-style: solid;
+            border-collapse: collapse;
+          "
+        >
+          <tbody>
+            <tr>
+              <td
+                style="
+                  text-align: center;
+                  font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+                  font-size: 15px;
+                  line-height: 1.48em;
+                  border-collapse: collapse;
+                  padding-top: 20px;
+                  padding-right: 15px;
+                  padding-bottom: 20px;
+                  padding-left: 15px;
+                "
+              >
+                <p
+                  style="
+                    font-size: 12px;
+                    line-height: 1.5em;
+                    margin-top: 0.8em;
+                    margin-bottom: 0.8em;
+                  "
+                >
+                  Curated by Peter Cooper and Terence C. Gannon.
+                </p>
+                <p
+                  style="
+                    font-size: 12px;
+                    line-height: 1.5em;
+                    margin-top: 0.8em;
+                    margin-bottom: 0.8em;
+                  "
+                >
+                  A
+                  <strong style="font-weight: 600"
+                    ><a
+                      href="https://cooperpress.com/"
+                      style="text-decoration: none; color: #3c2584"
+                      >Cooperpress</a
+                    ></strong
+                  >
+                  publication.
+                </p>
+                <p style="font-size: 0.9em; margin-top: 0.8em; margin-bottom: 0.8em">
+                  <span class="nomob"
+                    ><a
+                      href="https://react.statuscode.com/edit_subscription/4bd00893df"
+                      style="text-decoration: underline; color: #3c2584"
+                      >Change your email address</a
+                    >
+                    or </span
+                  ><a
+                    href="https://react.statuscode.com/leave/4bd00893df"
+                    style="text-decoration: underline; color: #3c2584"
+                    >Stop getting this newsletter</a
+                  >
+                </p>
+                <p style="font-size: 12px; margin-top: 0.8em; margin-bottom: 0.8em">
+                  © Cooper Press Ltd · Fairfield Enterprise Centre, Louth, LN11 0LS,
+                  United&nbsp;Kingdom
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <img
+        src="https://react.statuscode.com/open/469/4bd00893df"
+        width="3"
+        height="1"
+        alt="n"
+        data-unique-identifier=""
+      />
+    </div>
+  </body>
+</html>

@@ -178,7 +178,9 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
 } {
   const sessionInfo = sessionData.info as Record<string, unknown> | undefined;
   const sessionId =
-    typeof sessionInfo?.id === 'string' && sessionInfo.id.startsWith('ses_') ? sessionInfo.id : null;
+    typeof sessionInfo?.id === 'string' && sessionInfo.id.startsWith('ses_')
+      ? sessionInfo.id
+      : null;
 
   const topLevelTokens =
     readOpencodeTokenPair(sessionData.tokens) ??
@@ -225,7 +227,9 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
 async function loadRulesFromFile(rulesFile: string): Promise<DebugRule[]> {
   const content = await readFile(rulesFile, 'utf-8');
   if (rulesFile.endsWith('.json')) {
-    const parsed = JSON.parse(content) as Array<string | { id?: string; name?: string; text?: string }>;
+    const parsed = JSON.parse(content) as Array<
+      string | { id?: string; name?: string; text?: string }
+    >;
     return parsed
       .map((entry, index) => {
         if (typeof entry === 'string') {
@@ -317,14 +321,12 @@ async function main() {
     process.exit(1);
   }
 
-  let logRow:
-    | {
-        user_id: string | null;
-        from_address: string | null;
-        subject: string | null;
-        original_body: string | null;
-      }
-    | null = null;
+  let logRow: {
+    user_id: string | null;
+    from_address: string | null;
+    subject: string | null;
+    original_body: string | null;
+  } | null = null;
 
   if (logIdArg) {
     const { data } = await supabase
@@ -345,15 +347,16 @@ async function main() {
   const artifactDir = nodePath.dirname(htmlFilePath);
   const artifactBaseName = nodePath.basename(htmlFilePath, nodePath.extname(htmlFilePath));
 
-  const emailBody = htmlFileArg || !logRow
-    ? await readFile(htmlFilePath, 'utf-8')
-    : ((logRow?.original_body as string | null) ?? '');
+  const emailBody =
+    htmlFileArg || !logRow
+      ? await readFile(htmlFilePath, 'utf-8')
+      : ((logRow?.original_body as string | null) ?? '');
   const siblingSubject = await readOptionalTextFile(
     nodePath.join(artifactDir, `${artifactBaseName}.subject.txt`),
   );
   const resolvedSubject = subjectArg ?? logRow?.subject ?? siblingSubject?.trim() ?? '';
   const emailSubject = resolvedSubject.length > 0 ? resolvedSubject : artifactBaseName;
-  const emailFrom = fromArg ?? (logRow?.from_address ?? 'unknown@example.com');
+  const emailFrom = fromArg ?? logRow?.from_address ?? 'unknown@example.com';
   const userId = userIdArg ?? logRow?.user_id ?? null;
 
   let rules: DebugRule[] = [];
