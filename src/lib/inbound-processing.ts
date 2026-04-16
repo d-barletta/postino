@@ -440,7 +440,7 @@ export async function processQueuedInboundPayload(
           status: 'skipped',
           processed_at: new Date().toISOString(),
           error_message:
-            'AI features suspended because monthly credits are exhausted and forwarding is disabled',
+            'AI features suspended because monthly credits are exhausted (analysis-only mode)',
         })
         .eq('id', payload.logId);
       await sendEmailPushNotification(
@@ -795,7 +795,7 @@ export async function processQueuedInboundPayload(
         estimated_credits: 0,
         processed_body: forwardedBody,
         error_message:
-          'AI features suspended because monthly credits are exhausted; email forwarded without AI processing',
+          'AI skipped because monthly credits are exhausted; forwarded original email without AI changes',
       })
       .eq('id', payload.logId);
 
