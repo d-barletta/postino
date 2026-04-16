@@ -88,12 +88,9 @@ const OPENCODE_RUN_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes
  * message-part events if the session total is not present.
  */
 function parseOpencodeTokens(stdout: string): { promptTokens: number; completionTokens: number } {
-  function getUsageCandidate(
-    source: unknown,
-    key: 'usage',
-  ): Record<string, unknown> | undefined {
+  function getUsageCandidate(source: unknown): Record<string, unknown> | undefined {
     if (!source || typeof source !== 'object') return undefined;
-    const value = (source as Record<string, unknown>)[key];
+    const value = (source as Record<string, unknown>).usage;
     return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
   }
 
@@ -124,6 +121,8 @@ function parseOpencodeTokens(stdout: string): { promptTokens: number; completion
       promptTokens = totalTokens;
     } else if (totalTokens > 0 && promptTokens + completionTokens < totalTokens) {
       const missing = totalTokens - (promptTokens + completionTokens);
+      // Preserve a deterministic split without inventing a new ratio: assign the
+      // unknown remainder to the smaller side so prompt/completion stay balanced.
       if (promptTokens <= completionTokens) promptTokens += missing;
       else completionTokens += missing;
     }
@@ -162,10 +161,12 @@ function parseOpencodeTokens(stdout: string): { promptTokens: number; completion
       }
 
       // Per-message usage (accumulate only as fallback when session totals are absent).
+      const eventMessage = 'message' in event ? event.message : undefined;
+      const eventData = 'data' in event ? event.data : undefined;
       const usageCandidates = [
-        getUsageCandidate(event, 'usage'),
-        getUsageCandidate(event.message, 'usage'),
-        getUsageCandidate(event.data, 'usage'),
+        getUsageCandidate(event),
+        getUsageCandidate(eventMessage),
+        getUsageCandidate(eventData),
       ].filter((u): u is Record<string, unknown> => Boolean(u));
 
       for (const usage of usageCandidates) {
