@@ -71,6 +71,14 @@ export interface QueuedInboundPayload {
   aiAnalysisOnly?: boolean;
 }
 
+const AI_SKIPPED_CREDITS_EXHAUSTED_RULE = 'AI skipped (credits exhausted)';
+const AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE =
+  'AI features suspended because monthly credits are exhausted (analysis-only mode)';
+const AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE =
+  'Monthly credits exhausted; email forwarded without AI processing';
+const FORWARDING_DISABLED_MESSAGE =
+  'Forwarding is disabled because your Postino address is turned off';
+
 /** Escape special HTML characters to prevent HTML injection in email templates. */
 function escapeHtml(text: string): string {
   return text
@@ -407,10 +415,11 @@ export async function processQueuedInboundPayload(
   const { data: userRow } = await supabase
     .from('users')
     .select(
-      'is_forwarding_header_enabled, analysis_output_language, credits_usage_month, monthly_credits_used, monthly_credits_bonus',
+      'is_address_enabled, is_forwarding_header_enabled, analysis_output_language, credits_usage_month, monthly_credits_used, monthly_credits_bonus',
     )
     .eq('id', payload.userId)
     .single();
+  const isAddressEnabled = userRow?.is_address_enabled !== false;
   const isForwardingHeaderEnabled = userRow?.is_forwarding_header_enabled !== false;
   const analysisOutputLanguage =
     typeof userRow?.analysis_output_language === 'string'
@@ -431,6 +440,25 @@ export async function processQueuedInboundPayload(
   );
   const monthlyCreditsRemaining = Math.max(0, monthlyCreditsLimit - monthlyCredits.used);
 
+  if (!payload.aiAnalysisOnly && !isAddressEnabled) {
+    await supabase
+      .from('email_logs')
+      .update({
+        status: 'skipped',
+        processed_at: new Date().toISOString(),
+        error_message: FORWARDING_DISABLED_MESSAGE,
+      })
+      .eq('id', payload.logId);
+    await sendEmailPushNotification(
+      payload.userId,
+      payload.fromHeader || payload.sender,
+      payload.subject,
+      payload.logId,
+      'skipped',
+    );
+    return;
+  }
+
   // AI-analysis-only mode: run analysis + memory update, skip rules and forwarding.
   if (payload.aiAnalysisOnly) {
     if (monthlyCreditsRemaining <= 0) {
@@ -439,8 +467,7 @@ export async function processQueuedInboundPayload(
         .update({
           status: 'skipped',
           processed_at: new Date().toISOString(),
-          error_message:
-            'AI features suspended because monthly credits are exhausted (analysis-only mode)',
+          error_message: AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE,
         })
         .eq('id', payload.logId);
       await sendEmailPushNotification(
@@ -742,7 +769,7 @@ export async function processQueuedInboundPayload(
           .update({
             processed_at: new Date().toISOString(),
             status: 'skipped',
-            rule_applied: 'AI skipped (credits exhausted)',
+            rule_applied: AI_SKIPPED_CREDITS_EXHAUSTED_RULE,
             tokens_used: 0,
             estimated_cost: 0,
             estimated_credits: 0,
@@ -789,13 +816,12 @@ export async function processQueuedInboundPayload(
       .update({
         processed_at: new Date().toISOString(),
         status: 'forwarded',
-        rule_applied: 'AI skipped (credits exhausted)',
+        rule_applied: AI_SKIPPED_CREDITS_EXHAUSTED_RULE,
         tokens_used: 0,
         estimated_cost: 0,
         estimated_credits: 0,
         processed_body: forwardedBody,
-        error_message:
-          'Monthly credits exhausted; email forwarded without AI processing',
+        error_message: AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE,
       })
       .eq('id', payload.logId);
 
