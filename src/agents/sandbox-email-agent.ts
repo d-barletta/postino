@@ -88,8 +88,44 @@ const OPENCODE_RUN_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes
  * message-part events if the session total is not present.
  */
 function parseOpencodeTokens(stdout: string): { promptTokens: number; completionTokens: number } {
-  let promptTokens = 0;
-  let completionTokens = 0;
+  function normalizeUsageTotals(usage: Record<string, unknown>): {
+    promptTokens: number;
+    completionTokens: number;
+  } {
+    const totalTokens =
+      typeof usage.totalTokens === 'number'
+        ? usage.totalTokens
+        : typeof usage.total_tokens === 'number'
+          ? usage.total_tokens
+          : 0;
+    let promptTokens =
+      typeof usage.inputTokens === 'number'
+        ? usage.inputTokens
+        : typeof usage.prompt_tokens === 'number'
+          ? usage.prompt_tokens
+          : 0;
+    let completionTokens =
+      typeof usage.outputTokens === 'number'
+        ? usage.outputTokens
+        : typeof usage.completion_tokens === 'number'
+          ? usage.completion_tokens
+          : 0;
+
+    if (totalTokens > 0 && promptTokens + completionTokens === 0) {
+      promptTokens = totalTokens;
+    } else if (totalTokens > 0 && promptTokens + completionTokens < totalTokens) {
+      const missing = totalTokens - (promptTokens + completionTokens);
+      if (promptTokens <= completionTokens) promptTokens += missing;
+      else completionTokens += missing;
+    }
+
+    return { promptTokens, completionTokens };
+  }
+
+  let sessionPromptTokens: number | null = null;
+  let sessionCompletionTokens: number | null = null;
+  let fallbackPromptTokens = 0;
+  let fallbackCompletionTokens = 0;
 
   for (const line of stdout.split('\n')) {
     const trimmed = line.trim();
@@ -98,39 +134,54 @@ function parseOpencodeTokens(stdout: string): { promptTokens: number; completion
       const event = JSON.parse(trimmed) as Record<string, unknown>;
 
       // Session-level totals carried on session update events.
-      if (typeof event.tokensIn === 'number' || typeof event.tokensOut === 'number') {
-        promptTokens = typeof event.tokensIn === 'number' ? event.tokensIn : promptTokens;
-        completionTokens = typeof event.tokensOut === 'number' ? event.tokensOut : completionTokens;
-        continue;
+      if (typeof event.tokensIn === 'number') {
+        sessionPromptTokens = Math.max(sessionPromptTokens ?? 0, event.tokensIn);
+      }
+      if (typeof event.tokensOut === 'number') {
+        sessionCompletionTokens = Math.max(sessionCompletionTokens ?? 0, event.tokensOut);
       }
 
       // Nested session object (e.g. { type: 'session.updated', session: { tokensIn, tokensOut } })
       const session = event.session as Record<string, unknown> | undefined;
-      if (
-        session &&
-        (typeof session.tokensIn === 'number' || typeof session.tokensOut === 'number')
-      ) {
-        promptTokens = typeof session.tokensIn === 'number' ? session.tokensIn : promptTokens;
-        completionTokens =
-          typeof session.tokensOut === 'number' ? session.tokensOut : completionTokens;
-        continue;
+      if (session) {
+        if (typeof session.tokensIn === 'number') {
+          sessionPromptTokens = Math.max(sessionPromptTokens ?? 0, session.tokensIn);
+        }
+        if (typeof session.tokensOut === 'number') {
+          sessionCompletionTokens = Math.max(sessionCompletionTokens ?? 0, session.tokensOut);
+        }
       }
 
-      // Per-message usage (accumulate as fallback).
-      const usage = event.usage as Record<string, unknown> | undefined;
-      if (usage) {
-        if (typeof usage.inputTokens === 'number') promptTokens += usage.inputTokens;
-        if (typeof usage.outputTokens === 'number') completionTokens += usage.outputTokens;
-        if (typeof usage.prompt_tokens === 'number') promptTokens += usage.prompt_tokens;
-        if (typeof usage.completion_tokens === 'number')
-          completionTokens += usage.completion_tokens;
+      // Per-message usage (accumulate only as fallback when session totals are absent).
+      const usageCandidates = [
+        event.usage as Record<string, unknown> | undefined,
+        (event.message as Record<string, unknown> | undefined)?.usage as
+          | Record<string, unknown>
+          | undefined,
+        (event.data as Record<string, unknown> | undefined)?.usage as Record<string, unknown> | undefined,
+      ].filter((u): u is Record<string, unknown> => Boolean(u));
+
+      for (const usage of usageCandidates) {
+        const normalized = normalizeUsageTotals(usage);
+        fallbackPromptTokens += normalized.promptTokens;
+        fallbackCompletionTokens += normalized.completionTokens;
       }
     } catch {
       // Non-JSON line — skip.
     }
   }
 
-  return { promptTokens, completionTokens };
+  if (sessionPromptTokens !== null || sessionCompletionTokens !== null) {
+    return {
+      promptTokens: Math.max(0, sessionPromptTokens ?? 0),
+      completionTokens: Math.max(0, sessionCompletionTokens ?? 0),
+    };
+  }
+
+  return {
+    promptTokens: Math.max(0, fallbackPromptTokens),
+    completionTokens: Math.max(0, fallbackCompletionTokens),
+  };
 }
 
 function todayUtc(): string {
