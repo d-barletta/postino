@@ -45,6 +45,28 @@ async function main() {
   }
   console.log('opencode-ai installed.');
 
+  // Run `opencode --version` once so OpenCode performs its one-time SQLite
+  // migration now and bakes the migrated database into the snapshot.
+  // Without this the migration runs on every sandbox boot, adding a few
+  // seconds of startup latency and noise to stderr on every email processed.
+  console.log('Priming OpenCode database (one-time migration)…');
+  const prime = await sandbox.runCommand({
+    cmd: 'opencode',
+    args: ['--version'],
+    env: {
+      HOME: '/vercel/sandbox',
+      XDG_DATA_HOME: '/vercel/sandbox/.local/share',
+    },
+    stdout: process.stdout,
+    stderr: process.stderr,
+  });
+  if (prime.exitCode !== 0) {
+    // Non-fatal: migration may have still succeeded even with a non-zero exit.
+    console.warn('opencode --version exited with code', prime.exitCode, '(non-fatal)');
+  } else {
+    console.log('OpenCode database primed.');
+  }
+
   console.log('Taking snapshot (expiration: 0 = never expires)…');
   const snapshot = await sandbox.snapshot({ expiration: 0 });
 

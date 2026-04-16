@@ -307,6 +307,18 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
   return { sessionId, promptTokens, completionTokens };
 }
 
+function extractJsonObject(text: string): Record<string, unknown> | null {
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) return null;
+
+  const candidate = text.slice(firstBrace).trim();
+  try {
+    return JSON.parse(candidate) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -773,7 +785,10 @@ export async function processEmailWithAgent(
               },
             });
             const exportOut = await (await exportCmd.wait()).stdout();
-            const sessionData = JSON.parse(exportOut.trim()) as Record<string, unknown>;
+            const sessionData = extractJsonObject(exportOut);
+            if (!sessionData) {
+              throw new Error('Could not parse opencode export JSON');
+            }
 
             const exportedUsage = extractUsageFromOpencodeExport(sessionData);
             sandboxPromptTokens = exportedUsage.promptTokens;
