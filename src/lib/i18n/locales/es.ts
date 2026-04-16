@@ -219,6 +219,9 @@ const es: Translations = {
       title: 'Créditos mensuales',
       refreshAriaLabel: 'Actualizar créditos',
       remaining: 'Restantes',
+      limitReachedTitle: 'Límite mensual de créditos alcanzado',
+      limitReachedMessage:
+        'Has alcanzado el 100% del uso mensual de créditos. Los correos entrantes se conservarán, pero las funciones de IA se suspenden hasta que obtengas nuevos créditos.',
     },
     deleteEntities: {
       title: 'Eliminar todas las entidades y fusiones',

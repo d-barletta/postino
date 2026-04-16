@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/Alert';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { UserStats } from '@/types';
@@ -26,6 +27,7 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
   const limit = stats.monthlyCreditsLimit || 0;
   const remaining = Math.max(0, stats.monthlyCreditsRemaining || 0);
   const percent = toPercent(remaining, limit);
+  const isLimitReached = limit > 0 && remaining <= 0;
 
   const barColor = percent <= 10 ? 'bg-red-500' : percent <= 25 ? 'bg-orange-500' : 'bg-green-500';
 
@@ -66,6 +68,13 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
         </CardContent>
       ) : (
         <CardContent className="space-y-3">
+          {isLimitReached ? (
+            <Alert variant="warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{tr.limitReachedTitle}</AlertTitle>
+              <AlertDescription>{tr.limitReachedMessage}</AlertDescription>
+            </Alert>
+          ) : null}
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {Math.ceil(used).toLocaleString()} / {Math.ceil(limit).toLocaleString()}

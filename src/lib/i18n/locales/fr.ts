@@ -223,6 +223,9 @@ const fr: Translations = {
       title: 'Crédits mensuels',
       refreshAriaLabel: 'Actualiser les crédits',
       remaining: 'Restants',
+      limitReachedTitle: 'Limite mensuelle de crédits atteinte',
+      limitReachedMessage:
+        "Vous avez atteint 100 % d'utilisation mensuelle des crédits. Les e-mails entrants seront conservés, mais les fonctionnalités IA sont suspendues jusqu'à l'obtention de nouveaux crédits.",
     },
     deleteEntities: {
       title: 'Supprimer toutes les entités et fusions',
