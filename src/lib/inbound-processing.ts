@@ -12,7 +12,14 @@ import {
 import { processEmailWithAgent as processEmailWithSandbox } from '@/agents/sandbox-email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
-import { addUserCreditsUsage, dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
+import {
+  addUserCreditsUsage,
+  computeMonthlyCreditsLimit,
+  dollarsToCredits,
+  getUtcMonthKey,
+  normalizeUserCreditsSnapshot,
+  resolveCreditSettings,
+} from '@/lib/credits';
 
 /**
  * Attachment serialized for queue storage.
@@ -63,6 +70,14 @@ export interface QueuedInboundPayload {
    */
   aiAnalysisOnly?: boolean;
 }
+
+const AI_SKIPPED_CREDITS_EXHAUSTED_RULE = 'AI skipped (credits exhausted)';
+const AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE =
+  'Skipped because monthly credits are exhausted (analysis-only mode)';
+const AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE =
+  'Monthly credits exhausted; email forwarded without AI processing';
+const FORWARDING_DISABLED_MESSAGE =
+  'Forwarding is disabled because your Postino address is turned off';
 
 /** Escape special HTML characters to prevent HTML injection in email templates. */
 function escapeHtml(text: string): string {
@@ -151,6 +166,12 @@ function resolveSenderDisplayValue(fromHeader: string, senderFallback: string): 
 function matchesPattern(value: string, pattern?: string): boolean {
   if (!pattern || !pattern.trim()) return true;
   return value.toLowerCase().includes(pattern.toLowerCase());
+}
+
+function buildForwardBodyWithoutAi(payload: QueuedInboundPayload): string {
+  if (payload.bodyHtml.trim()) return payload.bodyHtml;
+  const plain = payload.bodyPlain || payload.emailBody || '';
+  return `<pre style="white-space: pre-wrap; font-family: inherit;">${escapeHtml(plain)}</pre>`;
 }
 
 function sanitizeStorageFilename(filename: string, fallback: string): string {
@@ -393,17 +414,72 @@ export async function processQueuedInboundPayload(
   // Fetch user preferences. is_forwarding_header_enabled defaults to true when unset.
   const { data: userRow } = await supabase
     .from('users')
-    .select('is_forwarding_header_enabled, analysis_output_language')
+    .select(
+      'is_address_enabled, is_forwarding_header_enabled, analysis_output_language, credits_usage_month, monthly_credits_used, monthly_credits_bonus',
+    )
     .eq('id', payload.userId)
     .single();
+  const isAddressEnabled = userRow?.is_address_enabled !== false;
   const isForwardingHeaderEnabled = userRow?.is_forwarding_header_enabled !== false;
   const analysisOutputLanguage =
     typeof userRow?.analysis_output_language === 'string'
       ? (userRow.analysis_output_language as string) || undefined
       : undefined;
+  const currentMonth = getUtcMonthKey();
+  const monthlyCredits = normalizeUserCreditsSnapshot(
+    {
+      credits_usage_month: userRow?.credits_usage_month as string | null | undefined,
+      monthly_credits_used: userRow?.monthly_credits_used as number | null | undefined,
+      monthly_credits_bonus: userRow?.monthly_credits_bonus as number | null | undefined,
+    },
+    currentMonth,
+  );
+  const monthlyCreditsLimit = computeMonthlyCreditsLimit(
+    creditSettings.freeCreditsPerMonth,
+    monthlyCredits.bonus,
+  );
+  const monthlyCreditsRemaining = Math.max(0, monthlyCreditsLimit - monthlyCredits.used);
+
+  if (!payload.aiAnalysisOnly && !isAddressEnabled) {
+    await supabase
+      .from('email_logs')
+      .update({
+        status: 'skipped',
+        processed_at: new Date().toISOString(),
+        error_message: FORWARDING_DISABLED_MESSAGE,
+      })
+      .eq('id', payload.logId);
+    await sendEmailPushNotification(
+      payload.userId,
+      payload.fromHeader || payload.sender,
+      payload.subject,
+      payload.logId,
+      'skipped',
+    );
+    return;
+  }
 
   // AI-analysis-only mode: run analysis + memory update, skip rules and forwarding.
   if (payload.aiAnalysisOnly) {
+    if (monthlyCreditsRemaining <= 0) {
+      await supabase
+        .from('email_logs')
+        .update({
+          status: 'skipped',
+          processed_at: new Date().toISOString(),
+          error_message: AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE,
+        })
+        .eq('id', payload.logId);
+      await sendEmailPushNotification(
+        payload.userId,
+        payload.fromHeader || payload.sender,
+        payload.subject,
+        payload.logId,
+        'skipped',
+      );
+      return;
+    }
+
     try {
       const [analysisResult, memory] = await Promise.all([
         analyzeEmailContent(
@@ -665,6 +741,98 @@ export async function processQueuedInboundPayload(
       .eq('id', payload.logId);
   } else {
     console.log('[processing] no attachments in payload', { logId: payload.logId });
+  }
+
+  if (monthlyCreditsRemaining <= 0) {
+    const forwardedBody = buildForwardBodyWithoutAi(payload);
+
+    if (payload.messageId) {
+      const forwardNonce = `forward:${crypto
+        .createHash('sha256')
+        .update(`${payload.userId}:${payload.messageId}`)
+        .digest('hex')}`;
+
+      const { error: nonceErr } = await supabase.from('mailgun_webhook_nonces').insert({
+        id: forwardNonce,
+        created_at: new Date().toISOString(),
+      });
+
+      if (nonceErr) {
+        console.warn('[processing] duplicate forward prevented', {
+          logId: payload.logId,
+          userId: payload.userId,
+          messageId: payload.messageId,
+        });
+
+        await supabase
+          .from('email_logs')
+          .update({
+            processed_at: new Date().toISOString(),
+            status: 'skipped',
+            rule_applied: AI_SKIPPED_CREDITS_EXHAUSTED_RULE,
+            tokens_used: 0,
+            estimated_cost: 0,
+            estimated_credits: 0,
+            processed_body: forwardedBody,
+            error_message: `Duplicate forward prevented for Message-Id: ${payload.messageId}`,
+          })
+          .eq('id', payload.logId);
+
+        await sendEmailPushNotification(
+          payload.userId,
+          payload.fromHeader || payload.sender,
+          payload.subject,
+          payload.logId,
+          'skipped',
+        );
+        return;
+      }
+    }
+
+    if (effectiveAttachments && effectiveAttachments.length > 0) {
+      console.log(
+        `Forwarding ${effectiveAttachments.length} attachment(s) for log ${payload.logId}: ` +
+          effectiveAttachments.map((a) => `${a.filename} (${a.contentType})`).join(', '),
+      );
+    }
+
+    await sendEmail({
+      to: payload.userEmail,
+      subject: stripCrlf(payload.subject),
+      html: forwardedBody,
+      replyTo: payload.replyToHeader || payload.sender,
+      senderName: resolveSenderDisplayValue(payload.fromHeader || '', payload.sender),
+      attachments:
+        effectiveAttachments && effectiveAttachments.length > 0 ? effectiveAttachments : undefined,
+      headers: {
+        'X-Postino-Processed': 'true',
+        'Auto-Submitted': 'auto-generated',
+        'X-Auto-Response-Suppress': 'All',
+      },
+    });
+
+    await supabase
+      .from('email_logs')
+      .update({
+        processed_at: new Date().toISOString(),
+        status: 'forwarded',
+        rule_applied: AI_SKIPPED_CREDITS_EXHAUSTED_RULE,
+        tokens_used: 0,
+        estimated_cost: 0,
+        estimated_credits: 0,
+        processed_body: forwardedBody,
+        error_message: AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE,
+      })
+      .eq('id', payload.logId);
+
+    await sendEmailPushNotification(
+      payload.userId,
+      payload.fromHeader || payload.sender,
+      payload.subject,
+      payload.logId,
+      'forwarded',
+    );
+    return;
   }
 
   // Fetch rules sorted by sort_order ASC (user-defined), then created_at ASC as tiebreaker.
