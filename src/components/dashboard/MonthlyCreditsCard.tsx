@@ -76,8 +76,8 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
             </Alert>
           ) : null}
           <div className="flex items-baseline justify-between gap-3">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {Math.ceil(used).toLocaleString()} / {Math.ceil(limit).toLocaleString()}
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {tr.used} {Math.ceil(used).toLocaleString()} {tr.of} {Math.ceil(limit).toLocaleString()}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {tr.remaining}: {Math.round(percent)}%

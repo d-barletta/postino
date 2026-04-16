@@ -222,6 +222,8 @@ const fr: Translations = {
     monthlyCredits: {
       title: 'Crédits mensuels',
       refreshAriaLabel: 'Actualiser les crédits',
+      used: 'Utilisés',
+      of: 'sur',
       remaining: 'Restants',
       limitReachedTitle: 'Limite mensuelle de crédits atteinte',
       limitReachedMessage:
