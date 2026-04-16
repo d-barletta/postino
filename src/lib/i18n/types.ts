@@ -186,6 +186,8 @@ export interface Translations {
     monthlyCredits: {
       title: string;
       refreshAriaLabel: string;
+      used: string;
+      of: string;
       remaining: string;
       limitReachedTitle: string;
       limitReachedMessage: string;

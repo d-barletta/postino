@@ -215,6 +215,8 @@ const en: Translations = {
     monthlyCredits: {
       title: 'Monthly Credits',
       refreshAriaLabel: 'Refresh credits',
+      used: 'Used',
+      of: 'of',
       remaining: 'Remaining',
       limitReachedTitle: 'Monthly credit limit reached',
       limitReachedMessage:
