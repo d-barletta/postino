@@ -73,7 +73,7 @@ export interface QueuedInboundPayload {
 
 const AI_SKIPPED_CREDITS_EXHAUSTED_RULE = 'AI skipped (credits exhausted)';
 const AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE =
-  'AI features suspended because monthly credits are exhausted (analysis-only mode)';
+  'Skipped because monthly credits are exhausted (analysis-only mode)';
 const AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE =
   'Monthly credits exhausted; email forwarded without AI processing';
 const FORWARDING_DISABLED_MESSAGE =
