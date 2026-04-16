@@ -795,7 +795,7 @@ export async function processQueuedInboundPayload(
         estimated_credits: 0,
         processed_body: forwardedBody,
         error_message:
-          'AI skipped because monthly credits are exhausted; forwarded original email without AI changes',
+          'Monthly credits exhausted; email forwarded without AI processing',
       })
       .eq('id', payload.logId);
 
