@@ -88,6 +88,15 @@ const OPENCODE_RUN_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes
  * message-part events if the session total is not present.
  */
 function parseOpencodeTokens(stdout: string): { promptTokens: number; completionTokens: number } {
+  function getUsageCandidate(
+    source: unknown,
+    key: 'usage',
+  ): Record<string, unknown> | undefined {
+    if (!source || typeof source !== 'object') return undefined;
+    const value = (source as Record<string, unknown>)[key];
+    return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
+  }
+
   function normalizeUsageTotals(usage: Record<string, unknown>): {
     promptTokens: number;
     completionTokens: number;
@@ -154,11 +163,9 @@ function parseOpencodeTokens(stdout: string): { promptTokens: number; completion
 
       // Per-message usage (accumulate only as fallback when session totals are absent).
       const usageCandidates = [
-        event.usage as Record<string, unknown> | undefined,
-        (event.message as Record<string, unknown> | undefined)?.usage as
-          | Record<string, unknown>
-          | undefined,
-        (event.data as Record<string, unknown> | undefined)?.usage as Record<string, unknown> | undefined,
+        getUsageCandidate(event, 'usage'),
+        getUsageCandidate(event.message, 'usage'),
+        getUsageCandidate(event.data, 'usage'),
       ].filter((u): u is Record<string, unknown> => Boolean(u));
 
       for (const usage of usageCandidates) {
