@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import {
   Accordion,
@@ -218,10 +218,6 @@ export function EmailSearchTab({
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
   const [totalEmailCount, setTotalEmailCount] = useState<number | undefined>(undefined);
   const [totalEmailCountLoading, setTotalEmailCountLoading] = useState(false);
-  const hasProcessingEmails = useMemo(
-    () => logs.some((log) => log.status === 'processing'),
-    [logs],
-  );
   const { expandedData, fetchExpandedEmail } = useEmailExpansion();
   const { markEmailAsRead, toggleEmailRead } = useEmailReadActions(setLogs);
 
