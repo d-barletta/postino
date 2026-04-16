@@ -15,7 +15,7 @@
  *      configured OpenRouter model) into the sandbox filesystem.
  *   4. Runs `opencode run` with a prompt that embeds the user's rules.
  *   5. Reads the modified email HTML back from the sandbox.
- *   6. Stores the sandbox session ID in the `email_logs` row for later
+ *   6. Stores the OpenCode session ID in the `email_logs` row for later
  *      recovery / debugging.
  *
  * Signature is identical to `processEmailWithAgent` in `email-agent.ts` so
@@ -133,6 +133,121 @@ function parseOpencodeTokens(stdout: string): { promptTokens: number; completion
   return { promptTokens, completionTokens };
 }
 
+function parseOpencodeSessionId(stdout: string): string | null {
+  for (const line of stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    try {
+      const event = JSON.parse(trimmed) as Record<string, unknown>;
+      const candidates = [
+        event.sessionID,
+        event.sessionId,
+        (event.session as Record<string, unknown> | undefined)?.id,
+        (event.session as Record<string, unknown> | undefined)?.sessionID,
+        (event.info as Record<string, unknown> | undefined)?.sessionID,
+        (event.info as Record<string, unknown> | undefined)?.id,
+      ];
+
+      for (const candidate of candidates) {
+        if (typeof candidate === 'string' && candidate.startsWith('ses_')) {
+          return candidate;
+        }
+      }
+    } catch {
+      // Non-JSON line — skip.
+    }
+  }
+
+  return null;
+}
+
+function readOpencodeTokenPair(
+  value: unknown,
+): { promptTokens: number; completionTokens: number } | null {
+  if (!value || typeof value !== 'object') return null;
+
+  const tokens = value as Record<string, unknown>;
+  const promptCandidates = [
+    tokens.input,
+    tokens.inputTokens,
+    tokens.tokensIn,
+    tokens.tokens_in,
+    tokens.prompt_tokens,
+  ];
+  const completionCandidates = [
+    tokens.output,
+    tokens.outputTokens,
+    tokens.tokensOut,
+    tokens.tokens_out,
+    tokens.completion_tokens,
+  ];
+
+  const promptTokens = promptCandidates.find((candidate) => typeof candidate === 'number');
+  const completionTokens = completionCandidates.find((candidate) => typeof candidate === 'number');
+
+  if (typeof promptTokens !== 'number' && typeof completionTokens !== 'number') {
+    return null;
+  }
+
+  return {
+    promptTokens: typeof promptTokens === 'number' ? promptTokens : 0,
+    completionTokens: typeof completionTokens === 'number' ? completionTokens : 0,
+  };
+}
+
+function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
+  sessionId: string | null;
+  promptTokens: number;
+  completionTokens: number;
+} {
+  const sessionInfo = sessionData.info as Record<string, unknown> | undefined;
+  const sessionId =
+    typeof sessionInfo?.id === 'string' && sessionInfo.id.startsWith('ses_')
+      ? sessionInfo.id
+      : null;
+
+  const topLevelTokens =
+    readOpencodeTokenPair(sessionData.tokens) ??
+    readOpencodeTokenPair(sessionInfo?.tokens) ??
+    readOpencodeTokenPair(sessionData.usage) ??
+    readOpencodeTokenPair(sessionData.stats);
+  if (topLevelTokens) {
+    return { sessionId, ...topLevelTokens };
+  }
+
+  let promptTokens = 0;
+  let completionTokens = 0;
+  const messages = sessionData.messages as Array<Record<string, unknown>> | undefined;
+
+  if (Array.isArray(messages)) {
+    for (const message of messages) {
+      const messageInfo = message.info as Record<string, unknown> | undefined;
+      const messageTokens =
+        readOpencodeTokenPair(messageInfo?.tokens) ??
+        readOpencodeTokenPair(message.tokens) ??
+        readOpencodeTokenPair(message.usage);
+
+      if (messageTokens) {
+        promptTokens += messageTokens.promptTokens;
+        completionTokens += messageTokens.completionTokens;
+        continue;
+      }
+
+      const parts = message.parts as Array<Record<string, unknown>> | undefined;
+      if (!Array.isArray(parts)) continue;
+
+      for (const part of parts) {
+        const partTokens = readOpencodeTokenPair(part.tokens) ?? readOpencodeTokenPair(part.usage);
+        if (!partTokens) continue;
+        promptTokens += partTokens.promptTokens;
+        completionTokens += partTokens.completionTokens;
+      }
+    }
+  }
+
+  return { sessionId, promptTokens, completionTokens };
+}
+
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -244,16 +359,26 @@ SUBJECT: ${sanitizeEmailField(emailSubject)}${attachmentsLine}
 RULES:
 ${rulesText}
 
-IMPORTANT: Apply each rule only when the transformation is actually needed. If a rule asks to translate the email into a specific language and the email is already written in that language, skip the translation and preserve the original content unchanged.
+IMPORTANT:
+- The user's rules are the source of truth, but preserve the original email as much as possible while applying them.
+- Default behavior: keep the email structurally and semantically intact. Make the smallest effective change that satisfies the rules.
+- Do not rewrite from scratch unless a rule clearly asks for a full rewrite, a completely new version, or a fundamentally different email.
+- If a rule asks to translate the email, translate only user-visible email content that should appear in the rendered message. Do not translate HTML tags, attributes, CSS, URLs, tracking parameters, code snippets, hidden metadata, or technical identifiers unless the rule explicitly asks for that.
+- If a rule asks to summarize, condense, simplify, or shorten the email, keep the original intent, key facts, promises, dates, names, links, calls to action, and tone whenever possible.
+- If a rule asks to modify or improve the email, edit only the portions necessary to satisfy that request and preserve the rest of the message.
+- If a rule asks to change tone, wording, or clarity, retain the original meaning unless the rule explicitly asks to change the meaning.
+- If a rule asks to remove content, remove only the targeted content and keep the remaining message intact.
+- If a rule asks to completely change, fully rewrite, or regenerate the email, then a substantial rewrite is allowed.
+- If a rule asks to translate into a language the email already uses, skip translation and preserve the original content unchanged.
 ${analysisSection}${memorySection}
 
 INSTRUCTIONS:
 1. Read the file /vercel/sandbox/email.html
 2. Apply the rules above to both the subject and body.
-3. Preserve the original HTML structure, CSS styles, inline styles, and images.
-4. Only modify content specifically targeted by the rules.
+3. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
+4. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
 5. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
-6. Write the new subject line to /vercel/sandbox/subject.txt (overwrite).
+6. Write the subject line to /vercel/sandbox/subject.txt (overwrite). ALWAYS write this file even if the subject did not change — write the original subject as-is in that case.
 7. Do NOT create any other files.`;
 }
 
@@ -300,12 +425,12 @@ function buildAnalysisSection(analysis: EmailAnalysis | null): string {
 }
 
 // ---------------------------------------------------------------------------
-// Sandbox session ID persistence
+// OpenCode session ID persistence
 // ---------------------------------------------------------------------------
 
-async function saveSandboxSessionId(logId: string, sandboxId: string): Promise<void> {
+async function saveOpencodeSessionId(logId: string, sessionId: string): Promise<void> {
   const supabase = createAdminClient();
-  await supabase.from('email_logs').update({ sandbox_session_id: sandboxId }).eq('id', logId);
+  await supabase.from('email_logs').update({ sandbox_session_id: sessionId }).eq('id', logId);
 }
 
 // ---------------------------------------------------------------------------
@@ -462,6 +587,7 @@ export async function processEmailWithAgent(
   let parseError: string | undefined;
   let sandboxPromptTokens = 0;
   let sandboxCompletionTokens = 0;
+  let opencodeSessionId: string | null = null;
 
   try {
     pushTrace('sandbox_creating', 'ok', 'Creating sandbox from snapshot');
@@ -504,9 +630,6 @@ export async function processEmailWithAgent(
     pushTrace('sandbox_created', 'ok', 'Sandbox started', {
       sandboxId: sandbox.sandboxId,
     });
-
-    // Persist sandbox session ID immediately so it can be recovered.
-    await saveSandboxSessionId(logId, sandbox.sandboxId);
 
     // Write files into the sandbox.
     await sandbox.writeFiles([
@@ -573,10 +696,44 @@ export async function processEmailWithAgent(
         const stdout = await finished.stdout();
         const stderr = await finished.stderr();
 
-        // Extract token usage from the JSON event stream.
-        const parsed = parseOpencodeTokens(stdout);
-        sandboxPromptTokens = parsed.promptTokens;
-        sandboxCompletionTokens = parsed.completionTokens;
+        opencodeSessionId = parseOpencodeSessionId(stdout);
+
+        // `opencode export <sessionID>` is the authoritative source of usage for the
+        // exact session that just ran. Only fall back to the stdout event stream if
+        // export cannot be resolved.
+        if (exitCode === 0 && opencodeSessionId) {
+          try {
+            const exportCmd = await sandbox.runCommand({
+              cmd: 'opencode',
+              args: ['export', opencodeSessionId],
+              cwd: '/vercel/sandbox',
+              env: {
+                HOME: '/vercel/sandbox',
+                XDG_DATA_HOME: '/vercel/sandbox/.local/share',
+                OPENROUTER_API_KEY: apiKey,
+              },
+            });
+            const exportOut = await (await exportCmd.wait()).stdout();
+            const sessionData = JSON.parse(exportOut.trim()) as Record<string, unknown>;
+
+            const exportedUsage = extractUsageFromOpencodeExport(sessionData);
+            sandboxPromptTokens = exportedUsage.promptTokens;
+            sandboxCompletionTokens = exportedUsage.completionTokens;
+            opencodeSessionId = exportedUsage.sessionId ?? opencodeSessionId;
+
+            if (opencodeSessionId) {
+              await saveOpencodeSessionId(logId, opencodeSessionId);
+            }
+          } catch {
+            const parsed = parseOpencodeTokens(stdout);
+            sandboxPromptTokens = parsed.promptTokens;
+            sandboxCompletionTokens = parsed.completionTokens;
+          }
+        } else {
+          const parsed = parseOpencodeTokens(stdout);
+          sandboxPromptTokens = parsed.promptTokens;
+          sandboxCompletionTokens = parsed.completionTokens;
+        }
 
         pushTrace(
           'opencode_finished',
@@ -586,6 +743,7 @@ export async function processEmailWithAgent(
             exitCode,
             stdoutLength: stdout.length,
             stderrLength: stderr.length,
+            opencodeSessionId,
             sandboxPromptTokens,
             sandboxCompletionTokens,
           },
