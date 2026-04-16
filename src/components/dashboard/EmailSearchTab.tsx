@@ -502,12 +502,11 @@ export function EmailSearchTab({
 
   useEffect(() => {
     if (!authUser) return;
-    if (!hasProcessingEmails) return;
     const timer = setInterval(() => {
       void fetchLogs(page, true);
     }, PROCESSING_REFRESH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [authUser, hasProcessingEmails, page, fetchLogs]);
+  }, [authUser, page, fetchLogs]);
 
   const selectionResetKey = JSON.stringify(applied);
   const resultsHeader = (
