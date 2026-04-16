@@ -605,6 +605,69 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <div>
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Use OpenCode (Sandbox)
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Offload email processing to OpenCode running inside a Vercel Sandbox.
+                        Handles very large emails that exceed model context-window limits. Requires
+                        a sandbox snapshot with OpenCode pre-installed.
+                      </p>
+                    </div>
+                    <Switch
+                      id="agent-use-opencode"
+                      checked={settings.agentUseOpencode === true}
+                      onCheckedChange={(checked) =>
+                        setSettings((p) => ({ ...p, agentUseOpencode: checked }))
+                      }
+                    />
+                  </div>
+
+                  {settings.agentUseOpencode && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Sandbox Snapshot ID
+                      </label>
+                      <Input
+                        value={settings.opencodeSandboxSnapshotId || ''}
+                        onChange={(e) =>
+                          setSettings((p) => ({ ...p, opencodeSandboxSnapshotId: e.target.value }))
+                        }
+                        placeholder="snap_..."
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        The Vercel Sandbox snapshot ID with OpenCode installed. Created by running
+                        the setup script (see docs).
+                      </p>
+                    </div>
+                  )}
+
+                  {settings.agentUseOpencode && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Min. Body Length for OpenCode
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={settings.opencodeMinBodyLength ?? 50000}
+                        onChange={(e) =>
+                          setSettings((p) => ({
+                            ...p,
+                            opencodeMinBodyLength: Number(e.target.value) || 0,
+                          }))
+                        }
+                        placeholder="50000"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Emails with a body shorter than this (in characters) are processed by the
+                        standard agent. Set to 0 to always use OpenCode.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Enable Agent Tracing
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

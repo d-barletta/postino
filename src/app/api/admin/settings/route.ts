@@ -119,6 +119,9 @@ export async function PUT(request: NextRequest) {
       'googleMapsApiKey',
       'creditsPerDollarFactor',
       'freeCreditsPerMonth',
+      'agentUseOpencode',
+      'opencodeSandboxSnapshotId',
+      'opencodeMinBodyLength',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),

@@ -218,7 +218,10 @@ export function EmailSearchTab({
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
   const [totalEmailCount, setTotalEmailCount] = useState<number | undefined>(undefined);
   const [totalEmailCountLoading, setTotalEmailCountLoading] = useState(false);
-  const hasProcessingEmails = useMemo(() => logs.some((log) => log.status === 'processing'), [logs]);
+  const hasProcessingEmails = useMemo(
+    () => logs.some((log) => log.status === 'processing'),
+    [logs],
+  );
   const { expandedData, fetchExpandedEmail } = useEmailExpansion();
   const { markEmailAsRead, toggleEmailRead } = useEmailReadActions(setLogs);
 

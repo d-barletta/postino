@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   serverExternalPackages: ['nodemailer'],
 
+  // Include the .agents folder in the Vercel serverless bundle so the sandbox
+  // agent can read AGENTS.md, skills, and custom agent definitions at runtime.
+  outputFileTracingIncludes: {
+    '/api/**': ['./src/agents/.agents/**/*'],
+  },
+
   async headers() {
     return [
       {

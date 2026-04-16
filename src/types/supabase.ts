@@ -116,6 +116,7 @@ export type Database = {
           processing_started_at: string | null;
           received_at: string | null;
           rule_applied: string | null;
+          sandbox_session_id: string | null;
           status: string;
           subject: string | null;
           to_address: string;
@@ -142,6 +143,7 @@ export type Database = {
           processing_started_at?: string | null;
           received_at?: string | null;
           rule_applied?: string | null;
+          sandbox_session_id?: string | null;
           status?: string;
           subject?: string | null;
           to_address: string;
@@ -168,6 +170,7 @@ export type Database = {
           processing_started_at?: string | null;
           received_at?: string | null;
           rule_applied?: string | null;
+          sandbox_session_id?: string | null;
           status?: string;
           subject?: string | null;
           to_address?: string;

@@ -9,7 +9,9 @@
     "lint": "eslint --fix",
     "format": "prettier --write .",
     "deploy:preview": "vercel",
-    "deploy:prod": "vercel --prod"
+    "deploy:prod": "vercel --prod",
+    "create:sandbox-snapshot": "npx tsx --env-file .env.local scripts/create-opencode-snapshot.ts",
+    "debug:sandbox": "npx tsx --env-file .env.local scripts/debug-sandbox-agent.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",

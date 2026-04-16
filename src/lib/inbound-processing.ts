@@ -8,6 +8,7 @@ import {
   saveAttachmentFilesToSupermemory,
   buildMemoryEntryFromAnalysis,
 } from '@/agents/email-agent';
+import { processEmailWithAgent as processEmailWithSandbox } from '@/agents/sandbox-email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
 import { addUserCreditsUsage, dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
@@ -701,7 +702,15 @@ export async function processQueuedInboundPayload(
           .filter((name): name is string => Boolean(name))
       : undefined;
 
-  const result = await processEmailWithAgent(
+  const opencodeMinLen =
+    typeof settings?.opencodeMinBodyLength === 'number'
+      ? (settings.opencodeMinBodyLength as number)
+      : 50000;
+  const useSandbox =
+    settings?.agentUseOpencode === true && payload.emailBody.length >= opencodeMinLen;
+  const agentFn = useSandbox ? processEmailWithSandbox : processEmailWithAgent;
+
+  const result = await agentFn(
     payload.userId,
     payload.logId,
     payload.sender,
