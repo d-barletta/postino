@@ -215,7 +215,10 @@ function parseOpencodeStatsOutput(text: string): {
   completionTokens: number;
 } | null {
   const extractMetric = (label: string): number | null => {
-    const regex = new RegExp(`\\|\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|]+)\\s*\\|`, 'i');
+    const regex = new RegExp(
+      `[|│]\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|│]+)\\s*[|│]`,
+      'i',
+    );
     const match = text.match(regex);
     return match ? parseHumanReadableOpencodeNumber(match[1]) : null;
   };
@@ -553,6 +556,7 @@ RULES:
 ${rulesText}
 
 IMPORTANT:
+- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.
 - The user's rules are the source of truth, but preserve the original email as much as possible while applying them.
 - Default behavior: keep the email structurally and semantically intact. Make the smallest effective change that satisfies the rules.
 - Do not rewrite from scratch unless a rule clearly asks for a full rewrite, a completely new version, or a fundamentally different email.
@@ -566,14 +570,15 @@ IMPORTANT:
 ${analysisSection}${memorySection}
 
 INSTRUCTIONS:
-1. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
-2. Read the file /vercel/sandbox/email.html
-3. Apply the rules above to both the subject and body.
-4. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
-5. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
-6. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
-7. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
-8. Do NOT create any other files.`;
+1. First, activate caveman ultra mode by issuing: /caveman ultra
+2. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
+3. Read the file /vercel/sandbox/email.html
+4. Apply the rules above to both the subject and body.
+5. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
+6. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
+7. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
+8. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
+9. Do NOT create any other files.`;
 }
 
 // ---------------------------------------------------------------------------
