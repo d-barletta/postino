@@ -220,6 +220,9 @@ const it: Translations = {
       title: 'Crediti mensili',
       refreshAriaLabel: 'Aggiorna crediti',
       remaining: 'Rimanenti',
+      limitReachedTitle: 'Limite mensile crediti raggiunto',
+      limitReachedMessage:
+        'Hai raggiunto il 100% dell’utilizzo dei crediti mensili. Le email in arrivo verranno conservate, ma le funzionalità AI sono sospese finché non ottieni nuovi crediti.',
     },
     deleteEntities: {
       title: 'Elimina tutte le entità e le unioni',

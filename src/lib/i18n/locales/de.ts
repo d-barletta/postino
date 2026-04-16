@@ -225,6 +225,9 @@ const de: Translations = {
       title: 'Monatliche Credits',
       refreshAriaLabel: 'Credits aktualisieren',
       remaining: 'Verbleibend',
+      limitReachedTitle: 'Monatliches Credit-Limit erreicht',
+      limitReachedMessage:
+        'Sie haben 100 % Ihrer monatlichen Credits verbraucht. Eingehende E-Mails bleiben erhalten, aber KI-Funktionen sind ausgesetzt, bis Sie neue Credits erhalten.',
     },
     deleteEntities: {
       title: 'Alle Entitäten und Zusammenführungen löschen',

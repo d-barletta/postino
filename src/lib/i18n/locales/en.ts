@@ -216,6 +216,9 @@ const en: Translations = {
       title: 'Monthly Credits',
       refreshAriaLabel: 'Refresh credits',
       remaining: 'Remaining',
+      limitReachedTitle: 'Monthly credit limit reached',
+      limitReachedMessage:
+        'You reached 100% of monthly credit usage. Incoming emails will be kept, but AI features are suspended until you get new credits.',
     },
     deleteEntities: {
       title: 'Delete All Entities & Merges',

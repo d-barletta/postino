@@ -187,6 +187,8 @@ export interface Translations {
       title: string;
       refreshAriaLabel: string;
       remaining: string;
+      limitReachedTitle: string;
+      limitReachedMessage: string;
     };
     deleteEntities: {
       title: string;
