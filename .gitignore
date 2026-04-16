@@ -48,3 +48,4 @@ scripts/original.stderr.log
 scripts/original.session.json
 scripts/original.rewritten.html
 scripts/original.prompt.txt
+scripts/original.stats.txt

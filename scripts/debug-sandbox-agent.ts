@@ -126,6 +126,61 @@ function parseOpencodeSessionId(stdout: string): string | null {
   return null;
 }
 
+function parseHumanReadableOpencodeNumber(value: string): number | null {
+  const normalized = value.replace(/,/g, '').trim();
+  const match = normalized.match(/^([0-9]+(?:\.[0-9]+)?)([KMB])?$/i);
+  if (!match) return null;
+
+  const base = Number.parseFloat(match[1]);
+  if (!Number.isFinite(base)) return null;
+
+  const suffix = match[2]?.toUpperCase();
+  const multiplier =
+    suffix === 'K' ? 1_000 : suffix === 'M' ? 1_000_000 : suffix === 'B' ? 1_000_000_000 : 1;
+  return Math.round(base * multiplier);
+}
+
+function parseOpencodeStatsOutput(text: string): {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  promptTokens: number;
+  completionTokens: number;
+} | null {
+  const extractMetric = (label: string): number | null => {
+    const regex = new RegExp(`\\|\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|]+)\\s*\\|`, 'i');
+    const match = text.match(regex);
+    return match ? parseHumanReadableOpencodeNumber(match[1]) : null;
+  };
+
+  const inputTokens = extractMetric('Input');
+  const outputTokens = extractMetric('Output');
+  const cacheReadTokens = extractMetric('Cache Read') ?? 0;
+  const cacheWriteTokens = extractMetric('Cache Write') ?? 0;
+
+  if (
+    inputTokens === null &&
+    outputTokens === null &&
+    cacheReadTokens === 0 &&
+    cacheWriteTokens === 0
+  ) {
+    return null;
+  }
+
+  const promptBase = inputTokens ?? 0;
+  const completionTokens = outputTokens ?? 0;
+
+  return {
+    inputTokens: promptBase,
+    outputTokens: completionTokens,
+    cacheReadTokens,
+    cacheWriteTokens,
+    promptTokens: promptBase + cacheReadTokens + cacheWriteTokens,
+    completionTokens,
+  };
+}
+
 function readOpencodeTokenPair(
   value: unknown,
 ): { promptTokens: number; completionTokens: number; totalTokens: number } | null {
@@ -153,11 +208,7 @@ function readOpencodeTokenPair(
     tokens.completion_tokens,
     tokens.completionTokens,
   ];
-  const totalCandidates = [
-    tokens.total,
-    tokens.totalTokens,
-    tokens.total_tokens,
-  ];
+  const totalCandidates = [tokens.total, tokens.totalTokens, tokens.total_tokens];
 
   const cacheWriteCandidates = [
     cache?.write,
@@ -195,7 +246,9 @@ function readOpencodeTokenPair(
   const cacheRead = typeof cacheReadTokens === 'number' ? cacheReadTokens : 0;
   const completion = typeof completionTokens === 'number' ? completionTokens : 0;
   const total =
-    typeof totalTokens === 'number' ? totalTokens : promptBase + cacheWrite + cacheRead + completion;
+    typeof totalTokens === 'number'
+      ? totalTokens
+      : promptBase + cacheWrite + cacheRead + completion;
 
   return {
     // OpenCode export can move most prompt usage into cache write/read fields.
@@ -239,8 +292,11 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
 
   let promptTokens = 0;
   let completionTokens = 0;
-  const usageRecords: Array<{ promptTokens: number; completionTokens: number; totalTokens: number }> =
-    [];
+  const usageRecords: Array<{
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  }> = [];
   const messages = sessionData.messages as Array<Record<string, unknown>> | undefined;
 
   if (Array.isArray(messages)) {
@@ -457,6 +513,7 @@ async function main() {
   const rewrittenHtmlPath = nodePath.join(artifactDir, `${artifactBaseName}.rewritten.html`);
   const rewrittenSubjectPath = nodePath.join(artifactDir, `${artifactBaseName}.subject.txt`);
   const usagePath = nodePath.join(artifactDir, `${artifactBaseName}.usage.json`);
+  const statsPath = nodePath.join(artifactDir, `${artifactBaseName}.stats.txt`);
   const sessionPath = nodePath.join(artifactDir, `${artifactBaseName}.session.json`);
   const stdoutPath = nodePath.join(artifactDir, `${artifactBaseName}.stdout.log`);
   const stderrPath = nodePath.join(artifactDir, `${artifactBaseName}.stderr.log`);
@@ -505,6 +562,7 @@ async function main() {
 
   await sandbox.writeFiles([
     { path: '/vercel/sandbox/email.html', content: Buffer.from(emailBody, 'utf-8') },
+    { path: '/vercel/sandbox/prompt.txt', content: Buffer.from(prompt, 'utf-8') },
     { path: '/vercel/sandbox/opencode.json', content: Buffer.from(opencodeConfig, 'utf-8') },
     {
       path: '/vercel/sandbox/.local/share/opencode/auth.json',
@@ -534,9 +592,38 @@ async function main() {
   console.log('━'.repeat(60));
   console.log('');
 
+  const liveLogPath = '/vercel/sandbox/opencode-live.log';
+  let streamedStdout = '';
+  let streamedLength = 0;
+  let pollingLiveOutput = false;
+
+  const flushLiveOutput = async (): Promise<void> => {
+    if (pollingLiveOutput) return;
+    pollingLiveOutput = true;
+    try {
+      const liveBuf = await sandbox.readFileToBuffer({ path: liveLogPath });
+      if (!liveBuf) return;
+
+      const liveText = liveBuf.toString('utf-8');
+      if (liveText.length <= streamedLength) return;
+
+      const chunk = liveText.slice(streamedLength);
+      streamedLength = liveText.length;
+      streamedStdout += chunk;
+      process.stdout.write(chunk);
+    } catch {
+      // Ignore transient read errors while the file is being written.
+    } finally {
+      pollingLiveOutput = false;
+    }
+  };
+
   const command = await sandbox.runCommand({
-    cmd: 'opencode',
-    args: ['run', '--format', 'json', '--model', `openrouter/${model}`, prompt],
+    cmd: 'bash',
+    args: [
+      '-lc',
+      `set -o pipefail; opencode run --format json --model openrouter/${model} "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${liveLogPath}`,
+    ],
     cwd: '/vercel/sandbox',
     env: {
       HOME: '/vercel/sandbox',
@@ -545,23 +632,60 @@ async function main() {
     },
     detached: true,
   });
+
+  console.log('📡 Streaming OpenCode output...');
+  const pollTimer = setInterval(() => {
+    void flushLiveOutput();
+  }, 1000);
+
   const result = await command.wait();
-  const stdout = await result.stdout();
+  clearInterval(pollTimer);
+  await flushLiveOutput();
+
+  const capturedStdout = await result.stdout();
   const stderr = await result.stderr();
+  const stdout = capturedStdout.trim().length > 0 ? capturedStdout : streamedStdout;
 
   await writeFile(stdoutPath, stdout, 'utf-8');
   await writeFile(stderrPath, stderr, 'utf-8');
 
+  const printOutputPreview = (
+    label: string,
+    content: string,
+    options?: { headLines?: number; tailLines?: number },
+  ): void => {
+    const headLines = options?.headLines ?? 30;
+    const tailLines = options?.tailLines ?? 80;
+
+    if (!content.trim()) {
+      console.log(`\n${label}: <empty>`);
+      return;
+    }
+
+    const lines = content.split('\n');
+    const total = lines.length;
+
+    console.log(`\n${label}: ${total} line(s)`);
+
+    if (total <= headLines + tailLines + 1) {
+      console.log(content);
+      return;
+    }
+
+    const head = lines.slice(0, headLines).join('\n');
+    const tail = lines.slice(Math.max(total - tailLines, 0)).join('\n');
+
+    console.log(`--- start (${headLines} lines) ---`);
+    console.log(head);
+    console.log(`--- middle omitted (${total - headLines - tailLines} lines) ---`);
+    console.log(`--- end (${tailLines} lines) ---`);
+    console.log(tail);
+  };
+
   console.log('🪵 OpenCode stdout saved to:', stdoutPath);
   console.log('🪵 OpenCode stderr saved to:', stderrPath);
-  if (stdout.trim()) {
-    console.log('\n📤 OpenCode stdout:');
-    console.log(stdout);
-  }
-  if (stderr.trim()) {
-    console.log('\n📥 OpenCode stderr:');
-    console.log(stderr);
-  }
+  printOutputPreview('📤 OpenCode stdout', stdout);
+  printOutputPreview('📥 OpenCode stderr', stderr, { headLines: 20, tailLines: 40 });
 
   console.log('\n' + '━'.repeat(60));
   console.log('Exit code:', result.exitCode);
@@ -569,7 +693,38 @@ async function main() {
   let opencodeSessionId = parseOpencodeSessionId(stdout);
   let promptTokens = 0;
   let completionTokens = 0;
+  let statsRaw = '';
+  let statsParsed: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    promptTokens: number;
+    completionTokens: number;
+  } | null = null;
   let exportedSessionData: Record<string, unknown> | null = null;
+
+  if (result.exitCode === 0) {
+    const statsCommand = await sandbox.runCommand({
+      cmd: 'opencode',
+      args: ['stats'],
+      cwd: '/vercel/sandbox',
+      env: {
+        HOME: '/vercel/sandbox',
+        XDG_DATA_HOME: '/vercel/sandbox/.local/share',
+        OPENROUTER_API_KEY: openRouterKey,
+      },
+    });
+    const statsResult = await statsCommand.wait();
+    statsRaw = await statsResult.stdout();
+    statsParsed = parseOpencodeStatsOutput(statsRaw);
+    await writeFile(statsPath, statsRaw, 'utf-8');
+
+    if (statsParsed) {
+      promptTokens = statsParsed.promptTokens;
+      completionTokens = statsParsed.completionTokens;
+    }
+  }
 
   if (result.exitCode === 0 && opencodeSessionId) {
     const exportCommand = await sandbox.runCommand({
@@ -587,10 +742,12 @@ async function main() {
     const parsedSession = extractJsonObject(exportOut);
     if (parsedSession) {
       exportedSessionData = parsedSession;
-      const usage = extractUsageFromOpencodeExport(parsedSession);
-      promptTokens = usage.promptTokens;
-      completionTokens = usage.completionTokens;
-      opencodeSessionId = usage.sessionId ?? opencodeSessionId;
+      if (!statsParsed) {
+        const usage = extractUsageFromOpencodeExport(parsedSession);
+        promptTokens = usage.promptTokens;
+        completionTokens = usage.completionTokens;
+        opencodeSessionId = usage.sessionId ?? opencodeSessionId;
+      }
       await writeFile(sessionPath, JSON.stringify(parsedSession, null, 2), 'utf-8');
     } else {
       await writeFile(sessionPath, exportOut, 'utf-8');
@@ -642,6 +799,8 @@ async function main() {
       promptTokens,
       completionTokens,
       totalTokens: promptTokens + completionTokens,
+      statsRaw,
+      statsParsed,
       exportedSessionWritten: Boolean(exportedSessionData),
     },
     email: {
@@ -657,11 +816,13 @@ async function main() {
       stdoutPath,
       stderrPath,
       usagePath,
+      statsPath,
       sessionPath,
     },
   };
   await writeFile(usagePath, JSON.stringify(usageData, null, 2), 'utf-8');
   console.log('📊 Usage saved to:', usagePath);
+  console.log('📊 Stats saved to:', statsPath);
   if (opencodeSessionId) {
     console.log('🆔 OpenCode session ID:', opencodeSessionId);
   }

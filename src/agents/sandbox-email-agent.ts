@@ -192,6 +192,61 @@ function parseOpencodeTokens(stdout: string): { promptTokens: number; completion
   };
 }
 
+function parseHumanReadableOpencodeNumber(value: string): number | null {
+  const normalized = value.replace(/,/g, '').trim();
+  const match = normalized.match(/^([0-9]+(?:\.[0-9]+)?)([KMB])?$/i);
+  if (!match) return null;
+
+  const base = Number.parseFloat(match[1]);
+  if (!Number.isFinite(base)) return null;
+
+  const suffix = match[2]?.toUpperCase();
+  const multiplier =
+    suffix === 'K' ? 1_000 : suffix === 'M' ? 1_000_000 : suffix === 'B' ? 1_000_000_000 : 1;
+  return Math.round(base * multiplier);
+}
+
+function parseOpencodeStatsOutput(text: string): {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  promptTokens: number;
+  completionTokens: number;
+} | null {
+  const extractMetric = (label: string): number | null => {
+    const regex = new RegExp(`\\|\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|]+)\\s*\\|`, 'i');
+    const match = text.match(regex);
+    return match ? parseHumanReadableOpencodeNumber(match[1]) : null;
+  };
+
+  const inputTokens = extractMetric('Input');
+  const outputTokens = extractMetric('Output');
+  const cacheReadTokens = extractMetric('Cache Read') ?? 0;
+  const cacheWriteTokens = extractMetric('Cache Write') ?? 0;
+
+  if (
+    inputTokens === null &&
+    outputTokens === null &&
+    cacheReadTokens === 0 &&
+    cacheWriteTokens === 0
+  ) {
+    return null;
+  }
+
+  const promptBase = inputTokens ?? 0;
+  const completionTokens = outputTokens ?? 0;
+
+  return {
+    inputTokens: promptBase,
+    outputTokens: completionTokens,
+    cacheReadTokens,
+    cacheWriteTokens,
+    promptTokens: promptBase + cacheReadTokens + cacheWriteTokens,
+    completionTokens,
+  };
+}
+
 function parseOpencodeSessionId(stdout: string): string | null {
   for (const line of stdout.split('\n')) {
     const trimmed = line.trim();
@@ -247,11 +302,7 @@ function readOpencodeTokenPair(
     tokens.completion_tokens,
     tokens.completionTokens,
   ];
-  const totalCandidates = [
-    tokens.total,
-    tokens.totalTokens,
-    tokens.total_tokens,
-  ];
+  const totalCandidates = [tokens.total, tokens.totalTokens, tokens.total_tokens];
 
   const cacheWriteCandidates = [
     cache?.write,
@@ -290,7 +341,9 @@ function readOpencodeTokenPair(
   const cacheRead = typeof cacheReadTokens === 'number' ? cacheReadTokens : 0;
   const completion = typeof completionTokens === 'number' ? completionTokens : 0;
   const total =
-    typeof totalTokens === 'number' ? totalTokens : promptBase + cacheWrite + cacheRead + completion;
+    typeof totalTokens === 'number'
+      ? totalTokens
+      : promptBase + cacheWrite + cacheRead + completion;
 
   return {
     // OpenCode export may place most prompt usage in cache write/read buckets.
@@ -322,8 +375,11 @@ function extractUsageFromOpencodeExport(sessionData: Record<string, unknown>): {
 
   let promptTokens = 0;
   let completionTokens = 0;
-  const usageRecords: Array<{ promptTokens: number; completionTokens: number; totalTokens: number }> =
-    [];
+  const usageRecords: Array<{
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  }> = [];
   const messages = sessionData.messages as Array<Record<string, unknown>> | undefined;
 
   if (Array.isArray(messages)) {
@@ -726,6 +782,17 @@ export async function processEmailWithAgent(
   let sandboxPromptTokens = 0;
   let sandboxCompletionTokens = 0;
   let opencodeSessionId: string | null = null;
+  let opencodeStatsRaw: string | undefined;
+  let opencodeStatsParsed:
+    | {
+        inputTokens: number;
+        outputTokens: number;
+        cacheReadTokens: number;
+        cacheWriteTokens: number;
+        promptTokens: number;
+        completionTokens: number;
+      }
+    | undefined;
 
   try {
     pushTrace('sandbox_creating', 'ok', 'Creating sandbox from snapshot');
@@ -836,14 +903,13 @@ export async function processEmailWithAgent(
 
         opencodeSessionId = parseOpencodeSessionId(stdout);
 
-        // `opencode export <sessionID>` is the authoritative source of usage for the
-        // exact session that just ran. Only fall back to the stdout event stream if
-        // export cannot be resolved.
-        if (exitCode === 0 && opencodeSessionId) {
+        // `opencode stats` is the primary usage source for the sandbox state.
+        // Keep `opencode export` as a fallback and for session persistence/debugging.
+        if (exitCode === 0) {
           try {
-            const exportCmd = await sandbox.runCommand({
+            const statsCmd = await sandbox.runCommand({
               cmd: 'opencode',
-              args: ['export', opencodeSessionId],
+              args: ['stats'],
               cwd: '/vercel/sandbox',
               env: {
                 HOME: '/vercel/sandbox',
@@ -851,19 +917,53 @@ export async function processEmailWithAgent(
                 OPENROUTER_API_KEY: apiKey,
               },
             });
-            const exportOut = await (await exportCmd.wait()).stdout();
-            const sessionData = extractJsonObject(exportOut);
-            if (!sessionData) {
-              throw new Error('Could not parse opencode export JSON');
-            }
+            const statsOut = await (await statsCmd.wait()).stdout();
+            const statsUsage = parseOpencodeStatsOutput(statsOut);
+            opencodeStatsRaw = statsOut;
+            opencodeStatsParsed = statsUsage ?? undefined;
 
-            const exportedUsage = extractUsageFromOpencodeExport(sessionData);
-            sandboxPromptTokens = exportedUsage.promptTokens;
-            sandboxCompletionTokens = exportedUsage.completionTokens;
-            opencodeSessionId = exportedUsage.sessionId ?? opencodeSessionId;
+            pushTrace(
+              'opencode_stats',
+              statsUsage ? 'ok' : 'warning',
+              statsUsage
+                ? 'Read sandbox usage from opencode stats'
+                : 'Could not parse opencode stats output',
+              {
+                raw: statsOut,
+                ...(statsUsage ?? {}),
+              },
+            );
+
+            if (statsUsage) {
+              sandboxPromptTokens = statsUsage.promptTokens;
+              sandboxCompletionTokens = statsUsage.completionTokens;
+            }
 
             if (opencodeSessionId) {
               await saveOpencodeSessionId(logId, opencodeSessionId);
+            }
+
+            if (!statsUsage && opencodeSessionId) {
+              const exportCmd = await sandbox.runCommand({
+                cmd: 'opencode',
+                args: ['export', opencodeSessionId],
+                cwd: '/vercel/sandbox',
+                env: {
+                  HOME: '/vercel/sandbox',
+                  XDG_DATA_HOME: '/vercel/sandbox/.local/share',
+                  OPENROUTER_API_KEY: apiKey,
+                },
+              });
+              const exportOut = await (await exportCmd.wait()).stdout();
+              const sessionData = extractJsonObject(exportOut);
+              if (!sessionData) {
+                throw new Error('Could not parse opencode export JSON');
+              }
+
+              const exportedUsage = extractUsageFromOpencodeExport(sessionData);
+              sandboxPromptTokens = exportedUsage.promptTokens;
+              sandboxCompletionTokens = exportedUsage.completionTokens;
+              opencodeSessionId = exportedUsage.sessionId ?? opencodeSessionId;
             }
           } catch {
             const parsed = parseOpencodeTokens(stdout);
@@ -887,6 +987,8 @@ export async function processEmailWithAgent(
             opencodeSessionId,
             sandboxPromptTokens,
             sandboxCompletionTokens,
+            ...(opencodeStatsRaw ? { opencodeStatsRaw } : {}),
+            ...(opencodeStatsParsed ? { opencodeStatsParsed } : {}),
           },
         );
 
@@ -965,6 +1067,8 @@ export async function processEmailWithAgent(
       sandboxPromptTokens,
       sandboxCompletionTokens,
       sandboxLlmCost,
+      ...(opencodeStatsRaw ? { opencodeStatsRaw } : {}),
+      ...(opencodeStatsParsed ? { opencodeStatsParsed } : {}),
     },
   );
 
