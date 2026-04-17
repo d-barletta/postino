@@ -708,7 +708,9 @@ async function savePreSandboxCheckpoint(params: {
     .eq('id', params.logId);
 
   if (error) {
-    throw new Error(error.message || 'Failed to persist pre-sandbox checkpoint');
+    throw new Error(
+      `Failed to persist pre-sandbox checkpoint: ${error.message || 'Unknown Supabase error'}`,
+    );
   }
 }
 
@@ -847,17 +849,17 @@ export async function processEmailWithAgent(
 
   // Persist a pre-sandbox checkpoint so retries/resumes have non-empty state even
   // if sandbox execution times out or crashes before final update.
-  const checkpointSavedAt = new Date().toISOString();
+  const checkpointTimestamp = new Date().toISOString();
   pushTrace('pre_sandbox_checkpoint', 'ok', 'Persisting pre-sandbox checkpoint', {
     hasAnalysis: !!analysis,
     selectedRuleCount: activeRules.length,
     selectedRuleNames: activeRules.map((r) => r.name),
-    checkpointSavedAt,
+    checkpointTimestamp,
   });
   try {
     await savePreSandboxCheckpoint({
       logId,
-      processingStartedAt: checkpointSavedAt,
+      processingStartedAt: checkpointTimestamp,
       ruleApplied,
       analysis,
       trace: {
@@ -865,11 +867,13 @@ export async function processEmailWithAgent(
         mode: 'sequential',
         isHtmlInput: isHtml,
         startedAt: traceStartedAt,
-        finishedAt: checkpointSavedAt,
+        finishedAt: checkpointTimestamp,
         steps: traceSteps,
       },
     });
   } catch (checkpointError) {
+    // Non-fatal by design: we preserve existing completion semantics and still
+    // attempt sandbox execution so forwarding is not blocked by checkpoint I/O.
     pushTrace(
       'pre_sandbox_checkpoint_failed',
       'warning',
