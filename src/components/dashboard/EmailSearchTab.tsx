@@ -236,6 +236,7 @@ export function EmailSearchTab({
 
   // Advanced filters panel state
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
 
   // Lazy-loaded entity suggestions
   interface Suggestions {
@@ -526,6 +527,15 @@ export function EmailSearchTab({
       <Button
         variant="ghost"
         size="icon"
+        onClick={() => setMobileFiltersVisible((v) => !v)}
+        title={ts.title}
+        className={cn('sm:hidden', mobileFiltersVisible && 'text-[#a3891f] dark:text-[#f3df79]')}
+      >
+        <Search className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={handleRefresh}
         disabled={refreshing}
         title={t.dashboard.emailHistory.refresh}
@@ -554,381 +564,390 @@ export function EmailSearchTab({
       )}
     </div>
   );
+  const filterPanelContent = (
+    <div className="px-6 pb-6 space-y-4">
+      {hasActive && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleClearFilters}
+            className="text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
+          >
+            {t.dashboard.emailHistory.clearFilter}
+          </button>
+        </div>
+      )}
+
+      {/* Text search */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            type="search"
+            value={pending.search}
+            onChange={(e) => setPending((p) => ({ ...p, search: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
+            }}
+            placeholder={ts.searchPlaceholder}
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-inset focus:ring-1 focus:ring-[#efd957] focus:border-[#efd957]"
+          />
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={openAgentFullPage}
+          className="shrink-0 gap-1.5 hover:translate-y-0"
+          title={ts.askAI}
+        >
+          <Brain className="h-4 w-4" />
+          {ts.askAI}
+        </Button>
+      </div>
+
+      {/* Advanced filters — collapsible sub-section */}
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        >
+          <span>{ts.advancedFilters}</span>
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 transition-transform duration-200',
+              advancedOpen ? 'rotate-180' : '',
+            )}
+          />
+        </button>
+
+        {advancedOpen && (
+          <div className="px-4 pb-4 pt-2 space-y-4 border-t border-gray-200 dark:border-gray-700">
+            {/* Dropdown filters grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterStatus}
+                </label>
+                <Select
+                  value={pending.status || ALL_VALUE}
+                  onValueChange={(v) =>
+                    setPending((p) => ({ ...p, status: v === ALL_VALUE ? '' : v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterSentiment}
+                </label>
+                <Select
+                  value={pending.sentiment || ALL_VALUE}
+                  onValueChange={(v) =>
+                    setPending((p) => ({ ...p, sentiment: v === ALL_VALUE ? '' : v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {SENTIMENT_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterCategory}
+                </label>
+                <Select
+                  value={pending.emailType || ALL_VALUE}
+                  onValueChange={(v) =>
+                    setPending((p) => ({ ...p, emailType: v === ALL_VALUE ? '' : v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {EMAIL_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterPriority}
+                </label>
+                <Select
+                  value={pending.priority || ALL_VALUE}
+                  onValueChange={(v) =>
+                    setPending((p) => ({ ...p, priority: v === ALL_VALUE ? '' : v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {PRIORITY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterSenderType}
+                </label>
+                <Select
+                  value={pending.senderType || ALL_VALUE}
+                  onValueChange={(v) =>
+                    setPending((p) => ({ ...p, senderType: v === ALL_VALUE ? '' : v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {SENDER_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterLanguage}
+                </label>
+                <Combobox
+                  options={suggestions ? toLanguageOptions(suggestions.languages) : []}
+                  value={pending.language}
+                  onValueChange={(v) => setPending((p) => ({ ...p, language: v }))}
+                  placeholder={ts.languagePlaceholder}
+                  searchPlaceholder={ts.languagePlaceholder}
+                  clearable
+                  disabled={suggestionsLoading}
+                />
+              </div>
+            </div>
+
+            {/* Entity combobox chips — 2-col grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterPeople}
+                </label>
+                <ComboboxChips
+                  options={suggestions ? toChipsOptions(suggestions.people) : []}
+                  values={pending.people}
+                  onValuesChange={(v) => setPending((p) => ({ ...p, people: v }))}
+                  placeholder={ts.peoplePlaceholder}
+                  searchPlaceholder={ts.peoplePlaceholder}
+                  loading={suggestionsLoading}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterOrgs}
+                </label>
+                <ComboboxChips
+                  options={suggestions ? toChipsOptions(suggestions.organizations) : []}
+                  values={pending.orgs}
+                  onValuesChange={(v) => setPending((p) => ({ ...p, orgs: v }))}
+                  placeholder={ts.orgsPlaceholder}
+                  searchPlaceholder={ts.orgsPlaceholder}
+                  loading={suggestionsLoading}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterPlaces}
+                </label>
+                <ComboboxChips
+                  options={suggestions ? toChipsOptions(suggestions.places) : []}
+                  values={pending.places}
+                  onValuesChange={(v) => setPending((p) => ({ ...p, places: v }))}
+                  placeholder={ts.placesPlaceholder}
+                  searchPlaceholder={ts.placesPlaceholder}
+                  loading={suggestionsLoading}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterEvents}
+                </label>
+                <ComboboxChips
+                  options={suggestions ? toChipsOptions(suggestions.events) : []}
+                  values={pending.events}
+                  onValuesChange={(v) => setPending((p) => ({ ...p, events: v }))}
+                  placeholder={ts.eventsPlaceholder}
+                  searchPlaceholder={ts.eventsPlaceholder}
+                  loading={suggestionsLoading}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterDates}
+                </label>
+                <ComboboxChips
+                  options={suggestions ? toChipsOptions(suggestions.dates) : []}
+                  values={pending.dates}
+                  onValuesChange={(v) => setPending((p) => ({ ...p, dates: v }))}
+                  placeholder={ts.datesPlaceholder}
+                  searchPlaceholder={ts.datesPlaceholder}
+                  loading={suggestionsLoading}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterNumbers}
+                </label>
+                <ComboboxChips
+                  options={suggestions ? toChipsOptions(suggestions.numbers) : []}
+                  values={pending.numbers}
+                  onValuesChange={(v) => setPending((p) => ({ ...p, numbers: v }))}
+                  placeholder={ts.numbersPlaceholder}
+                  searchPlaceholder={ts.numbersPlaceholder}
+                  loading={suggestionsLoading}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {ts.filterPrices}
+                </label>
+                <ComboboxChips
+                  options={suggestions ? toChipsOptions(suggestions.prices) : []}
+                  values={pending.prices}
+                  onValuesChange={(v) => setPending((p) => ({ ...p, prices: v }))}
+                  placeholder={ts.pricesPlaceholder}
+                  searchPlaceholder={ts.pricesPlaceholder}
+                  loading={suggestionsLoading}
+                />
+              </div>
+            </div>
+
+            {/* Toggle filters row */}
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={pending.attachments}
+                  onCheckedChange={(v) => setPending((p) => ({ ...p, attachments: v }))}
+                  aria-label={ts.withAttachments}
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.withAttachments}</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={pending.requiresResponse}
+                  onCheckedChange={(v) => setPending((p) => ({ ...p, requiresResponse: v }))}
+                  aria-label={ts.requiresResponse}
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {ts.requiresResponse}
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={pending.hasActionItems}
+                  onCheckedChange={(v) => setPending((p) => ({ ...p, hasActionItems: v }))}
+                  aria-label={ts.hasActionItems}
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.hasActionItems}</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={pending.isUrgent}
+                  onCheckedChange={(v) => setPending((p) => ({ ...p, isUrgent: v }))}
+                  aria-label={ts.isUrgent}
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.isUrgent}</span>
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Search button — last row, full width on mobile */}
+      <Button
+        size="sm"
+        onClick={handleApplyFilters}
+        disabled={!hasPendingChanges || logsLoading || refreshing}
+        className="w-full sm:w-auto gap-2"
+      >
+        <Search className="h-4 w-4 shrink-0" />
+        {ts.applyFilters}
+      </Button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
-      {/* Filter panel */}
-      <Card>
+      {/* Filter panel - mobile */}
+      {mobileFiltersVisible && (
+        <Card className="sm:hidden">
+          <div className="flex items-center justify-between px-4 py-4">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{ts.title}</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileFiltersVisible(false)}
+              title={t.common.close}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          {filterPanelContent}
+        </Card>
+      )}
+
+      {/* Filter panel - desktop */}
+      <Card className="hidden sm:block">
         <Accordion type="single" collapsible>
           <AccordionItem value="filters" className="border-0">
             <AccordionTrigger className="px-4 py-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               {ts.title}
             </AccordionTrigger>
-            <AccordionContent>
-              <div className="px-6 space-y-4">
-                {hasActive && (
-                  <div className="flex justify-end">
-                    <button
-                      onClick={handleClearFilters}
-                      className="text-xs text-[#a3891f] dark:text-[#f3df79] hover:underline"
-                    >
-                      {t.dashboard.emailHistory.clearFilter}
-                    </button>
-                  </div>
-                )}
-
-                {/* Text search */}
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                    <input
-                      type="search"
-                      value={pending.search}
-                      onChange={(e) => setPending((p) => ({ ...p, search: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && hasPendingChanges) handleApplyFilters();
-                      }}
-                      placeholder={ts.searchPlaceholder}
-                      className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-inset focus:ring-1 focus:ring-[#efd957] focus:border-[#efd957]"
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={openAgentFullPage}
-                    className="shrink-0 gap-1.5 hover:translate-y-0"
-                    title={ts.askAI}
-                  >
-                    <Brain className="h-4 w-4" />
-                    {ts.askAI}
-                  </Button>
-                </div>
-
-                {/* Advanced filters — collapsible sub-section */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setAdvancedOpen((v) => !v)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                  >
-                    <span>{ts.advancedFilters}</span>
-                    <ChevronDown
-                      className={cn(
-                        'h-4 w-4 transition-transform duration-200',
-                        advancedOpen ? 'rotate-180' : '',
-                      )}
-                    />
-                  </button>
-
-                  {advancedOpen && (
-                    <div className="px-4 pb-4 pt-2 space-y-4 border-t border-gray-200 dark:border-gray-700">
-                      {/* Dropdown filters grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterStatus}
-                          </label>
-                          <Select
-                            value={pending.status || ALL_VALUE}
-                            onValueChange={(v) =>
-                              setPending((p) => ({ ...p, status: v === ALL_VALUE ? '' : v }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {STATUS_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterSentiment}
-                          </label>
-                          <Select
-                            value={pending.sentiment || ALL_VALUE}
-                            onValueChange={(v) =>
-                              setPending((p) => ({ ...p, sentiment: v === ALL_VALUE ? '' : v }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {SENTIMENT_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterCategory}
-                          </label>
-                          <Select
-                            value={pending.emailType || ALL_VALUE}
-                            onValueChange={(v) =>
-                              setPending((p) => ({ ...p, emailType: v === ALL_VALUE ? '' : v }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {EMAIL_TYPE_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterPriority}
-                          </label>
-                          <Select
-                            value={pending.priority || ALL_VALUE}
-                            onValueChange={(v) =>
-                              setPending((p) => ({ ...p, priority: v === ALL_VALUE ? '' : v }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {PRIORITY_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterSenderType}
-                          </label>
-                          <Select
-                            value={pending.senderType || ALL_VALUE}
-                            onValueChange={(v) =>
-                              setPending((p) => ({ ...p, senderType: v === ALL_VALUE ? '' : v }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {SENDER_TYPE_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterLanguage}
-                          </label>
-                          <Combobox
-                            options={suggestions ? toLanguageOptions(suggestions.languages) : []}
-                            value={pending.language}
-                            onValueChange={(v) => setPending((p) => ({ ...p, language: v }))}
-                            placeholder={ts.languagePlaceholder}
-                            searchPlaceholder={ts.languagePlaceholder}
-                            clearable
-                            disabled={suggestionsLoading}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Entity combobox chips — 2-col grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterPeople}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.people) : []}
-                            values={pending.people}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, people: v }))}
-                            placeholder={ts.peoplePlaceholder}
-                            searchPlaceholder={ts.peoplePlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterOrgs}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.organizations) : []}
-                            values={pending.orgs}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, orgs: v }))}
-                            placeholder={ts.orgsPlaceholder}
-                            searchPlaceholder={ts.orgsPlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterPlaces}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.places) : []}
-                            values={pending.places}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, places: v }))}
-                            placeholder={ts.placesPlaceholder}
-                            searchPlaceholder={ts.placesPlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterEvents}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.events) : []}
-                            values={pending.events}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, events: v }))}
-                            placeholder={ts.eventsPlaceholder}
-                            searchPlaceholder={ts.eventsPlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterDates}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.dates) : []}
-                            values={pending.dates}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, dates: v }))}
-                            placeholder={ts.datesPlaceholder}
-                            searchPlaceholder={ts.datesPlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterNumbers}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.numbers) : []}
-                            values={pending.numbers}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, numbers: v }))}
-                            placeholder={ts.numbersPlaceholder}
-                            searchPlaceholder={ts.numbersPlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {ts.filterPrices}
-                          </label>
-                          <ComboboxChips
-                            options={suggestions ? toChipsOptions(suggestions.prices) : []}
-                            values={pending.prices}
-                            onValuesChange={(v) => setPending((p) => ({ ...p, prices: v }))}
-                            placeholder={ts.pricesPlaceholder}
-                            searchPlaceholder={ts.pricesPlaceholder}
-                            loading={suggestionsLoading}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Toggle filters row */}
-                      <div className="flex flex-wrap gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Switch
-                            checked={pending.attachments}
-                            onCheckedChange={(v) => setPending((p) => ({ ...p, attachments: v }))}
-                            aria-label={ts.withAttachments}
-                          />
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {ts.withAttachments}
-                          </span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Switch
-                            checked={pending.requiresResponse}
-                            onCheckedChange={(v) =>
-                              setPending((p) => ({ ...p, requiresResponse: v }))
-                            }
-                            aria-label={ts.requiresResponse}
-                          />
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {ts.requiresResponse}
-                          </span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Switch
-                            checked={pending.hasActionItems}
-                            onCheckedChange={(v) =>
-                              setPending((p) => ({ ...p, hasActionItems: v }))
-                            }
-                            aria-label={ts.hasActionItems}
-                          />
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {ts.hasActionItems}
-                          </span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Switch
-                            checked={pending.isUrgent}
-                            onCheckedChange={(v) => setPending((p) => ({ ...p, isUrgent: v }))}
-                            aria-label={ts.isUrgent}
-                          />
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {ts.isUrgent}
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Search button — last row, full width on mobile */}
-                <Button
-                  size="sm"
-                  onClick={handleApplyFilters}
-                  disabled={!hasPendingChanges || logsLoading || refreshing}
-                  className="w-full sm:w-auto gap-2"
-                >
-                  <Search className="h-4 w-4 shrink-0" />
-                  {ts.applyFilters}
-                </Button>
-              </div>
-            </AccordionContent>
+            <AccordionContent>{filterPanelContent}</AccordionContent>
           </AccordionItem>
         </Accordion>
       </Card>
