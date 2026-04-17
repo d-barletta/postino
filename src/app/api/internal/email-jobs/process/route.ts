@@ -2,6 +2,10 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { processEmailJobsBatch } from '@/lib/email-jobs';
 
+// Allow long-running sandbox rewrites to complete on platforms that support
+// extended function duration (e.g. Vercel Fluid Compute).
+export const maxDuration = 800;
+
 function timingSafeStringEqual(a: string, b: string): boolean {
   // Hash both values to a fixed-length digest before comparing so that
   // neither string length nor short-circuit evaluation leaks timing information.
