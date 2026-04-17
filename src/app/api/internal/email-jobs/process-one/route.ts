@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { claimJobById, processSingleClaimedJob } from '@/lib/email-jobs';
 
 /**
- * Max function duration: 15 minutes.
- * The HTTP response is sent immediately after claiming the job; the actual
- * processing runs inside `after()` so it can take up to 15 minutes without
- * blocking the caller.
+ * Max function duration: 12 minutes.
+ * This route waits for full job processing so sandbox execution completes
+ * before returning to the caller.
  */
-export const maxDuration = 800; //max 300 in hobby plan
+export const maxDuration = 720; // max 300 in hobby plan
 
 function timingSafeStringEqual(a: string, b: string): boolean {
   const hashA = crypto.createHash('sha256').update(a).digest();
@@ -61,22 +60,13 @@ async function handleProcessOne(request: NextRequest, bodyJobId?: string) {
     return NextResponse.json({ claimed: false, jobId });
   }
 
-  // Kick off processing after the response is sent so the caller (process route)
-  // gets an immediate acknowledgement without waiting for the full job duration.
-  after(async () => {
-    try {
-      await processSingleClaimedJob(job);
-    } catch (err) {
-      console.error(
-        '[process-one] processSingleClaimedJob unhandled error (job:',
-        job.id,
-        '):',
-        err,
-      );
-    }
-  });
-
-  return NextResponse.json({ claimed: true, jobId });
+  try {
+    await processSingleClaimedJob(job);
+    return NextResponse.json({ claimed: true, jobId });
+  } catch (err) {
+    console.error('[process-one] processSingleClaimedJob unhandled error (job:', job.id, '):', err);
+    return NextResponse.json({ error: 'Worker failed', jobId }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
