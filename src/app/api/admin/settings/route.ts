@@ -15,6 +15,8 @@ const AGENT_LIMITS = {
   agentFallbackMaxTokens: { min: 500, max: 6000 },
 } as const;
 
+const OPENCODE_SKILL_KEYS = ['caveman', 'html-email-editing'] as const;
+
 function clampInt(value: unknown, min: number, max: number): unknown {
   if (typeof value !== 'number' || !Number.isFinite(value)) return value;
   return Math.max(min, Math.min(Math.floor(value), max));
@@ -32,6 +34,18 @@ function pickDomainSettings(source: Record<string, unknown>) {
       typeof source.mailgunSandboxEmail === 'string' ? source.mailgunSandboxEmail : undefined,
     mailgunDomain: typeof source.mailgunDomain === 'string' ? source.mailgunDomain : undefined,
   };
+}
+
+function normalizeOpencodeSkillToggles(value: unknown): Record<string, boolean> | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const input = value as Record<string, unknown>;
+  const normalized: Record<string, boolean> = {};
+  for (const key of OPENCODE_SKILL_KEYS) {
+    if (typeof input[key] === 'boolean') {
+      normalized[key] = input[key] as boolean;
+    }
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
 export async function GET(request: NextRequest) {
@@ -122,6 +136,7 @@ export async function PUT(request: NextRequest) {
       'agentUseOpencode',
       'opencodeSandboxSnapshotId',
       'opencodeMinBodyLength',
+      'opencodeSkillToggles',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),
@@ -131,6 +146,9 @@ export async function PUT(request: NextRequest) {
         key,
         typeof value === 'string' ? value.trim() : value,
       ]),
+    );
+    const normalizedOpencodeSkillToggles = normalizeOpencodeSkillToggles(
+      normalized.opencodeSkillToggles,
     );
 
     // Validate mailgunBaseUrl to prevent SSRF: only official Mailgun API base URLs are accepted.
@@ -153,6 +171,9 @@ export async function PUT(request: NextRequest) {
 
     const normalizedWithBounds = {
       ...normalized,
+      ...(normalizedOpencodeSkillToggles !== undefined
+        ? { opencodeSkillToggles: normalizedOpencodeSkillToggles }
+        : {}),
       creditsPerDollarFactor: clampPositiveInt(
         normalized.creditsPerDollarFactor,
         DEFAULT_CREDITS_PER_DOLLAR_FACTOR,

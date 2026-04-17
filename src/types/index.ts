@@ -226,6 +226,8 @@ export interface Settings {
   opencodeSandboxSnapshotId?: string;
   /** Minimum email body length (in characters) to trigger the OpenCode sandbox agent. Emails shorter than this use the standard agent. Defaults to 50000. */
   opencodeMinBodyLength?: number;
+  /** Per-skill OpenCode enablement map. Missing keys default to true. */
+  opencodeSkillToggles?: Record<string, boolean>;
   /** Google Maps Geocoding API key. When set, place geocoding uses Google Maps instead of Nominatim. Falls back to GOOGLE_MAPS_API_KEY env variable. */
   googleMapsApiKey?: string;
   /** Conversion factor from USD to credits. Credits are computed as USD * factor. Defaults to 100. */
