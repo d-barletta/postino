@@ -55,6 +55,9 @@ const OPENCODE_SKILLS = [
     description: 'Structured editing skill for preserving email HTML layout.',
   },
 ] as const;
+const DEFAULT_OPENCODE_SKILL_TOGGLES = Object.fromEntries(
+  OPENCODE_SKILLS.map((skill) => [skill.key, true]),
+) as Record<string, boolean>;
 
 type NumberBounds = {
   min?: number;
@@ -121,10 +124,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     memoryApiKey: '',
     creditsPerDollarFactor: 100,
     freeCreditsPerMonth: 1000,
-    opencodeSkillToggles: {
-      caveman: true,
-      'html-email-editing': true,
-    },
+    opencodeSkillToggles: DEFAULT_OPENCODE_SKILL_TOGGLES,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -687,15 +687,16 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                               id={`opencode-skill-${skill.key}`}
                               checked={settings.opencodeSkillToggles?.[skill.key] !== false}
                               onCheckedChange={(checked) =>
-                                setSettings((p) => ({
-                                  ...p,
-                                  opencodeSkillToggles: {
-                                    caveman: p.opencodeSkillToggles?.caveman !== false,
-                                    'html-email-editing':
-                                      p.opencodeSkillToggles?.['html-email-editing'] !== false,
-                                    [skill.key]: checked,
-                                  },
-                                }))
+                                setSettings((p) => {
+                                  return {
+                                    ...p,
+                                    opencodeSkillToggles: {
+                                      ...DEFAULT_OPENCODE_SKILL_TOGGLES,
+                                      ...p.opencodeSkillToggles,
+                                      [skill.key]: checked,
+                                    },
+                                  };
+                                })
                               }
                             />
                           </div>

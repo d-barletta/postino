@@ -513,6 +513,10 @@ function isOpencodeSkillEnabled(
   return skillToggles[skillName] !== false;
 }
 
+function isKnownOpencodeSkillName(skillName: string): skillName is (typeof OPENCODE_SKILLS)[number] {
+  return OPENCODE_SKILLS.includes(skillName as (typeof OPENCODE_SKILLS)[number]);
+}
+
 /**
  * Pre-analysis helper — reuses the standard agent's `analyzeEmailContent`.
  * Imported lazily to avoid circular deps.
@@ -578,9 +582,9 @@ function buildOpencodePrompt(
   const cavemanImportantLine = cavemanEnabled
     ? '- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.'
     : '- Caveman skill is disabled. Do not use /caveman or any caveman mode command.';
-  const cavemanStepLine = cavemanEnabled
-    ? '1. First, activate caveman ultra mode by issuing: /caveman ultra'
-    : '1. Caveman skill is disabled. Skip any caveman command.';
+  const cavemanStepInstruction = cavemanEnabled
+    ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
+    : 'Caveman skill is disabled. Skip any caveman command.';
 
   return `You have an email HTML file at /vercel/sandbox/email.html that needs processing.
 
@@ -607,7 +611,7 @@ ${cavemanImportantLine}
 ${analysisSection}${memorySection}
 
 INSTRUCTIONS:
-${cavemanStepLine}
+1. ${cavemanStepInstruction}
 2. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
 3. Read the file /vercel/sandbox/email.html
 4. Apply the rules above to both the subject and body.
@@ -902,13 +906,14 @@ export async function processEmailWithAgent(
     // code and __dirname won't resolve to the source tree on Vercel.
     const agentsDir = path.join(process.cwd(), 'src', 'agents', '.agents');
     const agentFiles = await readAgentsFolder(agentsDir);
-    const allowedSkillNames = new Set<string>(
+    const allowedSkillNames = new Set(
       OPENCODE_SKILLS.filter((skill) => isOpencodeSkillEnabled(skillToggles, skill)),
     );
     const filteredAgentFiles = agentFiles.filter((file) => {
       const normalizedPath = file.relativePath.split(path.sep).join('/');
       const match = normalizedPath.match(/^\.opencode\/skills\/([^/]+)\//);
       if (!match) return true;
+      if (!isKnownOpencodeSkillName(match[1])) return false;
       return allowedSkillNames.has(match[1]);
     });
     if (filteredAgentFiles.length > 0) {
