@@ -902,7 +902,7 @@ export async function processEmailWithAgent(
     // code and __dirname won't resolve to the source tree on Vercel.
     const agentsDir = path.join(process.cwd(), 'src', 'agents', '.agents');
     const agentFiles = await readAgentsFolder(agentsDir);
-    const allowedSkillNames = new Set(
+    const allowedSkillNames = new Set<string>(
       OPENCODE_SKILLS.filter((skill) => isOpencodeSkillEnabled(skillToggles, skill)),
     );
     const filteredAgentFiles = agentFiles.filter((file) => {
