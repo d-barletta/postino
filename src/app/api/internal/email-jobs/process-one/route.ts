@@ -7,7 +7,7 @@ import { claimJobById, processSingleClaimedJob } from '@/lib/email-jobs';
  * This route waits for full job processing so sandbox execution completes
  * before returning to the caller.
  */
-export const maxDuration = 720; // max 300 in hobby plan
+export const maxDuration = 720;
 
 function timingSafeStringEqual(a: string, b: string): boolean {
   const hashA = crypto.createHash('sha256').update(a).digest();
