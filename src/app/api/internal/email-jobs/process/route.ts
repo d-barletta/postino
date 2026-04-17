@@ -75,7 +75,7 @@ async function handleProcess(request: NextRequest, bodyBatchSize?: number, bodyW
     }
 
     // Run the actual worker pass after we return the HTTP response so callers
-    // are not blocked by long-running sandbox/OpenCode processing.
+    // are not blocked by long-running AI processing.
     after(async () => {
       try {
         await processEmailJobsBatch(batchSize);
