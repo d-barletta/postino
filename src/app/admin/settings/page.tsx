@@ -43,6 +43,22 @@ const AGENT_LIMITS = {
   fallbackPassMaxTokens: { min: 500, max: 6000 },
 } as const;
 
+const OPENCODE_SKILLS = [
+  {
+    key: 'caveman',
+    label: 'Caveman',
+    description: 'Ultra-compressed response mode for lower token usage.',
+  },
+  {
+    key: 'html-email-editing',
+    label: 'HTML Email Editing',
+    description: 'Structured editing skill for preserving email HTML layout.',
+  },
+] as const;
+const DEFAULT_OPENCODE_SKILL_TOGGLES = Object.fromEntries(
+  OPENCODE_SKILLS.map((skill) => [skill.key, true]),
+) as Record<string, boolean>;
+
 type NumberBounds = {
   min?: number;
   max?: number;
@@ -108,6 +124,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     memoryApiKey: '',
     creditsPerDollarFactor: 100,
     freeCreditsPerMonth: 1000,
+    opencodeSkillToggles: DEFAULT_OPENCODE_SKILL_TOGGLES,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -638,6 +655,53 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                         The Vercel Sandbox snapshot ID with OpenCode installed. Created by running
                         the setup script (see docs).
                       </p>
+                    </div>
+                  )}
+
+                  {settings.agentUseOpencode && (
+                    <div className="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          OpenCode Skills
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Enable or disable each OpenCode skill. Disabled skills are not loaded in
+                          the sandbox agent.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        {OPENCODE_SKILLS.map((skill) => (
+                          <div
+                            key={skill.key}
+                            className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {skill.label}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                {skill.description}
+                              </p>
+                            </div>
+                            <Switch
+                              id={`opencode-skill-${skill.key}`}
+                              checked={settings.opencodeSkillToggles?.[skill.key] !== false}
+                              onCheckedChange={(checked) =>
+                                setSettings((p) => {
+                                  return {
+                                    ...p,
+                                    opencodeSkillToggles: {
+                                      ...DEFAULT_OPENCODE_SKILL_TOGGLES,
+                                      ...p.opencodeSkillToggles,
+                                      [skill.key]: checked,
+                                    },
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 

@@ -74,6 +74,8 @@ const SANDBOX_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 /** Max time (ms) we wait for the `opencode run` command. */
 const OPENCODE_RUN_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes
 
+const OPENCODE_SKILLS = ['caveman', 'html-email-editing'] as const;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -487,6 +489,34 @@ async function getGlobalSettings(): Promise<Record<string, unknown> | undefined>
   return (settingsRow?.data as Record<string, unknown> | null) ?? undefined;
 }
 
+function getOpencodeSkillToggles(settings: Record<string, unknown> | undefined): Record<string, boolean> {
+  const defaults = Object.fromEntries(OPENCODE_SKILLS.map((skill) => [skill, true])) as Record<
+    string,
+    boolean
+  >;
+  const raw = settings?.opencodeSkillToggles;
+  if (!raw || typeof raw !== 'object') return defaults;
+  const value = raw as Record<string, unknown>;
+  const normalized: Record<string, boolean> = { ...defaults };
+  for (const skill of OPENCODE_SKILLS) {
+    if (typeof value[skill] === 'boolean') {
+      normalized[skill] = value[skill] as boolean;
+    }
+  }
+  return normalized;
+}
+
+function isOpencodeSkillEnabled(
+  skillToggles: Record<string, boolean>,
+  skillName: (typeof OPENCODE_SKILLS)[number],
+): boolean {
+  return skillToggles[skillName] !== false;
+}
+
+function isKnownOpencodeSkillName(skillName: string): skillName is (typeof OPENCODE_SKILLS)[number] {
+  return OPENCODE_SKILLS.includes(skillName as (typeof OPENCODE_SKILLS)[number]);
+}
+
 /**
  * Pre-analysis helper — reuses the standard agent's `analyzeEmailContent`.
  * Imported lazily to avoid circular deps.
@@ -535,6 +565,7 @@ function buildOpencodePrompt(
   rules: RuleForProcessing[],
   memorySection: string,
   analysisSection: string,
+  skillToggles: Record<string, boolean>,
   attachmentNames?: string[],
 ): string {
   const rulesText =
@@ -547,6 +578,21 @@ function buildOpencodePrompt(
       ? `\nATTACHMENTS: ${attachmentNames.join(', ')}`
       : '';
 
+  const cavemanEnabled = isOpencodeSkillEnabled(skillToggles, 'caveman');
+  const htmlEditingEnabled = isOpencodeSkillEnabled(skillToggles, 'html-email-editing');
+  const cavemanImportantLine = cavemanEnabled
+    ? '- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.'
+    : '- Caveman skill is disabled. Do not use /caveman or any caveman mode command.';
+  const cavemanStepInstruction = cavemanEnabled
+    ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
+    : 'Caveman skill is disabled. Skip any caveman command.';
+  const htmlEditingImportantLine = htmlEditingEnabled
+    ? '- html-email-editing skill is enabled. Use it for this task to preserve email HTML structure/styles while making surgical rule-based edits.'
+    : '- html-email-editing skill is disabled. Do not use it.';
+  const htmlEditingStepInstruction = htmlEditingEnabled
+    ? 'Activate the html-email-editing skill before editing the HTML body.'
+    : 'html-email-editing skill is disabled. Skip any html-email-editing activation.';
+
   return `You have an email HTML file at /vercel/sandbox/email.html that needs processing.
 
 FROM: ${sanitizeEmailField(emailFrom)}
@@ -556,7 +602,8 @@ RULES:
 ${rulesText}
 
 IMPORTANT:
-- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.
+${cavemanImportantLine}
+${htmlEditingImportantLine}
 - The user's rules are the source of truth, but preserve the original email as much as possible while applying them.
 - Default behavior: keep the email structurally and semantically intact. Make the smallest effective change that satisfies the rules.
 - Do not rewrite from scratch unless a rule clearly asks for a full rewrite, a completely new version, or a fundamentally different email.
@@ -567,18 +614,21 @@ IMPORTANT:
 - If a rule asks to remove content, remove only the targeted content and keep the remaining message intact.
 - If a rule asks to completely change, fully rewrite, or regenerate the email, then a substantial rewrite is allowed.
 - If a rule asks to translate into a language the email already uses, skip translation and preserve the original content unchanged.
+- Apply applicable rules to 100% of the message (all relevant subject/body content), not just a subset.
+- Before finishing, double-check that every applicable rule was correctly applied to the final subject/body output.
 ${analysisSection}${memorySection}
 
 INSTRUCTIONS:
-1. First, activate caveman ultra mode by issuing: /caveman ultra
-2. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
-3. Read the file /vercel/sandbox/email.html
-4. Apply the rules above to both the subject and body.
-5. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
-6. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
-7. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
-8. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
-9. Do NOT create any other files.`;
+1. ${cavemanStepInstruction}
+2. ${htmlEditingStepInstruction}
+3. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
+4. Read the file /vercel/sandbox/email.html
+5. Apply the rules above to both the subject and body.
+6. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
+7. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
+8. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
+9. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
+10. Do NOT create any other files.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -678,6 +728,7 @@ export async function processEmailWithAgent(
   }
 
   const settings = await getGlobalSettings();
+  const skillToggles = getOpencodeSkillToggles(settings);
 
   tracingEnabled = settings?.agentTracingEnabled !== false;
 
@@ -769,6 +820,7 @@ export async function processEmailWithAgent(
     activeRules,
     memorySection,
     analysisSection,
+    skillToggles,
     attachmentNames,
   );
 
@@ -813,11 +865,15 @@ export async function processEmailWithAgent(
             },
           },
         },
-        agent: {
-          build: {
-            prompt: '/caveman ultra\nAlways use caveman ultra mode. Maximum compression.',
-          },
-        },
+        ...(isOpencodeSkillEnabled(skillToggles, 'caveman')
+          ? {
+              agent: {
+                build: {
+                  prompt: '/caveman ultra\nAlways use caveman ultra mode. Maximum compression.',
+                },
+              },
+            }
+          : {}),
       },
       null,
       2,
@@ -859,18 +915,42 @@ export async function processEmailWithAgent(
     // code and __dirname won't resolve to the source tree on Vercel.
     const agentsDir = path.join(process.cwd(), 'src', 'agents', '.agents');
     const agentFiles = await readAgentsFolder(agentsDir);
-    if (agentFiles.length > 0) {
+    const allowedSkillNames = new Set(
+      OPENCODE_SKILLS.filter((skill) => isOpencodeSkillEnabled(skillToggles, skill)),
+    );
+    const filteredAgentFiles = agentFiles.filter((file) => {
+      const normalizedPath = file.relativePath.split(path.sep).join('/');
+      const match = normalizedPath.match(/^\.opencode\/skills\/([^/]+)\//);
+      if (!match) return true;
+      if (!isKnownOpencodeSkillName(match[1])) return false;
+      return allowedSkillNames.has(match[1]);
+    });
+    if (filteredAgentFiles.length > 0) {
       await sandbox.writeFiles(
-        agentFiles.map((f) => ({
+        filteredAgentFiles.map((f) => ({
           path: `/vercel/sandbox/${f.relativePath}`,
           content: f.content,
         })),
       );
-      pushTrace('agents_folder_synced', 'ok', `Wrote ${agentFiles.length} file(s) from .agents`, {
-        files: agentFiles.map((f) => f.relativePath),
-      });
+      pushTrace(
+        'agents_folder_synced',
+        'ok',
+        `Wrote ${filteredAgentFiles.length} file(s) from .agents`,
+        {
+        files: filteredAgentFiles.map((f) => f.relativePath),
+          disabledSkills: OPENCODE_SKILLS.filter(
+            (skill) => !isOpencodeSkillEnabled(skillToggles, skill),
+          ),
+        },
+      );
     } else {
-      pushTrace('agents_folder_empty', 'warning', 'No files found in .agents folder');
+      pushTrace(
+        'agents_folder_empty',
+        'warning',
+        agentFiles.length > 0
+          ? 'No .agents files were synced after applying skill toggles'
+          : 'No files found in .agents folder',
+      );
     }
 
     // Run opencode in non-interactive (detached) mode.
