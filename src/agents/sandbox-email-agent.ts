@@ -69,10 +69,10 @@ export { analyzeEmailContent } from './email-agent';
 const SNAPSHOT_ID_ENV = 'OPENCODE_SANDBOX_SNAPSHOT_ID';
 
 /** Max time (ms) the sandbox is allowed to run before we kill it. */
-const SANDBOX_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const SANDBOX_TIMEOUT_MS = 14 * 60 * 1000; // 14 minutes (leave headroom under platform hard limit)
 
 /** Max time (ms) we wait for the `opencode run` command. */
-const OPENCODE_RUN_TIMEOUT_MS = 12 * 60 * 1000; // 12 minutes
+const OPENCODE_RUN_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes (leave headroom for readback + cleanup)
 
 const OPENCODE_SKILLS = ['caveman', 'html-email-editing'] as const;
 
@@ -604,6 +604,7 @@ ${rulesText}
 IMPORTANT:
 ${cavemanImportantLine}
 ${htmlEditingImportantLine}
+- Hard runtime limit: this sandbox execution is capped at 15 minutes total. Complete your work and write final outputs well before that limit.
 - The user's rules are the source of truth, but preserve the original email as much as possible while applying them.
 - Default behavior: keep the email structurally and semantically intact. Make the smallest effective change that satisfies the rules.
 - Do not rewrite from scratch unless a rule clearly asks for a full rewrite, a completely new version, or a fundamentally different email.
@@ -976,7 +977,11 @@ export async function processEmailWithAgent(
       });
 
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), OPENCODE_RUN_TIMEOUT_MS);
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, OPENCODE_RUN_TIMEOUT_MS);
 
       try {
         const finished = await command.wait({ signal: controller.signal });
@@ -1085,8 +1090,14 @@ export async function processEmailWithAgent(
         clearTimeout(timer);
         const msg = waitError instanceof Error ? waitError.message : String(waitError);
         console.error('[sandbox-agent] opencode wait failed:', msg);
-        pushTrace('opencode_wait_failed', 'error', msg);
-        parseError = `OpenCode command failed: ${msg}`;
+        if (timedOut) {
+          const timeoutMsg = `OpenCode timed out after ${Math.round(OPENCODE_RUN_TIMEOUT_MS / 60000)} minutes; forwarded as-is`;
+          pushTrace('opencode_timeout', 'error', timeoutMsg);
+          parseError = timeoutMsg;
+        } else {
+          pushTrace('opencode_wait_failed', 'error', msg);
+          parseError = `OpenCode command failed: ${msg}`;
+        }
       }
     } catch (cmdError) {
       const msg = cmdError instanceof Error ? cmdError.message : String(cmdError);
