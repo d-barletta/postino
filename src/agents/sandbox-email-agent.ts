@@ -220,10 +220,7 @@ function parseOpencodeStatsOutput(text: string): {
   completionTokens: number;
 } | null {
   const extractMetric = (label: string): number | null => {
-    const regex = new RegExp(
-      `[|│]\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|│]+)\\s*[|│]`,
-      'i',
-    );
+    const regex = new RegExp(`[|│]\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|│]+)\\s*[|│]`, 'i');
     const match = text.match(regex);
     return match ? parseHumanReadableOpencodeNumber(match[1]) : null;
   };
@@ -492,7 +489,9 @@ async function getGlobalSettings(): Promise<Record<string, unknown> | undefined>
   return (settingsRow?.data as Record<string, unknown> | null) ?? undefined;
 }
 
-function getOpencodeSkillToggles(settings: Record<string, unknown> | undefined): Record<string, boolean> {
+function getOpencodeSkillToggles(
+  settings: Record<string, unknown> | undefined,
+): Record<string, boolean> {
   const defaults = Object.fromEntries(OPENCODE_SKILLS.map((skill) => [skill, true])) as Record<
     string,
     boolean
@@ -516,7 +515,9 @@ function isOpencodeSkillEnabled(
   return skillToggles[skillName] !== false;
 }
 
-function isKnownOpencodeSkillName(skillName: string): skillName is (typeof OPENCODE_SKILLS)[number] {
+function isKnownOpencodeSkillName(
+  skillName: string,
+): skillName is (typeof OPENCODE_SKILLS)[number] {
   return OPENCODE_SKILLS.includes(skillName as (typeof OPENCODE_SKILLS)[number]);
 }
 
@@ -942,7 +943,7 @@ export async function processEmailWithAgent(
         'ok',
         `Wrote ${filteredAgentFiles.length} file(s) from .agents`,
         {
-        files: filteredAgentFiles.map((f) => f.relativePath),
+          files: filteredAgentFiles.map((f) => f.relativePath),
           disabledSkills: OPENCODE_SKILLS.filter(
             (skill) => !isOpencodeSkillEnabled(skillToggles, skill),
           ),

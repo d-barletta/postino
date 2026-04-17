@@ -151,10 +151,7 @@ function parseOpencodeStatsOutput(text: string): {
   completionTokens: number;
 } | null {
   const extractMetric = (label: string): number | null => {
-    const regex = new RegExp(
-      `[|│]\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|│]+)\\s*[|│]`,
-      'i',
-    );
+    const regex = new RegExp(`[|│]\\s*${label.replace(/ /g, '\\s+')}\\s+([^\\s|│]+)\\s*[|│]`, 'i');
     const match = text.match(regex);
     return match ? parseHumanReadableOpencodeNumber(match[1]) : null;
   };

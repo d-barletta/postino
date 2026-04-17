@@ -876,7 +876,9 @@ export function EmailSearchTab({
                   onCheckedChange={(v) => setPending((p) => ({ ...p, attachments: v }))}
                   aria-label={ts.withAttachments}
                 />
-                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.withAttachments}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {ts.withAttachments}
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <Switch
@@ -894,7 +896,9 @@ export function EmailSearchTab({
                   onCheckedChange={(v) => setPending((p) => ({ ...p, hasActionItems: v }))}
                   aria-label={ts.hasActionItems}
                 />
-                <span className="text-sm text-gray-600 dark:text-gray-400">{ts.hasActionItems}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {ts.hasActionItems}
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <Switch

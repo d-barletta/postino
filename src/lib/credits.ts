@@ -133,7 +133,8 @@ async function sendCreditsThresholdEmail(userEmail: string, usagePercent: number
     (typeof settings?.mailgunDomain === 'string' ? settings.mailgunDomain : '') ||
     process.env.MAILGUN_SANDBOX_EMAIL ||
     '';
-  const senderEmail = smtpFromEmail || smtpFromMatch?.[1] || `noreply@${fallbackDomain || 'postino.pro'}`;
+  const senderEmail =
+    smtpFromEmail || smtpFromMatch?.[1] || `noreply@${fallbackDomain || 'postino.pro'}`;
   const fromAddress = `📬 Postino <${senderEmail}>`;
   const html = `<!doctype html>
 <html>

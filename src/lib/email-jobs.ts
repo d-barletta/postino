@@ -4,6 +4,7 @@ import {
   sendEmailCompletionPushNotification,
   type QueuedInboundPayload,
 } from '@/lib/inbound-processing';
+import { analyzeEmailContent } from '@/agents/email-agent';
 
 export type EmailJobStatus = 'pending' | 'processing' | 'retrying' | 'done' | 'failed';
 
@@ -34,7 +35,7 @@ async function updateWebhookLogForJob(
   }
 }
 
-interface EmailJob {
+export interface EmailJob {
   status: EmailJobStatus;
   payload: QueuedInboundPayload;
   idempotencyKey: string;
@@ -334,4 +335,156 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
   }
 
   return { claimed, processed, failed };
+}
+
+// ---------------------------------------------------------------------------
+// Single-job processing helpers (used by the process-one route)
+// ---------------------------------------------------------------------------
+
+/**
+ * Run a quick pre-analysis pass and persist the result to `email_logs.email_analysis`
+ * so the user can see partial results while the full sandbox/agent is still running.
+ * Best-effort — never throws.
+ */
+async function runEarlyAnalysisAndSave(
+  payload: QueuedInboundPayload,
+  supabase: ReturnType<typeof createAdminClient>,
+): Promise<void> {
+  // Analysis-only jobs don't use sandbox, so early save isn't needed.
+  if (payload.aiAnalysisOnly) return;
+  try {
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('analysis_output_language')
+      .eq('id', payload.userId)
+      .single();
+    const analysisOutputLanguage =
+      typeof userRow?.analysis_output_language === 'string'
+        ? userRow.analysis_output_language || undefined
+        : undefined;
+
+    const result = await analyzeEmailContent(
+      payload.sender,
+      payload.subject,
+      payload.emailBody,
+      payload.bodyHtml !== '',
+      undefined,
+      analysisOutputLanguage,
+    );
+
+    if (result.analysis) {
+      await supabase
+        .from('email_logs')
+        .update({
+          email_analysis: result.analysis as unknown as import('@/types/supabase').Json,
+        })
+        .eq('id', payload.logId);
+    }
+  } catch (err) {
+    console.error('[email-jobs] runEarlyAnalysisAndSave failed (log:', payload.logId, '):', err);
+  }
+}
+
+/**
+ * Attempt to claim a single job by ID for processing.
+ * Returns the claimed job or `null` when the job cannot be claimed
+ * (already locked by another worker, not yet due, or not found).
+ */
+export async function claimJobById(
+  jobId: string,
+  workerId: string,
+): Promise<(EmailJob & { id: string }) | null> {
+  return claimJob(jobId, workerId, new Date());
+}
+
+/**
+ * Process a previously claimed job with an early analysis pass.
+ *
+ * Differences from `processClaimedJob` (used by the batch path):
+ * - Runs `analyzeEmailContent` and saves the result to the DB **before** calling
+ *   the full agent/sandbox, so the user can see partial analysis in real time.
+ * - Designed to be called inside `after()` so it runs after the HTTP response
+ *   has been sent by the `process-one` route.
+ */
+export async function processSingleClaimedJob(job: EmailJob & { id: string }): Promise<void> {
+  const supabase = createAdminClient();
+
+  console.log('[email-jobs] processSingleClaimedJob start', {
+    jobId: job.id,
+    logId: job.payload.logId,
+    userId: job.payload.userId,
+    attempts: job.attempts,
+  });
+
+  const { data: logRow } = await supabase
+    .from('email_logs')
+    .select('status')
+    .eq('id', job.payload.logId)
+    .single();
+  const currentLogStatus = logRow?.status as string | undefined;
+  if (
+    currentLogStatus === 'forwarded' ||
+    currentLogStatus === 'error' ||
+    currentLogStatus === 'skipped'
+  ) {
+    await markJobDone(job.id);
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const { error: procErr } = await supabase
+    .from('email_logs')
+    .update({ status: 'processing', processing_started_at: now })
+    .eq('id', job.payload.logId);
+  if (procErr)
+    console.error(
+      '[email-jobs] processSingleClaimedJob: email_log status update failed (log:',
+      job.payload.logId,
+      '):',
+      procErr,
+    );
+  await updateWebhookLogForJob(job.id, 'processing', 'processing');
+
+  // Save early analysis so the UI can show partial results while the
+  // sandbox/agent is still running.
+  await runEarlyAnalysisAndSave(job.payload, supabase);
+
+  try {
+    await processQueuedInboundPayload(job.payload);
+    try {
+      await markJobDone(job.id);
+    } catch (doneErr) {
+      console.error(
+        'Failed to mark job done after successful processing (job:',
+        job.id,
+        '):',
+        doneErr,
+      );
+    }
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    if (job.attempts >= job.maxAttempts) {
+      await markJobFailed(job, errMsg);
+      return;
+    }
+    await markJobRetry(job, errMsg);
+  }
+}
+
+/**
+ * Return the IDs of jobs that are eligible for processing right now.
+ * Jobs are not claimed — use `claimJobById` to acquire each one before processing.
+ */
+export async function getPendingJobIds(limit: number): Promise<string[]> {
+  const supabase = createAdminClient();
+  const now = new Date().toISOString();
+  const { data } = await supabase
+    .from('email_jobs')
+    .select('id')
+    .in('status', ['pending', 'retrying', 'processing'])
+    .or(`not_before.is.null,not_before.lte.${now}`)
+    .or(`lock_until.is.null,lock_until.lte.${now}`)
+    .order('created_at', { ascending: true })
+    .limit(limit);
+  return (data ?? []).map((row) => row.id as string);
 }
