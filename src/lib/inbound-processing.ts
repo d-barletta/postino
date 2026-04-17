@@ -1028,9 +1028,11 @@ export async function processQueuedInboundPayload(
     },
   });
 
-  const finalStatus: 'forwarded' | 'error' = result.parseError?.includes('forwarded as-is')
-    ? 'error'
-    : 'forwarded';
+  const forwardedWithoutAiRewrite =
+    result.parseErrorCode === 'forwarded_without_ai_rewrite_timeout' ||
+    // Backward-compatible fallback for parseError-only agent responses.
+    (result.parseError?.toLowerCase() || '').includes('forwarded as-is');
+  const finalStatus: 'forwarded' | 'error' = forwardedWithoutAiRewrite ? 'error' : 'forwarded';
 
   await supabase
     .from('email_logs')

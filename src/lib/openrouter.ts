@@ -83,6 +83,7 @@ export interface ProcessEmailResult {
   estimatedCost: number;
   ruleApplied: string;
   parseError?: string;
+  parseErrorCode?: 'forwarded_without_ai_rewrite_timeout';
   trace?: AgentTrace;
   /** Structured AI pre-analysis result for this email. */
   analysis?: EmailAnalysis | null;
