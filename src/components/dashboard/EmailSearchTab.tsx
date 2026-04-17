@@ -524,24 +524,26 @@ export function EmailSearchTab({
           </>
         ) : null}
       </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setMobileFiltersVisible((v) => !v)}
-        title={ts.title}
-        className={cn('sm:hidden', mobileFiltersVisible && 'text-[#a3891f] dark:text-[#f3df79]')}
-      >
-        <Search className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleRefresh}
-        disabled={refreshing}
-        title={t.dashboard.emailHistory.refresh}
-      >
-        <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileFiltersVisible((v) => !v)}
+          title={ts.title}
+          className={cn('sm:hidden', mobileFiltersVisible && 'text-[#a3891f] dark:text-[#f3df79]')}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title={t.dashboard.emailHistory.refresh}
+        >
+          <RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} />
+        </Button>
+      </div>
     </div>
   );
   const resultsEmptyState = (
@@ -931,7 +933,7 @@ export function EmailSearchTab({
               variant="ghost"
               size="icon"
               onClick={() => setMobileFiltersVisible(false)}
-              title={t.common.close}
+              title={ts.title}
             >
               <X className="h-4 w-4" />
             </Button>
