@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { processEmailJobsBatch } from '@/lib/email-jobs';
 
@@ -48,16 +48,40 @@ function resolveBatchSize(request: NextRequest, bodyBatchSize?: number): number 
   return Math.min(Math.max(rawBatchSize, 1), 50);
 }
 
-async function handleProcess(request: NextRequest, bodyBatchSize?: number) {
+function shouldWaitForCompletion(request: NextRequest, bodyWait?: boolean): boolean {
+  const url = new URL(request.url);
+  if (url.searchParams.get('wait') === '1') return true;
+  return bodyWait === true;
+}
+
+async function handleProcess(request: NextRequest, bodyBatchSize?: number, bodyWait?: boolean) {
   try {
     if (!isAuthorized(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const batchSize = resolveBatchSize(request, bodyBatchSize);
+    const waitForCompletion = shouldWaitForCompletion(request, bodyWait);
 
-    const result = await processEmailJobsBatch(batchSize);
-    return NextResponse.json({ success: true, ...result });
+    if (waitForCompletion) {
+      const result = await processEmailJobsBatch(batchSize);
+      return NextResponse.json({ success: true, mode: 'sync', ...result });
+    }
+
+    after(async () => {
+      try {
+        await processEmailJobsBatch(batchSize);
+      } catch (error) {
+        console.error('[internal/email-jobs/process] async processing error:', error);
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      queued: true,
+      mode: 'async',
+      batchSize,
+    });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Worker failed';
     console.error('[internal/email-jobs/process] error:', error);
@@ -70,6 +94,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => ({}))) as { batchSize?: number };
-  return handleProcess(request, body.batchSize);
+  const body = (await request.json().catch(() => ({}))) as { batchSize?: number; wait?: boolean };
+  return handleProcess(request, body.batchSize, body.wait);
 }
