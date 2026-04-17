@@ -873,7 +873,6 @@ export async function processEmailWithAgent(
         mode: 'sequential',
         isHtmlInput: isHtml,
         startedAt: traceStartedAt,
-        finishedAt: checkpointTimestamp,
         checkpointedAt: checkpointTimestamp,
         checkpointOnly: true,
         steps: [...traceSteps, checkpointSavedStep],
