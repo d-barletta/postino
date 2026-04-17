@@ -15,7 +15,7 @@ import { getPendingJobIds } from '@/lib/email-jobs';
  *   waveSize = ceil(15 / 4)              = 4
  *   dispatch time = 3 × 180 000         = 9 min  ✓
  */
-export const maxDuration = 900;
+export const maxDuration = 300; //900;
 
 /**
  * Hard budget for dispatching all waves. Wave size is auto-calculated so the
