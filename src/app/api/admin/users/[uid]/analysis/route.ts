@@ -6,7 +6,7 @@ import { saveToSupermemory, buildMemoryEntryFromAnalysis } from '@/agents/email-
 
 const MAX_PROCESS_BATCH = 5;
 
-export const maxDuration = 60;
+export const maxDuration = 120; //max 300 in hobby plan
 
 async function clearEmailAnalyses(logIds: string[]): Promise<void> {
   if (logIds.length === 0) return;

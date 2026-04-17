@@ -8,7 +8,7 @@ import { claimJobById, processSingleClaimedJob } from '@/lib/email-jobs';
  * processing runs inside `after()` so it can take up to 15 minutes without
  * blocking the caller.
  */
-export const maxDuration = 300; //900;
+export const maxDuration = 900; //max 300 in hobby plan
 
 function timingSafeStringEqual(a: string, b: string): boolean {
   const hashA = crypto.createHash('sha256').update(a).digest();
