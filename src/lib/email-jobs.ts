@@ -5,6 +5,7 @@ import {
   type QueuedInboundPayload,
 } from '@/lib/inbound-processing';
 import { analyzeEmailContent } from '@/agents/email-agent';
+import type { PreComputedEmailAnalysis } from '@/types';
 
 export type EmailJobStatus = 'pending' | 'processing' | 'retrying' | 'done' | 'failed';
 
@@ -344,14 +345,15 @@ export async function processEmailJobsBatch(batchSize = 10): Promise<{
 /**
  * Run a quick pre-analysis pass and persist the result to `email_logs.email_analysis`
  * so the user can see partial results while the full sandbox/agent is still running.
- * Best-effort — never throws.
+ * Returns the analysis result so the caller can pass it to the agent (avoiding a
+ * duplicate LLM call). Returns null on failure — best-effort, never throws.
  */
 async function runEarlyAnalysisAndSave(
   payload: QueuedInboundPayload,
   supabase: ReturnType<typeof createAdminClient>,
-): Promise<void> {
+): Promise<PreComputedEmailAnalysis | null> {
   // Analysis-only jobs don't use sandbox, so early save isn't needed.
-  if (payload.aiAnalysisOnly) return;
+  if (payload.aiAnalysisOnly) return null;
   try {
     const { data: userRow } = await supabase
       .from('users')
@@ -380,8 +382,16 @@ async function runEarlyAnalysisAndSave(
         })
         .eq('id', payload.logId);
     }
+
+    return {
+      analysis: result.analysis,
+      tokensUsed: result.tokensUsed,
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
+    };
   } catch (err) {
     console.error('[email-jobs] runEarlyAnalysisAndSave failed (log:', payload.logId, '):', err);
+    return null;
   }
 }
 
@@ -446,11 +456,12 @@ export async function processSingleClaimedJob(job: EmailJob & { id: string }): P
   await updateWebhookLogForJob(job.id, 'processing', 'processing');
 
   // Save early analysis so the UI can show partial results while the
-  // sandbox/agent is still running.
-  await runEarlyAnalysisAndSave(job.payload, supabase);
+  // sandbox/agent is still running. The result is passed to processQueuedInboundPayload
+  // so the agent reuses it instead of running a duplicate LLM analysis call.
+  const preComputedAnalysis = await runEarlyAnalysisAndSave(job.payload, supabase);
 
   try {
-    await processQueuedInboundPayload(job.payload);
+    await processQueuedInboundPayload(job.payload, undefined, preComputedAnalysis);
     try {
       await markJobDone(job.id);
     } catch (doneErr) {

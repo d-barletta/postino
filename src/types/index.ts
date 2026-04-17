@@ -119,6 +119,17 @@ export interface EmailAnalysis {
   prices?: string[];
 }
 
+/**
+ * Pre-computed analysis result that can be passed to agent functions so they
+ * skip their internal pre-analysis step (avoiding a duplicate LLM call).
+ */
+export interface PreComputedEmailAnalysis {
+  analysis: EmailAnalysis | null;
+  tokensUsed: number;
+  promptTokens: number;
+  completionTokens: number;
+}
+
 export interface EmailAttachmentInfo {
   id: string;
   filename: string;

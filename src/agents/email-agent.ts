@@ -32,7 +32,12 @@ import {
   type AgentTraceStep,
 } from '@/lib/openrouter';
 import type { ProcessEmailResult, RuleForProcessing } from '@/lib/openrouter';
-import type { EmailAnalysis, EmailMemoryEntry, UserMemory } from '@/types';
+import type {
+  EmailAnalysis,
+  EmailMemoryEntry,
+  UserMemory,
+  PreComputedEmailAnalysis,
+} from '@/types';
 import { geocodePlaceNames } from '@/lib/place-geocoding';
 import {
   extractStoredPlaceNames,
@@ -2153,6 +2158,7 @@ export async function processEmailWithAgent(
   attachmentNames?: string[],
   analysisOutputLanguage?: string,
   attachmentFiles?: EmailAttachment[],
+  preComputedAnalysis?: PreComputedEmailAnalysis | null,
 ): Promise<ProcessEmailResult> {
   const traceStartedAt = new Date().toISOString();
   const traceSteps: AgentTraceStep[] = [];
@@ -2228,48 +2234,71 @@ export async function processEmailWithAgent(
   // 3. Run pre-analysis and load user memory in parallel. They are independent
   //    operations, and failures are tolerated so forwarding can continue with
   //    safe defaults.
-  const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
-    preAnalyzeEmail(
-      emailFrom,
-      emailSubject,
-      emailBody,
-      isHtml,
-      openrouter,
-      model,
-      agentRuntimeSettings,
-      analysisOutputLanguage,
-    ),
-    getUserMemory(userId),
-  ]);
-  const preAnalysisResult =
-    preAnalysisOutcome.status === 'fulfilled'
-      ? preAnalysisOutcome.value
-      : {
-          analysis: null,
-          extractedBody: '',
-          tokensUsed: 0,
-          promptTokens: 0,
-          completionTokens: 0,
-        };
-  if (preAnalysisOutcome.status === 'rejected') {
-    const preAnalysisError =
-      preAnalysisOutcome.reason instanceof Error
-        ? preAnalysisOutcome.reason.message
-        : String(preAnalysisOutcome.reason);
-    pushTrace('pre_analysis_failed', 'warning', preAnalysisError);
+  //    When a preComputedAnalysis is provided (single-job path), skip the LLM
+  //    call entirely and reuse the already-saved result.
+  let preAnalysisResult: PreAnalysisResult;
+  let memory: Awaited<ReturnType<typeof getUserMemory>>;
+
+  if (preComputedAnalysis) {
+    pushTrace('pre_analysis', 'ok', 'Reusing pre-computed analysis (skipping LLM call)', {
+      emailType: preComputedAnalysis.analysis?.emailType,
+    });
+    preAnalysisResult = {
+      analysis: preComputedAnalysis.analysis as RawEmailAnalysis | null,
+      extractedBody: '',
+      tokensUsed: preComputedAnalysis.tokensUsed,
+      promptTokens: preComputedAnalysis.promptTokens,
+      completionTokens: preComputedAnalysis.completionTokens,
+    };
+    memory = await getUserMemory(userId);
+  } else {
+    const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
+      preAnalyzeEmail(
+        emailFrom,
+        emailSubject,
+        emailBody,
+        isHtml,
+        openrouter,
+        model,
+        agentRuntimeSettings,
+        analysisOutputLanguage,
+      ),
+      getUserMemory(userId),
+    ]);
+    preAnalysisResult =
+      preAnalysisOutcome.status === 'fulfilled'
+        ? preAnalysisOutcome.value
+        : {
+            analysis: null,
+            extractedBody: '',
+            tokensUsed: 0,
+            promptTokens: 0,
+            completionTokens: 0,
+          };
+    if (preAnalysisOutcome.status === 'rejected') {
+      const preAnalysisError =
+        preAnalysisOutcome.reason instanceof Error
+          ? preAnalysisOutcome.reason.message
+          : String(preAnalysisOutcome.reason);
+      pushTrace('pre_analysis_failed', 'warning', preAnalysisError);
+    }
+    memory =
+      memoryOutcome.status === 'fulfilled'
+        ? memoryOutcome.value
+        : { userId, entries: [], updatedAt: new Date() };
+    if (memoryOutcome.status === 'rejected') {
+      const memoryError =
+        memoryOutcome.reason instanceof Error
+          ? memoryOutcome.reason.message
+          : String(memoryOutcome.reason);
+      pushTrace('memory_load_failed', 'warning', memoryError);
+    }
   }
-  const memory =
-    memoryOutcome.status === 'fulfilled'
-      ? memoryOutcome.value
-      : { userId, entries: [], updatedAt: new Date() };
-  if (memoryOutcome.status === 'rejected') {
-    const memoryError =
-      memoryOutcome.reason instanceof Error
-        ? memoryOutcome.reason.message
-        : String(memoryOutcome.reason);
-    pushTrace('memory_load_failed', 'warning', memoryError);
-  }
-  const analysis = await hydrateEmailAnalysis(preAnalysisResult.analysis, googleMapsApiKey);
+
+  // When analysis was pre-computed it is already fully hydrated (geocoded).
+  const analysis = preComputedAnalysis
+    ? preComputedAnalysis.analysis
+    : await hydrateEmailAnalysis(preAnalysisResult.analysis, googleMapsApiKey);
   const {
     tokensUsed: analysisTotalTokens,
     promptTokens: analysisPromptTokens,

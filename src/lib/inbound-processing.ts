@@ -12,6 +12,7 @@ import {
 import { processEmailWithAgent as processEmailWithSandbox } from '@/agents/sandbox-email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
+import type { PreComputedEmailAnalysis } from '@/types';
 import {
   addUserCreditsUsage,
   computeMonthlyCreditsLimit,
@@ -401,6 +402,7 @@ async function sendEmailPushNotification(
 export async function processQueuedInboundPayload(
   payload: QueuedInboundPayload,
   attachments?: EmailAttachment[],
+  preComputedAnalysis?: PreComputedEmailAnalysis | null,
 ): Promise<void> {
   const supabase = createAdminClient();
   const { data: settingsRow } = await supabase
@@ -891,6 +893,7 @@ export async function processQueuedInboundPayload(
     attachmentNames?.length ? attachmentNames : undefined,
     analysisOutputLanguage,
     effectiveAttachments?.length ? effectiveAttachments : undefined,
+    preComputedAnalysis ?? undefined,
   );
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
