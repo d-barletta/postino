@@ -27,7 +27,7 @@ const MAX_DISPATCH_MS = 10 * 60 * 1000;
 /** Default delay between waves in milliseconds (3 minutes). */
 const DEFAULT_WAVE_DELAY_MS = 3 * 60 * 1000;
 /** Default total number of jobs to query and dispatch in a single run. */
-const DEFAULT_BATCH_SIZE = 50;
+const DEFAULT_BATCH_SIZE = 10;
 
 /**
  * Compute how many jobs to put in each wave so that all waves fit inside
@@ -136,7 +136,7 @@ async function handleProcess(request: NextRequest, body?: ProcessBody) {
     body?.batchSize,
     DEFAULT_BATCH_SIZE,
     1,
-    200,
+    50,
   );
   const waveDelayMs = resolveNumber(
     url.searchParams.get('waveDelayMs'),
