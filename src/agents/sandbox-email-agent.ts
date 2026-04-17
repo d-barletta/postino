@@ -579,12 +579,19 @@ function buildOpencodePrompt(
       : '';
 
   const cavemanEnabled = isOpencodeSkillEnabled(skillToggles, 'caveman');
+  const htmlEditingEnabled = isOpencodeSkillEnabled(skillToggles, 'html-email-editing');
   const cavemanImportantLine = cavemanEnabled
     ? '- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.'
     : '- Caveman skill is disabled. Do not use /caveman or any caveman mode command.';
   const cavemanStepInstruction = cavemanEnabled
     ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
     : 'Caveman skill is disabled. Skip any caveman command.';
+  const htmlEditingImportantLine = htmlEditingEnabled
+    ? '- html-email-editing skill is enabled. Use it for this task to preserve email HTML structure/styles while making surgical rule-based edits.'
+    : '- html-email-editing skill is disabled. Do not use it.';
+  const htmlEditingStepInstruction = htmlEditingEnabled
+    ? 'Activate the html-email-editing skill before editing the HTML body.'
+    : 'html-email-editing skill is disabled. Skip any html-email-editing activation.';
 
   return `You have an email HTML file at /vercel/sandbox/email.html that needs processing.
 
@@ -596,6 +603,7 @@ ${rulesText}
 
 IMPORTANT:
 ${cavemanImportantLine}
+${htmlEditingImportantLine}
 - The user's rules are the source of truth, but preserve the original email as much as possible while applying them.
 - Default behavior: keep the email structurally and semantically intact. Make the smallest effective change that satisfies the rules.
 - Do not rewrite from scratch unless a rule clearly asks for a full rewrite, a completely new version, or a fundamentally different email.
@@ -612,14 +620,15 @@ ${analysisSection}${memorySection}
 
 INSTRUCTIONS:
 1. ${cavemanStepInstruction}
-2. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
-3. Read the file /vercel/sandbox/email.html
-4. Apply the rules above to both the subject and body.
-5. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
-6. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
-7. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
-8. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
-9. Do NOT create any other files.`;
+2. ${htmlEditingStepInstruction}
+3. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
+4. Read the file /vercel/sandbox/email.html
+5. Apply the rules above to both the subject and body.
+6. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
+7. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
+8. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
+9. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
+10. Do NOT create any other files.`;
 }
 
 // ---------------------------------------------------------------------------
