@@ -691,7 +691,7 @@ async function savePreSandboxCheckpoint(params: {
   processingStartedAt: string;
   ruleApplied: string;
   analysis: EmailAnalysis | null;
-  trace: AgentTrace;
+  trace: Record<string, unknown>;
 }): Promise<void> {
   const supabase = createAdminClient();
   const { error } = await supabase
@@ -850,12 +850,18 @@ export async function processEmailWithAgent(
   // Persist a pre-sandbox checkpoint so retries/resumes have non-empty state even
   // if sandbox execution times out or crashes before final update.
   const checkpointTimestamp = new Date().toISOString();
-  pushTrace('pre_sandbox_checkpoint', 'ok', 'Persisting pre-sandbox checkpoint', {
-    hasAnalysis: !!analysis,
-    selectedRuleCount: activeRules.length,
-    selectedRuleNames: activeRules.map((r) => r.name),
-    checkpointTimestamp,
-  });
+  const checkpointSavedStep: AgentTraceStep = {
+    step: 'pre_sandbox_checkpoint_saved',
+    status: 'ok',
+    detail: 'Saved pre-sandbox checkpoint before OpenCode execution',
+    data: {
+      hasAnalysis: !!analysis,
+      selectedRuleCount: activeRules.length,
+      selectedRuleNames: activeRules.map((r) => r.name),
+      checkpointTimestamp,
+    },
+    ts: checkpointTimestamp,
+  };
   try {
     await savePreSandboxCheckpoint({
       logId,
@@ -868,9 +874,12 @@ export async function processEmailWithAgent(
         isHtmlInput: isHtml,
         startedAt: traceStartedAt,
         finishedAt: checkpointTimestamp,
-        steps: traceSteps,
+        checkpointedAt: checkpointTimestamp,
+        checkpointOnly: true,
+        steps: [...traceSteps, checkpointSavedStep],
       },
     });
+    traceSteps.push(checkpointSavedStep);
   } catch (checkpointError) {
     // Non-fatal by design: we preserve existing completion semantics and still
     // attempt sandbox execution so forwarding is not blocked by checkpoint I/O.
