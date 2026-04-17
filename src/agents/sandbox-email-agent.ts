@@ -686,6 +686,32 @@ async function saveOpencodeSessionId(logId: string, sessionId: string): Promise<
   await supabase.from('email_logs').update({ sandbox_session_id: sessionId }).eq('id', logId);
 }
 
+async function savePreSandboxCheckpoint(params: {
+  logId: string;
+  processingStartedAt: string;
+  ruleApplied: string;
+  analysis: EmailAnalysis | null;
+  trace: AgentTrace;
+}): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('email_logs')
+    .update({
+      status: 'processing',
+      processing_started_at: params.processingStartedAt,
+      rule_applied: params.ruleApplied,
+      agent_trace: params.trace as unknown as import('@/types/supabase').Json,
+      ...(params.analysis
+        ? { email_analysis: params.analysis as unknown as import('@/types/supabase').Json }
+        : {}),
+    })
+    .eq('id', params.logId);
+
+  if (error) {
+    throw new Error(error.message || 'Failed to persist pre-sandbox checkpoint');
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
@@ -816,6 +842,40 @@ export async function processEmailWithAgent(
   const analysisSection = buildAnalysisSection(analysis);
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
+  const ruleApplied =
+    activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';
+
+  // Persist a pre-sandbox checkpoint so retries/resumes have non-empty state even
+  // if sandbox execution times out or crashes before final update.
+  const checkpointSavedAt = new Date().toISOString();
+  pushTrace('pre_sandbox_checkpoint', 'ok', 'Persisting pre-sandbox checkpoint', {
+    hasAnalysis: !!analysis,
+    selectedRuleCount: activeRules.length,
+    selectedRuleNames: activeRules.map((r) => r.name),
+    checkpointSavedAt,
+  });
+  try {
+    await savePreSandboxCheckpoint({
+      logId,
+      processingStartedAt: checkpointSavedAt,
+      ruleApplied,
+      analysis,
+      trace: {
+        model,
+        mode: 'sequential',
+        isHtmlInput: isHtml,
+        startedAt: traceStartedAt,
+        finishedAt: checkpointSavedAt,
+        steps: traceSteps,
+      },
+    });
+  } catch (checkpointError) {
+    pushTrace(
+      'pre_sandbox_checkpoint_failed',
+      'warning',
+      checkpointError instanceof Error ? checkpointError.message : String(checkpointError),
+    );
+  }
 
   // 4. Build the OpenCode prompt.
   const opencodePrompt = buildOpencodePrompt(
@@ -1174,9 +1234,6 @@ export async function processEmailWithAgent(
   );
 
   const estimatedCost = preAnalysisCost + sandboxLlmCost;
-
-  const ruleApplied =
-    activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';
 
   // 8. Update user memory.
   const newEntry: EmailMemoryEntry = buildMemoryEntryFromAnalysis(
