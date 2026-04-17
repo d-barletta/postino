@@ -65,9 +65,17 @@ async function handleProcess(request: NextRequest, bodyBatchSize?: number, bodyW
 
     if (waitForCompletion) {
       const result = await processEmailJobsBatch(batchSize);
-      return NextResponse.json({ success: true, mode: 'sync', ...result });
+      return NextResponse.json({
+        success: true,
+        mode: 'sync',
+        queued: false,
+        batchSize,
+        ...result,
+      });
     }
 
+    // Run the actual worker pass after we return the HTTP response so callers
+    // are not blocked by long-running sandbox/OpenCode processing.
     after(async () => {
       try {
         await processEmailJobsBatch(batchSize);
