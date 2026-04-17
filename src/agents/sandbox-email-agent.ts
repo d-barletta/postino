@@ -930,6 +930,7 @@ export async function processEmailWithAgent(
     // Write files into the sandbox.
     await sandbox.writeFiles([
       { path: '/vercel/sandbox/email.html', content: Buffer.from(emailBody, 'utf-8') },
+      { path: '/vercel/sandbox/prompt.txt', content: Buffer.from(opencodePrompt, 'utf-8') },
       { path: '/vercel/sandbox/opencode.json', content: Buffer.from(opencodeConfig, 'utf-8') },
       {
         path: '/vercel/sandbox/.local/share/opencode/auth.json',
@@ -990,13 +991,17 @@ export async function processEmailWithAgent(
     // `command.wait()` which is resilient to transient stream disconnections.
     try {
       const command = await sandbox.runCommand({
-        cmd: 'opencode',
-        args: ['run', '--format', 'json', '--model', `openrouter/${model}`, opencodePrompt],
+        cmd: 'bash',
+        args: [
+          '-lc',
+          'set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)"',
+        ],
         cwd: '/vercel/sandbox',
         env: {
           HOME: '/vercel/sandbox',
           XDG_DATA_HOME: '/vercel/sandbox/.local/share',
           OPENROUTER_API_KEY: apiKey,
+          OPENCODE_MODEL: `openrouter/${model}`,
         },
         detached: true,
       });
