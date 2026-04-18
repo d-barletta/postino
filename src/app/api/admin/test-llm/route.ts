@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const adminUser = await verifyAdminRequest(request);
 
     const { client, model, apiKey } = await getOpenRouterClient({
-      userId: adminUser.email ?? '',
+      userId: adminUser.email,
       sessionId: `admin-test-llm:${adminUser.id}`,
     });
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         model,
         messages: [{ role: 'user', content: 'Say "ok" only.' }],
         ...buildOpenRouterChatCompletionTrackingFields({
-          userId: adminUser.email ?? '',
+          userId: adminUser.email,
           sessionId: `admin-test-llm:${adminUser.id}`,
         }),
         max_tokens: 5,
