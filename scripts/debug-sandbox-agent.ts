@@ -10,6 +10,8 @@
  *   npm run debug:sandbox -- --html-file ./tmp/email.html --user-id <user_id>
  *   npm run debug:sandbox -- --html-file ./tmp/email.html --rules-file ./tmp/rules.json
  *   npm run debug:sandbox -- --html-file ./tmp/email.html --rule "Translate to Italian"
+ *   npm run debug:sandbox -- --model qwen/qwen3-coder-480b-a35b-instruct:free
+ *   npm run debug:sandbox -- --html-file ./tmp/email.html --model openai/gpt-4o
  *
  * When `--html-file` is provided, the script writes artifacts next to that file:
  *   - <name>.rewritten.html
@@ -416,6 +418,7 @@ async function main() {
   const userIdArg = getArgValue('--user-id');
   const rulesFileArg = getArgValue('--rules-file');
   const directRuleArgs = getArgValues('--rule');
+  const modelArg = getArgValue('--model');
   const defaultRulesFilePath = nodePath.join(process.cwd(), 'scripts', 'rules.json');
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -433,7 +436,7 @@ async function main() {
     process.env.OPENCODE_SANDBOX_SNAPSHOT_ID ||
     '';
   const model =
-    (settings.llmModel as string) || process.env.LLM_MODEL || 'anthropic/claude-haiku-4.5';
+    modelArg || process.env.LLM_MODEL || (settings.llmModel as string) || 'anthropic/claude-haiku-4.5';
 
   if (!snapshotId) {
     console.error('No snapshot ID found in settings or env');
