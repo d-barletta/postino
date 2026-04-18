@@ -11,10 +11,11 @@ function maskKey(key: string): string {
 export async function GET(request: NextRequest) {
   try {
     const adminUser = await verifyAdminRequest(request);
+    const sessionId = `admin-test-llm:${adminUser.id}`;
 
     const { client, model, apiKey } = await getOpenRouterClient({
       userId: adminUser.email,
-      sessionId: `admin-test-llm:${adminUser.id}`,
+      sessionId,
     });
 
     const diagnostics: Record<string, unknown> = {
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
         messages: [{ role: 'user', content: 'Say "ok" only.' }],
         ...buildOpenRouterChatCompletionTrackingFields({
           userId: adminUser.email,
-          sessionId: `admin-test-llm:${adminUser.id}`,
+          sessionId,
         }),
         max_tokens: 5,
       });

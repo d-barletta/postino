@@ -86,9 +86,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Call LLM for translation
+    const sessionId = `admin-blog-translate:${id}:${targetLanguage}`;
     const { client, model } = await getOpenRouterClient({
       userId: adminUser.email,
-      sessionId: `admin-blog-translate:${id}:${targetLanguage}`,
+      sessionId,
     });
     const targetLangName = LOCALE_NAMES[targetLanguage] ?? targetLanguage;
     const sourceLangName = LOCALE_NAMES[sourceLanguage] ?? sourceLanguage;
@@ -112,7 +113,7 @@ ${sourceHtmlContent}`;
       ],
       ...buildOpenRouterChatCompletionTrackingFields({
         userId: adminUser.email,
-        sessionId: `admin-blog-translate:${id}:${targetLanguage}`,
+        sessionId,
       }),
       response_format: { type: 'json_object' },
       max_tokens: 100000,

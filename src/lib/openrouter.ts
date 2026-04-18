@@ -222,7 +222,7 @@ export function buildOpenRouterHeaders(
 
 export function buildOpenRouterChatCompletionTrackingFields(
   tracking?: OpenRouterTrackingContext,
-): Record<string, string> {
+): { user?: string; session_id?: string } {
   const resolved = resolveOpenRouterTrackingContext(tracking);
   return {
     ...(resolved.userId ? { user: resolved.userId } : {}),
