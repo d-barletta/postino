@@ -347,6 +347,7 @@ const es: Translations = {
       analysisEntitiesPlaces: 'Lugares:',
       analysisEntitiesEvents: 'Eventos:',
       analysisEntitiesDates: 'Fechas:',
+      analysisEntitiesNumbers: 'Números y códigos:',
       analysisEntitiesPrices: 'Precios:',
       rerunAnalysis: 'Repetir análisis',
       rerunningAnalysis: 'Repitiendo análisis...',

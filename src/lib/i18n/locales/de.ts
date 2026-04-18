@@ -353,6 +353,7 @@ const de: Translations = {
       analysisEntitiesPlaces: 'Orte:',
       analysisEntitiesEvents: 'Ereignisse:',
       analysisEntitiesDates: 'Datumsangaben:',
+      analysisEntitiesNumbers: 'Nummern & Codes:',
       analysisEntitiesPrices: 'Preise:',
       rerunAnalysis: 'Analyse wiederholen',
       rerunningAnalysis: 'Analyse wird wiederholt...',

@@ -306,6 +306,7 @@ export interface Translations {
       analysisEntitiesPlaces: string;
       analysisEntitiesEvents: string;
       analysisEntitiesDates: string;
+      analysisEntitiesNumbers: string;
       analysisEntitiesPrices: string;
       rerunAnalysis: string;
       rerunningAnalysis: string;

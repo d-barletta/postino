@@ -348,6 +348,7 @@ const it: Translations = {
       analysisEntitiesPlaces: 'Luoghi:',
       analysisEntitiesEvents: 'Eventi:',
       analysisEntitiesDates: 'Date:',
+      analysisEntitiesNumbers: 'Numeri e codici:',
       analysisEntitiesPrices: 'Prezzi:',
       rerunAnalysis: 'Ripeti analisi',
       rerunningAnalysis: 'Analisi in aggiornamento...',
