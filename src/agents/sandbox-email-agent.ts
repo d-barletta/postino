@@ -881,9 +881,12 @@ export async function processEmailWithAgent(
     // Build the opencode.json config for OpenRouter inside the sandbox.
     const trackingHeaders = buildOpenRouterHeaders(openRouterTracking);
     const trackingBody = buildOpenRouterChatCompletionTrackingFields(openRouterTracking);
+    const opencodeModelId = `openrouter/${model}`;
     const opencodeConfig = JSON.stringify(
       {
         $schema: 'https://opencode.ai/config.json',
+        model: opencodeModelId,
+        small_model: opencodeModelId,
         provider: {
           openrouter: {
             options: {
@@ -1005,7 +1008,7 @@ export async function processEmailWithAgent(
           OPENROUTER_API_KEY: apiKey,
           OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
           OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
-          OPENCODE_MODEL: `openrouter/${model}`,
+          OPENCODE_MODEL: opencodeModelId,
         },
         detached: true,
       });
@@ -1205,7 +1208,7 @@ export async function processEmailWithAgent(
             OPENROUTER_API_KEY: apiKey,
             OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
             OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
-            OPENCODE_MODEL: `openrouter/${model}`,
+            OPENCODE_MODEL: opencodeModelId,
           },
           detached: true,
         });
