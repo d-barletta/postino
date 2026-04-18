@@ -405,7 +405,7 @@ async function main() {
     modelArg ||
     process.env.LLM_MODEL ||
     (settings.llmModel as string) ||
-    'anthropic/claude-haiku-4.5';
+    'google/gemini-3-flash-preview';
 
   if (!snapshotId) {
     console.error('No snapshot ID found in settings or env');

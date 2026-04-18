@@ -29,7 +29,7 @@ No fixed free plan. Usage is token-based.
 
 Typical model choices:
 
-- `anthropic/claude-haiku-4.5` as the current default model.
+- `google/gemini-3-flash-preview` as the current default model.
 - More advanced models increase quality and cost.
 
 Postino notes:
