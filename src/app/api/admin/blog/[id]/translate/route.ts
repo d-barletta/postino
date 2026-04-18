@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
-import { getOpenRouterClient } from '@/lib/openrouter';
+import { buildOpenRouterChatCompletionTrackingFields, getOpenRouterClient } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 
 const VALID_LOCALES = ['en', 'it', 'es', 'fr', 'de'] as const;
@@ -86,9 +86,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Call LLM for translation
+    const sessionId = `admin-blog-translate:${id}:${targetLanguage}`;
     const { client, model } = await getOpenRouterClient({
-      userId: adminUser.email ?? '',
-      sessionId: `admin-blog-translate:${id}:${targetLanguage}`,
+      userId: adminUser.email ?? undefined,
+      sessionId,
     });
     const targetLangName = LOCALE_NAMES[targetLanguage] ?? targetLanguage;
     const sourceLangName = LOCALE_NAMES[sourceLanguage] ?? sourceLanguage;
@@ -110,7 +111,10 @@ ${sourceHtmlContent}`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      ...(adminUser.email ? { user: adminUser.email } : {}),
+      ...buildOpenRouterChatCompletionTrackingFields({
+        userId: adminUser.email ?? undefined,
+        sessionId,
+      }),
       response_format: { type: 'json_object' },
       max_tokens: 100000,
     });

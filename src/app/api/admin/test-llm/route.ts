@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOpenRouterClient } from '@/lib/openrouter';
+import { buildOpenRouterChatCompletionTrackingFields, getOpenRouterClient } from '@/lib/openrouter';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
 function maskKey(key: string): string {
@@ -11,10 +11,11 @@ function maskKey(key: string): string {
 export async function GET(request: NextRequest) {
   try {
     const adminUser = await verifyAdminRequest(request);
+    const sessionId = `admin-test-llm:${adminUser.id}`;
 
     const { client, model, apiKey } = await getOpenRouterClient({
-      userId: adminUser.email ?? '',
-      sessionId: `admin-test-llm:${adminUser.id}`,
+      userId: adminUser.email ?? undefined,
+      sessionId,
     });
 
     const diagnostics: Record<string, unknown> = {
@@ -28,7 +29,10 @@ export async function GET(request: NextRequest) {
       const response = await client.chat.completions.create({
         model,
         messages: [{ role: 'user', content: 'Say "ok" only.' }],
-        ...(adminUser.email ? { user: adminUser.email } : {}),
+        ...buildOpenRouterChatCompletionTrackingFields({
+          userId: adminUser.email ?? undefined,
+          sessionId,
+        }),
         max_tokens: 5,
       });
       diagnostics.chatCompletion = 'ok';
