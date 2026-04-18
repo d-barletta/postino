@@ -17,7 +17,7 @@ const DEFAULT_SANDBOX_PLATFORM_TIMEOUT_MINUTES = 15;
 function sanitizeRule(rule: string): string {
   return rule
     .replace(/<[^>]*>/g, '')
-  .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -45,7 +45,9 @@ function isSkillEnabled(
 
 function buildRulesText(rules: SandboxPromptRule[]): string {
   return rules.length > 0
-    ? rules.map((rule) => `Rule "${sanitizeRule(rule.name)}": ${sanitizeRule(rule.text)}`).join('\n')
+    ? rules
+        .map((rule) => `Rule "${sanitizeRule(rule.name)}": ${sanitizeRule(rule.text)}`)
+        .join('\n')
     : 'No specific rules. Preserve the original email content and subject unless a global system behavior explicitly requires a minimal, non-destructive cleanup.';
 }
 
