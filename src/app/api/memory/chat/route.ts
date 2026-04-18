@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-import { DEFAULT_LLM_MODEL } from '@/lib/llm';
 import {
   getModelPricing,
   calculateCost,
@@ -67,7 +66,14 @@ export async function POST(request: NextRequest) {
     const llmApiKey =
       (settingsData?.llmApiKey as string | undefined) || process.env.OPEN_ROUTER_API_KEY || '';
     const llmModel =
-      (settingsData?.llmModel as string | undefined) || process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
+      (settingsData?.llmModel as string | undefined)?.trim() || process.env.LLM_MODEL?.trim() || '';
+
+    if (!llmModel) {
+      return NextResponse.json(
+        { error: 'LLM model is not configured. Please set it in Admin → Settings.' },
+        { status: 500 },
+      );
+    }
 
     if (!llmApiKey) {
       return NextResponse.json({ error: 'LLM API key is not configured' }, { status: 500 });

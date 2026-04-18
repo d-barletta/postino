@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { jsonrepair } from 'jsonrepair';
 import * as cheerio from 'cheerio';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { DEFAULT_LLM_MODEL } from '@/lib/llm';
+
 import DEFAULT_SYSTEM_PROMPT from './default-system-prompt';
 import type { EmailAnalysis } from '@/types';
 
@@ -272,9 +272,12 @@ export async function getOpenRouterClient(tracking?: OpenRouterTrackingContext):
     process.env.OPEN_ROUTER_API_KEY ||
     '';
   const model =
-    (typeof settings?.llmModel === 'string' ? settings.llmModel : '') ||
-    process.env.LLM_MODEL ||
-    DEFAULT_LLM_MODEL;
+    (typeof settings?.llmModel === 'string' ? settings.llmModel.trim() : '') ||
+    process.env.LLM_MODEL?.trim() ||
+    '';
+  if (!model) {
+    throw new Error('LLM model is not configured. Please set it in Admin → Settings.');
+  }
   const normalizedApiKey = apiKey.trim();
 
   const client = new OpenAI({
