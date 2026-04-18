@@ -27,6 +27,7 @@ import { Sandbox } from '@vercel/sandbox';
 import { createClient } from '@supabase/supabase-js';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import nodePath from 'node:path';
+import { buildSandboxEmailAgentPrompt } from '../src/agents/sandbox-email-agent-prompt-builder';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -59,47 +60,12 @@ function buildPrompt(
   rules: DebugRule[],
   attachmentNames?: string[],
 ): string {
-  const rulesText =
-    rules.length > 0
-      ? rules.map((rule) => `Rule "${rule.name}": ${rule.text}`).join('\n')
-      : 'No specific rules. Preserve the original email content and subject unless a minimal, non-destructive cleanup is clearly needed.';
-
-  const attachmentsLine =
-    attachmentNames && attachmentNames.length > 0
-      ? `\nATTACHMENTS: ${attachmentNames.join(', ')}`
-      : '';
-
-  return `You have an email HTML file at /vercel/sandbox/email.html that needs processing.
-
-FROM: ${emailFrom}
-SUBJECT: ${emailSubject}${attachmentsLine}
-
-RULES:
-${rulesText}
-
-IMPORTANT:
-- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.
-- The user's rules are the source of truth, but preserve the original email as much as possible while applying them.
-- Default behavior: keep the email structurally and semantically intact. Make the smallest effective change that satisfies the rules.
-- Do not rewrite from scratch unless a rule clearly asks for a full rewrite, a completely new version, or a fundamentally different email.
-- If a rule asks to translate the email, translate only user-visible email content that should appear in the rendered message. Do not translate HTML tags, attributes, CSS, URLs, tracking parameters, code snippets, hidden metadata, or technical identifiers unless the rule explicitly asks for that.
-- If a rule asks to summarize, condense, simplify, or shorten the email, keep the original intent, key facts, promises, dates, names, links, calls to action, and tone whenever possible.
-- If a rule asks to modify or improve the email, edit only the portions necessary to satisfy that request and preserve the rest of the message.
-- If a rule asks to change tone, wording, or clarity, retain the original meaning unless the rule explicitly asks to change the meaning.
-- If a rule asks to remove content, remove only the targeted content and keep the remaining message intact.
-- If a rule asks to completely change, fully rewrite, or regenerate the email, then a substantial rewrite is allowed.
-- If a rule asks to translate into a language the email already uses, skip translation and preserve the original content unchanged.
-
-INSTRUCTIONS:
-1. First, activate caveman ultra mode by issuing: /caveman ultra
-2. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${emailSubject}"
-3. Read the file /vercel/sandbox/email.html
-4. Apply the rules above to both the subject and body.
-5. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
-6. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
-7. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
-8. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
-9. Do NOT create any other files.`;
+  return buildSandboxEmailAgentPrompt({
+    emailFrom,
+    emailSubject,
+    rules,
+    attachmentNames,
+  });
 }
 
 function parseOpencodeSessionId(stdout: string): string | null {

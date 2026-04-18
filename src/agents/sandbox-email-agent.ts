@@ -27,8 +27,6 @@ import path from 'node:path';
 import { Sandbox } from '@vercel/sandbox';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
-  sanitizeRule,
-  sanitizeEmailField,
   getOpenRouterClient,
   buildOpenRouterChatCompletionTrackingFields,
   buildOpenRouterHeaders,
@@ -50,6 +48,10 @@ import {
   saveToSupermemory,
   saveAttachmentFilesToSupermemory,
 } from './email-agent';
+import {
+  buildSandboxEmailAgentPrompt,
+  buildSandboxEmailAgentVerificationPrompt,
+} from './sandbox-email-agent-prompt-builder';
 
 // Re-export memory helpers so consumers can import from either agent module.
 export {
@@ -580,70 +582,16 @@ function buildOpencodePrompt(
   skillToggles: Record<string, boolean>,
   attachmentNames?: string[],
 ): string {
-  const rulesText =
-    rules.length > 0
-      ? rules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
-      : 'No specific rules. Preserve the original email content and subject unless a global system behavior explicitly requires a minimal, non-destructive cleanup.';
-
-  const attachmentsLine =
-    attachmentNames && attachmentNames.length > 0
-      ? `\nATTACHMENTS: ${attachmentNames.join(', ')}`
-      : '';
-
-  const cavemanEnabled = isOpencodeSkillEnabled(skillToggles, 'caveman');
-  const htmlEditingEnabled = isOpencodeSkillEnabled(skillToggles, 'html-email-editing');
-  const cavemanImportantLine = cavemanEnabled
-    ? '- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.'
-    : '- Caveman skill is disabled. Do not use /caveman or any caveman mode command.';
-  const cavemanStepInstruction = cavemanEnabled
-    ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
-    : 'Caveman skill is disabled. Skip any caveman command.';
-  const htmlEditingImportantLine = htmlEditingEnabled
-    ? '- html-email-editing skill is enabled. Use it for this task to preserve email HTML structure/styles while making surgical rule-based edits.'
-    : '- html-email-editing skill is disabled. Do not use it.';
-  const htmlEditingStepInstruction = htmlEditingEnabled
-    ? 'Activate the html-email-editing skill before editing the HTML body.'
-    : 'html-email-editing skill is disabled. Skip any html-email-editing activation.';
-
-  return `You have an email HTML file at /vercel/sandbox/email.html that needs processing.
-
-FROM: ${sanitizeEmailField(emailFrom)}
-SUBJECT: ${sanitizeEmailField(emailSubject)}${attachmentsLine}
-
-RULES:
-${rulesText}
-
-IMPORTANT:
-${cavemanImportantLine}
-${htmlEditingImportantLine}
-- Hard runtime limit: this sandbox execution is capped at ${Math.round(SANDBOX_PLATFORM_TIMEOUT_MS / 60000)} minutes total. Complete your work and write final outputs well before that limit.
-- The user's rules are the source of truth, but preserve the original email as much as possible while applying them.
-- Default behavior: keep the email structurally and semantically intact. Make the smallest effective change that satisfies the rules.
-- Do not rewrite from scratch unless a rule clearly asks for a full rewrite, a completely new version, or a fundamentally different email.
-- If a rule asks to translate the email, translate only user-visible email content that should appear in the rendered message. Do not translate HTML tags, attributes, CSS, URLs, tracking parameters, code snippets, hidden metadata, or technical identifiers unless the rule explicitly asks for that.
-- If a rule asks to summarize, condense, simplify, or shorten the email, keep the original intent, key facts, promises, dates, names, links, calls to action, and tone whenever possible.
-- If a rule asks to modify or improve the email, edit only the portions necessary to satisfy that request and preserve the rest of the message.
-- If a rule asks to change tone, wording, or clarity, retain the original meaning unless the rule explicitly asks to change the meaning.
-- If a rule asks to remove content, remove only the targeted content and keep the remaining message intact.
-- If a rule asks to completely change, fully rewrite, or regenerate the email, then a substantial rewrite is allowed.
-- If a rule asks to translate into a language the email already uses, skip translation and preserve the original content unchanged.
-- Apply applicable rules to 100% of the message (all relevant subject/body content), not just a subset.
-- Before finishing, double-check that every applicable rule was correctly applied to the final subject/body output.
-- If an edit tool call fails because oldString was not found, do NOT give up or declare success. Read the file again, locate the exact current text, and retry the edit. If a targeted edit keeps failing, fall back to rewriting the entire file with the correct content.
-- After writing subject.txt, always verify its content with a bash cat command. If the subject still shows the original value and a rule requires a subject change (e.g. translation, rewording), overwrite subject.txt with the correctly transformed subject.
-${analysisSection}${memorySection}
-
-INSTRUCTIONS:
-1. ${cavemanStepInstruction}
-2. ${htmlEditingStepInstruction}
-3. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "${sanitizeEmailField(emailSubject)}"
-4. Read the file /vercel/sandbox/email.html
-5. Apply the rules above to both the subject and body.
-6. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
-7. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
-8. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
-9. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
-10. Do NOT create any other files.`;
+  return buildSandboxEmailAgentPrompt({
+    emailFrom,
+    emailSubject,
+    rules,
+    memorySection,
+    analysisSection,
+    skillToggles,
+    attachmentNames,
+    sandboxPlatformTimeoutMinutes: Math.round(SANDBOX_PLATFORM_TIMEOUT_MS / 60000),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -662,38 +610,12 @@ function buildVerificationPrompt(
   rules: RuleForProcessing[],
   skillToggles: Record<string, boolean>,
 ): string {
-  const rulesText = rules
-    .map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`)
-    .join('\n');
-
-  const cavemanEnabled = isOpencodeSkillEnabled(skillToggles, 'caveman');
-  const htmlEditingEnabled = isOpencodeSkillEnabled(skillToggles, 'html-email-editing');
-  const cavemanStepInstruction = cavemanEnabled
-    ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
-    : 'Caveman skill is disabled. Skip any caveman command.';
-  const htmlEditingStepInstruction = htmlEditingEnabled
-    ? 'Activate the html-email-editing skill before editing the HTML body.'
-    : 'html-email-editing skill is disabled. Skip any html-email-editing activation.';
-
-  return `VERIFICATION PASS: A previous step has already processed this email. Your job is to verify that every applicable rule was fully applied and to fix anything that was missed or only partially done.
-
-FROM: ${sanitizeEmailField(emailFrom)}
-ORIGINAL SUBJECT: ${sanitizeEmailField(emailSubject)}
-
-RULES THAT SHOULD HAVE BEEN APPLIED:
-${rulesText}
-
-INSTRUCTIONS:
-1. ${cavemanStepInstruction}
-2. ${htmlEditingStepInstruction}
-3. Read the current /vercel/sandbox/email.html (this is the already-processed output).
-4. Read the current /vercel/sandbox/subject.txt.
-5. For each rule above, verify it was correctly and completely applied to the subject and body.
-6. If any rule was missed, partially applied, or incorrectly applied, fix it now. If an edit tool call fails (oldString not found), read the file again and locate the exact text before retrying. Fall back to a full file rewrite if targeted edits keep failing.
-7. If all rules are fully and correctly applied, you may leave the files unchanged.
-8. Write the final HTML back to /vercel/sandbox/email.html (overwrite).
-9. Write the final subject to /vercel/sandbox/subject.txt (overwrite).
-10. Do NOT create any other files.`;
+  return buildSandboxEmailAgentVerificationPrompt({
+    emailFrom,
+    emailSubject,
+    rules,
+    skillToggles,
+  });
 }
 
 // ---------------------------------------------------------------------------
