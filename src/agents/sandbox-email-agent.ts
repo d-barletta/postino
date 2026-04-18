@@ -29,8 +29,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import {
   sanitizeRule,
   sanitizeEmailField,
-  buildOpenRouterHeaders,
   getOpenRouterClient,
+  buildOpenRouterHeaders,
   getModelPricing,
   calculateCost,
   type AgentTrace,
@@ -901,12 +901,15 @@ export async function processEmailWithAgent(
     pushTrace('sandbox_creating', 'ok', 'Creating sandbox from snapshot');
 
     // Build the opencode.json config for OpenRouter inside the sandbox.
+    const trackingHeaders = buildOpenRouterHeaders(openRouterTracking);
     const opencodeConfig = JSON.stringify(
       {
         $schema: 'https://opencode.ai/config.json',
         provider: {
           openrouter: {
-            headers: buildOpenRouterHeaders(openRouterTracking),
+            options: {
+              ...(Object.keys(trackingHeaders).length > 0 ? { headers: trackingHeaders } : {}),
+            },
             models: {
               [model]: {},
             },

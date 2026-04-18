@@ -190,9 +190,10 @@ function normalizeTrackingValue(value: string | null | undefined): string | unde
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-export function resolveOpenRouterTrackingContext(
-  tracking?: OpenRouterTrackingContext,
-): { userId?: string; sessionId?: string } {
+export function resolveOpenRouterTrackingContext(tracking?: OpenRouterTrackingContext): {
+  userId?: string;
+  sessionId?: string;
+} {
   const userId = normalizeTrackingValue(tracking?.userId);
   const sessionId = normalizeTrackingValue(tracking?.sessionId);
   return {
@@ -208,7 +209,9 @@ export function getDefaultOpenRouterHeaders(): Record<string, string> {
   };
 }
 
-export function buildOpenRouterHeaders(tracking?: OpenRouterTrackingContext): Record<string, string> {
+export function buildOpenRouterHeaders(
+  tracking?: OpenRouterTrackingContext,
+): Record<string, string> {
   const resolved = resolveOpenRouterTrackingContext(tracking);
   return {
     ...getDefaultOpenRouterHeaders(),
@@ -236,9 +239,7 @@ export function buildOpenRouterProviderOptions(
   };
 }
 
-export async function getOpenRouterClient(
-  tracking?: OpenRouterTrackingContext,
-): Promise<{
+export async function getOpenRouterClient(tracking?: OpenRouterTrackingContext): Promise<{
   client: OpenAI;
   model: string;
   apiKey: string;
