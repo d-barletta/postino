@@ -22,16 +22,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const ownerId = typeof data.user_id === 'string' ? data.user_id : '';
     let analysisOutputLanguage: string | undefined;
+    let ownerEmail = '';
     if (ownerId) {
       const { data: ownerData } = await supabase
         .from('users')
-        .select('analysis_output_language')
+        .select('analysis_output_language, email')
         .eq('id', ownerId)
         .single();
       analysisOutputLanguage =
         typeof ownerData?.analysis_output_language === 'string'
           ? ownerData.analysis_output_language || undefined
           : undefined;
+      ownerEmail = typeof ownerData?.email === 'string' ? ownerData.email : '';
     }
 
     let analysisResult;
@@ -41,6 +43,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         subject: typeof data.subject === 'string' ? data.subject : '',
         originalBody: data.original_body,
         analysisOutputLanguage,
+        openRouterUserId: ownerEmail,
+        openRouterSessionId: id,
       });
     } catch (error) {
       if (error instanceof Error && error.message === 'Analysis unavailable') {
@@ -78,12 +82,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Charge credits to the email owner
     if (ownerId) {
-      const { data: ownerRow } = await supabase
-        .from('users')
-        .select('email')
-        .eq('id', ownerId)
-        .single();
-      const ownerEmail = typeof ownerRow?.email === 'string' ? ownerRow.email : '';
       await addUserCreditsUsage({
         userId: ownerId,
         userEmail: ownerEmail,

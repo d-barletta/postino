@@ -26,7 +26,7 @@ function slugify(title: string): string {
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await verifyAdminRequest(request);
+    const adminUser = await verifyAdminRequest(request);
     const { id } = await params;
     const supabase = createAdminClient();
     const body = await request.json();
@@ -86,7 +86,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Call LLM for translation
-    const { client, model } = await getOpenRouterClient();
+    const { client, model } = await getOpenRouterClient({
+      userId: adminUser.email ?? '',
+      sessionId: `admin-blog-translate:${id}:${targetLanguage}`,
+    });
     const targetLangName = LOCALE_NAMES[targetLanguage] ?? targetLanguage;
     const sourceLangName = LOCALE_NAMES[sourceLanguage] ?? sourceLanguage;
 
@@ -107,6 +110,7 @@ ${sourceHtmlContent}`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      ...(adminUser.email ? { user: adminUser.email } : {}),
       response_format: { type: 'json_object' },
       max_tokens: 100000,
     });

@@ -25,11 +25,14 @@ import {
   sanitizeEmailField,
   sanitizeEmailBody,
   sanitizeHtmlBodyForPrompt,
+  buildOpenRouterHeaders,
+  buildOpenRouterProviderOptions,
   getOpenRouterClient,
   getModelPricing,
   calculateCost,
   type AgentTrace,
   type AgentTraceStep,
+  type OpenRouterTrackingContext,
 } from '@/lib/openrouter';
 import type { ProcessEmailResult, RuleForProcessing } from '@/lib/openrouter';
 import type {
@@ -1104,6 +1107,7 @@ async function preAnalyzeEmail(
   model: string,
   agentRuntimeSettings: AgentRuntimeSettings,
   outputLanguage?: string,
+  openRouterTracking?: OpenRouterTrackingContext,
 ): Promise<PreAnalysisResult> {
   // Convert HTML to reader-focused structured text so the AI receives cleaner
   // content than raw HTML. Plain-text emails are used as-is.
@@ -1133,6 +1137,9 @@ SUBJECT: ${sanitizeEmailField(emailSubject)}
 BODY${isHtml ? ' (Markdown, converted from HTML)' : ' (excerpt)'}:
 ${bodyExcerpt}`,
       maxOutputTokens: agentRuntimeSettings.analysisMaxTokens,
+      ...(buildOpenRouterProviderOptions(openRouterTracking)
+        ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+        : {}),
     });
     const normalizedUsage = normalizeUsageTotals(usage);
 
@@ -1193,8 +1200,9 @@ export async function analyzeEmailContent(
   isHtml = false,
   modelOverride?: string,
   analysisOutputLanguage?: string,
+  openRouterTracking?: OpenRouterTrackingContext,
 ): Promise<AnalyzeEmailContentResult> {
-  const { apiKey, model: settingsModel } = await getOpenRouterClient();
+  const { apiKey, model: settingsModel } = await getOpenRouterClient(openRouterTracking);
   const model = modelOverride || settingsModel;
 
   if (!apiKey) {
@@ -1211,10 +1219,7 @@ export async function analyzeEmailContent(
   const openrouter = createOpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey,
-    headers: {
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
-      'X-Title': 'Postino Email Redirector',
-    },
+    headers: buildOpenRouterHeaders(openRouterTracking),
   });
 
   const result = await preAnalyzeEmail(
@@ -1226,6 +1231,7 @@ export async function analyzeEmailContent(
     model,
     agentRuntimeSettings,
     analysisOutputLanguage,
+    openRouterTracking,
   );
 
   const analysis = await hydrateEmailAnalysis(result.analysis, googleMapsApiKey);
@@ -1371,6 +1377,7 @@ async function runFoldStep(
   fallbackSubject: string,
   attachmentNames?: string[],
   originalHtmlBody?: string,
+  openRouterTracking?: OpenRouterTrackingContext,
 ): Promise<{
   subject: string;
   body: string;
@@ -1449,6 +1456,9 @@ Return the updated subject and body as JSON.`;
     system: systemPrompt,
     prompt: userPrompt,
     maxOutputTokens,
+    ...(buildOpenRouterProviderOptions(openRouterTracking)
+      ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+      : {}),
   });
   const normalizedUsage = normalizeUsageTotals(usage);
 
@@ -1492,6 +1502,7 @@ async function processEmailInChunks(
   onPartialResult?: PartialResultCallback,
   /** Original HTML body to preserve structure across fold steps. */
   originalHtmlBody?: string,
+  openRouterTracking?: OpenRouterTrackingContext,
 ): Promise<{
   subject: string;
   body: string;
@@ -1526,6 +1537,9 @@ ${chunks[i]}`;
           'You are a content extractor. Your only job is to distil the meaningful text from a section of an email, removing boilerplate. Return plain text.',
         prompt: chunkPrompt,
         maxOutputTokens: agentRuntimeSettings.chunkExtractMaxTokens,
+        ...(buildOpenRouterProviderOptions(openRouterTracking)
+          ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+          : {}),
       });
       extractions.push(text.trim());
       const normalizedUsage = normalizeUsageTotals(usage);
@@ -1568,6 +1582,7 @@ ${chunks[i]}`;
         fallbackSubject,
         attachmentNames,
         originalHtmlBody,
+        openRouterTracking,
       );
       currentSubject = step.subject !== undefined ? step.subject || currentSubject : currentSubject;
       currentBody = step.body !== undefined ? step.body : currentBody;
@@ -1775,6 +1790,7 @@ async function runSingleRulePass(
   includeTraceExcerpts: boolean,
   attachmentNames?: string[],
   onPartialResult?: PartialResultCallback,
+  openRouterTracking?: OpenRouterTrackingContext,
 ): Promise<SingleRulePassResult> {
   // Build the rules text: combine multiple rules or use the "no rules" fallback.
   const rulesText =
@@ -1841,6 +1857,7 @@ IMPORTANT: Apply each rule only when the transformation is actually needed. If a
         attachmentNames,
         onPartialResult,
         isHtml ? sanitizeHtmlBodyForPrompt(emailBody) : undefined,
+        openRouterTracking,
       );
       subject = result.subject;
       body = result.body;
@@ -1912,6 +1929,9 @@ ${emailBodyForPrompt}`;
         system: systemPrompt,
         prompt: userPrompt,
         maxOutputTokens: maxTokens,
+        ...(buildOpenRouterProviderOptions(openRouterTracking)
+          ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+          : {}),
       });
 
       subject = object.subject || fallbackSubject;
@@ -1973,6 +1993,9 @@ Apply the user rules to BOTH the SUBJECT line and the BODY. For example, if a ru
         system: systemPrompt,
         prompt: userPrompt,
         maxOutputTokens: maxTokens,
+        ...(buildOpenRouterProviderOptions(openRouterTracking)
+          ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+          : {}),
       });
 
       subject = object.subject || fallbackSubject;
@@ -2030,6 +2053,9 @@ ${emailBodyForPrompt}`;
         system: `${systemPrompt}\n\nFallback mode: keep output simple and deterministic. Return only subject and body.`,
         prompt: fallbackPrompt,
         maxOutputTokens: Math.min(maxTokens, agentRuntimeSettings.fallbackPassMaxTokens),
+        ...(buildOpenRouterProviderOptions(openRouterTracking)
+          ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+          : {}),
       });
 
       subject = object.subject || fallbackSubject;
@@ -2082,6 +2108,9 @@ ${emailBodyForPrompt}`;
           system: `${systemPrompt}\n\nReturn strictly valid JSON only.`,
           prompt: textRecoveryPrompt,
           maxOutputTokens: Math.min(maxTokens, agentRuntimeSettings.fallbackPassMaxTokens),
+          ...(buildOpenRouterProviderOptions(openRouterTracking)
+            ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+            : {}),
         });
 
         const recovered = parseSubjectBodyFromText(text);
@@ -2159,7 +2188,12 @@ export async function processEmailWithAgent(
   analysisOutputLanguage?: string,
   attachmentFiles?: EmailAttachment[],
   preComputedAnalysis?: PreComputedEmailAnalysis | null,
+  openRouterUserEmail?: string,
 ): Promise<ProcessEmailResult> {
+  const openRouterTracking = {
+    userId: openRouterUserEmail,
+    sessionId: logId,
+  } satisfies OpenRouterTrackingContext;
   const traceStartedAt = new Date().toISOString();
   const traceSteps: AgentTraceStep[] = [];
   let tracingEnabled = true;
@@ -2174,7 +2208,7 @@ export async function processEmailWithAgent(
   };
 
   // 1. Load settings + OpenRouter client details
-  const { apiKey, model: settingsModel } = await getOpenRouterClient();
+  const { apiKey, model: settingsModel } = await getOpenRouterClient(openRouterTracking);
   const model = modelOverride || settingsModel;
 
   if (!apiKey) {
@@ -2225,10 +2259,7 @@ export async function processEmailWithAgent(
   const openrouter = createOpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey,
-    headers: {
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
-      'X-Title': 'Postino Email Redirector',
-    },
+    headers: buildOpenRouterHeaders(openRouterTracking),
   });
 
   // 3. Run pre-analysis and load user memory in parallel. They are independent
@@ -2262,6 +2293,7 @@ export async function processEmailWithAgent(
         model,
         agentRuntimeSettings,
         analysisOutputLanguage,
+        openRouterTracking,
       ),
       getUserMemory(userId),
     ]);
@@ -2397,6 +2429,7 @@ export async function processEmailWithAgent(
       includeTraceExcerpts,
       attachmentNames,
       onPartialResult,
+      openRouterTracking,
     );
     currentSubject = pass.subject;
     currentBody = pass.body;
@@ -2452,6 +2485,7 @@ export async function processEmailWithAgent(
         includeTraceExcerpts,
         attachmentNames,
         onPartialResult,
+        openRouterTracking,
       );
 
       currentSubject = pass.subject;

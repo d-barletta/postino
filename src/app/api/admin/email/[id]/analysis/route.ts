@@ -32,7 +32,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const userId = typeof logRow.user_id === 'string' ? logRow.user_id : '';
     const { data: userRow } = userId
-      ? await supabase.from('users').select('analysis_output_language').eq('id', userId).single()
+      ? await supabase
+          .from('users')
+          .select('analysis_output_language, email')
+          .eq('id', userId)
+          .single()
       : { data: null };
 
     const analysisOutputLanguage =
@@ -46,6 +50,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       originalBody: typeof logRow.original_body === 'string' ? logRow.original_body : '',
       analysisOutputLanguage,
       modelOverride,
+      openRouterUserId: typeof userRow?.email === 'string' ? userRow.email : '',
+      openRouterSessionId: id,
     });
 
     if (!result.analysis) {

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const { data: userRow } = await supabase
       .from('users')
-      .select('analysis_output_language')
+      .select('analysis_output_language, email')
       .eq('id', uid)
       .single();
     if (!userRow) {
@@ -72,6 +72,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         typeof userRow.analysis_output_language === 'string'
           ? (userRow.analysis_output_language as string) || undefined
           : undefined;
+      const userEmail = typeof userRow.email === 'string' ? userRow.email : '';
 
       if (!Array.isArray(body.emailIds)) {
         return NextResponse.json({ error: 'emailIds must be an array' }, { status: 400 });
@@ -122,6 +123,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             subject: typeof logRow.subject === 'string' ? logRow.subject : '',
             originalBody,
             analysisOutputLanguage,
+            openRouterUserId: userEmail,
+            openRouterSessionId: emailId,
           });
 
           if (!debugResult.analysis) {

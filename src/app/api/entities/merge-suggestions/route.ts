@@ -96,9 +96,11 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   let uid: string;
+  let userEmail = '';
   try {
     const user = await verifyUserRequest(request);
     uid = user.id;
+    userEmail = user.email ?? '';
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -250,7 +252,10 @@ Return a JSON object with this structure:
 
 Return an empty array if no confident merges are found. Only include suggestions where you are highly confident.`;
 
-    const { client, model } = await getOpenRouterClient();
+    const { client, model } = await getOpenRouterClient({
+      userId: userEmail,
+      sessionId: `entities-merge-suggestions:${uid}`,
+    });
 
     const response = await withLlmRetry(
       () =>
@@ -260,6 +265,7 @@ Return an empty array if no confident merges are found. Only include suggestions
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
+          ...(userEmail ? { user: userEmail } : {}),
           response_format: { type: 'json_object' },
           max_tokens: 2000,
         }),
