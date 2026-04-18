@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const sessionId = `admin-test-llm:${adminUser.id}`;
 
     const { client, model, apiKey } = await getOpenRouterClient({
-      userId: adminUser.email,
+      userId: adminUser.email ?? undefined,
       sessionId,
     });
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         model,
         messages: [{ role: 'user', content: 'Say "ok" only.' }],
         ...buildOpenRouterChatCompletionTrackingFields({
-          userId: adminUser.email,
+          userId: adminUser.email ?? undefined,
           sessionId,
         }),
         max_tokens: 5,

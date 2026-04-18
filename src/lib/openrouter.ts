@@ -220,6 +220,10 @@ export function buildOpenRouterHeaders(
   };
 }
 
+/**
+ * Builds OpenRouter-compatible chat-completion tracking fields.
+ * Includes `user` and `session_id` only when non-empty values are available.
+ */
 export function buildOpenRouterChatCompletionTrackingFields(
   tracking?: OpenRouterTrackingContext,
 ): { user?: string; session_id?: string } {
