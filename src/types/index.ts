@@ -239,6 +239,8 @@ export interface Settings {
   opencodeMinBodyLength?: number;
   /** Per-skill OpenCode enablement map. Missing keys default to true. */
   opencodeSkillToggles?: Record<string, boolean>;
+  /** When enabled, runs a second OpenCode verification pass after the first to catch any rules that were missed or only partially applied. */
+  opencodeVerificationPass?: boolean;
   /** Google Maps Geocoding API key. When set, place geocoding uses Google Maps instead of Nominatim. Falls back to GOOGLE_MAPS_API_KEY env variable. */
   googleMapsApiKey?: string;
   /** Conversion factor from USD to credits. Credits are computed as USD * factor. Defaults to 100. */

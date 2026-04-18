@@ -137,6 +137,7 @@ export async function PUT(request: NextRequest) {
       'opencodeSandboxSnapshotId',
       'opencodeMinBodyLength',
       'opencodeSkillToggles',
+      'opencodeVerificationPass',
     ];
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([k]) => allowed.includes(k)),

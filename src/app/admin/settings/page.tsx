@@ -752,6 +752,28 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     </div>
                   )}
 
+                  {settings.agentUseOpencode && (
+                    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Verification Pass
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          After OpenCode finishes, runs a second pass to verify every rule was fully
+                          applied and fix anything missed. Adds token usage but improves
+                          reliability.
+                        </p>
+                      </div>
+                      <Switch
+                        id="opencode-verification-pass"
+                        checked={settings.opencodeVerificationPass === true}
+                        onCheckedChange={(checked) =>
+                          setSettings((p) => ({ ...p, opencodeVerificationPass: checked }))
+                        }
+                      />
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <div>
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">

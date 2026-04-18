@@ -80,6 +80,9 @@ const SANDBOX_TIMEOUT_MS = 14 * 60 * 1000; // 14 minutes (leave headroom under p
 /** Max time (ms) we wait for the `opencode run` command. */
 const OPENCODE_RUN_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes (leave headroom for readback + cleanup)
 
+/** Max time (ms) for the optional verification/correction pass. */
+const OPENCODE_VERIFY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+
 const OPENCODE_SKILLS = ['caveman', 'html-email-editing'] as const;
 
 // ---------------------------------------------------------------------------
@@ -626,6 +629,8 @@ ${htmlEditingImportantLine}
 - If a rule asks to translate into a language the email already uses, skip translation and preserve the original content unchanged.
 - Apply applicable rules to 100% of the message (all relevant subject/body content), not just a subset.
 - Before finishing, double-check that every applicable rule was correctly applied to the final subject/body output.
+- If an edit tool call fails because oldString was not found, do NOT give up or declare success. Read the file again, locate the exact current text, and retry the edit. If a targeted edit keeps failing, fall back to rewriting the entire file with the correct content.
+- After writing subject.txt, always verify its content with a bash cat command. If the subject still shows the original value and a rule requires a subject change (e.g. translation, rewording), overwrite subject.txt with the correctly transformed subject.
 ${analysisSection}${memorySection}
 
 INSTRUCTIONS:
@@ -638,6 +643,56 @@ INSTRUCTIONS:
 7. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.
 8. Write the processed HTML back to /vercel/sandbox/email.html (overwrite).
 9. If the rules required a subject change, overwrite /vercel/sandbox/subject.txt with the new subject.
+10. Do NOT create any other files.`;
+}
+
+// ---------------------------------------------------------------------------
+// Verification prompt builder
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the prompt for the second (verification) OpenCode pass.
+ * The email.html in the sandbox already contains the first-pass output.
+ * This prompt asks OpenCode to re-check that every applicable rule was fully
+ * applied and to fix anything that was missed or only partially done.
+ */
+function buildVerificationPrompt(
+  emailFrom: string,
+  emailSubject: string,
+  rules: RuleForProcessing[],
+  skillToggles: Record<string, boolean>,
+): string {
+  const rulesText = rules
+    .map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`)
+    .join('\n');
+
+  const cavemanEnabled = isOpencodeSkillEnabled(skillToggles, 'caveman');
+  const htmlEditingEnabled = isOpencodeSkillEnabled(skillToggles, 'html-email-editing');
+  const cavemanStepInstruction = cavemanEnabled
+    ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
+    : 'Caveman skill is disabled. Skip any caveman command.';
+  const htmlEditingStepInstruction = htmlEditingEnabled
+    ? 'Activate the html-email-editing skill before editing the HTML body.'
+    : 'html-email-editing skill is disabled. Skip any html-email-editing activation.';
+
+  return `VERIFICATION PASS: A previous step has already processed this email. Your job is to verify that every applicable rule was fully applied and to fix anything that was missed or only partially done.
+
+FROM: ${sanitizeEmailField(emailFrom)}
+ORIGINAL SUBJECT: ${sanitizeEmailField(emailSubject)}
+
+RULES THAT SHOULD HAVE BEEN APPLIED:
+${rulesText}
+
+INSTRUCTIONS:
+1. ${cavemanStepInstruction}
+2. ${htmlEditingStepInstruction}
+3. Read the current /vercel/sandbox/email.html (this is the already-processed output).
+4. Read the current /vercel/sandbox/subject.txt.
+5. For each rule above, verify it was correctly and completely applied to the subject and body.
+6. If any rule was missed, partially applied, or incorrectly applied, fix it now. If an edit tool call fails (oldString not found), read the file again and locate the exact text before retrying. Fall back to a full file rewrite if targeted edits keep failing.
+7. If all rules are fully and correctly applied, you may leave the files unchanged.
+8. Write the final HTML back to /vercel/sandbox/email.html (overwrite).
+9. Write the final subject to /vercel/sandbox/subject.txt (overwrite).
 10. Do NOT create any other files.`;
 }
 
@@ -1191,6 +1246,155 @@ export async function processEmailWithAgent(
       pushTrace('read_processed_subject', 'ok', 'Read processed subject from sandbox');
     } else {
       pushTrace('read_processed_subject', 'warning', 'Subject file not found — using fallback');
+    }
+
+    // Optional verification pass: re-run OpenCode to check all rules were fully applied.
+    const runVerification =
+      settings?.opencodeVerificationPass === true &&
+      activeRules.length > 0 &&
+      !parseError &&
+      htmlBuffer !== null;
+
+    if (runVerification) {
+      pushTrace('opencode_verify_start', 'ok', 'Starting verification pass');
+      try {
+        const verifyPrompt = buildVerificationPrompt(
+          emailFrom,
+          emailSubject,
+          activeRules,
+          skillToggles,
+        );
+
+        // Write the verification prompt to the sandbox filesystem.
+        await sandbox!.writeFiles([
+          { path: '/vercel/sandbox/prompt.txt', content: Buffer.from(verifyPrompt, 'utf-8') },
+        ]);
+
+        const verifyCommand = await sandbox!.runCommand({
+          cmd: 'bash',
+          args: [
+            '-lc',
+            'set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)"',
+          ],
+          cwd: '/vercel/sandbox',
+          env: {
+            HOME: '/vercel/sandbox',
+            XDG_DATA_HOME: '/vercel/sandbox/.local/share',
+            OPENROUTER_API_KEY: apiKey,
+            OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+            OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
+            OPENCODE_MODEL: `openrouter/${model}`,
+          },
+          detached: true,
+        });
+
+        const verifyController = new AbortController();
+        const verifyTimer = setTimeout(() => verifyController.abort(), OPENCODE_VERIFY_TIMEOUT_MS);
+
+        try {
+          const verifyFinished = await verifyCommand.wait({ signal: verifyController.signal });
+          clearTimeout(verifyTimer);
+
+          const verifyExitCode = verifyFinished.exitCode;
+          const verifyStdout = await verifyFinished.stdout();
+          const verifyStderr = await verifyFinished.stderr();
+
+          // Accumulate token usage from the verification pass.
+          if (verifyExitCode === 0) {
+            try {
+              const verifyStatsCmd = await sandbox!.runCommand({
+                cmd: 'opencode',
+                args: ['stats'],
+                cwd: '/vercel/sandbox',
+                env: {
+                  HOME: '/vercel/sandbox',
+                  XDG_DATA_HOME: '/vercel/sandbox/.local/share',
+                  OPENROUTER_API_KEY: apiKey,
+                  OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+                  OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
+                },
+              });
+              const verifyStatsOut = await (await verifyStatsCmd.wait()).stdout();
+              const verifyStatsUsage = parseOpencodeStatsOutput(verifyStatsOut);
+              if (verifyStatsUsage) {
+                sandboxPromptTokens += verifyStatsUsage.promptTokens;
+                sandboxCompletionTokens += verifyStatsUsage.completionTokens;
+              } else {
+                const parsed = parseOpencodeTokens(verifyStdout);
+                sandboxPromptTokens += parsed.promptTokens;
+                sandboxCompletionTokens += parsed.completionTokens;
+              }
+            } catch {
+              const parsed = parseOpencodeTokens(verifyStdout);
+              sandboxPromptTokens += parsed.promptTokens;
+              sandboxCompletionTokens += parsed.completionTokens;
+            }
+          } else {
+            const parsed = parseOpencodeTokens(verifyStdout);
+            sandboxPromptTokens += parsed.promptTokens;
+            sandboxCompletionTokens += parsed.completionTokens;
+          }
+
+          pushTrace(
+            'opencode_verify_finished',
+            verifyExitCode === 0 ? 'ok' : 'warning',
+            'Verification pass completed',
+            {
+              exitCode: verifyExitCode,
+              stdoutLength: verifyStdout.length,
+              stderrLength: verifyStderr.length,
+            },
+          );
+
+          if (verifyExitCode === 0) {
+            // Read back the (potentially corrected) files.
+            const verifyHtmlBuffer = await sandbox!.readFileToBuffer({
+              path: '/vercel/sandbox/email.html',
+            });
+            const verifySubjectBuffer = await sandbox!.readFileToBuffer({
+              path: '/vercel/sandbox/subject.txt',
+            });
+
+            if (verifyHtmlBuffer) {
+              processedBody = verifyHtmlBuffer.toString('utf-8');
+              pushTrace('opencode_verify_html', 'ok', 'Read verified HTML from sandbox');
+            }
+            if (verifySubjectBuffer) {
+              const rawVerifySubject = verifySubjectBuffer.toString('utf-8').trim();
+              if (rawVerifySubject) processedSubject = rawVerifySubject;
+              pushTrace('opencode_verify_subject', 'ok', 'Read verified subject from sandbox');
+            }
+          } else {
+            console.error(
+              `[sandbox-agent] verification pass exited with code ${verifyExitCode}:`,
+              verifyStderr,
+            );
+            pushTrace(
+              'opencode_verify_error',
+              'warning',
+              `Verification pass exited with code ${verifyExitCode} — using first-pass output`,
+            );
+          }
+        } catch (verifyWaitError) {
+          clearTimeout(verifyTimer);
+          const msg =
+            verifyWaitError instanceof Error ? verifyWaitError.message : String(verifyWaitError);
+          console.error('[sandbox-agent] verification pass wait failed:', msg);
+          pushTrace(
+            'opencode_verify_timeout',
+            'warning',
+            `Verification pass timed out or failed: ${msg} — using first-pass output`,
+          );
+        }
+      } catch (verifyErr) {
+        const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
+        console.error('[sandbox-agent] verification pass launch failed:', msg);
+        pushTrace(
+          'opencode_verify_launch_failed',
+          'warning',
+          `Verification pass could not start: ${msg} — using first-pass output`,
+        );
+      }
     }
   } catch (sandboxError) {
     const msg = sandboxError instanceof Error ? sandboxError.message : String(sandboxError);
