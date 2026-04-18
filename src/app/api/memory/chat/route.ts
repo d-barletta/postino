@@ -75,10 +75,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const query: string = typeof body.query === 'string' ? body.query.trim() : '';
-    const providedSessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
+    const requestSessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
     const openRouterTracking = {
       userId: user.email ?? '',
-      sessionId: providedSessionId || `memory-chat:${uid}`,
+      sessionId: requestSessionId || `memory-chat:${uid}`,
     };
 
     if (!query) {

@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
       .eq('id', id);
 
-    // Charge credits to the email owner
+    // Charge credits to the email owner (ownerEmail resolved above with language settings).
     if (ownerId) {
       await addUserCreditsUsage({
         userId: ownerId,
