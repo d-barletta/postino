@@ -436,7 +436,10 @@ async function main() {
     process.env.OPENCODE_SANDBOX_SNAPSHOT_ID ||
     '';
   const model =
-    modelArg || process.env.LLM_MODEL || (settings.llmModel as string) || 'anthropic/claude-haiku-4.5';
+    modelArg ||
+    process.env.LLM_MODEL ||
+    (settings.llmModel as string) ||
+    'anthropic/claude-haiku-4.5';
 
   if (!snapshotId) {
     console.error('No snapshot ID found in settings or env');

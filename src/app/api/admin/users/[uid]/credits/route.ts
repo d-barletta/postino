@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
-import { getUtcMonthKey, normalizeUserCreditsSnapshot } from '@/lib/credits';
+import { getUtcMonthKey, normalizeUserCreditsSnapshot, resolveCreditSettings } from '@/lib/credits';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
@@ -56,6 +56,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           credits_usage_month: month,
           monthly_credits_used: current.used,
           monthly_credits_bonus: Number((current.bonus + bonusToAdd).toFixed(6)),
+          credits_threshold_notified: false,
+        })
+        .eq('id', uid);
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (body.action === 'set_limit') {
+      const desiredLimit =
+        typeof body.credits === 'number' && Number.isFinite(body.credits)
+          ? Math.max(0, body.credits)
+          : 0;
+
+      const { data: settingsRow } = await supabase
+        .from('settings')
+        .select('data')
+        .eq('id', 'global')
+        .single();
+      const creditSettings = resolveCreditSettings(
+        (settingsRow?.data as Record<string, unknown> | undefined) ?? {},
+      );
+
+      const bonus = Math.max(0, desiredLimit - creditSettings.freeCreditsPerMonth);
+
+      await supabase
+        .from('users')
+        .update({
+          credits_usage_month: month,
+          monthly_credits_used: current.used,
+          monthly_credits_bonus: Number(bonus.toFixed(6)),
           credits_threshold_notified: false,
         })
         .eq('id', uid);

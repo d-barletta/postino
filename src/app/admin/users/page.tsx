@@ -130,6 +130,33 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
     [authUser, fetchUsers],
   );
 
+  const handleSetCreditLimit = useCallback(
+    async (uid: string) => {
+      if (!authUser) return;
+      const raw = window.prompt('Set monthly credit limit for this user:', '1000');
+      if (!raw) return;
+      const value = Number.parseFloat(raw);
+      if (!Number.isFinite(value) || value < 0) {
+        toast.error('Please enter a valid non-negative credit limit');
+        return;
+      }
+      try {
+        const token = await getIdToken();
+        const res = await fetch(`/api/admin/users/${uid}/credits`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'set_limit', credits: value }),
+        });
+        if (!res.ok) throw new Error('Failed to set credit limit');
+        toast.success('Monthly credit limit updated');
+        await fetchUsers();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to set credit limit');
+      }
+    },
+    [authUser, fetchUsers],
+  );
+
   const handleAddCredits = useCallback(
     async (uid: string) => {
       if (!authUser) return;
@@ -576,6 +603,9 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleResetCreditsUsage(user.uid)}>
                             Reset Credits Usage
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSetCreditLimit(user.uid)}>
+                            Set Monthly Credit Limit
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleAddCredits(user.uid)}>
                             Add Credits
