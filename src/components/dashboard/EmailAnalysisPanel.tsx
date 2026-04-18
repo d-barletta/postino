@@ -183,6 +183,16 @@ export function EmailAnalysisPanel({ analysis }: EmailAnalysisPanelProps) {
               </dd>
             </>
           )}
+          {entities && entities.numbers.length > 0 && (
+            <>
+              <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {eh.analysisEntitiesNumbers}
+              </dt>
+              <dd className="text-gray-600 dark:text-gray-300 min-w-0">
+                {entities.numbers.join(', ')}
+              </dd>
+            </>
+          )}
           {analysis.prices && analysis.prices.length > 0 && (
             <>
               <dt className="text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">

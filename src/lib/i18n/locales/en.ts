@@ -344,6 +344,7 @@ const en: Translations = {
       analysisEntitiesPlaces: 'Places:',
       analysisEntitiesEvents: 'Events:',
       analysisEntitiesDates: 'Dates:',
+      analysisEntitiesNumbers: 'Numbers & codes:',
       analysisEntitiesPrices: 'Prices:',
       rerunAnalysis: 'Repeat analysis',
       rerunningAnalysis: 'Repeating analysis...',

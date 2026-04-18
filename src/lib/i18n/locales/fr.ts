@@ -351,6 +351,7 @@ const fr: Translations = {
       analysisEntitiesPlaces: 'Lieux :',
       analysisEntitiesEvents: 'Événements :',
       analysisEntitiesDates: 'Dates :',
+      analysisEntitiesNumbers: 'Numéros et codes :',
       analysisEntitiesPrices: 'Prix :',
       rerunAnalysis: "Relancer l'analyse",
       rerunningAnalysis: "Relance de l'analyse...",
