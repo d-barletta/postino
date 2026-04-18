@@ -30,6 +30,7 @@ import {
   sanitizeRule,
   sanitizeEmailField,
   getOpenRouterClient,
+  buildOpenRouterChatCompletionTrackingFields,
   buildOpenRouterHeaders,
   getModelPricing,
   calculateCost,
@@ -902,6 +903,7 @@ export async function processEmailWithAgent(
 
     // Build the opencode.json config for OpenRouter inside the sandbox.
     const trackingHeaders = buildOpenRouterHeaders(openRouterTracking);
+    const trackingBody = buildOpenRouterChatCompletionTrackingFields(openRouterTracking);
     const opencodeConfig = JSON.stringify(
       {
         $schema: 'https://opencode.ai/config.json',
@@ -909,6 +911,7 @@ export async function processEmailWithAgent(
           openrouter: {
             options: {
               ...(Object.keys(trackingHeaders).length > 0 ? { headers: trackingHeaders } : {}),
+              ...(Object.keys(trackingBody).length > 0 ? { body: trackingBody } : {}),
             },
             models: {
               [model]: {},
