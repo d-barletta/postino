@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { DEFAULT_LLM_MODEL } from '@/lib/llm';
-import { getModelPricing, calculateCost } from '@/lib/openrouter';
+import {
+  getModelPricing,
+  calculateCost,
+  buildOpenRouterHeaders,
+  buildOpenRouterProviderOptions,
+} from '@/lib/openrouter';
 import { addUserCreditsUsage } from '@/lib/credits';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
@@ -70,6 +75,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const query: string = typeof body.query === 'string' ? body.query.trim() : '';
+    const requestSessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
+    const openRouterTracking = {
+      userId: user.email ?? '',
+      sessionId: requestSessionId || `memory-chat:${uid}`,
+    };
 
     if (!query) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -239,12 +249,16 @@ export async function POST(request: NextRequest) {
     const openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: llmApiKey,
+      headers: buildOpenRouterHeaders(openRouterTracking),
     });
 
     const result = streamText({
       model: openrouter.chat(llmModel),
       system: systemPrompt,
       messages: [...history, { role: 'user', content: query }],
+      ...(buildOpenRouterProviderOptions(openRouterTracking)
+        ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+        : {}),
       onFinish: async ({ usage }) => {
         // Track token usage on the user document (fire-and-forget).
         const { inputTokens, outputTokens } = normalizeUsageForCost(usage);

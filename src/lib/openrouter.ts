@@ -179,7 +179,66 @@ export function calculateCost(
   );
 }
 
-export async function getOpenRouterClient(): Promise<{
+export interface OpenRouterTrackingContext {
+  userId?: string | null;
+  sessionId?: string | null;
+}
+
+function normalizeTrackingValue(value: string | null | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+export function resolveOpenRouterTrackingContext(
+  tracking?: OpenRouterTrackingContext,
+): { userId?: string; sessionId?: string } {
+  const userId = normalizeTrackingValue(tracking?.userId);
+  const sessionId = normalizeTrackingValue(tracking?.sessionId);
+  return {
+    ...(userId ? { userId } : {}),
+    ...(sessionId ? { sessionId } : {}),
+  };
+}
+
+export function getDefaultOpenRouterHeaders(): Record<string, string> {
+  return {
+    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
+    'X-Title': 'Postino Email Redirector',
+  };
+}
+
+export function buildOpenRouterHeaders(tracking?: OpenRouterTrackingContext): Record<string, string> {
+  const resolved = resolveOpenRouterTrackingContext(tracking);
+  return {
+    ...getDefaultOpenRouterHeaders(),
+    ...(resolved.userId ? { 'X-OpenRouter-User-Id': resolved.userId } : {}),
+    ...(resolved.sessionId ? { 'X-OpenRouter-Session-Id': resolved.sessionId } : {}),
+  };
+}
+
+export function buildOpenRouterProviderOptions(
+  tracking?: OpenRouterTrackingContext,
+): { openai: { user?: string; metadata?: Record<string, string> } } | undefined {
+  const resolved = resolveOpenRouterTrackingContext(tracking);
+  if (!resolved.userId && !resolved.sessionId) return undefined;
+  return {
+    openai: {
+      ...(resolved.userId ? { user: resolved.userId } : {}),
+      ...(resolved.sessionId
+        ? {
+            metadata: {
+              session_id: resolved.sessionId,
+            },
+          }
+        : {}),
+    },
+  };
+}
+
+export async function getOpenRouterClient(
+  tracking?: OpenRouterTrackingContext,
+): Promise<{
   client: OpenAI;
   model: string;
   apiKey: string;
@@ -205,10 +264,7 @@ export async function getOpenRouterClient(): Promise<{
   const client = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: normalizedApiKey,
-    defaultHeaders: {
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://postino.pro',
-      'X-Title': 'Postino Email Redirector',
-    },
+    defaultHeaders: buildOpenRouterHeaders(tracking),
   });
 
   return { client, model, apiKey: normalizedApiKey };
@@ -368,8 +424,10 @@ export async function processEmailWithRules(
   emailBody: string,
   rules: RuleForProcessing[],
   isHtml = false,
+  tracking?: OpenRouterTrackingContext,
 ): Promise<ProcessEmailResult> {
-  const { client, model, apiKey } = await getOpenRouterClient();
+  const { client, model, apiKey } = await getOpenRouterClient(tracking);
+  const resolvedTracking = resolveOpenRouterTrackingContext(tracking);
 
   if (!apiKey) {
     throw new Error('Missing OpenRouter API key');
@@ -457,6 +515,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
+          ...(resolvedTracking.userId ? { user: resolvedTracking.userId } : {}),
           response_format: { type: 'json_object' },
           max_tokens: maxTokens,
         }),

@@ -372,6 +372,10 @@ async function runEarlyAnalysisAndSave(
       payload.bodyHtml !== '',
       undefined,
       analysisOutputLanguage,
+      {
+        userId: payload.userEmail,
+        sessionId: payload.logId,
+      },
     );
 
     if (result.analysis) {

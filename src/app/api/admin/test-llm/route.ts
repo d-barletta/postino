@@ -10,9 +10,12 @@ function maskKey(key: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    await verifyAdminRequest(request);
+    const adminUser = await verifyAdminRequest(request);
 
-    const { client, model, apiKey } = await getOpenRouterClient();
+    const { client, model, apiKey } = await getOpenRouterClient({
+      userId: adminUser.email ?? '',
+      sessionId: `admin-test-llm:${adminUser.id}`,
+    });
 
     const diagnostics: Record<string, unknown> = {
       keySource: apiKey ? 'resolved' : 'missing',
@@ -25,6 +28,7 @@ export async function GET(request: NextRequest) {
       const response = await client.chat.completions.create({
         model,
         messages: [{ role: 'user', content: 'Say "ok" only.' }],
+        ...(adminUser.email ? { user: adminUser.email } : {}),
         max_tokens: 5,
       });
       diagnostics.chatCompletion = 'ok';

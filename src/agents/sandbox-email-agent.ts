@@ -29,11 +29,13 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import {
   sanitizeRule,
   sanitizeEmailField,
+  buildOpenRouterHeaders,
   getOpenRouterClient,
   getModelPricing,
   calculateCost,
   type AgentTrace,
   type AgentTraceStep,
+  type OpenRouterTrackingContext,
 } from '@/lib/openrouter';
 import type { ProcessEmailResult, RuleForProcessing } from '@/lib/openrouter';
 import type { EmailAnalysis, EmailMemoryEntry, PreComputedEmailAnalysis } from '@/types';
@@ -531,6 +533,7 @@ async function runPreAnalysis(
   emailBody: string,
   isHtml: boolean,
   analysisOutputLanguage?: string,
+  openRouterTracking?: OpenRouterTrackingContext,
 ): Promise<{
   analysis: EmailAnalysis | null;
   tokensUsed: number;
@@ -547,6 +550,7 @@ async function runPreAnalysis(
       isHtml,
       undefined,
       analysisOutputLanguage,
+      openRouterTracking,
     );
     return {
       analysis: result.analysis,
@@ -711,7 +715,12 @@ export async function processEmailWithAgent(
   analysisOutputLanguage?: string,
   attachmentFiles?: EmailAttachment[],
   preComputedAnalysis?: PreComputedEmailAnalysis | null,
+  openRouterUserEmail?: string,
 ): Promise<ProcessEmailResult> {
+  const openRouterTracking = {
+    userId: openRouterUserEmail,
+    sessionId: logId,
+  } satisfies OpenRouterTrackingContext;
   const traceStartedAt = new Date().toISOString();
   const traceSteps: AgentTraceStep[] = [];
   let tracingEnabled = true;
@@ -726,7 +735,7 @@ export async function processEmailWithAgent(
   };
 
   // 1. Load settings + OpenRouter client details
-  const { apiKey, model: settingsModel } = await getOpenRouterClient();
+  const { apiKey, model: settingsModel } = await getOpenRouterClient(openRouterTracking);
   const model = modelOverride || settingsModel;
 
   if (!apiKey) {
@@ -789,7 +798,14 @@ export async function processEmailWithAgent(
     memory = await getUserMemory(userId);
   } else {
     const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
-      runPreAnalysis(emailFrom, emailSubject, emailBody, isHtml, analysisOutputLanguage),
+      runPreAnalysis(
+        emailFrom,
+        emailSubject,
+        emailBody,
+        isHtml,
+        analysisOutputLanguage,
+        openRouterTracking,
+      ),
       getUserMemory(userId),
     ]);
 
@@ -890,6 +906,7 @@ export async function processEmailWithAgent(
         $schema: 'https://opencode.ai/config.json',
         provider: {
           openrouter: {
+            headers: buildOpenRouterHeaders(openRouterTracking),
             models: {
               [model]: {},
             },
@@ -920,6 +937,8 @@ export async function processEmailWithAgent(
       env: {
         // Pass OpenRouter key as env var as well (belt-and-suspenders).
         OPENROUTER_API_KEY: apiKey,
+        OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+        OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
       },
     });
 
@@ -1001,6 +1020,8 @@ export async function processEmailWithAgent(
           HOME: '/vercel/sandbox',
           XDG_DATA_HOME: '/vercel/sandbox/.local/share',
           OPENROUTER_API_KEY: apiKey,
+          OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+          OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
           OPENCODE_MODEL: `openrouter/${model}`,
         },
         detached: true,
@@ -1039,6 +1060,8 @@ export async function processEmailWithAgent(
                 HOME: '/vercel/sandbox',
                 XDG_DATA_HOME: '/vercel/sandbox/.local/share',
                 OPENROUTER_API_KEY: apiKey,
+                OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+                OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
               },
             });
             const statsOut = await (await statsCmd.wait()).stdout();
@@ -1076,6 +1099,8 @@ export async function processEmailWithAgent(
                   HOME: '/vercel/sandbox',
                   XDG_DATA_HOME: '/vercel/sandbox/.local/share',
                   OPENROUTER_API_KEY: apiKey,
+                  OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+                  OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
                 },
               });
               const exportOut = await (await exportCmd.wait()).stdout();

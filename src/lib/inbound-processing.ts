@@ -491,6 +491,10 @@ export async function processQueuedInboundPayload(
           payload.bodyHtml !== '',
           undefined,
           analysisOutputLanguage,
+          {
+            userId: payload.userEmail,
+            sessionId: payload.logId,
+          },
         ),
         getUserMemory(payload.userId),
       ]);
@@ -894,6 +898,7 @@ export async function processQueuedInboundPayload(
     analysisOutputLanguage,
     effectiveAttachments?.length ? effectiveAttachments : undefined,
     preComputedAnalysis ?? undefined,
+    payload.userEmail,
   );
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');

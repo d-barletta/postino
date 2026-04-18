@@ -7,6 +7,8 @@ interface StoredEmailAnalysisInput {
   originalBody?: string;
   analysisOutputLanguage?: string;
   modelOverride?: string;
+  openRouterUserId?: string;
+  openRouterSessionId?: string;
 }
 
 export interface StoredEmailAnalysisDebugResult {
@@ -42,6 +44,10 @@ export async function analyzeStoredEmailLogWithDebug(
     isHtml,
     input.modelOverride,
     input.analysisOutputLanguage,
+    {
+      userId: input.openRouterUserId,
+      sessionId: input.openRouterSessionId,
+    },
   );
 
   return {
