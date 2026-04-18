@@ -27,8 +27,6 @@ import path from 'node:path';
 import { Sandbox } from '@vercel/sandbox';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
-  sanitizeRule,
-  sanitizeEmailField,
   getOpenRouterClient,
   buildOpenRouterChatCompletionTrackingFields,
   buildOpenRouterHeaders,
@@ -51,9 +49,9 @@ import {
   saveAttachmentFilesToSupermemory,
 } from './email-agent';
 import {
-  SANDBOX_EMAIL_AGENT_PROMPT,
-  SANDBOX_EMAIL_AGENT_VERIFICATION_PROMPT,
-} from './sandbox-email-agent-prompt';
+  buildSandboxEmailAgentPrompt,
+  buildSandboxEmailAgentVerificationPrompt,
+} from './sandbox-email-agent-prompt-builder';
 
 // Re-export memory helpers so consumers can import from either agent module.
 export {
@@ -575,10 +573,6 @@ async function runPreAnalysis(
 // Prompt builder
 // ---------------------------------------------------------------------------
 
-function populateSandboxPromptTemplate(template: string, values: Record<string, string>): string {
-  return template.replace(/__[A-Z0-9_]+__/g, (placeholder) => values[placeholder] ?? placeholder);
-}
-
 function buildOpencodePrompt(
   emailFrom: string,
   emailSubject: string,
@@ -588,44 +582,15 @@ function buildOpencodePrompt(
   skillToggles: Record<string, boolean>,
   attachmentNames?: string[],
 ): string {
-  const rulesText =
-    rules.length > 0
-      ? rules.map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`).join('\n')
-      : 'No specific rules. Preserve the original email content and subject unless a global system behavior explicitly requires a minimal, non-destructive cleanup.';
-
-  const attachmentsLine =
-    attachmentNames && attachmentNames.length > 0
-      ? `\nATTACHMENTS: ${attachmentNames.join(', ')}`
-      : '';
-
-  const cavemanEnabled = isOpencodeSkillEnabled(skillToggles, 'caveman');
-  const htmlEditingEnabled = isOpencodeSkillEnabled(skillToggles, 'html-email-editing');
-  const cavemanImportantLine = cavemanEnabled
-    ? '- Activate the caveman skill in ultra mode immediately by using "/caveman ultra" and keep it active for the entire task to minimize token usage while you work.'
-    : '- Caveman skill is disabled. Do not use /caveman or any caveman mode command.';
-  const cavemanStepInstruction = cavemanEnabled
-    ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
-    : 'Caveman skill is disabled. Skip any caveman command.';
-  const htmlEditingImportantLine = htmlEditingEnabled
-    ? '- html-email-editing skill is enabled. Use it for this task to preserve email HTML structure/styles while making surgical rule-based edits.'
-    : '- html-email-editing skill is disabled. Do not use it.';
-  const htmlEditingStepInstruction = htmlEditingEnabled
-    ? 'Activate the html-email-editing skill before editing the HTML body.'
-    : 'html-email-editing skill is disabled. Skip any html-email-editing activation.';
-
-  return populateSandboxPromptTemplate(SANDBOX_EMAIL_AGENT_PROMPT, {
-    __EMAIL_FROM__: sanitizeEmailField(emailFrom),
-    __EMAIL_SUBJECT__: sanitizeEmailField(emailSubject),
-    __ATTACHMENTS_LINE__: attachmentsLine,
-    __RULES_TEXT__: rulesText,
-    __CAVEMAN_IMPORTANT_LINE__: cavemanImportantLine,
-    __HTML_EDITING_IMPORTANT_LINE__: htmlEditingImportantLine,
-    __SANDBOX_PLATFORM_TIMEOUT_MINUTES__: String(Math.round(SANDBOX_PLATFORM_TIMEOUT_MS / 60000)),
-    __ANALYSIS_SECTION__: analysisSection,
-    __MEMORY_SECTION__: memorySection,
-    __CAVEMAN_STEP_INSTRUCTION__: cavemanStepInstruction,
-    __HTML_EDITING_STEP_INSTRUCTION__: htmlEditingStepInstruction,
-    __ORIGINAL_SUBJECT__: sanitizeEmailField(emailSubject),
+  return buildSandboxEmailAgentPrompt({
+    emailFrom,
+    emailSubject,
+    rules,
+    memorySection,
+    analysisSection,
+    skillToggles,
+    attachmentNames,
+    sandboxPlatformTimeoutMinutes: Math.round(SANDBOX_PLATFORM_TIMEOUT_MS / 60000),
   });
 }
 
@@ -645,25 +610,11 @@ function buildVerificationPrompt(
   rules: RuleForProcessing[],
   skillToggles: Record<string, boolean>,
 ): string {
-  const rulesText = rules
-    .map((r) => `Rule "${sanitizeRule(r.name)}": ${sanitizeRule(r.text)}`)
-    .join('\n');
-
-  const cavemanEnabled = isOpencodeSkillEnabled(skillToggles, 'caveman');
-  const htmlEditingEnabled = isOpencodeSkillEnabled(skillToggles, 'html-email-editing');
-  const cavemanStepInstruction = cavemanEnabled
-    ? 'First, activate caveman ultra mode by issuing: /caveman ultra'
-    : 'Caveman skill is disabled. Skip any caveman command.';
-  const htmlEditingStepInstruction = htmlEditingEnabled
-    ? 'Activate the html-email-editing skill before editing the HTML body.'
-    : 'html-email-editing skill is disabled. Skip any html-email-editing activation.';
-
-  return populateSandboxPromptTemplate(SANDBOX_EMAIL_AGENT_VERIFICATION_PROMPT, {
-    __EMAIL_FROM__: sanitizeEmailField(emailFrom),
-    __EMAIL_SUBJECT__: sanitizeEmailField(emailSubject),
-    __RULES_TEXT__: rulesText,
-    __CAVEMAN_STEP_INSTRUCTION__: cavemanStepInstruction,
-    __HTML_EDITING_STEP_INSTRUCTION__: htmlEditingStepInstruction,
+  return buildSandboxEmailAgentVerificationPrompt({
+    emailFrom,
+    emailSubject,
+    rules,
+    skillToggles,
   });
 }
 
