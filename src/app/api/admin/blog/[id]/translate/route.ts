@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
-import { getOpenRouterClient } from '@/lib/openrouter';
+import { buildOpenRouterChatCompletionTrackingFields, getOpenRouterClient } from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 
 const VALID_LOCALES = ['en', 'it', 'es', 'fr', 'de'] as const;
@@ -110,7 +110,10 @@ ${sourceHtmlContent}`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      ...(adminUser.email ? { user: adminUser.email } : {}),
+      ...buildOpenRouterChatCompletionTrackingFields({
+        userId: adminUser.email ?? '',
+        sessionId: `admin-blog-translate:${id}:${targetLanguage}`,
+      }),
       response_format: { type: 'json_object' },
       max_tokens: 100000,
     });

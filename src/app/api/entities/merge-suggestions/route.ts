@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getOpenRouterClient, withLlmRetry } from '@/lib/openrouter';
+import {
+  buildOpenRouterChatCompletionTrackingFields,
+  getOpenRouterClient,
+  withLlmRetry,
+} from '@/lib/openrouter';
 import { jsonrepair } from 'jsonrepair';
 import type { EntityCategory } from '@/types';
 import { verifyUserRequest } from '@/lib/api-auth';
@@ -265,7 +269,10 @@ Return an empty array if no confident merges are found. Only include suggestions
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          ...(userEmail ? { user: userEmail } : {}),
+          ...buildOpenRouterChatCompletionTrackingFields({
+            userId: userEmail,
+            sessionId: `entities-merge-suggestions:${uid}`,
+          }),
           response_format: { type: 'json_object' },
           max_tokens: 2000,
         }),

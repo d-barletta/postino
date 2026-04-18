@@ -216,7 +216,17 @@ export function buildOpenRouterHeaders(
   return {
     ...getDefaultOpenRouterHeaders(),
     ...(resolved.userId ? { 'X-OpenRouter-User-Id': resolved.userId } : {}),
-    ...(resolved.sessionId ? { 'X-OpenRouter-Session-Id': resolved.sessionId } : {}),
+    ...(resolved.sessionId ? { 'x-session-id': resolved.sessionId } : {}),
+  };
+}
+
+export function buildOpenRouterChatCompletionTrackingFields(
+  tracking?: OpenRouterTrackingContext,
+): Record<string, string> {
+  const resolved = resolveOpenRouterTrackingContext(tracking);
+  return {
+    ...(resolved.userId ? { user: resolved.userId } : {}),
+    ...(resolved.sessionId ? { session_id: resolved.sessionId } : {}),
   };
 }
 
@@ -516,7 +526,7 @@ Respond with a JSON object containing: subject (processed subject line) and body
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          ...(resolvedTracking.userId ? { user: resolvedTracking.userId } : {}),
+          ...buildOpenRouterChatCompletionTrackingFields(resolvedTracking),
           response_format: { type: 'json_object' },
           max_tokens: maxTokens,
         }),
