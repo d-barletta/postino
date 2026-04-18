@@ -20,7 +20,6 @@ import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Combobox, type ComboboxOption } from '@/components/ui/Combobox';
 import { Separator } from '@/components/ui/Separator';
 import { AlertCircle, CheckCircle } from 'lucide-react';
-import { DEFAULT_LLM_MODEL } from '@/lib/llm';
 import { cn } from '@/lib/utils';
 import type { Settings } from '@/types';
 
@@ -95,7 +94,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
   const [settings, setSettings] = useState<Partial<Settings>>({
     maxRuleLength: 1000,
     maxActiveRules: 3,
-    llmModel: DEFAULT_LLM_MODEL,
+    llmModel: 'google/gemini-3-flash-preview',
     llmApiKey: '',
     llmMaxTokens: 180000,
     llmSystemPrompt: '',
