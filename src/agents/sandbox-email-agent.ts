@@ -7,8 +7,8 @@
  * its own context autonomously.
  *
  * The agent:
- *   1. Loads settings, pre-analyses the email, and builds memory context
- *      (same as the standard agent).
+ *   1. Loads settings, pre-analyses the email, and provisions an on-demand
+ *      memory tool for the sandbox when available.
  *   2. Spins up a Vercel Sandbox from a pre-built snapshot that has OpenCode
  *      installed (`opencode-ai`).
  *   3. Writes the email HTML + an `opencode.json` config (pointing at the
@@ -52,6 +52,10 @@ import {
   buildSandboxEmailAgentPrompt,
   buildSandboxEmailAgentVerificationPrompt,
 } from './sandbox-email-agent-prompt-builder';
+import {
+  createSandboxMemoryToolToken,
+  resolveSandboxMemoryToolBaseUrl,
+} from '@/lib/sandbox-memory-tool';
 
 // Re-export memory helpers so consumers can import from either agent module.
 export {
@@ -581,12 +585,14 @@ function buildOpencodePrompt(
   analysisSection: string,
   skillToggles: Record<string, boolean>,
   attachmentNames?: string[],
+  memoryToolEnabled = false,
 ): string {
   return buildSandboxEmailAgentPrompt({
     emailFrom,
     emailSubject,
     rules,
     memorySection,
+    memoryToolEnabled,
     analysisSection,
     skillToggles,
     attachmentNames,
@@ -752,7 +758,29 @@ export async function processEmailWithAgent(
     tracingEnabled,
   });
 
-  // 2. Run pre-analysis and load memory in parallel.
+  const sandboxMemoryToolBaseUrl = resolveSandboxMemoryToolBaseUrl();
+  const sandboxMemoryToolToken = createSandboxMemoryToolToken({
+    userId,
+    logId,
+    userEmail: openRouterUserEmail,
+  });
+  const memoryToolEnabled = Boolean(sandboxMemoryToolBaseUrl && sandboxMemoryToolToken);
+
+  pushTrace(
+    'memory_tool',
+    memoryToolEnabled ? 'ok' : 'warning',
+    memoryToolEnabled
+      ? 'Enabled sandbox memory tool'
+      : 'Sandbox memory tool unavailable; falling back to prompt memory context',
+    {
+      hasBaseUrl: !!sandboxMemoryToolBaseUrl,
+      hasToken: !!sandboxMemoryToolToken,
+    },
+  );
+
+  // 2. Run pre-analysis. If the sandbox memory tool cannot be provisioned,
+  //    also load the sender memory so the prompt can fall back to the old
+  //    inline context behavior.
   //    When a preComputedAnalysis is provided (single-job path), skip the LLM
   //    call entirely and reuse the already-saved result.
   let preAnalysisResult: {
@@ -761,7 +789,7 @@ export async function processEmailWithAgent(
     promptTokens: number;
     completionTokens: number;
   };
-  let memory: Awaited<ReturnType<typeof getUserMemory>>;
+  let promptMemoryEntries: EmailMemoryEntry[] = [];
 
   if (preComputedAnalysis) {
     pushTrace('pre_analysis', 'ok', 'Reusing pre-computed analysis (skipping LLM call)', {
@@ -773,45 +801,76 @@ export async function processEmailWithAgent(
       promptTokens: preComputedAnalysis.promptTokens,
       completionTokens: preComputedAnalysis.completionTokens,
     };
-    memory = await getUserMemory(userId);
-  } else {
-    const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
-      runPreAnalysis(
-        emailFrom,
-        emailSubject,
-        emailBody,
-        isHtml,
-        analysisOutputLanguage,
-        openRouterTracking,
-      ),
-      getUserMemory(userId),
-    ]);
-
-    preAnalysisResult =
-      preAnalysisOutcome.status === 'fulfilled'
-        ? preAnalysisOutcome.value
-        : { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
-    if (preAnalysisOutcome.status === 'rejected') {
-      pushTrace(
-        'pre_analysis_failed',
-        'warning',
-        preAnalysisOutcome.reason instanceof Error
-          ? preAnalysisOutcome.reason.message
-          : String(preAnalysisOutcome.reason),
-      );
+    if (!memoryToolEnabled) {
+      const memory = await getUserMemory(userId).catch(() => ({
+        userId,
+        entries: [],
+        updatedAt: new Date(),
+      }));
+      promptMemoryEntries = memory.entries;
     }
-    memory =
-      memoryOutcome.status === 'fulfilled'
-        ? memoryOutcome.value
-        : { userId, entries: [], updatedAt: new Date() };
-    if (memoryOutcome.status === 'rejected') {
-      pushTrace(
-        'memory_load_failed',
-        'warning',
-        memoryOutcome.reason instanceof Error
-          ? memoryOutcome.reason.message
-          : String(memoryOutcome.reason),
-      );
+  } else {
+    if (memoryToolEnabled) {
+      try {
+        preAnalysisResult = await runPreAnalysis(
+          emailFrom,
+          emailSubject,
+          emailBody,
+          isHtml,
+          analysisOutputLanguage,
+          openRouterTracking,
+        );
+      } catch (error) {
+        pushTrace(
+          'pre_analysis_failed',
+          'warning',
+          error instanceof Error ? error.message : String(error),
+        );
+        preAnalysisResult = {
+          analysis: null,
+          tokensUsed: 0,
+          promptTokens: 0,
+          completionTokens: 0,
+        };
+      }
+    } else {
+      const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
+        runPreAnalysis(
+          emailFrom,
+          emailSubject,
+          emailBody,
+          isHtml,
+          analysisOutputLanguage,
+          openRouterTracking,
+        ),
+        getUserMemory(userId),
+      ]);
+
+      preAnalysisResult =
+        preAnalysisOutcome.status === 'fulfilled'
+          ? preAnalysisOutcome.value
+          : { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
+      if (preAnalysisOutcome.status === 'rejected') {
+        pushTrace(
+          'pre_analysis_failed',
+          'warning',
+          preAnalysisOutcome.reason instanceof Error
+            ? preAnalysisOutcome.reason.message
+            : String(preAnalysisOutcome.reason),
+        );
+      }
+
+      if (memoryOutcome.status === 'fulfilled') {
+        promptMemoryEntries = memoryOutcome.value.entries;
+      } else {
+        pushTrace(
+          'memory_load_failed',
+          'warning',
+          memoryOutcome.reason instanceof Error
+            ? memoryOutcome.reason.message
+            : String(memoryOutcome.reason),
+        );
+      }
     }
   }
 
@@ -828,10 +887,13 @@ export async function processEmailWithAgent(
   );
 
   // 3. Build context for the prompt.
-  const memoryContext = buildMemoryContext(memory.entries, emailFrom);
-  const memorySection = memoryContext
-    ? `\n\n<email_history>\n${memoryContext}\n</email_history>`
+  const memoryContext = !memoryToolEnabled
+    ? buildMemoryContext(promptMemoryEntries, emailFrom)
     : '';
+  const memorySection =
+    !memoryToolEnabled && memoryContext
+      ? `\n\n<email_history>\n${memoryContext}\n</email_history>`
+      : '';
   const analysisSection = buildAnalysisSection(analysis);
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
@@ -845,12 +907,14 @@ export async function processEmailWithAgent(
     analysisSection,
     skillToggles,
     attachmentNames,
+    memoryToolEnabled,
   );
 
   pushTrace('opencode_prompt', 'ok', 'Built OpenCode prompt', {
     promptLength: opencodePrompt.length,
     prompt: opencodePrompt,
     hasMemory: !!memoryContext,
+    hasMemoryTool: memoryToolEnabled,
     hasAnalysis: !!analysis,
   });
 
@@ -925,6 +989,8 @@ export async function processEmailWithAgent(
         OPENROUTER_API_KEY: apiKey,
         OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
         OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
+        POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
+        POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
       },
     });
 
@@ -1009,6 +1075,8 @@ export async function processEmailWithAgent(
           OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
           OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
           OPENCODE_MODEL: opencodeModelId,
+          POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
+          POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
         },
         detached: true,
       });
@@ -1209,6 +1277,8 @@ export async function processEmailWithAgent(
             OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
             OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
             OPENCODE_MODEL: opencodeModelId,
+            POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
+            POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
           },
           detached: true,
         });
@@ -1383,11 +1453,18 @@ export async function processEmailWithAgent(
     analysis,
   );
 
-  saveUserMemory({
-    userId,
-    entries: [...memory.entries, newEntry],
-    updatedAt: new Date(),
-  }).catch((err) => console.error('Failed to update user memory:', err));
+  void (async () => {
+    try {
+      const currentMemory = await getUserMemory(userId);
+      await saveUserMemory({
+        userId,
+        entries: [...currentMemory.entries, newEntry],
+        updatedAt: new Date(),
+      });
+    } catch (err) {
+      console.error('Failed to update user memory:', err);
+    }
+  })();
 
   // Optionally save to Supermemory.ai.
   if (settings?.memoryEnabled === true) {

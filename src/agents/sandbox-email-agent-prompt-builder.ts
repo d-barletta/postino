@@ -77,11 +77,23 @@ function buildSkillPromptValues(skillToggles?: SandboxPromptSkillToggles): Recor
   };
 }
 
+function buildMemoryPromptValues(memoryToolEnabled?: boolean): Record<string, string> {
+  return {
+    __MEMORY_IMPORTANT_LINE__: memoryToolEnabled
+      ? '- A `memory_agent` tool is available. Use it for focused questions about prior emails or sender-specific patterns when memory would help you apply the rules. Ask narrow questions, not broad memory dumps.'
+      : '- An <email_history> block may be provided below with prior emails from the same sender. Use it to detect sender-specific patterns when applying the rules.',
+    __MEMORY_STEP_INSTRUCTION__: memoryToolEnabled
+      ? 'If sender history would help, use the memory_agent tool to ask a focused question before editing the email.'
+      : 'Review the provided <email_history> block if present before editing.',
+  };
+}
+
 export function buildSandboxEmailAgentPrompt(input: {
   emailFrom: string;
   emailSubject: string;
   rules: SandboxPromptRule[];
   memorySection?: string;
+  memoryToolEnabled?: boolean;
   analysisSection?: string;
   skillToggles?: SandboxPromptSkillToggles;
   attachmentNames?: string[];
@@ -92,6 +104,7 @@ export function buildSandboxEmailAgentPrompt(input: {
     emailSubject,
     rules,
     memorySection = '',
+    memoryToolEnabled,
     analysisSection = '',
     skillToggles,
     attachmentNames,
@@ -108,6 +121,7 @@ export function buildSandboxEmailAgentPrompt(input: {
     __MEMORY_SECTION__: memorySection,
     __ORIGINAL_SUBJECT__: sanitizeEmailField(emailSubject),
     ...buildSkillPromptValues(skillToggles),
+    ...buildMemoryPromptValues(memoryToolEnabled),
   });
 }
 

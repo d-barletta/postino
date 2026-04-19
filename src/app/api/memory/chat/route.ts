@@ -1,256 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-import {
-  getModelPricing,
-  calculateCost,
-  buildOpenRouterHeaders,
-  buildOpenRouterProviderOptions,
-} from '@/lib/openrouter';
-import { addUserCreditsUsage } from '@/lib/credits';
+import { buildOpenRouterHeaders, buildOpenRouterProviderOptions } from '@/lib/openrouter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
-import Supermemory from 'supermemory';
-
-function resolveMemoryApiKey(settingsApiKey?: string): string {
-  return (settingsApiKey || process.env.SUPERMEMORY_API_KEY || '').trim();
-}
-
-function normalizeUsageForCost(
-  usage:
-    | {
-        inputTokens?: number | undefined;
-        outputTokens?: number | undefined;
-        totalTokens?: number | undefined;
-      }
-    | undefined,
-): { inputTokens: number; outputTokens: number } {
-  let inputTokens = usage?.inputTokens ?? 0;
-  let outputTokens = usage?.outputTokens ?? 0;
-  const totalTokens = usage?.totalTokens ?? 0;
-
-  if (totalTokens > 0 && inputTokens + outputTokens === 0) {
-    inputTokens = totalTokens;
-  } else if (totalTokens > 0 && inputTokens + outputTokens < totalTokens) {
-    const missing = totalTokens - (inputTokens + outputTokens);
-    if (inputTokens <= outputTokens) inputTokens += missing;
-    else outputTokens += missing;
-  }
-
-  return { inputTokens, outputTokens };
-}
+import {
+  buildMemoryChatSystemPrompt,
+  getMemoryChatRuntimeConfig,
+  normalizeMemoryChatHistory,
+  recordMemoryChatUsage,
+  resolveMemoryChatErrorStatus,
+  searchMemoryChatContext,
+  validateMemoryChatQuery,
+} from '@/lib/memory-chat';
 
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyUserRequest(request);
     const uid = user.id;
-
-    // Check if memory is enabled and get the API key from admin settings
-    const supabase = createAdminClient();
-    const { data: settingsRow } = await supabase
-      .from('settings')
-      .select('data')
-      .eq('id', 'global')
-      .single();
-    const settingsData = settingsRow?.data as Record<string, unknown> | undefined;
-
-    if (!settingsData?.memoryEnabled) {
-      return NextResponse.json({ error: 'Memory feature is not enabled' }, { status: 403 });
-    }
-
-    const memoryApiKey = resolveMemoryApiKey(settingsData?.memoryApiKey as string | undefined);
-    if (!memoryApiKey) {
-      return NextResponse.json({ error: 'Supermemory API key is not configured' }, { status: 500 });
-    }
-
-    const llmApiKey =
-      (settingsData?.llmApiKey as string | undefined) || process.env.OPEN_ROUTER_API_KEY || '';
-    const llmModel =
-      (settingsData?.llmModel as string | undefined)?.trim() || process.env.LLM_MODEL?.trim() || '';
-
-    if (!llmModel) {
-      return NextResponse.json(
-        { error: 'LLM model is not configured. Please set it in Admin → Settings.' },
-        { status: 500 },
-      );
-    }
-
-    if (!llmApiKey) {
-      return NextResponse.json({ error: 'LLM API key is not configured' }, { status: 500 });
-    }
+    const { supabase, settingsData, memoryApiKey, llmApiKey, llmModel } =
+      await getMemoryChatRuntimeConfig();
 
     const body = await request.json();
-    const query: string = typeof body.query === 'string' ? body.query.trim() : '';
+    const query = validateMemoryChatQuery(body.query);
     const requestSessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
     const openRouterTracking = {
       userId: user.email ?? '',
       sessionId: requestSessionId || `memory-chat:${uid}`,
     };
-
-    if (!query) {
-      return NextResponse.json({ error: 'Query is required' }, { status: 400 });
-    }
-
-    const MAX_QUERY_LENGTH = 1000;
-    if (query.length > MAX_QUERY_LENGTH) {
-      return NextResponse.json(
-        { error: `Query must be at most ${MAX_QUERY_LENGTH} characters` },
-        { status: 400 },
-      );
-    }
-
-    type ChatMessage = { role: 'user' | 'assistant'; content: string };
-    const rawHistory = Array.isArray(body.history) ? body.history : [];
-    const MAX_HISTORY = 10;
-    const MAX_MESSAGE_LENGTH = 2000;
-    const MAX_SEARCH_QUERY_LENGTH = 500;
-    const history: ChatMessage[] = rawHistory
-      .slice(-MAX_HISTORY)
-      .filter(
-        (m: unknown): m is ChatMessage =>
-          typeof m === 'object' &&
-          m !== null &&
-          ((m as ChatMessage).role === 'user' || (m as ChatMessage).role === 'assistant') &&
-          typeof (m as ChatMessage).content === 'string',
-      )
-      .map((m: ChatMessage) => ({
-        role: m.role,
-        content: String(m.content).slice(0, MAX_MESSAGE_LENGTH),
-      }));
-
-    // uid comes from server-side token verification and cannot be
-    // spoofed by the client. The containerTag ensures each search query is
-    // restricted to the authenticated user's own memory partition in
-    // Supermemory, preventing any cross-user data access.
-    const containerTag = `user_${uid}`;
-    const client = new Supermemory({ apiKey: memoryApiKey });
-
-    // Build a search query that combines recent conversation context so that
-    // follow-up questions retrieve memories relevant to the full dialogue.
-    const recentUserMessages = history
-      .filter((m) => m.role === 'user')
-      .slice(-3)
-      .map((m) => m.content)
-      .join(' ');
-    const searchQuery = recentUserMessages
-      ? `${recentUserMessages} ${query}`.slice(0, MAX_SEARCH_QUERY_LENGTH)
-      : query;
-
-    // Use hybrid search mode to retrieve both AI-extracted memory summaries and raw
-    // document chunks. Memories provide compact, high-quality context for the LLM;
-    // chunks contain the original stored text (including "PostinoEmailID: <id>") which is
-    // the most reliable source for extracting email log references.
-    const searchResult = await client.search.memories({
-      q: searchQuery,
-      containerTag,
-      limit: 10,
-      // include: { documents: true },
-      searchMode: 'hybrid',
+    const history = normalizeMemoryChatHistory(body.history);
+    const { memoryContext, sourceEmailIds } = await searchMemoryChatContext({
+      userId: uid,
+      query,
+      history,
+      memoryApiKey,
     });
-
-    const memories = searchResult.results ?? [];
-
-    // console.log(memories);
-
-    // Diagnostic: log the raw Supermemory response so missing metadata can be investigated
-    console.warn(
-      '[memory/chat] supermemory raw results:',
-      JSON.stringify(
-        memories.map((r) => ({
-          memory: r.memory,
-          chunk: r.chunk,
-          metadata: r.metadata,
-          documents: r.documents,
-          similarity: r.similarity,
-        })),
-        null,
-        2,
-      ),
-    );
-
-    const memoryContext =
-      memories.length > 0
-        ? memories
-            .map((r, i) => {
-              // Prefer AI-summarised memory for quality; fall back to raw chunk text
-              const text = r.memory ?? r.chunk;
-              return text ? `[${i + 1}] ${text}` : null;
-            })
-            .filter(Boolean)
-            .join('\n\n')
-        : '';
-
-    // Extract email IDs from memory metadata (set during add()) or from the
-    // associated source documents (returned when include.documents=true), or fall
-    // back to parsing the memory/chunk text for entries stored before metadata was
-    // introduced. Chunks (from hybrid search) contain the original stored text and
-    // are the most reliable text-based fallback.
-    const emailIdPattern = /\bPostinoEmailID:\s*(\S+)/;
-    const extractSourceEmailId = (result: (typeof memories)[number]): string | null => {
-      // 1. Memory-level metadata
-      if (result.metadata && typeof result.metadata.logId === 'string' && result.metadata.logId) {
-        return result.metadata.logId;
-      }
-      // 2. Source document metadata (available when include.documents=true)
-      if (Array.isArray(result.documents) && result.documents.length > 0) {
-        for (const doc of result.documents) {
-          if (doc.metadata && typeof doc.metadata.logId === 'string' && doc.metadata.logId) {
-            return doc.metadata.logId as string;
-          }
-        }
-      }
-      // 3. Text-based fallback: check raw chunk first (preserves original format),
-      //    then AI-extracted memory summary
-      const textToSearch = result.chunk ?? result.memory ?? '';
-      if (!textToSearch) return null;
-      const match = textToSearch.match(emailIdPattern);
-      return match ? match[1] : null;
-    };
-
-    const sourceEmailIds = Array.from(
-      memories.reduce((emailScores, result, index) => {
-        const emailId = extractSourceEmailId(result);
-        if (!emailId) {
-          return emailScores;
-        }
-
-        const similarity =
-          typeof result.similarity === 'number' && Number.isFinite(result.similarity)
-            ? result.similarity
-            : Number.NEGATIVE_INFINITY;
-        const existing = emailScores.get(emailId);
-
-        if (
-          !existing ||
-          similarity > existing.similarity ||
-          (similarity === existing.similarity && index < existing.index)
-        ) {
-          emailScores.set(emailId, { similarity, index });
-        }
-
-        return emailScores;
-      }, new Map<string, { similarity: number; index: number }>()),
-    )
-      .sort(([, left], [, right]) => right.similarity - left.similarity || left.index - right.index)
-      .map(([emailId]) => emailId);
-
-    if (sourceEmailIds.length === 0 && memories.length > 0) {
-      console.warn(
-        '[memory/chat] no sourceEmailIds resolved — metadata/chunk may be missing logId',
-      );
-    } else {
-      console.warn('[memory/chat] resolved sourceEmailIds:', sourceEmailIds);
-    }
-
-    const systemPrompt = memoryContext
-      ? "Your name is Postino, you are a helpful assistant answering questions about the user's email memories. " +
-        'Use the memory context provided below together with the conversation history to answer. ' +
-        'For follow-up questions, refer to both the memory context and previous exchanges to give accurate, contextual replies. ' +
-        'Be concise and helpful. If neither the memory context nor the conversation history contains relevant information, say so clearly.\n\n' +
-        `<memory_context>\n${memoryContext}\n</memory_context>`
-      : 'Your name is Postino, you are a helpful assistant. The user asked a question about their email memories, ' +
-        'but no relevant memories were found. Use the conversation history to answer follow-up questions if applicable, ' +
-        'otherwise let them know politely that no relevant memories were found.';
 
     const openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
@@ -260,39 +43,20 @@ export async function POST(request: NextRequest) {
 
     const result = streamText({
       model: openrouter.chat(llmModel),
-      system: systemPrompt,
+      system: buildMemoryChatSystemPrompt(memoryContext),
       messages: [...history, { role: 'user', content: query }],
       ...(buildOpenRouterProviderOptions(openRouterTracking)
         ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
         : {}),
       onFinish: async ({ usage }) => {
-        // Track token usage on the user document (fire-and-forget).
-        const { inputTokens, outputTokens } = normalizeUsageForCost(usage);
-        const pricing = await getModelPricing(llmModel, llmApiKey).catch(() => null);
-        const cost = calculateCost(inputTokens, outputTokens, pricing);
-
-        const { data: currentUser } = await supabase
-          .from('users')
-          .select('memory_tokens_used, memory_estimated_cost')
-          .eq('id', uid)
-          .single();
-        supabase
-          .from('users')
-          .update({
-            memory_tokens_used:
-              ((currentUser?.memory_tokens_used as number) ?? 0) + inputTokens + outputTokens,
-            memory_estimated_cost: ((currentUser?.memory_estimated_cost as number) ?? 0) + cost,
-          })
-          .eq('id', uid)
-          .then(undefined, (err: unknown) =>
-            console.error('[memory/chat] Failed to update memory token stats:', err),
-          );
-
-        void addUserCreditsUsage({
+        await recordMemoryChatUsage({
+          supabase,
           userId: uid,
           userEmail: user.email || '',
-          estimatedCostUsd: cost,
           settingsData,
+          llmModel,
+          llmApiKey,
+          usage,
         });
       },
     });
@@ -305,6 +69,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Error) {
+      const status = resolveMemoryChatErrorStatus(error.message);
+      if (status !== 500) {
+        return NextResponse.json({ error: error.message }, { status });
+      }
+    }
+
     return handleUserError(error, 'memory/chat POST');
   }
 }
