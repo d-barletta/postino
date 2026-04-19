@@ -3,6 +3,7 @@ import { tool } from '@opencode-ai/plugin';
 const MAX_TOOL_RESPONSE_LENGTH = 6000;
 const MEMORY_TOOL_TIMEOUT_MS = 12000;
 const MAX_MEMORY_TOOL_CALLS = 2;
+const MAX_MEMORY_QUERY_LENGTH = 300;
 
 let memoryToolCallCount = 0;
 const memoryToolResponseCache = new Map();
@@ -22,9 +23,9 @@ export default tool({
     query: tool.schema
       .string()
       .min(1)
-      .max(1000)
+      .max(MAX_MEMORY_QUERY_LENGTH)
       .describe(
-        'A focused question about prior emails, sender behavior, or user memory. Ask narrow questions, not broad memory dumps.',
+        'A focused question (max 300 chars) about prior emails, sender behavior, or user memory. Ask narrow questions, not broad memory dumps.',
       ),
   },
   async execute(args) {
@@ -38,6 +39,9 @@ export default tool({
 
     if (!query) {
       return 'Memory tool requires a non-empty question.';
+    }
+    if (query.length > MAX_MEMORY_QUERY_LENGTH) {
+      return 'Memory tool question too long. Keep it to 300 characters or fewer.';
     }
 
     if (memoryToolResponseCache.has(query)) {
