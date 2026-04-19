@@ -2,7 +2,7 @@ import { tool } from '@opencode-ai/plugin';
 
 const MAX_TOOL_RESPONSE_LENGTH = 6000;
 const MEMORY_TOOL_TIMEOUT_MS = 12000;
-const MAX_MEMORY_TOOL_CALLS = 2;
+const MAX_MEMORY_TOOL_CALLS = 1;
 const MAX_MEMORY_QUERY_LENGTH = 300;
 
 let memoryToolCallCount = 0;
@@ -18,14 +18,14 @@ function normalizeQuery(value) {
 
 export default tool({
   description:
-    "Ask Postino's memory agent a focused question about the current user's email memory. Use this when past emails or sender history would help you apply the rules.",
+    "Ask Postino's memory agent one narrow question about the current user's email memory only when prior emails, sender history, or stored user preferences are genuinely needed to apply the Postino user's rules. Do not use it for broad memory dumps, analysis of the current email, or repeated retries.",
   args: {
     query: tool.schema
       .string()
       .min(1)
       .max(MAX_MEMORY_QUERY_LENGTH)
       .describe(
-        'A focused question (max 300 chars) about prior emails, sender behavior, or user memory. Ask narrow questions, not broad memory dumps.',
+        'One short, specific question (max 300 chars) about prior emails, sender patterns, or stored user preferences relevant to this edit. Ask a single narrow question. Do not paste HTML, full email bodies, long excerpts, or multiple questions.',
       ),
   },
   async execute(args) {
@@ -34,11 +34,11 @@ export default tool({
     const token = (process.env.POSTINO_MEMORY_TOOL_TOKEN || '').trim();
 
     if (!baseUrl || !token) {
-      return 'Memory tool unavailable for this sandbox run.';
+      return 'Memory tool unavailable for this sandbox run. Continue without memory.';
     }
 
     if (!query) {
-      return 'Memory tool requires a non-empty question.';
+      return 'Memory tool requires one non-empty question.';
     }
     if (query.length > MAX_MEMORY_QUERY_LENGTH) {
       return 'Memory tool question too long. Keep it to 300 characters or fewer.';
@@ -49,7 +49,7 @@ export default tool({
     }
 
     if (memoryToolCallCount >= MAX_MEMORY_TOOL_CALLS) {
-      return 'Memory tool limit reached for this run. Continue without additional memory lookups.';
+      return 'Memory tool limit reached for this run. Use the answer you already have, or continue without additional memory lookups.';
     }
 
     memoryToolCallCount += 1;
@@ -82,7 +82,8 @@ export default tool({
           : [];
 
         if (!answer && sourceEmailIds.length === 0) {
-          toolResponse = 'Memory tool returned no answer.';
+          toolResponse =
+            'Memory tool returned no relevant answer. Continue without memory unless a rule truly requires it.';
         } else {
           const suffix =
             sourceEmailIds.length > 0 ? `\n\nSource email IDs: ${sourceEmailIds.join(', ')}` : '';

@@ -46,15 +46,18 @@ function isSkillEnabled(
 function buildRulesText(rules: SandboxPromptRule[]): string {
   return rules.length > 0
     ? rules
-        .map((rule) => `Rule "${sanitizeRule(rule.name)}": ${sanitizeRule(rule.text)}`)
+        .map((rule, index) => {
+          const ruleName = sanitizeRule(rule.name) || `Rule ${index + 1}`;
+          return `${index + 1}. ${ruleName}: ${sanitizeRule(rule.text)}`;
+        })
         .join('\n')
-    : 'No specific rules. Preserve the original email content and subject unless a global system behavior explicitly requires a minimal, non-destructive cleanup.';
+    : '1. No specific user rules. Preserve the original email content and subject unless a higher-priority system requirement explicitly requires a minimal, non-destructive cleanup.';
 }
 
 function buildAttachmentsLine(attachmentNames?: string[]): string {
   return attachmentNames && attachmentNames.length > 0
-    ? `\nATTACHMENTS: ${attachmentNames.join(', ')}`
-    : '';
+    ? `ATTACHMENTS: ${attachmentNames.map((name) => sanitizeEmailField(name)).join(', ')}`
+    : 'ATTACHMENTS: none';
 }
 
 function buildSkillPromptValues(skillToggles?: SandboxPromptSkillToggles): Record<string, string> {
