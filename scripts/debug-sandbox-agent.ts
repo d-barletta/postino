@@ -27,7 +27,12 @@ import { Sandbox } from '@vercel/sandbox';
 import { createClient } from '@supabase/supabase-js';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import nodePath from 'node:path';
+import { buildMemoryContext, getUserMemory } from '../src/agents/sandbox-email-agent';
 import { buildSandboxEmailAgentPrompt } from '../src/agents/sandbox-email-agent-prompt-builder';
+import {
+  createSandboxMemoryToolToken,
+  resolveSandboxMemoryToolBaseUrl,
+} from '../src/lib/sandbox-memory-tool';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -58,14 +63,35 @@ function buildPrompt(
   emailFrom: string,
   emailSubject: string,
   rules: DebugRule[],
+  memorySection = '',
   attachmentNames?: string[],
+  memoryToolEnabled = false,
 ): string {
   return buildSandboxEmailAgentPrompt({
     emailFrom,
     emailSubject,
     rules,
+    memorySection,
     attachmentNames,
+    memoryToolEnabled,
   });
+}
+
+function canSandboxReachBaseUrl(baseUrl: string): boolean {
+  if (!baseUrl) return false;
+
+  try {
+    const url = new URL(baseUrl);
+    const hostname = url.hostname.toLowerCase();
+    return !(
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.endsWith('.localhost')
+    );
+  } catch {
+    return false;
+  }
 }
 
 function parseOpencodeSessionId(stdout: string): string | null {
@@ -453,6 +479,16 @@ async function main() {
   const emailSubject = resolvedSubject.length > 0 ? resolvedSubject : artifactBaseName;
   const emailFrom = fromArg ?? logRow?.from_address ?? 'unknown@example.com';
   const userId = userIdArg ?? logRow?.user_id ?? null;
+  let userEmail = '';
+
+  if (userId) {
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', userId)
+      .single();
+    userEmail = typeof userRow?.email === 'string' ? userRow.email.trim() : '';
+  }
 
   let rules: DebugRule[] = [];
   if (userId) {
@@ -479,7 +515,37 @@ async function main() {
     rules = await loadRulesFromFile(defaultRulesFilePath);
   }
 
-  const prompt = buildPrompt(emailFrom, emailSubject, rules);
+  const sandboxMemoryToolBaseUrl = resolveSandboxMemoryToolBaseUrl();
+  const sandboxCanReachBaseUrl = canSandboxReachBaseUrl(sandboxMemoryToolBaseUrl);
+  const sandboxMemoryToolToken =
+    userId && sandboxCanReachBaseUrl
+      ? createSandboxMemoryToolToken({
+          userId,
+          logId: logIdArg ?? `debug-${Date.now()}`,
+          userEmail,
+        })
+      : null;
+  const memoryToolEnabled = Boolean(sandboxCanReachBaseUrl && sandboxMemoryToolToken);
+
+  let memorySection = '';
+  if (!memoryToolEnabled && userId) {
+    const memory = await getUserMemory(userId).catch(() => ({
+      userId,
+      entries: [],
+      updatedAt: new Date(),
+    }));
+    const memoryContext = buildMemoryContext(memory.entries, emailFrom);
+    memorySection = memoryContext ? `\n\n<email_history>\n${memoryContext}\n</email_history>` : '';
+  }
+
+  const prompt = buildPrompt(
+    emailFrom,
+    emailSubject,
+    rules,
+    memorySection,
+    undefined,
+    memoryToolEnabled,
+  );
 
   await mkdir(artifactDir, { recursive: true });
 
@@ -502,6 +568,20 @@ async function main() {
   console.log('📋 Rules:', rules.length);
   console.log('🤖 Model:', model);
   console.log('📦 Snapshot:', snapshotId);
+  console.log(
+    '🧠 Memory mode:',
+    memoryToolEnabled
+      ? `tool (${sandboxMemoryToolBaseUrl})`
+      : memorySection
+        ? 'inline fallback'
+        : 'disabled',
+  );
+  if (!sandboxCanReachBaseUrl && sandboxMemoryToolBaseUrl) {
+    console.log(
+      '⚠️  Memory tool disabled because sandbox cannot reach local/private base URL:',
+      sandboxMemoryToolBaseUrl,
+    );
+  }
   console.log('📁 Artifact dir:', artifactDir);
   console.log('━'.repeat(60));
 
@@ -514,14 +594,21 @@ async function main() {
   const sandbox = await Sandbox.create({
     source: { type: 'snapshot', snapshotId },
     timeout: 15 * 60 * 1000,
-    env: { OPENROUTER_API_KEY: openRouterKey },
+    env: {
+      OPENROUTER_API_KEY: openRouterKey,
+      POSTINO_INTERNAL_BASE_URL: memoryToolEnabled ? sandboxMemoryToolBaseUrl : '',
+      POSTINO_MEMORY_TOOL_TOKEN: memoryToolEnabled ? (sandboxMemoryToolToken ?? '') : '',
+    },
   });
   console.log('✅ Sandbox ID:', sandbox.sandboxId);
 
   // Write files
+  const opencodeModelId = `openrouter/${model}`;
   const opencodeConfig = JSON.stringify(
     {
       $schema: 'https://opencode.ai/config.json',
+      model: opencodeModelId,
+      small_model: opencodeModelId,
       provider: {
         openrouter: {
           models: { [model]: {} },
@@ -562,7 +649,7 @@ async function main() {
   console.log('');
 
   console.log('━'.repeat(60));
-  console.log('🔧 Running: opencode run --format json --model openrouter/' + model);
+  console.log('🔧 Running: opencode run --format json --model ' + opencodeModelId);
   console.log('━'.repeat(60));
   console.log('');
 
@@ -596,13 +683,16 @@ async function main() {
     cmd: 'bash',
     args: [
       '-lc',
-      `set -o pipefail; opencode run --format json --model openrouter/${model} "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${liveLogPath}`,
+      `set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${liveLogPath}`,
     ],
     cwd: '/vercel/sandbox',
     env: {
       HOME: '/vercel/sandbox',
       XDG_DATA_HOME: '/vercel/sandbox/.local/share',
       OPENROUTER_API_KEY: openRouterKey,
+      OPENCODE_MODEL: opencodeModelId,
+      POSTINO_INTERNAL_BASE_URL: memoryToolEnabled ? sandboxMemoryToolBaseUrl : '',
+      POSTINO_MEMORY_TOOL_TOKEN: memoryToolEnabled ? (sandboxMemoryToolToken ?? '') : '',
     },
     detached: true,
   });
@@ -765,6 +855,13 @@ async function main() {
     sandbox: {
       sandboxId: sandbox.sandboxId,
       snapshotId,
+    },
+    memory: {
+      mode: memoryToolEnabled ? 'tool' : memorySection ? 'inline-fallback' : 'disabled',
+      baseUrl: memoryToolEnabled ? sandboxMemoryToolBaseUrl : null,
+      hasToken: memoryToolEnabled,
+      inlineContextIncluded: Boolean(memorySection),
+      userId,
     },
     opencode: {
       sessionId: opencodeSessionId,

@@ -7,8 +7,8 @@
  * its own context autonomously.
  *
  * The agent:
- *   1. Loads settings, pre-analyses the email, and builds memory context
- *      (same as the standard agent).
+ *   1. Loads settings, pre-analyses the email, and provisions an on-demand
+ *      memory tool for the sandbox when available.
  *   2. Spins up a Vercel Sandbox from a pre-built snapshot that has OpenCode
  *      installed (`opencode-ai`).
  *   3. Writes the email HTML + an `opencode.json` config (pointing at the
@@ -52,6 +52,10 @@ import {
   buildSandboxEmailAgentPrompt,
   buildSandboxEmailAgentVerificationPrompt,
 } from './sandbox-email-agent-prompt-builder';
+import {
+  createSandboxMemoryToolToken,
+  resolveSandboxMemoryToolBaseUrl,
+} from '@/lib/sandbox-memory-tool';
 
 // Re-export memory helpers so consumers can import from either agent module.
 export {
@@ -84,6 +88,12 @@ const OPENCODE_RUN_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes (leave headroom fo
 
 /** Max time (ms) for the optional verification/correction pass. */
 const OPENCODE_VERIFY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+
+const OPENCODE_RUN_LOG_PATH = '/vercel/sandbox/opencode-run.log';
+const OPENCODE_VERIFY_LOG_PATH = '/vercel/sandbox/opencode-verify.log';
+const TRACE_TEXT_EXCERPT_MAX_CHARS = 2000;
+const TRACE_TEXT_TAIL_MAX_CHARS = 4000;
+const TRACE_CONSOLE_TEXT_MAX_CHARS = 320;
 
 const OPENCODE_SKILLS = ['caveman', 'html-email-editing'] as const;
 
@@ -454,6 +464,90 @@ function extractJsonObject(text: string): Record<string, unknown> | null {
   }
 }
 
+function excerptForTrace(text: string, maxLen = TRACE_TEXT_EXCERPT_MAX_CHARS): string {
+  if (text.length <= maxLen) return text;
+  return `${text.slice(0, maxLen)}\n...[truncated ${text.length - maxLen} chars]`;
+}
+
+function tailExcerptForTrace(text: string, maxLen = TRACE_TEXT_TAIL_MAX_CHARS): string {
+  if (text.length <= maxLen) return text;
+  return `[truncated ${text.length - maxLen} chars]\n${text.slice(-maxLen)}`;
+}
+
+function sanitizeTraceValueForConsole(value: unknown, depth = 0): unknown {
+  if (typeof value === 'string') {
+    return excerptForTrace(value, TRACE_CONSOLE_TEXT_MAX_CHARS);
+  }
+
+  if (Array.isArray(value)) {
+    const items = value.slice(0, 8).map((item) => sanitizeTraceValueForConsole(item, depth + 1));
+    if (value.length > 8) {
+      items.push(`... (${value.length - 8} more items)`);
+    }
+    return items;
+  }
+
+  if (value && typeof value === 'object') {
+    if (depth >= 2) return '[object]';
+
+    const entries = Object.entries(value as Record<string, unknown>);
+    const limited = entries
+      .slice(0, 10)
+      .map(([key, entryValue]) => [key, sanitizeTraceValueForConsole(entryValue, depth + 1)]);
+    const result = Object.fromEntries(limited) as Record<string, unknown>;
+    if (entries.length > 10) {
+      result.__truncated__ = `${entries.length - 10} more keys`;
+    }
+    return result;
+  }
+
+  return value;
+}
+
+function summarizeTextForTrace(text: string, includeExcerpt: boolean): Record<string, unknown> {
+  return {
+    length: text.length,
+    ...(includeExcerpt
+      ? {
+          excerpt: excerptForTrace(text),
+          tailExcerpt: tailExcerptForTrace(text),
+        }
+      : {}),
+  };
+}
+
+async function readSandboxTextFile(
+  sandbox: Awaited<ReturnType<typeof Sandbox.create>>,
+  filePath: string,
+): Promise<string | null> {
+  try {
+    const buffer = await sandbox.readFileToBuffer({ path: filePath });
+    return buffer ? buffer.toString('utf-8') : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readSandboxTextSnapshot(
+  sandbox: Awaited<ReturnType<typeof Sandbox.create>>,
+  filePath: string,
+  includeExcerpt: boolean,
+): Promise<Record<string, unknown>> {
+  const text = await readSandboxTextFile(sandbox, filePath);
+  if (text === null) {
+    return {
+      path: filePath,
+      exists: false,
+    };
+  }
+
+  return {
+    path: filePath,
+    exists: true,
+    ...summarizeTextForTrace(text, includeExcerpt),
+  };
+}
+
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -581,12 +675,14 @@ function buildOpencodePrompt(
   analysisSection: string,
   skillToggles: Record<string, boolean>,
   attachmentNames?: string[],
+  memoryToolEnabled = false,
 ): string {
   return buildSandboxEmailAgentPrompt({
     emailFrom,
     emailSubject,
     rules,
     memorySection,
+    memoryToolEnabled,
     analysisSection,
     skillToggles,
     attachmentNames,
@@ -702,14 +798,32 @@ export async function processEmailWithAgent(
   const traceStartedAt = new Date().toISOString();
   const traceSteps: AgentTraceStep[] = [];
   let tracingEnabled = true;
+  let includeTraceExcerpts = false;
   const pushTrace = (
     step: string,
     status: AgentTraceStep['status'],
     detail?: string,
     data?: Record<string, unknown>,
   ) => {
-    if (!tracingEnabled) return;
-    traceSteps.push({ step, status, detail, data, ts: new Date().toISOString() });
+    const ts = new Date().toISOString();
+    const entry = { step, status, detail, data, ts };
+
+    if (tracingEnabled) {
+      traceSteps.push(entry);
+    }
+
+    const message = `[sandbox-agent][${logId}][${step}]${detail ? ` ${detail}` : ''}`;
+    const consoleData = data
+      ? (sanitizeTraceValueForConsole(data) as Record<string, unknown>)
+      : undefined;
+
+    if (status === 'error') {
+      console.error(message, consoleData ?? '');
+    } else if (status === 'warning') {
+      console.warn(message, consoleData ?? '');
+    } else {
+      console.log(message, consoleData ?? '');
+    }
   };
 
   // 1. Load settings + OpenRouter client details
@@ -724,6 +838,7 @@ export async function processEmailWithAgent(
   const skillToggles = getOpencodeSkillToggles(settings);
 
   tracingEnabled = settings?.agentTracingEnabled !== false;
+  includeTraceExcerpts = tracingEnabled && settings?.agentTraceIncludeExcerpts === true;
 
   const subjectPrefix =
     typeof settings?.emailSubjectPrefix === 'string'
@@ -750,9 +865,35 @@ export async function processEmailWithAgent(
     model,
     snapshotId,
     tracingEnabled,
+    includeTraceExcerpts,
+    subjectPrefix,
+    skillToggles,
   });
 
-  // 2. Run pre-analysis and load memory in parallel.
+  const sandboxMemoryToolBaseUrl = resolveSandboxMemoryToolBaseUrl();
+  const sandboxMemoryToolToken = createSandboxMemoryToolToken({
+    userId,
+    logId,
+    userEmail: openRouterUserEmail,
+  });
+  const memoryToolEnabled = Boolean(sandboxMemoryToolBaseUrl && sandboxMemoryToolToken);
+
+  pushTrace(
+    'memory_tool',
+    memoryToolEnabled ? 'ok' : 'warning',
+    memoryToolEnabled
+      ? 'Enabled sandbox memory tool'
+      : 'Sandbox memory tool unavailable; falling back to prompt memory context',
+    {
+      hasBaseUrl: !!sandboxMemoryToolBaseUrl,
+      hasToken: !!sandboxMemoryToolToken,
+      baseUrl: sandboxMemoryToolBaseUrl || undefined,
+    },
+  );
+
+  // 2. Run pre-analysis. If the sandbox memory tool cannot be provisioned,
+  //    also load the sender memory so the prompt can fall back to the old
+  //    inline context behavior.
   //    When a preComputedAnalysis is provided (single-job path), skip the LLM
   //    call entirely and reuse the already-saved result.
   let preAnalysisResult: {
@@ -761,7 +902,7 @@ export async function processEmailWithAgent(
     promptTokens: number;
     completionTokens: number;
   };
-  let memory: Awaited<ReturnType<typeof getUserMemory>>;
+  let promptMemoryEntries: EmailMemoryEntry[] = [];
 
   if (preComputedAnalysis) {
     pushTrace('pre_analysis', 'ok', 'Reusing pre-computed analysis (skipping LLM call)', {
@@ -773,45 +914,76 @@ export async function processEmailWithAgent(
       promptTokens: preComputedAnalysis.promptTokens,
       completionTokens: preComputedAnalysis.completionTokens,
     };
-    memory = await getUserMemory(userId);
-  } else {
-    const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
-      runPreAnalysis(
-        emailFrom,
-        emailSubject,
-        emailBody,
-        isHtml,
-        analysisOutputLanguage,
-        openRouterTracking,
-      ),
-      getUserMemory(userId),
-    ]);
-
-    preAnalysisResult =
-      preAnalysisOutcome.status === 'fulfilled'
-        ? preAnalysisOutcome.value
-        : { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
-    if (preAnalysisOutcome.status === 'rejected') {
-      pushTrace(
-        'pre_analysis_failed',
-        'warning',
-        preAnalysisOutcome.reason instanceof Error
-          ? preAnalysisOutcome.reason.message
-          : String(preAnalysisOutcome.reason),
-      );
+    if (!memoryToolEnabled) {
+      const memory = await getUserMemory(userId).catch(() => ({
+        userId,
+        entries: [],
+        updatedAt: new Date(),
+      }));
+      promptMemoryEntries = memory.entries;
     }
-    memory =
-      memoryOutcome.status === 'fulfilled'
-        ? memoryOutcome.value
-        : { userId, entries: [], updatedAt: new Date() };
-    if (memoryOutcome.status === 'rejected') {
-      pushTrace(
-        'memory_load_failed',
-        'warning',
-        memoryOutcome.reason instanceof Error
-          ? memoryOutcome.reason.message
-          : String(memoryOutcome.reason),
-      );
+  } else {
+    if (memoryToolEnabled) {
+      try {
+        preAnalysisResult = await runPreAnalysis(
+          emailFrom,
+          emailSubject,
+          emailBody,
+          isHtml,
+          analysisOutputLanguage,
+          openRouterTracking,
+        );
+      } catch (error) {
+        pushTrace(
+          'pre_analysis_failed',
+          'warning',
+          error instanceof Error ? error.message : String(error),
+        );
+        preAnalysisResult = {
+          analysis: null,
+          tokensUsed: 0,
+          promptTokens: 0,
+          completionTokens: 0,
+        };
+      }
+    } else {
+      const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
+        runPreAnalysis(
+          emailFrom,
+          emailSubject,
+          emailBody,
+          isHtml,
+          analysisOutputLanguage,
+          openRouterTracking,
+        ),
+        getUserMemory(userId),
+      ]);
+
+      preAnalysisResult =
+        preAnalysisOutcome.status === 'fulfilled'
+          ? preAnalysisOutcome.value
+          : { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
+      if (preAnalysisOutcome.status === 'rejected') {
+        pushTrace(
+          'pre_analysis_failed',
+          'warning',
+          preAnalysisOutcome.reason instanceof Error
+            ? preAnalysisOutcome.reason.message
+            : String(preAnalysisOutcome.reason),
+        );
+      }
+
+      if (memoryOutcome.status === 'fulfilled') {
+        promptMemoryEntries = memoryOutcome.value.entries;
+      } else {
+        pushTrace(
+          'memory_load_failed',
+          'warning',
+          memoryOutcome.reason instanceof Error
+            ? memoryOutcome.reason.message
+            : String(memoryOutcome.reason),
+        );
+      }
     }
   }
 
@@ -828,13 +1000,28 @@ export async function processEmailWithAgent(
   );
 
   // 3. Build context for the prompt.
-  const memoryContext = buildMemoryContext(memory.entries, emailFrom);
-  const memorySection = memoryContext
-    ? `\n\n<email_history>\n${memoryContext}\n</email_history>`
+  const memoryContext = !memoryToolEnabled
+    ? buildMemoryContext(promptMemoryEntries, emailFrom)
     : '';
+  const memorySection =
+    !memoryToolEnabled && memoryContext
+      ? `\n\n<email_history>\n${memoryContext}\n</email_history>`
+      : '';
   const analysisSection = buildAnalysisSection(analysis);
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
+
+  pushTrace('rules_selected', 'ok', 'Prepared sandbox inputs', {
+    activeRuleCount: activeRules.length,
+    activeRuleNames: activeRules.map((rule) => rule.name),
+    attachmentCount: attachmentNames?.length ?? 0,
+    isHtmlInput: isHtml,
+    emailBodyLength: emailBody.length,
+    memoryMode: memoryToolEnabled ? 'tool' : memoryContext ? 'inline' : 'none',
+    memoryEntryCount: promptMemoryEntries.length,
+    memoryContextLength: memoryContext.length,
+    analysisSectionLength: analysisSection.length,
+  });
 
   // 4. Build the OpenCode prompt.
   const opencodePrompt = buildOpencodePrompt(
@@ -845,12 +1032,14 @@ export async function processEmailWithAgent(
     analysisSection,
     skillToggles,
     attachmentNames,
+    memoryToolEnabled,
   );
 
   pushTrace('opencode_prompt', 'ok', 'Built OpenCode prompt', {
     promptLength: opencodePrompt.length,
-    prompt: opencodePrompt,
+    promptSummary: summarizeTextForTrace(opencodePrompt, includeTraceExcerpts),
     hasMemory: !!memoryContext,
+    hasMemoryTool: memoryToolEnabled,
     hasAnalysis: !!analysis,
   });
 
@@ -917,6 +1106,14 @@ export async function processEmailWithAgent(
       openrouter: { apiKey },
     });
 
+    pushTrace('sandbox_inputs_prepared', 'ok', 'Prepared sandbox payloads', {
+      emailHtmlBytes: Buffer.byteLength(emailBody, 'utf-8'),
+      promptBytes: Buffer.byteLength(opencodePrompt, 'utf-8'),
+      opencodeConfigBytes: Buffer.byteLength(opencodeConfig, 'utf-8'),
+      authJsonBytes: Buffer.byteLength(authJson, 'utf-8'),
+      opencodeModelId,
+    });
+
     sandbox = await Sandbox.create({
       source: { type: 'snapshot', snapshotId },
       timeout: SANDBOX_TIMEOUT_MS,
@@ -925,11 +1122,14 @@ export async function processEmailWithAgent(
         OPENROUTER_API_KEY: apiKey,
         OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
         OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
+        POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
+        POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
       },
     });
 
     pushTrace('sandbox_created', 'ok', 'Sandbox started', {
       sandboxId: sandbox.sandboxId,
+      sandboxTimeoutMs: SANDBOX_TIMEOUT_MS,
     });
 
     // Write files into the sandbox.
@@ -943,7 +1143,14 @@ export async function processEmailWithAgent(
       },
     ]);
 
-    pushTrace('sandbox_files_written', 'ok', 'Wrote email and config into sandbox');
+    pushTrace('sandbox_files_written', 'ok', 'Wrote email and config into sandbox', {
+      files: [
+        '/vercel/sandbox/email.html',
+        '/vercel/sandbox/prompt.txt',
+        '/vercel/sandbox/opencode.json',
+        '/vercel/sandbox/.local/share/opencode/auth.json',
+      ],
+    });
 
     // Sync the local .agents folder into the sandbox so OpenCode picks up
     // AGENTS.md, custom agents, and skills the developer has placed there.
@@ -995,11 +1202,12 @@ export async function processEmailWithAgent(
     // serverless runtime.  We launch the command, then poll for completion via
     // `command.wait()` which is resilient to transient stream disconnections.
     try {
+      const opencodeRunStartedAt = Date.now();
       const command = await sandbox.runCommand({
         cmd: 'bash',
         args: [
           '-lc',
-          'set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)"',
+          `set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_RUN_LOG_PATH}`,
         ],
         cwd: '/vercel/sandbox',
         env: {
@@ -1009,12 +1217,17 @@ export async function processEmailWithAgent(
           OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
           OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
           OPENCODE_MODEL: opencodeModelId,
+          POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
+          POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
         },
         detached: true,
       });
 
       pushTrace('opencode_started', 'ok', 'OpenCode command launched (detached)', {
         cmdId: command.cmdId,
+        timeoutMs: OPENCODE_RUN_TIMEOUT_MS,
+        liveLogPath: OPENCODE_RUN_LOG_PATH,
+        cwd: '/vercel/sandbox',
       });
 
       const controller = new AbortController();
@@ -1031,6 +1244,11 @@ export async function processEmailWithAgent(
         const exitCode = finished.exitCode;
         const stdout = await finished.stdout();
         const stderr = await finished.stderr();
+        const runLogSnapshot = await readSandboxTextSnapshot(
+          sandbox,
+          OPENCODE_RUN_LOG_PATH,
+          includeTraceExcerpts,
+        );
 
         opencodeSessionId = parseOpencodeSessionId(stdout);
 
@@ -1116,9 +1334,18 @@ export async function processEmailWithAgent(
           exitCode === 0 ? 'ok' : 'warning',
           'OpenCode run completed',
           {
+            durationMs: Date.now() - opencodeRunStartedAt,
             exitCode,
             stdoutLength: stdout.length,
             stderrLength: stderr.length,
+            ...(includeTraceExcerpts
+              ? {
+                  stdoutExcerpt: excerptForTrace(stdout),
+                  stdoutTail: tailExcerptForTrace(stdout),
+                  stderrExcerpt: excerptForTrace(stderr),
+                }
+              : {}),
+            runLog: runLogSnapshot,
             opencodeSessionId,
             sandboxPromptTokens,
             sandboxCompletionTokens,
@@ -1129,19 +1356,40 @@ export async function processEmailWithAgent(
 
         if (exitCode !== 0) {
           console.error(`[sandbox-agent] opencode exited with code ${exitCode}:`, stderr);
-          parseError = `OpenCode exited with code ${exitCode}: ${stderr.slice(0, 500)}`;
+          const stderrSummary =
+            stderr.trim() ||
+            (runLogSnapshot.exists ? String(runLogSnapshot.tailExcerpt ?? '') : '');
+          parseError = `OpenCode exited with code ${exitCode}: ${stderrSummary.slice(0, 500)}`;
         }
       } catch (waitError) {
         clearTimeout(timer);
         const msg = waitError instanceof Error ? waitError.message : String(waitError);
         console.error('[sandbox-agent] opencode wait failed:', msg);
+        const [runLogSnapshot, subjectSnapshot] = sandbox
+          ? await Promise.all([
+              readSandboxTextSnapshot(sandbox, OPENCODE_RUN_LOG_PATH, includeTraceExcerpts),
+              readSandboxTextSnapshot(sandbox, '/vercel/sandbox/subject.txt', includeTraceExcerpts),
+            ])
+          : [
+              { path: OPENCODE_RUN_LOG_PATH, exists: false },
+              { path: '/vercel/sandbox/subject.txt', exists: false },
+            ];
         if (timedOut) {
           const timeoutMsg = `OpenCode timed out after ${Math.round(OPENCODE_RUN_TIMEOUT_MS / 60000)} minutes; original email was forwarded without AI rewrite`;
-          pushTrace('opencode_timeout', 'error', timeoutMsg);
+          pushTrace('opencode_timeout', 'error', timeoutMsg, {
+            durationMs: Date.now() - opencodeRunStartedAt,
+            waitError: msg,
+            runLog: runLogSnapshot,
+            subjectSnapshot,
+          });
           parseError = timeoutMsg;
           parseErrorCode = 'forwarded_without_ai_rewrite_timeout';
         } else {
-          pushTrace('opencode_wait_failed', 'error', msg);
+          pushTrace('opencode_wait_failed', 'error', msg, {
+            durationMs: Date.now() - opencodeRunStartedAt,
+            runLog: runLogSnapshot,
+            subjectSnapshot,
+          });
           parseError = `OpenCode command failed: ${msg}`;
         }
       }
@@ -1158,7 +1406,9 @@ export async function processEmailWithAgent(
 
     if (htmlBuffer) {
       processedBody = htmlBuffer.toString('utf-8');
-      pushTrace('read_processed_html', 'ok', 'Read processed HTML from sandbox');
+      pushTrace('read_processed_html', 'ok', 'Read processed HTML from sandbox', {
+        processedHtml: summarizeTextForTrace(processedBody, includeTraceExcerpts),
+      });
     } else {
       pushTrace('read_processed_html', 'warning', 'Could not read processed HTML — using original');
       parseError =
@@ -1168,7 +1418,9 @@ export async function processEmailWithAgent(
     if (subjectBuffer) {
       const rawSubject = subjectBuffer.toString('utf-8').trim();
       if (rawSubject) processedSubject = rawSubject;
-      pushTrace('read_processed_subject', 'ok', 'Read processed subject from sandbox');
+      pushTrace('read_processed_subject', 'ok', 'Read processed subject from sandbox', {
+        processedSubject,
+      });
     } else {
       pushTrace('read_processed_subject', 'warning', 'Subject file not found — using fallback');
     }
@@ -1181,7 +1433,10 @@ export async function processEmailWithAgent(
       htmlBuffer !== null;
 
     if (runVerification) {
-      pushTrace('opencode_verify_start', 'ok', 'Starting verification pass');
+      pushTrace('opencode_verify_start', 'ok', 'Starting verification pass', {
+        timeoutMs: OPENCODE_VERIFY_TIMEOUT_MS,
+        liveLogPath: OPENCODE_VERIFY_LOG_PATH,
+      });
       try {
         const verifyPrompt = buildVerificationPrompt(
           emailFrom,
@@ -1190,16 +1445,22 @@ export async function processEmailWithAgent(
           skillToggles,
         );
 
+        pushTrace('opencode_verify_prompt', 'ok', 'Built verification prompt', {
+          promptSummary: summarizeTextForTrace(verifyPrompt, includeTraceExcerpts),
+        });
+
         // Write the verification prompt to the sandbox filesystem.
         await sandbox!.writeFiles([
           { path: '/vercel/sandbox/prompt.txt', content: Buffer.from(verifyPrompt, 'utf-8') },
         ]);
 
+        const verifyStartedAt = Date.now();
+
         const verifyCommand = await sandbox!.runCommand({
           cmd: 'bash',
           args: [
             '-lc',
-            'set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)"',
+            `set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_VERIFY_LOG_PATH}`,
           ],
           cwd: '/vercel/sandbox',
           env: {
@@ -1209,6 +1470,8 @@ export async function processEmailWithAgent(
             OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
             OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
             OPENCODE_MODEL: opencodeModelId,
+            POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
+            POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
           },
           detached: true,
         });
@@ -1223,6 +1486,11 @@ export async function processEmailWithAgent(
           const verifyExitCode = verifyFinished.exitCode;
           const verifyStdout = await verifyFinished.stdout();
           const verifyStderr = await verifyFinished.stderr();
+          const verifyLogSnapshot = await readSandboxTextSnapshot(
+            sandbox!,
+            OPENCODE_VERIFY_LOG_PATH,
+            includeTraceExcerpts,
+          );
 
           // Accumulate token usage from the verification pass.
           if (verifyExitCode === 0) {
@@ -1265,9 +1533,18 @@ export async function processEmailWithAgent(
             verifyExitCode === 0 ? 'ok' : 'warning',
             'Verification pass completed',
             {
+              durationMs: Date.now() - verifyStartedAt,
               exitCode: verifyExitCode,
               stdoutLength: verifyStdout.length,
               stderrLength: verifyStderr.length,
+              ...(includeTraceExcerpts
+                ? {
+                    stdoutExcerpt: excerptForTrace(verifyStdout),
+                    stdoutTail: tailExcerptForTrace(verifyStdout),
+                    stderrExcerpt: excerptForTrace(verifyStderr),
+                  }
+                : {}),
+              verifyLog: verifyLogSnapshot,
             },
           );
 
@@ -1282,12 +1559,16 @@ export async function processEmailWithAgent(
 
             if (verifyHtmlBuffer) {
               processedBody = verifyHtmlBuffer.toString('utf-8');
-              pushTrace('opencode_verify_html', 'ok', 'Read verified HTML from sandbox');
+              pushTrace('opencode_verify_html', 'ok', 'Read verified HTML from sandbox', {
+                verifiedHtml: summarizeTextForTrace(processedBody, includeTraceExcerpts),
+              });
             }
             if (verifySubjectBuffer) {
               const rawVerifySubject = verifySubjectBuffer.toString('utf-8').trim();
               if (rawVerifySubject) processedSubject = rawVerifySubject;
-              pushTrace('opencode_verify_subject', 'ok', 'Read verified subject from sandbox');
+              pushTrace('opencode_verify_subject', 'ok', 'Read verified subject from sandbox', {
+                processedSubject,
+              });
             }
           } else {
             console.error(
@@ -1305,10 +1586,18 @@ export async function processEmailWithAgent(
           const msg =
             verifyWaitError instanceof Error ? verifyWaitError.message : String(verifyWaitError);
           console.error('[sandbox-agent] verification pass wait failed:', msg);
+          const verifyLogSnapshot = await readSandboxTextSnapshot(
+            sandbox!,
+            OPENCODE_VERIFY_LOG_PATH,
+            includeTraceExcerpts,
+          );
           pushTrace(
             'opencode_verify_timeout',
             'warning',
             `Verification pass timed out or failed: ${msg} — using first-pass output`,
+            {
+              verifyLog: verifyLogSnapshot,
+            },
           );
         }
       } catch (verifyErr) {
@@ -1331,8 +1620,12 @@ export async function processEmailWithAgent(
     if (sandbox) {
       try {
         await sandbox.stop({ blocking: false });
+        pushTrace('sandbox_stopped', 'ok', 'Stopped sandbox', {
+          sandboxId: sandbox.sandboxId,
+        });
       } catch {
         // Ignore stop errors.
+        pushTrace('sandbox_stop_failed', 'warning', 'Failed to stop sandbox cleanly');
       }
     }
   }
@@ -1340,6 +1633,9 @@ export async function processEmailWithAgent(
   // 6. Apply subject prefix.
   if (subjectPrefix.length > 0 && !processedSubject.startsWith(subjectPrefix)) {
     processedSubject = `${subjectPrefix} ${processedSubject}`.trim();
+    pushTrace('subject_prefixed', 'ok', 'Applied configured subject prefix', {
+      processedSubject,
+    });
   }
 
   // 7. Calculate cost using pre-analysis tokens + sandbox session tokens.
@@ -1368,6 +1664,16 @@ export async function processEmailWithAgent(
   const ruleApplied =
     activeRules.length > 0 ? activeRules.map((r) => r.name).join(', ') : 'No rule applied';
 
+  pushTrace('result_ready', 'ok', 'Prepared sandbox agent result', {
+    processedSubject,
+    processedBodyLength: processedBody.length,
+    ruleApplied,
+    parseError: parseError || null,
+    parseErrorCode: parseErrorCode || null,
+    totalTokensUsed: totalTokensUsed + sandboxPromptTokens + sandboxCompletionTokens,
+    estimatedCost,
+  });
+
   // 8. Update user memory.
   const newEntry: EmailMemoryEntry = buildMemoryEntryFromAnalysis(
     {
@@ -1383,11 +1689,18 @@ export async function processEmailWithAgent(
     analysis,
   );
 
-  saveUserMemory({
-    userId,
-    entries: [...memory.entries, newEntry],
-    updatedAt: new Date(),
-  }).catch((err) => console.error('Failed to update user memory:', err));
+  void (async () => {
+    try {
+      const currentMemory = await getUserMemory(userId);
+      await saveUserMemory({
+        userId,
+        entries: [...currentMemory.entries, newEntry],
+        updatedAt: new Date(),
+      });
+    } catch (err) {
+      console.error('Failed to update user memory:', err);
+    }
+  })();
 
   // Optionally save to Supermemory.ai.
   if (settings?.memoryEnabled === true) {
