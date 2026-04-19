@@ -47,9 +47,9 @@ __MEMORY_SECTION__
 INSTRUCTIONS:
 1. __CAVEMAN_STEP_INSTRUCTION__
 2. __HTML_EDITING_STEP_INSTRUCTION__
-3. __MEMORY_STEP_INSTRUCTION__
-4. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "__ORIGINAL_SUBJECT__"
-5. Read the file /vercel/sandbox/email.html
+3. IMMEDIATELY write the subject line to /vercel/sandbox/subject.txt. Do this before reading or processing the email. Write the original subject as-is: "__ORIGINAL_SUBJECT__"
+4. Read the file /vercel/sandbox/email.html
+5. __MEMORY_STEP_INSTRUCTION__
 6. Apply the rules above to both the subject and body.
 7. Preserve the original HTML structure, layout, CSS styles, inline styles, classes, links, images, and rendering behavior unless a rule explicitly requires changing them.
 8. Modify only content that is necessary to satisfy the rules, keeping untouched content exactly as close to the original as possible.

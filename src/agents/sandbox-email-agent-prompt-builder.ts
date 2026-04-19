@@ -80,10 +80,10 @@ function buildSkillPromptValues(skillToggles?: SandboxPromptSkillToggles): Recor
 function buildMemoryPromptValues(memoryToolEnabled?: boolean): Record<string, string> {
   return {
     __MEMORY_IMPORTANT_LINE__: memoryToolEnabled
-      ? '- A `memory_agent` tool is available. Use it for focused questions about prior emails or sender-specific patterns when memory would help you apply the rules. Ask narrow questions, not broad memory dumps.'
+      ? '- A `memory_agent` tool is available. Use it only when prior emails are clearly needed to apply a rule. Ask one narrow question if possible, avoid repeated lookups, and continue without memory if the tool is slow or unavailable.'
       : '- An <email_history> block may be provided below with prior emails from the same sender. Use it to detect sender-specific patterns when applying the rules.',
     __MEMORY_STEP_INSTRUCTION__: memoryToolEnabled
-      ? 'If sender history would help, use the memory_agent tool to ask a focused question before editing the email.'
+      ? 'Only if prior emails are clearly needed, use the memory_agent tool for one focused question. If it fails or times out, continue the task without memory instead of retrying repeatedly.'
       : 'Review the provided <email_history> block if present before editing.',
   };
 }
