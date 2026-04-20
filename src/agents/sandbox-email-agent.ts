@@ -222,6 +222,37 @@ function parseHumanReadableOpencodeNumber(value: string): number | null {
   return Math.round(base * multiplier);
 }
 
+function parseSubjectWithForwardingDecision(rawSubjectFile: string): {
+  subject: string;
+  shouldForward?: boolean;
+  skipForwardReason?: string;
+} {
+  const normalized = rawSubjectFile.replace(/\r\n/g, '\n').trim();
+  if (!normalized) return { subject: '' };
+
+  const lines = normalized.split('\n');
+  const firstLine = (lines[0] ?? '').trim();
+  // Marker format:
+  //   [POSTINO_FORWARD=YES]
+  //   [POSTINO_FORWARD=NO] optional reason...
+  // Capture group 1 = YES|NO, capture group 2 = optional reason text.
+  const markerMatch = firstLine.match(/^\[POSTINO_FORWARD=(YES|NO)\](?:\s+(.*))?$/);
+
+  if (!markerMatch) {
+    return { subject: normalized };
+  }
+
+  const shouldForward = markerMatch[1] === 'YES';
+  const reason = (markerMatch[2] ?? '').trim();
+  const subject = lines.slice(1).join('\n').trim();
+
+  return {
+    subject,
+    shouldForward,
+    ...(!shouldForward && reason ? { skipForwardReason: reason } : {}),
+  };
+}
+
 function parseOpencodeStatsOutput(text: string): {
   inputTokens: number;
   outputTokens: number;
@@ -991,6 +1022,8 @@ export async function processEmailWithAgent(
   let processedBody = emailBody;
   let parseError: string | undefined;
   let parseErrorCode: ProcessEmailResult['parseErrorCode'] | undefined;
+  let shouldForward: boolean | undefined;
+  let skipForwardReason: string | undefined;
   let sandboxPromptTokens = 0;
   let sandboxCompletionTokens = 0;
   let opencodeSessionId: string | null = null;
@@ -1358,10 +1391,17 @@ export async function processEmailWithAgent(
     }
 
     if (subjectBuffer) {
-      const rawSubject = subjectBuffer.toString('utf-8').trim();
-      if (rawSubject) processedSubject = rawSubject;
+      const rawSubject = subjectBuffer.toString('utf-8');
+      const parsedSubject = parseSubjectWithForwardingDecision(rawSubject);
+      if (parsedSubject.subject) processedSubject = parsedSubject.subject;
+      if (parsedSubject.shouldForward !== undefined) {
+        shouldForward = parsedSubject.shouldForward;
+        skipForwardReason = parsedSubject.skipForwardReason;
+      }
       pushTrace('read_processed_subject', 'ok', 'Read processed subject from sandbox', {
         processedSubject,
+        shouldForward: shouldForward ?? null,
+        skipForwardReason: skipForwardReason ?? null,
       });
     } else {
       pushTrace('read_processed_subject', 'warning', 'Subject file not found — using fallback');
@@ -1507,10 +1547,17 @@ export async function processEmailWithAgent(
               });
             }
             if (verifySubjectBuffer) {
-              const rawVerifySubject = verifySubjectBuffer.toString('utf-8').trim();
-              if (rawVerifySubject) processedSubject = rawVerifySubject;
+              const rawVerifySubject = verifySubjectBuffer.toString('utf-8');
+              const parsedVerifySubject = parseSubjectWithForwardingDecision(rawVerifySubject);
+              if (parsedVerifySubject.subject) processedSubject = parsedVerifySubject.subject;
+              if (parsedVerifySubject.shouldForward !== undefined) {
+                shouldForward = parsedVerifySubject.shouldForward;
+                skipForwardReason = parsedVerifySubject.skipForwardReason;
+              }
               pushTrace('opencode_verify_subject', 'ok', 'Read verified subject from sandbox', {
                 processedSubject,
+                shouldForward: shouldForward ?? null,
+                skipForwardReason: skipForwardReason ?? null,
               });
             }
           } else {
@@ -1574,7 +1621,12 @@ export async function processEmailWithAgent(
   }
 
   // 6. Apply subject prefix.
-  if (subjectPrefix.length > 0 && !processedSubject.startsWith(subjectPrefix)) {
+  // Apply subject prefix only when forwarding remains enabled.
+  if (
+    shouldForward !== false &&
+    subjectPrefix.length > 0 &&
+    !processedSubject.startsWith(subjectPrefix)
+  ) {
     processedSubject = `${subjectPrefix} ${processedSubject}`.trim();
     pushTrace('subject_prefixed', 'ok', 'Applied configured subject prefix', {
       processedSubject,
@@ -1613,6 +1665,8 @@ export async function processEmailWithAgent(
     ruleApplied,
     parseError: parseError || null,
     parseErrorCode: parseErrorCode || null,
+    shouldForward: shouldForward ?? null,
+    skipForwardReason: skipForwardReason ?? null,
     totalTokensUsed: totalTokensUsed + sandboxPromptTokens + sandboxCompletionTokens,
     estimatedCost,
   });
@@ -1670,6 +1724,8 @@ export async function processEmailWithAgent(
     tokensUsed: totalTokensUsed + sandboxPromptTokens + sandboxCompletionTokens,
     estimatedCost,
     ruleApplied,
+    ...(shouldForward !== undefined ? { shouldForward } : {}),
+    ...(skipForwardReason ? { skipForwardReason } : {}),
     ...(trace ? { trace } : {}),
     ...(parseError ? { parseError } : {}),
     ...(parseErrorCode ? { parseErrorCode } : {}),

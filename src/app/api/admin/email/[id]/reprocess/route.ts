@@ -113,6 +113,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       tokensUsed: result.tokensUsed,
       estimatedCost: result.estimatedCost,
       ruleApplied: result.ruleApplied,
+      shouldForward: result.shouldForward ?? true,
+      skipForwardReason: result.skipForwardReason ?? null,
     });
   } catch (error) {
     return handleAdminError(error, 'admin/email/[id]/reprocess POST');
