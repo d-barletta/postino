@@ -226,35 +226,8 @@ function parseHumanReadableOpencodeNumber(value: string): number | null {
   return Math.round(base * multiplier);
 }
 
-function parseSubjectWithForwardingDecision(rawSubjectFile: string): {
-  subject: string;
-  shouldForward?: boolean;
-  skipForwardReason?: string;
-} {
-  const normalized = rawSubjectFile.replace(/\r\n/g, '\n').trim();
-  if (!normalized) return { subject: '' };
-
-  const lines = normalized.split('\n');
-  const firstLine = (lines[0] ?? '').trim();
-  // Marker format:
-  //   [POSTINO_FORWARD=YES]
-  //   [POSTINO_FORWARD=NO] optional reason...
-  // Capture group 1 = YES|NO, capture group 2 = optional reason text.
-  const markerMatch = firstLine.match(/^\[POSTINO_FORWARD=(YES|NO)\](?:\s+(.*))?$/i);
-
-  if (!markerMatch) {
-    return { subject: normalized };
-  }
-
-  const shouldForward = markerMatch[1]?.toUpperCase() === 'YES';
-  const reason = (markerMatch[2] ?? '').trim();
-  const subject = lines.slice(1).join('\n').trim();
-
-  return {
-    subject,
-    shouldForward,
-    ...(!shouldForward && reason ? { skipForwardReason: reason } : {}),
-  };
+function parseSubjectFile(rawSubjectFile: string): { subject: string } {
+  return { subject: rawSubjectFile.replace(/\r\n/g, '\n').trim() };
 }
 
 function parseProcessingResultFile(rawResultFile: string): {
@@ -1451,26 +1424,11 @@ export async function processEmailWithAgent(
 
     if (subjectBuffer) {
       const rawSubject = subjectBuffer.toString('utf-8');
-      const parsedSubject = parseSubjectWithForwardingDecision(rawSubject);
+      const parsedSubject = parseSubjectFile(rawSubject);
       if (parsedSubject.subject) processedSubject = parsedSubject.subject;
       pushTrace('read_processed_subject', 'ok', 'Read processed subject from sandbox', {
         processedSubject,
       });
-      // Legacy fallback: accept decision markers from subject.txt only if JSON decision
-      // output is unavailable, to preserve compatibility with older sandbox outputs.
-      if (!processingResultBuffer && parsedSubject.shouldForward !== undefined) {
-        shouldForward = parsedSubject.shouldForward;
-        skipForwardReason = parsedSubject.skipForwardReason;
-        pushTrace(
-          'read_processed_subject_legacy_decision',
-          'warning',
-          'Using legacy subject marker decision because processing_result.json is missing',
-          {
-            shouldForward: shouldForward ?? null,
-            skipForwardReason: skipForwardReason ?? null,
-          },
-        );
-      }
     } else {
       pushTrace('read_processed_subject', 'warning', 'Subject file not found — using fallback');
     }
@@ -1638,24 +1596,11 @@ export async function processEmailWithAgent(
             }
             if (verifySubjectBuffer) {
               const rawVerifySubject = verifySubjectBuffer.toString('utf-8');
-              const parsedVerifySubject = parseSubjectWithForwardingDecision(rawVerifySubject);
+              const parsedVerifySubject = parseSubjectFile(rawVerifySubject);
               if (parsedVerifySubject.subject) processedSubject = parsedVerifySubject.subject;
               pushTrace('opencode_verify_subject', 'ok', 'Read verified subject from sandbox', {
                 processedSubject,
               });
-              if (!verifyProcessingResultBuffer && parsedVerifySubject.shouldForward !== undefined) {
-                shouldForward = parsedVerifySubject.shouldForward;
-                skipForwardReason = parsedVerifySubject.skipForwardReason;
-                pushTrace(
-                  'opencode_verify_subject_legacy_decision',
-                  'warning',
-                  'Using legacy subject marker decision because processing_result.json is missing',
-                  {
-                    shouldForward: shouldForward ?? null,
-                    skipForwardReason: skipForwardReason ?? null,
-                  },
-                );
-              }
             }
 
             if (verifyProcessingResultBuffer) {
