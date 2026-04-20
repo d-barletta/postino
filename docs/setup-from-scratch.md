@@ -69,7 +69,7 @@ Whether you use the default Supabase templates or custom ones, the Site URL and 
 
 ## 4. Database Schema Setup
 
-Postino expects existing tables in Supabase (`users`, `rules`, `email_logs`, `email_jobs`, `settings`, `user_memory`, `place_geocodes`, blog and entities tables).
+Postino expects existing tables in Supabase (`users`, `rules`, `email_logs`, `email_jobs`, `settings`, `place_geocodes`, blog and entities tables).
 
 Use one of these strategies:
 
@@ -79,7 +79,7 @@ Use one of these strategies:
 Important:
 
 - The app will not function correctly without the full schema.
-- Verify at least these tables exist in `public`: `users`, `rules`, `email_logs`, `email_jobs`, `settings`, `user_memory`, `place_geocodes`.
+- Verify at least these tables exist in `public`: `users`, `rules`, `email_logs`, `email_jobs`, `settings`, `place_geocodes`.
 
 ## 5. Configure OneSignal (Web Push)
 

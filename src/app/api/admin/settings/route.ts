@@ -6,13 +6,8 @@ import type { Json } from '@/types/supabase';
 import { DEFAULT_CREDITS_PER_DOLLAR_FACTOR, DEFAULT_FREE_CREDITS_PER_MONTH } from '@/lib/credits';
 
 const AGENT_LIMITS = {
-  agentChunkThresholdChars: { min: 5000, max: 300000 },
-  agentChunkSizeChars: { min: 1000, max: 100000 },
-  agentChunkExtractMaxTokens: { min: 100, max: 4000 },
   agentAnalysisMaxTokens: { min: 100, max: 2000 },
   agentBodyAnalysisMaxChars: { min: 500, max: 50000 },
-  agentChunkFallbackMaxChars: { min: 200, max: 10000 },
-  agentFallbackMaxTokens: { min: 500, max: 6000 },
 } as const;
 
 const OPENCODE_SKILL_KEYS = ['caveman', 'html-email-editing'] as const;
@@ -99,7 +94,6 @@ export async function PUT(request: NextRequest) {
       'maxActiveRules',
       'llmModel',
       'llmApiKey',
-      'llmMaxTokens',
       'llmSystemPrompt',
       'emailSubjectPrefix',
       'smtpHost',
@@ -118,24 +112,15 @@ export async function PUT(request: NextRequest) {
       'mailgunBaseUrl',
       'maintenanceMode',
       'signupMaintenanceMode',
-      'rulesExecutionMode',
-      'agentChunkThresholdChars',
-      'agentChunkSizeChars',
-      'agentChunkExtractMaxTokens',
       'agentAnalysisMaxTokens',
       'agentBodyAnalysisMaxChars',
-      'agentChunkFallbackMaxChars',
-      'agentFallbackMaxTokens',
       'agentTracingEnabled',
       'agentTraceIncludeExcerpts',
-      'memoryEnabled',
       'memoryApiKey',
       'googleMapsApiKey',
       'creditsPerDollarFactor',
       'freeCreditsPerMonth',
-      'agentUseOpencode',
       'opencodeSandboxSnapshotId',
-      'opencodeMinBodyLength',
       'opencodeSkillToggles',
       'opencodeVerificationPass',
     ];
@@ -187,21 +172,6 @@ export async function PUT(request: NextRequest) {
         0,
         100000000,
       ),
-      agentChunkThresholdChars: clampInt(
-        normalized.agentChunkThresholdChars,
-        AGENT_LIMITS.agentChunkThresholdChars.min,
-        AGENT_LIMITS.agentChunkThresholdChars.max,
-      ),
-      agentChunkSizeChars: clampInt(
-        normalized.agentChunkSizeChars,
-        AGENT_LIMITS.agentChunkSizeChars.min,
-        AGENT_LIMITS.agentChunkSizeChars.max,
-      ),
-      agentChunkExtractMaxTokens: clampInt(
-        normalized.agentChunkExtractMaxTokens,
-        AGENT_LIMITS.agentChunkExtractMaxTokens.min,
-        AGENT_LIMITS.agentChunkExtractMaxTokens.max,
-      ),
       agentAnalysisMaxTokens: clampInt(
         normalized.agentAnalysisMaxTokens,
         AGENT_LIMITS.agentAnalysisMaxTokens.min,
@@ -212,35 +182,11 @@ export async function PUT(request: NextRequest) {
         AGENT_LIMITS.agentBodyAnalysisMaxChars.min,
         AGENT_LIMITS.agentBodyAnalysisMaxChars.max,
       ),
-      agentChunkFallbackMaxChars: clampInt(
-        normalized.agentChunkFallbackMaxChars,
-        AGENT_LIMITS.agentChunkFallbackMaxChars.min,
-        AGENT_LIMITS.agentChunkFallbackMaxChars.max,
-      ),
-      agentFallbackMaxTokens: clampInt(
-        normalized.agentFallbackMaxTokens,
-        AGENT_LIMITS.agentFallbackMaxTokens.min,
-        AGENT_LIMITS.agentFallbackMaxTokens.max,
-      ),
     };
 
     const nextSettings = { ...currentSettings, ...normalizedWithBounds };
-
-    const nextChunkThreshold = nextSettings.agentChunkThresholdChars;
-    const nextChunkSize = nextSettings.agentChunkSizeChars;
-    if (
-      typeof nextChunkThreshold === 'number' &&
-      typeof nextChunkSize === 'number' &&
-      nextChunkSize >= nextChunkThreshold
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Agent Settings invalid: agentChunkSizeChars must be smaller than agentChunkThresholdChars.',
-        },
-        { status: 400 },
-      );
-    }
+    const { agentUseOpencode: _removedAgentUseOpencode, ...cleanedNextSettings } =
+      nextSettings as Record<string, unknown>;
 
     const previousAssignedEmailDomain = resolveAssignedEmailDomain(
       pickDomainSettings(currentSettings as Record<string, unknown>),
@@ -251,7 +197,7 @@ export async function PUT(request: NextRequest) {
 
     await supabase.from('settings').upsert({
       id: 'global',
-      data: nextSettings as unknown as Json,
+      data: cleanedNextSettings as unknown as Json,
       updated_at: new Date().toISOString(),
     });
 

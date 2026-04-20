@@ -38,13 +38,8 @@ const SUGGESTED_MODELS = [
 ];
 
 const AGENT_LIMITS = {
-  chunkThresholdChars: { min: 5000, max: 300000 },
-  chunkSizeChars: { min: 1000, max: 100000 },
-  chunkExtractMaxTokens: { min: 100, max: 4000 },
   analysisMaxTokens: { min: 100, max: 2000 },
   bodyAnalysisMaxChars: { min: 500, max: 100000 },
-  chunkFallbackMaxChars: { min: 200, max: 10000 },
-  fallbackPassMaxTokens: { min: 500, max: 6000 },
 } as const;
 
 const OPENCODE_SKILLS = [
@@ -96,16 +91,10 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     maxActiveRules: 3,
     llmModel: 'google/gemini-3-flash-preview',
     llmApiKey: '',
-    llmMaxTokens: 180000,
     llmSystemPrompt: '',
     emailSubjectPrefix: '[Postino]',
-    agentChunkThresholdChars: 100000,
-    agentChunkSizeChars: 15000,
-    agentChunkExtractMaxTokens: 1000,
     agentAnalysisMaxTokens: 2000,
     agentBodyAnalysisMaxChars: 30000,
-    agentChunkFallbackMaxChars: 1000,
-    agentFallbackMaxTokens: 3000,
     agentTracingEnabled: true,
     agentTraceIncludeExcerpts: true,
     smtpHost: '',
@@ -123,8 +112,6 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
     mailgunBaseUrl: 'https://api.eu.mailgun.net',
     maintenanceMode: false,
     signupMaintenanceMode: true,
-    rulesExecutionMode: 'parallel',
-    memoryEnabled: true,
     memoryApiKey: '',
     creditsPerDollarFactor: 100,
     freeCreditsPerMonth: 1000,
@@ -304,20 +291,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
       }),
       maxRuleLength: normalizeOptionalInteger(settings.maxRuleLength, { min: 1 }),
       maxActiveRules: normalizeOptionalInteger(settings.maxActiveRules, { min: 1 }),
-      llmMaxTokens: normalizeOptionalInteger(settings.llmMaxTokens, { min: 1 }),
       smtpPort: normalizeOptionalInteger(settings.smtpPort, { min: 1, max: 65535 }),
-      agentChunkThresholdChars: normalizeOptionalInteger(settings.agentChunkThresholdChars, {
-        min: AGENT_LIMITS.chunkThresholdChars.min,
-        max: AGENT_LIMITS.chunkThresholdChars.max,
-      }),
-      agentChunkSizeChars: normalizeOptionalInteger(settings.agentChunkSizeChars, {
-        min: AGENT_LIMITS.chunkSizeChars.min,
-        max: AGENT_LIMITS.chunkSizeChars.max,
-      }),
-      agentChunkExtractMaxTokens: normalizeOptionalInteger(settings.agentChunkExtractMaxTokens, {
-        min: AGENT_LIMITS.chunkExtractMaxTokens.min,
-        max: AGENT_LIMITS.chunkExtractMaxTokens.max,
-      }),
       agentAnalysisMaxTokens: normalizeOptionalInteger(settings.agentAnalysisMaxTokens, {
         min: AGENT_LIMITS.analysisMaxTokens.min,
         max: AGENT_LIMITS.analysisMaxTokens.max,
@@ -326,22 +300,7 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
         min: AGENT_LIMITS.bodyAnalysisMaxChars.min,
         max: AGENT_LIMITS.bodyAnalysisMaxChars.max,
       }),
-      agentChunkFallbackMaxChars: normalizeOptionalInteger(settings.agentChunkFallbackMaxChars, {
-        min: AGENT_LIMITS.chunkFallbackMaxChars.min,
-        max: AGENT_LIMITS.chunkFallbackMaxChars.max,
-      }),
-      agentFallbackMaxTokens: normalizeOptionalInteger(settings.agentFallbackMaxTokens, {
-        min: AGENT_LIMITS.fallbackPassMaxTokens.min,
-        max: AGENT_LIMITS.fallbackPassMaxTokens.max,
-      }),
     };
-
-    const threshold = normalizedForSave.agentChunkThresholdChars;
-    const chunkSize = normalizedForSave.agentChunkSizeChars;
-    if (typeof threshold === 'number' && typeof chunkSize === 'number' && chunkSize >= threshold) {
-      setSaveError('Agent Settings invalid: Chunk Size must be smaller than Chunk Threshold.');
-      return;
-    }
 
     setSaving(true);
     setSaveError('');
@@ -583,24 +542,6 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     }}
                     hint="Maximum number of active rules a non-admin user can have (default: 3)."
                   />
-                  <Input
-                    label="Max Response Tokens"
-                    type="number"
-                    value={settings.llmMaxTokens ?? ''}
-                    onChange={(e) => {
-                      setSettings((p) => ({
-                        ...p,
-                        llmMaxTokens: parseOptionalIntegerInput(e.target.value, p.llmMaxTokens),
-                      }));
-                    }}
-                    onBlur={() => {
-                      setSettings((p) => ({
-                        ...p,
-                        llmMaxTokens: normalizeOptionalInteger(p.llmMaxTokens, { min: 1 }),
-                      }));
-                    }}
-                    hint="Maximum number of tokens the LLM can return per email (default: 4000). Increase for long HTML emails."
-                  />
                   <Textarea
                     label="System Prompt (base)"
                     value={settings.llmSystemPrompt || ''}
@@ -608,31 +549,9 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                       setSettings((p) => ({ ...p, llmSystemPrompt: e.target.value }))
                     }
                     rows={8}
-                    placeholder="Leave empty to use the default Postino system prompt. User rules are always appended automatically."
-                    hint="This is the base system prompt sent to the LLM. User-specific rules are appended automatically per email."
+                    placeholder={`Example:\n- Always preserve all links and CTA buttons exactly as-is.\n- When translating, keep all monetary amounts in their original currency.\n\nLeave empty to send no additional admin instructions.`}
+                    hint="These instructions are appended verbatim after the RULES block in the OpenCode prompt (main pass and verification pass). They apply to all users globally. The built-in agent safeguards are always included and cannot be overridden here."
                   />
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Parallel Rule Execution
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        When enabled, all matching rules are applied in a single LLM call instead of
-                        one call per rule. Reduces token usage and latency, but the LLM must honour
-                        all rules simultaneously.
-                      </p>
-                    </div>
-                    <Switch
-                      id="rules-execution-mode"
-                      checked={settings.rulesExecutionMode === 'parallel'}
-                      onCheckedChange={(checked) =>
-                        setSettings((p) => ({
-                          ...p,
-                          rulesExecutionMode: checked ? 'parallel' : 'sequential',
-                        }))
-                      }
-                    />
-                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -641,137 +560,98 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
               <AccordionTrigger>Agent Settings</AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <div>
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Use OpenCode (Sandbox)
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Offload email processing to OpenCode running inside a Vercel Sandbox.
-                        Handles very large emails that exceed model context-window limits. Requires
-                        a sandbox snapshot with OpenCode pre-installed.
+                        Email processing now runs through OpenCode in a Vercel Sandbox. Configure
+                        the sandbox snapshot and skills below.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Sandbox Snapshot ID
+                    </label>
+                    <Input
+                      value={settings.opencodeSandboxSnapshotId || ''}
+                      onChange={(e) =>
+                        setSettings((p) => ({ ...p, opencodeSandboxSnapshotId: e.target.value }))
+                      }
+                      placeholder="snap_..."
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      The Vercel Sandbox snapshot ID with OpenCode installed. Created by running the
+                      setup script (see docs).
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        OpenCode Skills
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Enable or disable each OpenCode skill. Disabled skills are not loaded in the
+                        sandbox agent.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {OPENCODE_SKILLS.map((skill) => (
+                        <div
+                          key={skill.key}
+                          className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {skill.label}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              {skill.description}
+                            </p>
+                          </div>
+                          <Switch
+                            id={`opencode-skill-${skill.key}`}
+                            checked={settings.opencodeSkillToggles?.[skill.key] !== false}
+                            onCheckedChange={(checked) =>
+                              setSettings((p) => {
+                                return {
+                                  ...p,
+                                  opencodeSkillToggles: {
+                                    ...DEFAULT_OPENCODE_SKILL_TOGGLES,
+                                    ...p.opencodeSkillToggles,
+                                    [skill.key]: checked,
+                                  },
+                                };
+                              })
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Verification Pass
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        After OpenCode finishes, runs a second pass to verify every rule was fully
+                        applied and fix anything missed. Adds token usage but improves reliability.
                       </p>
                     </div>
                     <Switch
-                      id="agent-use-opencode"
-                      checked={settings.agentUseOpencode === true}
+                      id="opencode-verification-pass"
+                      checked={settings.opencodeVerificationPass === true}
                       onCheckedChange={(checked) =>
-                        setSettings((p) => ({ ...p, agentUseOpencode: checked }))
+                        setSettings((p) => ({ ...p, opencodeVerificationPass: checked }))
                       }
                     />
                   </div>
-
-                  {settings.agentUseOpencode && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Sandbox Snapshot ID
-                      </label>
-                      <Input
-                        value={settings.opencodeSandboxSnapshotId || ''}
-                        onChange={(e) =>
-                          setSettings((p) => ({ ...p, opencodeSandboxSnapshotId: e.target.value }))
-                        }
-                        placeholder="snap_..."
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        The Vercel Sandbox snapshot ID with OpenCode installed. Created by running
-                        the setup script (see docs).
-                      </p>
-                    </div>
-                  )}
-
-                  {settings.agentUseOpencode && (
-                    <div className="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          OpenCode Skills
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          Enable or disable each OpenCode skill. Disabled skills are not loaded in
-                          the sandbox agent.
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        {OPENCODE_SKILLS.map((skill) => (
-                          <div
-                            key={skill.key}
-                            className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
-                          >
-                            <div>
-                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {skill.label}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                {skill.description}
-                              </p>
-                            </div>
-                            <Switch
-                              id={`opencode-skill-${skill.key}`}
-                              checked={settings.opencodeSkillToggles?.[skill.key] !== false}
-                              onCheckedChange={(checked) =>
-                                setSettings((p) => {
-                                  return {
-                                    ...p,
-                                    opencodeSkillToggles: {
-                                      ...DEFAULT_OPENCODE_SKILL_TOGGLES,
-                                      ...p.opencodeSkillToggles,
-                                      [skill.key]: checked,
-                                    },
-                                  };
-                                })
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {settings.agentUseOpencode && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Min. Body Length for OpenCode
-                      </label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={settings.opencodeMinBodyLength ?? 50000}
-                        onChange={(e) =>
-                          setSettings((p) => ({
-                            ...p,
-                            opencodeMinBodyLength: Number(e.target.value) || 0,
-                          }))
-                        }
-                        placeholder="50000"
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Emails with a body shorter than this (in characters) are processed by the
-                        standard agent. Set to 0 to always use OpenCode.
-                      </p>
-                    </div>
-                  )}
-
-                  {settings.agentUseOpencode && (
-                    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Verification Pass
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          After OpenCode finishes, runs a second pass to verify every rule was fully
-                          applied and fix anything missed. Adds token usage but improves
-                          reliability.
-                        </p>
-                      </div>
-                      <Switch
-                        id="opencode-verification-pass"
-                        checked={settings.opencodeVerificationPass === true}
-                        onCheckedChange={(checked) =>
-                          setSettings((p) => ({ ...p, opencodeVerificationPass: checked }))
-                        }
-                      />
-                    </div>
-                  )}
 
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                     <div>
@@ -811,90 +691,6 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                     />
                   </div>
 
-                  <Input
-                    label="Chunk Threshold (chars)"
-                    type="number"
-                    min={AGENT_LIMITS.chunkThresholdChars.min}
-                    max={AGENT_LIMITS.chunkThresholdChars.max}
-                    value={settings.agentChunkThresholdChars ?? ''}
-                    onChange={(e) => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkThresholdChars: parseOptionalIntegerInput(
-                          e.target.value,
-                          p.agentChunkThresholdChars,
-                        ),
-                      }));
-                    }}
-                    onBlur={() => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkThresholdChars: normalizeOptionalInteger(
-                          p.agentChunkThresholdChars,
-                          {
-                            min: AGENT_LIMITS.chunkThresholdChars.min,
-                            max: AGENT_LIMITS.chunkThresholdChars.max,
-                          },
-                        ),
-                      }));
-                    }}
-                    hint={`If email body length exceeds this value, the agent switches to chunked map-reduce mode (${AGENT_LIMITS.chunkThresholdChars.min}-${AGENT_LIMITS.chunkThresholdChars.max}).`}
-                  />
-                  <Input
-                    label="Chunk Size (chars)"
-                    type="number"
-                    min={AGENT_LIMITS.chunkSizeChars.min}
-                    max={AGENT_LIMITS.chunkSizeChars.max}
-                    value={settings.agentChunkSizeChars ?? ''}
-                    onChange={(e) => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkSizeChars: parseOptionalIntegerInput(
-                          e.target.value,
-                          p.agentChunkSizeChars,
-                        ),
-                      }));
-                    }}
-                    onBlur={() => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkSizeChars: normalizeOptionalInteger(p.agentChunkSizeChars, {
-                          min: AGENT_LIMITS.chunkSizeChars.min,
-                          max: AGENT_LIMITS.chunkSizeChars.max,
-                        }),
-                      }));
-                    }}
-                    hint={`Target size for each map-phase chunk (${AGENT_LIMITS.chunkSizeChars.min}-${AGENT_LIMITS.chunkSizeChars.max}).`}
-                  />
-                  <Input
-                    label="Chunk Extract Max Tokens"
-                    type="number"
-                    min={AGENT_LIMITS.chunkExtractMaxTokens.min}
-                    max={AGENT_LIMITS.chunkExtractMaxTokens.max}
-                    value={settings.agentChunkExtractMaxTokens ?? ''}
-                    onChange={(e) => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkExtractMaxTokens: parseOptionalIntegerInput(
-                          e.target.value,
-                          p.agentChunkExtractMaxTokens,
-                        ),
-                      }));
-                    }}
-                    onBlur={() => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkExtractMaxTokens: normalizeOptionalInteger(
-                          p.agentChunkExtractMaxTokens,
-                          {
-                            min: AGENT_LIMITS.chunkExtractMaxTokens.min,
-                            max: AGENT_LIMITS.chunkExtractMaxTokens.max,
-                          },
-                        ),
-                      }));
-                    }}
-                    hint={`Max tokens for each chunk extraction LLM call (${AGENT_LIMITS.chunkExtractMaxTokens.min}-${AGENT_LIMITS.chunkExtractMaxTokens.max}).`}
-                  />
                   <Input
                     label="Pre-analysis Max Tokens"
                     type="number"
@@ -949,61 +745,6 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
                       }));
                     }}
                     hint={`Max Markdown characters sent to pre-analysis after HTML cleanup/extraction (${AGENT_LIMITS.bodyAnalysisMaxChars.min}-${AGENT_LIMITS.bodyAnalysisMaxChars.max}). HTML emails are converted to structured text before this limit is applied.`}
-                  />
-                  <Input
-                    label="Chunk Fallback Max Chars"
-                    type="number"
-                    min={AGENT_LIMITS.chunkFallbackMaxChars.min}
-                    max={AGENT_LIMITS.chunkFallbackMaxChars.max}
-                    value={settings.agentChunkFallbackMaxChars ?? ''}
-                    onChange={(e) => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkFallbackMaxChars: parseOptionalIntegerInput(
-                          e.target.value,
-                          p.agentChunkFallbackMaxChars,
-                        ),
-                      }));
-                    }}
-                    onBlur={() => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentChunkFallbackMaxChars: normalizeOptionalInteger(
-                          p.agentChunkFallbackMaxChars,
-                          {
-                            min: AGENT_LIMITS.chunkFallbackMaxChars.min,
-                            max: AGENT_LIMITS.chunkFallbackMaxChars.max,
-                          },
-                        ),
-                      }));
-                    }}
-                    hint={`If chunk extraction fails, raw chunk is truncated to this length (${AGENT_LIMITS.chunkFallbackMaxChars.min}-${AGENT_LIMITS.chunkFallbackMaxChars.max}).`}
-                  />
-                  <Input
-                    label="Fallback Pass Max Tokens"
-                    type="number"
-                    min={AGENT_LIMITS.fallbackPassMaxTokens.min}
-                    max={AGENT_LIMITS.fallbackPassMaxTokens.max}
-                    value={settings.agentFallbackMaxTokens ?? ''}
-                    onChange={(e) => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentFallbackMaxTokens: parseOptionalIntegerInput(
-                          e.target.value,
-                          p.agentFallbackMaxTokens,
-                        ),
-                      }));
-                    }}
-                    onBlur={() => {
-                      setSettings((p) => ({
-                        ...p,
-                        agentFallbackMaxTokens: normalizeOptionalInteger(p.agentFallbackMaxTokens, {
-                          min: AGENT_LIMITS.fallbackPassMaxTokens.min,
-                          max: AGENT_LIMITS.fallbackPassMaxTokens.max,
-                        }),
-                      }));
-                    }}
-                    hint={`Max tokens used by low-complexity fallback pass after a primary failure (${AGENT_LIMITS.fallbackPassMaxTokens.min}-${AGENT_LIMITS.fallbackPassMaxTokens.max}).`}
                   />
                 </div>
               </AccordionContent>
@@ -1244,34 +985,14 @@ export default function AdminSettingsPage({ showPageHeader = true }: AdminSettin
               <AccordionTrigger>Memory Settings</AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enable Memory (Supermemory.ai)
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        When enabled, processed emails are saved to Supermemory.ai and users get
-                        access to the Memory tab to query their memories in natural language.
-                      </p>
-                    </div>
-                    <Switch
-                      id="memory-enabled"
-                      checked={settings.memoryEnabled === true}
-                      onCheckedChange={(checked) =>
-                        setSettings((p) => ({ ...p, memoryEnabled: checked }))
-                      }
-                    />
-                  </div>
-                  {settings.memoryEnabled && (
-                    <Input
-                      label="Supermemory API Key"
-                      type="password"
-                      value={settings.memoryApiKey || ''}
-                      onChange={(e) => setSettings((p) => ({ ...p, memoryApiKey: e.target.value }))}
-                      placeholder="sm-..."
-                      hint="API key from console.supermemory.ai. Falls back to SUPERMEMORY_API_KEY environment variable."
-                    />
-                  )}
+                  <Input
+                    label="Supermemory API Key"
+                    type="password"
+                    value={settings.memoryApiKey || ''}
+                    onChange={(e) => setSettings((p) => ({ ...p, memoryApiKey: e.target.value }))}
+                    placeholder="sm-..."
+                    hint="API key from console.supermemory.ai. Falls back to SUPERMEMORY_API_KEY environment variable."
+                  />
                 </div>
               </AccordionContent>
             </AccordionItem>

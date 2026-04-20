@@ -132,7 +132,6 @@ async function deleteAllUserData(uid: string): Promise<{ logIds: string[] }> {
     supabase.from('entity_relations').delete().eq('user_id', uid),
     supabase.from('entity_flows').delete().eq('user_id', uid),
     supabase.from('entity_place_maps').delete().eq('user_id', uid),
-    supabase.from('user_memory').delete().eq('user_id', uid),
   ]);
 
   return { logIds };

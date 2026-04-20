@@ -81,17 +81,31 @@ function buildMemoryPromptValues(memoryToolEnabled?: boolean): Record<string, st
   return {
     __MEMORY_IMPORTANT_LINE__: memoryToolEnabled
       ? '- A `memory_agent` tool is available. Use it only when prior emails are clearly required to apply a rule. Ask at most one short, focused question (max 300 chars; no pasted HTML/email body), do not retry on timeout/errors, and immediately continue without memory if it is slow or unavailable.'
-      : '- An <email_history> block may be provided below with prior emails from the same sender. Use it to detect sender-specific patterns when applying the rules.',
+      : '- The memory tool is unavailable in this run. Continue without memory context and apply rules using only the current email and analysis context.',
     __MEMORY_STEP_INSTRUCTION__: memoryToolEnabled
       ? 'Only if prior emails are clearly required for a rule, call memory_agent once with a short question (max 300 chars; never paste full HTML or long excerpts). Treat memory as optional context; if the tool is slow, fails, or times out, skip memory and continue editing immediately.'
-      : 'Review the provided <email_history> block if present before editing.',
+      : 'Skip memory lookup and proceed directly with rule application.',
   };
+}
+
+function sanitizeAppendedPrompt(value: string): string {
+  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
+}
+
+function buildAdminAppendedPromptSection(appendedSystemPrompt?: string): string {
+  const normalized =
+    typeof appendedSystemPrompt === 'string' ? sanitizeAppendedPrompt(appendedSystemPrompt) : '';
+
+  if (!normalized) return '';
+
+  return `\nADDITIONAL INSTRUCTIONS:\n${normalized}`;
 }
 
 export function buildSandboxEmailAgentPrompt(input: {
   emailFrom: string;
   emailSubject: string;
   rules: SandboxPromptRule[];
+  appendedSystemPrompt?: string;
   memorySection?: string;
   memoryToolEnabled?: boolean;
   analysisSection?: string;
@@ -103,6 +117,7 @@ export function buildSandboxEmailAgentPrompt(input: {
     emailFrom,
     emailSubject,
     rules,
+    appendedSystemPrompt,
     memorySection = '',
     memoryToolEnabled,
     analysisSection = '',
@@ -116,6 +131,7 @@ export function buildSandboxEmailAgentPrompt(input: {
     __EMAIL_SUBJECT__: sanitizeEmailField(emailSubject),
     __ATTACHMENTS_LINE__: buildAttachmentsLine(attachmentNames),
     __RULES_TEXT__: buildRulesText(rules),
+    __ADMIN_APPENDED_PROMPT_SECTION__: buildAdminAppendedPromptSection(appendedSystemPrompt),
     __SANDBOX_PLATFORM_TIMEOUT_MINUTES__: String(sandboxPlatformTimeoutMinutes),
     __ANALYSIS_SECTION__: analysisSection,
     __MEMORY_SECTION__: memorySection,
@@ -129,14 +145,16 @@ export function buildSandboxEmailAgentVerificationPrompt(input: {
   emailFrom: string;
   emailSubject: string;
   rules: SandboxPromptRule[];
+  appendedSystemPrompt?: string;
   skillToggles?: SandboxPromptSkillToggles;
 }): string {
-  const { emailFrom, emailSubject, rules, skillToggles } = input;
+  const { emailFrom, emailSubject, rules, appendedSystemPrompt, skillToggles } = input;
 
   return populateSandboxPromptTemplate(SANDBOX_EMAIL_AGENT_VERIFICATION_PROMPT, {
     __EMAIL_FROM__: sanitizeEmailField(emailFrom),
     __EMAIL_SUBJECT__: sanitizeEmailField(emailSubject),
     __RULES_TEXT__: buildRulesText(rules),
+    __ADMIN_APPENDED_PROMPT_SECTION__: buildAdminAppendedPromptSection(appendedSystemPrompt),
     ...buildSkillPromptValues(skillToggles),
   });
 }

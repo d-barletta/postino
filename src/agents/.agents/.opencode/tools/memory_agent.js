@@ -1,7 +1,7 @@
 import { tool } from '@opencode-ai/plugin';
 
 const MAX_TOOL_RESPONSE_LENGTH = 6000;
-const MEMORY_TOOL_TIMEOUT_MS = 12000;
+const MEMORY_TOOL_TIMEOUT_MS = 20 * 1000;
 const MAX_MEMORY_TOOL_CALLS = 2;
 const MAX_MEMORY_QUERY_LENGTH = 300;
 
@@ -18,14 +18,14 @@ function normalizeQuery(value) {
 
 export default tool({
   description:
-    "Ask Postino's memory agent a focused question about the current user's email memory. Use this when past emails or sender history would help you apply the rules.",
+    "Query the user's email memory for specific fact needed to apply a rule. Use this when past emails or sender history would help you apply the rules.",
   args: {
     query: tool.schema
       .string()
       .min(1)
       .max(MAX_MEMORY_QUERY_LENGTH)
       .describe(
-        'A focused question (max 300 chars) about prior emails, sender behavior, or user memory. Ask narrow questions, not broad memory dumps.',
+        'A short and focused question (max 300 chars) about prior emails, sender behavior, or user memory. Ask narrow questions, not broad memory dumps.',
       ),
   },
   async execute(args) {

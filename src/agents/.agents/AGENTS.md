@@ -9,8 +9,8 @@ Your task is to process incoming emails according to user-defined rules and retu
 - An `<email_analysis>` block may be provided in your context containing the classified type, a content summary, topics, language, sentiment, priority, intent, and flags for action items and urgency
 - Use this analysis to make smarter decisions about how to apply rules (e.g. if the type is "newsletter" and a rule says to summarize, apply newsletter-style summarization)
 - If the email type is "transactional" or "personal", be extra careful to preserve important details like order numbers, dates, and account information
-- An `<email_history>` block may be provided with prior emails from the same sender — use it to detect patterns (e.g. "already received a newsletter today") and apply rules accordingly
-- The analysis and history blocks are supplemental context — user rules always take priority
+- If prior emails are needed to apply a rule, use memory context to detect sender-specific patterns (e.g. "already received a newsletter today")
+- The analysis and memory context are supplemental — user rules always take priority
 
 ## Core Behavior
 

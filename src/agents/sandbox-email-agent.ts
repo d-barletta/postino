@@ -1,8 +1,7 @@
 /**
  * sandbox-email-agent.ts — OpenCode Sandbox-based email processing agent.
  *
- * Alternative to the default email-agent that offloads HTML editing to an
- * OpenCode session running inside a Vercel Sandbox.  This avoids hitting
+ * OpenCode-based agent that edits HTML inside a Vercel Sandbox. This avoids hitting
  * model context-window limits for very large emails because OpenCode manages
  * its own context autonomously.
  *
@@ -18,8 +17,7 @@
  *   6. Stores the OpenCode session ID in the `email_logs` row for later
  *      recovery / debugging.
  *
- * Signature is identical to `processEmailWithAgent` in `email-agent.ts` so
- * the two can be swapped via an admin toggle.
+ * This module exposes the canonical `processEmailWithAgent` entrypoint.
  */
 
 import { readdir, readFile } from 'node:fs/promises';
@@ -41,10 +39,7 @@ import type { EmailAnalysis, EmailMemoryEntry, PreComputedEmailAnalysis } from '
 import type { EmailAttachment } from '@/lib/email';
 import { extractStoredPlaceNames } from '@/lib/place-utils';
 import {
-  getUserMemory,
-  saveUserMemory,
   buildMemoryEntryFromAnalysis,
-  buildMemoryContext,
   saveToSupermemory,
   saveAttachmentFilesToSupermemory,
 } from './email-agent';
@@ -60,10 +55,7 @@ import { VERCEL_TIMEOUTS } from '@/lib/vercel-plan';
 
 // Re-export memory helpers so consumers can import from either agent module.
 export {
-  getUserMemory,
-  saveUserMemory,
   buildMemoryEntryFromAnalysis,
-  buildMemoryContext,
   saveToSupermemory,
   saveAttachmentFilesToSupermemory,
 } from './email-agent';
@@ -675,6 +667,7 @@ function buildOpencodePrompt(
   memorySection: string,
   analysisSection: string,
   skillToggles: Record<string, boolean>,
+  appendedSystemPrompt: string,
   attachmentNames?: string[],
   memoryToolEnabled = false,
 ): string {
@@ -682,6 +675,7 @@ function buildOpencodePrompt(
     emailFrom,
     emailSubject,
     rules,
+    appendedSystemPrompt,
     memorySection,
     memoryToolEnabled,
     analysisSection,
@@ -706,11 +700,13 @@ function buildVerificationPrompt(
   emailSubject: string,
   rules: RuleForProcessing[],
   skillToggles: Record<string, boolean>,
+  appendedSystemPrompt: string,
 ): string {
   return buildSandboxEmailAgentVerificationPrompt({
     emailFrom,
     emailSubject,
     rules,
+    appendedSystemPrompt,
     skillToggles,
   });
 }
@@ -773,9 +769,7 @@ async function saveOpencodeSessionId(logId: string, sessionId: string): Promise<
 /**
  * Process an incoming email using OpenCode inside a Vercel Sandbox.
  *
- * Drop-in replacement for `processEmailWithAgent` from `email-agent.ts`.
- * The function signature is identical so the two can be swapped via admin
- * settings (`agentUseOpencode`).
+ * Primary processing entrypoint used by inbound and reprocess flows.
  */
 export async function processEmailWithAgent(
   userId: string,
@@ -845,6 +839,8 @@ export async function processEmailWithAgent(
     typeof settings?.emailSubjectPrefix === 'string'
       ? settings.emailSubjectPrefix.trim()
       : '[Postino]';
+  const appendedSystemPrompt =
+    typeof settings?.llmSystemPrompt === 'string' ? settings.llmSystemPrompt.trim() : '';
   const fallbackSubject =
     subjectPrefix.length > 0 ? `${subjectPrefix} ${emailSubject}`.trim() : emailSubject;
 
@@ -869,6 +865,7 @@ export async function processEmailWithAgent(
     includeTraceExcerpts,
     subjectPrefix,
     skillToggles,
+    hasAppendedSystemPrompt: appendedSystemPrompt.length > 0,
   });
 
   const sandboxMemoryToolBaseUrl = resolveSandboxMemoryToolBaseUrl();
@@ -884,7 +881,7 @@ export async function processEmailWithAgent(
     memoryToolEnabled ? 'ok' : 'warning',
     memoryToolEnabled
       ? 'Enabled sandbox memory tool'
-      : 'Sandbox memory tool unavailable; falling back to prompt memory context',
+      : 'Sandbox memory tool unavailable; continuing without memory context',
     {
       hasBaseUrl: !!sandboxMemoryToolBaseUrl,
       hasToken: !!sandboxMemoryToolToken,
@@ -892,9 +889,7 @@ export async function processEmailWithAgent(
     },
   );
 
-  // 2. Run pre-analysis. If the sandbox memory tool cannot be provisioned,
-  //    also load the sender memory so the prompt can fall back to the old
-  //    inline context behavior.
+  // 2. Run pre-analysis.
   //    When a preComputedAnalysis is provided (single-job path), skip the LLM
   //    call entirely and reuse the already-saved result.
   let preAnalysisResult: {
@@ -903,7 +898,6 @@ export async function processEmailWithAgent(
     promptTokens: number;
     completionTokens: number;
   };
-  let promptMemoryEntries: EmailMemoryEntry[] = [];
 
   if (preComputedAnalysis) {
     pushTrace('pre_analysis', 'ok', 'Reusing pre-computed analysis (skipping LLM call)', {
@@ -915,76 +909,28 @@ export async function processEmailWithAgent(
       promptTokens: preComputedAnalysis.promptTokens,
       completionTokens: preComputedAnalysis.completionTokens,
     };
-    if (!memoryToolEnabled) {
-      const memory = await getUserMemory(userId).catch(() => ({
-        userId,
-        entries: [],
-        updatedAt: new Date(),
-      }));
-      promptMemoryEntries = memory.entries;
-    }
   } else {
-    if (memoryToolEnabled) {
-      try {
-        preAnalysisResult = await runPreAnalysis(
-          emailFrom,
-          emailSubject,
-          emailBody,
-          isHtml,
-          analysisOutputLanguage,
-          openRouterTracking,
-        );
-      } catch (error) {
-        pushTrace(
-          'pre_analysis_failed',
-          'warning',
-          error instanceof Error ? error.message : String(error),
-        );
-        preAnalysisResult = {
-          analysis: null,
-          tokensUsed: 0,
-          promptTokens: 0,
-          completionTokens: 0,
-        };
-      }
-    } else {
-      const [preAnalysisOutcome, memoryOutcome] = await Promise.allSettled([
-        runPreAnalysis(
-          emailFrom,
-          emailSubject,
-          emailBody,
-          isHtml,
-          analysisOutputLanguage,
-          openRouterTracking,
-        ),
-        getUserMemory(userId),
-      ]);
-
-      preAnalysisResult =
-        preAnalysisOutcome.status === 'fulfilled'
-          ? preAnalysisOutcome.value
-          : { analysis: null, tokensUsed: 0, promptTokens: 0, completionTokens: 0 };
-      if (preAnalysisOutcome.status === 'rejected') {
-        pushTrace(
-          'pre_analysis_failed',
-          'warning',
-          preAnalysisOutcome.reason instanceof Error
-            ? preAnalysisOutcome.reason.message
-            : String(preAnalysisOutcome.reason),
-        );
-      }
-
-      if (memoryOutcome.status === 'fulfilled') {
-        promptMemoryEntries = memoryOutcome.value.entries;
-      } else {
-        pushTrace(
-          'memory_load_failed',
-          'warning',
-          memoryOutcome.reason instanceof Error
-            ? memoryOutcome.reason.message
-            : String(memoryOutcome.reason),
-        );
-      }
+    try {
+      preAnalysisResult = await runPreAnalysis(
+        emailFrom,
+        emailSubject,
+        emailBody,
+        isHtml,
+        analysisOutputLanguage,
+        openRouterTracking,
+      );
+    } catch (error) {
+      pushTrace(
+        'pre_analysis_failed',
+        'warning',
+        error instanceof Error ? error.message : String(error),
+      );
+      preAnalysisResult = {
+        analysis: null,
+        tokensUsed: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+      };
     }
   }
 
@@ -1001,13 +947,7 @@ export async function processEmailWithAgent(
   );
 
   // 3. Build context for the prompt.
-  const memoryContext = !memoryToolEnabled
-    ? buildMemoryContext(promptMemoryEntries, emailFrom)
-    : '';
-  const memorySection =
-    !memoryToolEnabled && memoryContext
-      ? `\n\n<email_history>\n${memoryContext}\n</email_history>`
-      : '';
+  const memorySection = '';
   const analysisSection = buildAnalysisSection(analysis);
 
   const activeRules = rules.filter((r) => r.text.trim().length > 0);
@@ -1018,9 +958,9 @@ export async function processEmailWithAgent(
     attachmentCount: attachmentNames?.length ?? 0,
     isHtmlInput: isHtml,
     emailBodyLength: emailBody.length,
-    memoryMode: memoryToolEnabled ? 'tool' : memoryContext ? 'inline' : 'none',
-    memoryEntryCount: promptMemoryEntries.length,
-    memoryContextLength: memoryContext.length,
+    memoryMode: memoryToolEnabled ? 'tool' : 'none',
+    memoryEntryCount: 0,
+    memoryContextLength: 0,
     analysisSectionLength: analysisSection.length,
   });
 
@@ -1032,6 +972,7 @@ export async function processEmailWithAgent(
     memorySection,
     analysisSection,
     skillToggles,
+    appendedSystemPrompt,
     attachmentNames,
     memoryToolEnabled,
   );
@@ -1039,7 +980,7 @@ export async function processEmailWithAgent(
   pushTrace('opencode_prompt', 'ok', 'Built OpenCode prompt', {
     promptLength: opencodePrompt.length,
     promptSummary: summarizeTextForTrace(opencodePrompt, includeTraceExcerpts),
-    hasMemory: !!memoryContext,
+    hasMemory: false,
     hasMemoryTool: memoryToolEnabled,
     hasAnalysis: !!analysis,
   });
@@ -1444,6 +1385,7 @@ export async function processEmailWithAgent(
           emailSubject,
           activeRules,
           skillToggles,
+          appendedSystemPrompt,
         );
 
         pushTrace('opencode_verify_prompt', 'ok', 'Built verification prompt', {
@@ -1675,7 +1617,7 @@ export async function processEmailWithAgent(
     estimatedCost,
   });
 
-  // 8. Update user memory.
+  // 8. Persist memory to Supermemory.
   const newEntry: EmailMemoryEntry = buildMemoryEntryFromAnalysis(
     {
       logId,
@@ -1690,40 +1632,24 @@ export async function processEmailWithAgent(
     analysis,
   );
 
-  void (async () => {
-    try {
-      const currentMemory = await getUserMemory(userId);
-      await saveUserMemory({
+  const supermemoryApiKey = (
+    (settings?.memoryApiKey as string | undefined) ||
+    process.env.SUPERMEMORY_API_KEY ||
+    ''
+  ).trim();
+  if (supermemoryApiKey) {
+    saveToSupermemory(supermemoryApiKey, userId, newEntry).catch((err) =>
+      console.error('Failed to save to Supermemory:', err),
+    );
+    if (attachmentFiles?.length) {
+      const date = new Date().toISOString().slice(0, 10);
+      saveAttachmentFilesToSupermemory(
+        supermemoryApiKey,
         userId,
-        entries: [...currentMemory.entries, newEntry],
-        updatedAt: new Date(),
-      });
-    } catch (err) {
-      console.error('Failed to update user memory:', err);
-    }
-  })();
-
-  // Optionally save to Supermemory.ai.
-  if (settings?.memoryEnabled === true) {
-    const supermemoryApiKey = (
-      (settings.memoryApiKey as string | undefined) ||
-      process.env.SUPERMEMORY_API_KEY ||
-      ''
-    ).trim();
-    if (supermemoryApiKey) {
-      saveToSupermemory(supermemoryApiKey, userId, newEntry).catch((err) =>
-        console.error('Failed to save to Supermemory:', err),
-      );
-      if (attachmentFiles?.length) {
-        const date = new Date().toISOString().slice(0, 10);
-        saveAttachmentFilesToSupermemory(
-          supermemoryApiKey,
-          userId,
-          logId,
-          date,
-          attachmentFiles,
-        ).catch((err) => console.error('Failed to upload attachments to Supermemory:', err));
-      }
+        logId,
+        date,
+        attachmentFiles,
+      ).catch((err) => console.error('Failed to upload attachments to Supermemory:', err));
     }
   }
 

@@ -136,7 +136,6 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const { openAgentFullPage } = useGlobalModals();
   const [maxRuleLength, setMaxRuleLength] = useState(1000);
-  const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [hasVisitedRelations, setHasVisitedRelations] = useState(false);
@@ -251,7 +250,6 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.maxRuleLength) setMaxRuleLength(d.maxRuleLength);
-        setMemoryEnabled(d.memoryEnabled === true);
       })
       .catch(() => {})
       .finally(() => setSettingsLoading(false));
@@ -458,7 +456,7 @@ export default function DashboardPage() {
           />
         )}
         <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} onRefresh={fetchStats} />
-        {memoryEnabled && (userStats?.totalEmailsReceived ?? 0) > 0 && (
+        {(userStats?.totalEmailsReceived ?? 0) > 0 && (
           <Card
             className="group cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-[#efd957]"
             role="button"
@@ -580,12 +578,10 @@ export default function DashboardPage() {
             <Inbox className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.inbox}</span>
           </TabsTrigger>
-          {(memoryEnabled || loading || settingsLoading) && (
-            <TabsTrigger value="agent">
-              <Brain className="h-4 w-4 shrink-0" />
-              <span>{t.dashboard.tabs.agent}</span>
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="agent">
+            <Brain className="h-4 w-4 shrink-0" />
+            <span>{t.dashboard.tabs.agent}</span>
+          </TabsTrigger>
           <TabsTrigger value="explore">
             <Compass className="h-4 w-4 shrink-0" />
             <span>{t.dashboard.tabs.explore}</span>
@@ -625,7 +621,6 @@ export default function DashboardPage() {
           ))}
 
         {activeTab === 'agent' &&
-          (memoryEnabled || loading || settingsLoading) &&
           (loading || settingsLoading ? (
             <DashboardPanelSkeleton cards={2} />
           ) : (

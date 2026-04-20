@@ -89,31 +89,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         settingsData,
       });
     }
-    if (settingsData?.memoryEnabled === true) {
-      const supermemoryApiKey = (
-        (settingsData?.memoryApiKey as string | undefined) ||
-        process.env.SUPERMEMORY_API_KEY ||
-        ''
-      ).trim();
-      if (supermemoryApiKey && ownerId) {
-        const receivedAt = data.received_at ? new Date(data.received_at) : new Date();
-        const entry = buildMemoryEntryFromAnalysis(
-          {
-            logId: id,
-            date: receivedAt.toISOString().slice(0, 10),
-            timestamp: receivedAt.toISOString(),
-            fromAddress: typeof data.from_address === 'string' ? data.from_address : '',
-            subject: typeof data.subject === 'string' ? data.subject : '',
-            ruleApplied: typeof data.rule_applied === 'string' ? data.rule_applied : undefined,
-            wasSummarized: typeof data.rule_applied === 'string' && data.rule_applied.length > 0,
-          },
-          safeAnalysis,
-        );
-        try {
-          await saveToSupermemory(supermemoryApiKey, ownerId, entry);
-        } catch (err) {
-          console.error(`[email/${id}/analysis] failed to save to Supermemory:`, err);
-        }
+    const supermemoryApiKey = (
+      (settingsData?.memoryApiKey as string | undefined) ||
+      process.env.SUPERMEMORY_API_KEY ||
+      ''
+    ).trim();
+    if (supermemoryApiKey && ownerId) {
+      const receivedAt = data.received_at ? new Date(data.received_at) : new Date();
+      const entry = buildMemoryEntryFromAnalysis(
+        {
+          logId: id,
+          date: receivedAt.toISOString().slice(0, 10),
+          timestamp: receivedAt.toISOString(),
+          fromAddress: typeof data.from_address === 'string' ? data.from_address : '',
+          subject: typeof data.subject === 'string' ? data.subject : '',
+          ruleApplied: typeof data.rule_applied === 'string' ? data.rule_applied : undefined,
+          wasSummarized: typeof data.rule_applied === 'string' && data.rule_applied.length > 0,
+        },
+        safeAnalysis,
+      );
+      try {
+        await saveToSupermemory(supermemoryApiKey, ownerId, entry);
+      } catch (err) {
+        console.error(`[email/${id}/analysis] failed to save to Supermemory:`, err);
       }
     }
 

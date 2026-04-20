@@ -184,7 +184,6 @@ export interface Settings {
   maxActiveRules?: number;
   llmModel: string;
   llmApiKey: string;
-  llmMaxTokens?: number;
   llmSystemPrompt?: string;
   emailSubjectPrefix?: string;
   smtpHost: string;
@@ -207,36 +206,18 @@ export interface Settings {
   maintenanceMode?: boolean;
   /** When enabled, new user registrations are suspended and a maintenance warning is shown on the signup page. */
   signupMaintenanceMode?: boolean;
-  /** Controls whether matching rules are applied sequentially (output of N feeds into N+1) or all at once in a single LLM call. Defaults to 'sequential'. */
-  rulesExecutionMode?: 'sequential' | 'parallel';
-  /** Character threshold above which the agent switches to map-reduce chunked processing. */
-  agentChunkThresholdChars?: number;
-  /** Target size for each chunk in map-reduce processing. */
-  agentChunkSizeChars?: number;
-  /** Max output tokens for each chunk extraction call. */
-  agentChunkExtractMaxTokens?: number;
   /** Max output tokens for the pre-analysis classification call. */
   agentAnalysisMaxTokens?: number;
   /** Max body characters included in pre-analysis. */
   agentBodyAnalysisMaxChars?: number;
-  /** Max raw characters used as fallback when a chunk extraction fails. */
-  agentChunkFallbackMaxChars?: number;
-  /** Max output tokens for the simplified low-complexity fallback pass. */
-  agentFallbackMaxTokens?: number;
   /** Enables/disables collection and persistence of agent execution traces. */
   agentTracingEnabled?: boolean;
   /** Includes prompt/response excerpts in trace payloads when tracing is enabled. */
   agentTraceIncludeExcerpts?: boolean;
-  /** Enables the Supermemory.ai integration for persistent memory and the Memory tab. */
-  memoryEnabled?: boolean;
   /** Supermemory.ai API key. Falls back to SUPERMEMORY_API_KEY env variable. */
   memoryApiKey?: string;
-  /** When enabled, email processing is offloaded to OpenCode running inside a Vercel Sandbox. */
-  agentUseOpencode?: boolean;
   /** Vercel Sandbox snapshot ID with OpenCode pre-installed. Created by the setup script. */
   opencodeSandboxSnapshotId?: string;
-  /** Minimum email body length (in characters) to trigger the OpenCode sandbox agent. Emails shorter than this use the standard agent. Defaults to 50000. */
-  opencodeMinBodyLength?: number;
   /** Per-skill OpenCode enablement map. Missing keys default to true. */
   opencodeSkillToggles?: Record<string, boolean>;
   /** When enabled, runs a second OpenCode verification pass after the first to catch any rules that were missed or only partially applied. */

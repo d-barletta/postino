@@ -27,7 +27,6 @@ import { Sandbox } from '@vercel/sandbox';
 import { createClient } from '@supabase/supabase-js';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import nodePath from 'node:path';
-import { buildMemoryContext, getUserMemory } from '../src/agents/sandbox-email-agent';
 import { buildSandboxEmailAgentPrompt } from '../src/agents/sandbox-email-agent-prompt-builder';
 import {
   createSandboxMemoryToolToken,
@@ -527,16 +526,7 @@ async function main() {
       : null;
   const memoryToolEnabled = Boolean(sandboxCanReachBaseUrl && sandboxMemoryToolToken);
 
-  let memorySection = '';
-  if (!memoryToolEnabled && userId) {
-    const memory = await getUserMemory(userId).catch(() => ({
-      userId,
-      entries: [],
-      updatedAt: new Date(),
-    }));
-    const memoryContext = buildMemoryContext(memory.entries, emailFrom);
-    memorySection = memoryContext ? `\n\n<email_history>\n${memoryContext}\n</email_history>` : '';
-  }
+  const memorySection = '';
 
   const prompt = buildPrompt(
     emailFrom,
@@ -570,11 +560,7 @@ async function main() {
   console.log('📦 Snapshot:', snapshotId);
   console.log(
     '🧠 Memory mode:',
-    memoryToolEnabled
-      ? `tool (${sandboxMemoryToolBaseUrl})`
-      : memorySection
-        ? 'inline fallback'
-        : 'disabled',
+    memoryToolEnabled ? `tool (${sandboxMemoryToolBaseUrl})` : 'disabled',
   );
   if (!sandboxCanReachBaseUrl && sandboxMemoryToolBaseUrl) {
     console.log(
@@ -857,10 +843,10 @@ async function main() {
       snapshotId,
     },
     memory: {
-      mode: memoryToolEnabled ? 'tool' : memorySection ? 'inline-fallback' : 'disabled',
+      mode: memoryToolEnabled ? 'tool' : 'disabled',
       baseUrl: memoryToolEnabled ? sandboxMemoryToolBaseUrl : null,
       hasToken: memoryToolEnabled,
-      inlineContextIncluded: Boolean(memorySection),
+      inlineContextIncluded: false,
       userId,
     },
     opencode: {

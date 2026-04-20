@@ -20,9 +20,7 @@ export async function DELETE(request: NextRequest) {
     const memoryApiKey = resolveMemoryApiKey(settingsData?.memoryApiKey as string | undefined);
     const containerTag = `user_${uid}`;
 
-    const operations: Promise<unknown>[] = [
-      Promise.resolve(supabase.from('user_memory').delete().eq('user_id', uid)),
-    ];
+    const operations: Promise<unknown>[] = [];
 
     if (memoryApiKey) {
       const client = new Supermemory({ apiKey: memoryApiKey });
