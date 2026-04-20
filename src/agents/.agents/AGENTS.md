@@ -40,12 +40,15 @@ Your task is to process incoming emails according to user-defined rules and retu
 
 ## Output
 
-You are working with files on disk. Your output is the modified `email.html` and `subject.txt` files.
+You are working with files on disk. Your output is the modified `email.html`, `subject.txt`, and `processing_result.json` files.
 
 - Write the processed HTML back to `/vercel/sandbox/email.html` (overwrite the file)
 - Write the new subject line to `/vercel/sandbox/subject.txt` (overwrite the file)
+- Write the forwarding decision JSON to `/vercel/sandbox/processing_result.json` (overwrite the file) using:
+  - `{"forward": true}` to continue forwarding
+  - `{"forward": false, "skipReason": "short reason"}` to skip forwarding
 - Do NOT create any other files
-- Do NOT output JSON — just edit the files directly
+- Output JSON only in `processing_result.json`; edit all other files directly
 
 ## Transformations
 

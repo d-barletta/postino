@@ -8,6 +8,10 @@ export interface ProcessEmailResult {
   tokensUsed: number;
   estimatedCost: number;
   ruleApplied: string;
+  /** When false, caller should skip forwarding this email. Missing/undefined means forward by default. */
+  shouldForward?: boolean;
+  /** Optional agent-provided reason explaining why forwarding was skipped. */
+  skipForwardReason?: string;
   parseError?: string;
   parseErrorCode?: 'forwarded_without_ai_rewrite_timeout';
   trace?: AgentTrace;

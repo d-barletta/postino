@@ -879,6 +879,47 @@ export async function processQueuedInboundPayload(
     payload.userEmail,
   );
 
+  const shouldForward = result.shouldForward !== false;
+  if (!shouldForward) {
+    const skipReason = result.skipForwardReason?.trim() || 'Forwarding skipped by AI rule decision';
+
+    await supabase
+      .from('email_logs')
+      .update({
+        processed_at: new Date().toISOString(),
+        status: 'skipped',
+        rule_applied: result.ruleApplied,
+        tokens_used: result.tokensUsed,
+        estimated_cost: result.estimatedCost,
+        estimated_credits: dollarsToCredits(result.estimatedCost, creditSettings.creditsPerDollarFactor),
+        // Preserve the original body (instead of AI-modified body) because this path
+        // intentionally skips both forwarding and rewrite output.
+        processed_body: payload.emailBody,
+        error_message: skipReason,
+        ...(result.trace ? { agent_trace: result.trace as unknown as import('@/types/supabase').Json } : {}),
+        ...(result.analysis
+          ? { email_analysis: result.analysis as unknown as import('@/types/supabase').Json }
+          : {}),
+      })
+      .eq('id', payload.logId);
+
+    await addUserCreditsUsage({
+      userId: payload.userId,
+      userEmail: payload.userEmail,
+      estimatedCostUsd: result.estimatedCost,
+      settingsData: settings,
+    });
+
+    await sendEmailPushNotification(
+      payload.userId,
+      payload.fromHeader || payload.sender,
+      payload.subject,
+      payload.logId,
+      'skipped',
+    );
+    return;
+  }
+
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
   const originalEmailUrl = appUrl ? `${appUrl}/email/original/${payload.logId}` : null;
 
