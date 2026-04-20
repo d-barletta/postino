@@ -36,6 +36,7 @@ export interface ExploreEmailsModalProps {
     subject: string;
     body: string | null;
     processedBody?: string | null;
+    initialShowRewritten?: boolean;
     loading?: boolean;
   }) => void;
   /** Called once the email body has loaded to update the fullscreen dialog opened by onRequestFullscreen */
@@ -320,7 +321,7 @@ export function ExploreEmailsModal({
                       onRequestFullscreen({ subject: log.subject, body: null, loading: true });
                       setPendingFullscreenId(log.id);
                     }}
-                    onViewFullscreen={(body) => {
+                    onViewFullscreen={(body, showRewritten) => {
                       fetchExpandedEmail(log.id);
                       if (log.isRead === false) markEmailAsRead(log.id);
                       const expanded = expandedData[log.id];
@@ -328,6 +329,7 @@ export function ExploreEmailsModal({
                         subject: log.subject,
                         body: expanded?.originalBody ?? body,
                         processedBody: expanded?.processedBody ?? null,
+                        initialShowRewritten: showRewritten,
                         loading: false,
                       });
                     }}

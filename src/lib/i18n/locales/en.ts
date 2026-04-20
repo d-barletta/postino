@@ -310,7 +310,7 @@ const en: Translations = {
       downloadAttachment: 'Download attachment',
       noAttachmentsShort: 'None',
       ruleApplied: 'Rule applied:',
-      rewriteFailedWarning: 'Rewrite failed; original content was forwarded',
+      rewriteFailedWarning: 'Rewrite failed, original content was forwarded',
       skipReason: 'Skip reason:',
       tokens: 'Tokens:',
       credits: 'Credits:',

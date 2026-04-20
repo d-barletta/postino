@@ -224,7 +224,7 @@ export function EmailLogsBrowser({
     });
   };
 
-  const handleViewFullscreen = (log: EmailLog, body: string | null) => {
+  const handleViewFullscreen = (log: EmailLog, body: string | null, showRewritten: boolean) => {
     fetchExpandedEmail(log.id);
     if (log.isRead === false) {
       void markEmailAsRead?.(log.id);
@@ -235,6 +235,7 @@ export function EmailLogsBrowser({
       subject: log.subject,
       body: expanded?.originalBody ?? body,
       processedBody: expanded?.processedBody ?? null,
+      initialShowRewritten: showRewritten,
       loading: false,
     });
   };
@@ -282,7 +283,9 @@ export function EmailLogsBrowser({
                       onToggleExpand={() => handleToggleExpand(log.id)}
                       onTabChange={setActiveDetailTab}
                       onFullscreen={() => handleFullscreen(log)}
-                      onViewFullscreen={(body) => handleViewFullscreen(log, body)}
+                      onViewFullscreen={(body, showRewritten) =>
+                        handleViewFullscreen(log, body, showRewritten)
+                      }
                       onDelete={onDeleteEmail ? () => setDeleteEmailId(log.id) : undefined}
                       onToggleRead={
                         onToggleRead ? () => onToggleRead(log.id, log.isRead !== false) : undefined
@@ -545,7 +548,9 @@ export function EmailLogsBrowser({
                   activeTab={activeDetailTab}
                   onTabChange={setActiveDetailTab}
                   onFullscreen={() => handleFullscreen(selectedLog)}
-                  onViewFullscreen={(body) => handleViewFullscreen(selectedLog, body)}
+                  onViewFullscreen={(body, showRewritten) =>
+                    handleViewFullscreen(selectedLog, body, showRewritten)
+                  }
                   onAnalysisUpdated={
                     onAnalysisUpdated
                       ? (analysis) => onAnalysisUpdated(selectedLog.id, analysis)

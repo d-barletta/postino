@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, AlignLeft, Brain, AlertTriangle } from 'lucide-react';
+import { Eye, AlignLeft, Brain, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
@@ -17,9 +18,9 @@ interface EmailDetailTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onFullscreen: () => void;
-  /** Called with the currently-displayed body when the eye button is clicked.
+  /** Called with the currently-displayed body and showRewritten state when the eye button is clicked.
    *  When provided this takes precedence over `onFullscreen` for the eye button. */
-  onViewFullscreen?: (body: string | null) => void;
+  onViewFullscreen?: (body: string | null, showRewritten: boolean) => void;
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
   onCreditsUsed?: () => void;
   className?: string;
@@ -54,7 +55,7 @@ export function EmailDetailTabs({
   const handleEyeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onViewFullscreen) {
-      onViewFullscreen(displayBody);
+      onViewFullscreen(displayBody, showRewritten);
     } else {
       onFullscreen();
     }
@@ -138,17 +139,20 @@ export function EmailDetailTabs({
         )}
 
         {showRewriteWarning && (
-          <p className="mt-1 break-all text-xs text-red-700 dark:text-red-300">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {t.dashboard.emailHistory.rewriteFailedWarning}
-          </p>
+          <Alert variant="destructive" className="text-xs flex text-center">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <AlertDescription>{t.dashboard.emailHistory.rewriteFailedWarning}</AlertDescription>
+          </Alert>
         )}
 
         {log.status === 'skipped' && log.errorMessage && (
-          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-            <span className="font-medium">{t.dashboard.emailHistory.skipReason}</span>{' '}
-            {log.errorMessage}
-          </p>
+          <Alert variant="warning" className="text-left text-xs">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <AlertDescription>
+              <span className="font-medium">{t.dashboard.emailHistory.skipReason}</span>{' '}
+              {log.errorMessage}
+            </AlertDescription>
+          </Alert>
         )}
 
         {emailData?.loading && (
@@ -160,7 +164,7 @@ export function EmailDetailTabs({
         )}
         {emailData && !emailData.loading && emailData.originalBody && (
           <div className={cn(fillAvailableHeight && 'min-h-0 flex-1 flex flex-col')}>
-            {hasRewritten && (
+            {hasRewritten && !showRewriteWarning && (
               <div className="flex items-center gap-1 mb-2 shrink-0">
                 <button
                   onClick={() => setShowRewritten(false)}

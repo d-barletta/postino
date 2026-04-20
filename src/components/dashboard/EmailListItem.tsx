@@ -301,7 +301,7 @@ export interface EmailListItemProps {
   /** Called when user clicks "view full page" button or swipes to open */
   onFullscreen: () => void;
   /** Called from the eye button with the currently-displayed body (original or rewritten). */
-  onViewFullscreen?: (body: string | null) => void;
+  onViewFullscreen?: (body: string | null, showRewritten: boolean) => void;
   /** If provided, enables swipe-to-delete and the swipe delete action */
   onDelete?: () => void;
   /** If provided, enables swipe-to-toggle-read and the swipe toggle action */

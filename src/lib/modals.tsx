@@ -13,6 +13,7 @@ interface FullPageEmailState {
   subject: string;
   body: string | null;
   processedBody?: string | null;
+  initialShowRewritten?: boolean;
   loading: boolean;
 }
 
@@ -31,6 +32,7 @@ interface ModalsContextValue {
     subject: string;
     body: string | null;
     processedBody?: string | null;
+    initialShowRewritten?: boolean;
     loading?: boolean;
   }) => void;
   updateFullPageEmail: (
@@ -83,12 +85,14 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
       subject: string;
       body: string | null;
       processedBody?: string | null;
+      initialShowRewritten?: boolean;
       loading?: boolean;
     }) => {
       setFullPageEmail({
         subject: opts.subject,
         body: opts.body,
         processedBody: opts.processedBody,
+        initialShowRewritten: opts.initialShowRewritten ?? false,
         loading: opts.loading ?? false,
       });
     },
@@ -166,6 +170,8 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
             openFullPageEmail({
               subject: email.subject,
               body: email.body,
+              processedBody: email.processedBody,
+              initialShowRewritten: email.initialShowRewritten,
               loading: email.loading ?? false,
             })
           }
@@ -183,6 +189,7 @@ export function GlobalModalsProvider({ children }: { children: ReactNode }) {
         subject={fullPageEmail?.subject ?? ''}
         body={fullPageEmail?.body ?? null}
         processedBody={fullPageEmail?.processedBody ?? null}
+        initialShowRewritten={fullPageEmail?.initialShowRewritten ?? false}
         loading={fullPageEmail?.loading}
         overlayClassName="z-[100]"
         contentClassName="z-[100]"

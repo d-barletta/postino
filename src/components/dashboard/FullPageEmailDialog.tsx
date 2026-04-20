@@ -22,6 +22,8 @@ interface FullPageEmailDialogProps {
   body: string | null;
   /** When provided, a toggle is shown in the footer to switch between original and rewritten. */
   processedBody?: string | null;
+  /** When true, dialog opens with "Rewritten" pre-selected (mirrors the state in EmailDetailTabs). */
+  initialShowRewritten?: boolean;
   loading?: boolean;
   /** Extra CSS classes forwarded to DialogContent (e.g. "z-[100]" for stacking). */
   contentClassName?: string;
@@ -39,17 +41,19 @@ export function FullPageEmailDialog({
   subject,
   body,
   processedBody,
+  initialShowRewritten = false,
   loading,
   contentClassName,
   overlayClassName,
 }: FullPageEmailDialogProps) {
   const { t } = useI18n();
   const hasRewritten = Boolean(processedBody);
-  const [showRewritten, setShowRewritten] = useState(false);
+  const [showRewritten, setShowRewritten] = useState(initialShowRewritten);
 
-  // Reset toggle whenever the dialog opens so each email always starts on "original".
+  // Sync toggle with the initial value whenever the dialog opens.
   useEffect(() => {
-    if (open) setShowRewritten(false);
+    if (open) setShowRewritten(initialShowRewritten);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const displayBody = hasRewritten && showRewritten ? (processedBody ?? body) : body;
