@@ -236,13 +236,13 @@ function parseSubjectWithForwardingDecision(rawSubjectFile: string): {
   //   [POSTINO_FORWARD=YES]
   //   [POSTINO_FORWARD=NO] optional reason...
   // Capture group 1 = YES|NO, capture group 2 = optional reason text.
-  const markerMatch = firstLine.match(/^\[POSTINO_FORWARD=(YES|NO)\](?:\s+(.*))?$/);
+  const markerMatch = firstLine.match(/^\[POSTINO_FORWARD=(YES|NO)\](?:\s+(.*))?$/i);
 
   if (!markerMatch) {
     return { subject: normalized };
   }
 
-  const shouldForward = markerMatch[1] === 'YES';
+  const shouldForward = markerMatch[1]?.toUpperCase() === 'YES';
   const reason = (markerMatch[2] ?? '').trim();
   const subject = lines.slice(1).join('\n').trim();
 
