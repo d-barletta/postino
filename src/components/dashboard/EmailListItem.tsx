@@ -6,7 +6,17 @@ import { EmailDetailTabs } from '@/components/dashboard/EmailDetailTabs';
 import { Spinner } from '@/components/ui/Spinner';
 import { formatDate, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { Mail, Paperclip, Trash2, Eye, MailOpen } from 'lucide-react';
+import {
+  Mail,
+  Paperclip,
+  Trash2,
+  Eye,
+  MailOpen,
+  CheckCircle,
+  MailWarning,
+  Inbox,
+  MinusCircle,
+} from 'lucide-react';
 import type { EmailAnalysis, EmailAttachmentInfo, EmailLog } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -345,10 +355,10 @@ export function EmailListItem({
 
   const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
     received: 'info',
-    processing: 'warning',
+    processing: 'default',
     forwarded: 'success',
     error: 'error',
-    skipped: 'default',
+    skipped: 'warning',
   };
 
   const rowTypeLabel: Record<string, string> = {
@@ -392,11 +402,19 @@ export function EmailListItem({
     </div>
   );
 
+  const statusIcon: Record<string, React.ReactNode> = {
+    received: <Inbox className="h-3 w-3 mr-1 shrink-0" />,
+    processing: <Spinner className="h-3 w-3 mr-1 shrink-0" />,
+    forwarded: <CheckCircle className="h-3 w-3 mr-1 shrink-0" />,
+    error: <MailWarning className="h-3 w-3 mr-1 shrink-0" />,
+    skipped: <MinusCircle className="h-3 w-3 mr-1 shrink-0" />,
+  };
+
   const statusAndDate = (
     <>
       {log.status !== 'forwarded' && (
         <Badge variant={statusVariant[log.status] || 'default'}>
-          {log.status === 'processing' && <Spinner className="h-3 w-3 mr-1 shrink-0" />}
+          {statusIcon[log.status]}
           {statusLabel[log.status] ?? log.status}
         </Badge>
       )}

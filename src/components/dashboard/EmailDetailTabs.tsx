@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, AlignLeft, Brain, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Eye, AlignLeft, Brain, AlertCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import { Alert, AlertDescription } from '@/components/ui/Alert';
+import { Alert, AlertDescription, AlertAction } from '@/components/ui/Alert';
+import { Button } from '@/components/ui/Button';
 import { SafeEmailIframe } from '@/components/ui/SafeEmailIframe';
 import { AttachmentList } from '@/components/dashboard/AttachmentList';
 import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTabContent';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/hooks/useAuth';
 import type { EmailAnalysis, EmailLog } from '@/types';
 import type { ExpandedEmailData } from '@/components/dashboard/EmailListItem';
 
@@ -21,6 +23,8 @@ interface EmailDetailTabsProps {
   /** Called with the currently-displayed body and showRewritten state when the eye button is clicked.
    *  When provided this takes precedence over `onFullscreen` for the eye button. */
   onViewFullscreen?: (body: string | null, showRewritten: boolean) => void;
+  /** Called after a successful reprocess so the parent can refresh the email data. */
+  onReprocessed?: () => void;
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
   onCreditsUsed?: () => void;
   className?: string;
@@ -35,6 +39,7 @@ export function EmailDetailTabs({
   onTabChange,
   onFullscreen,
   onViewFullscreen,
+  onReprocessed,
   onAnalysisUpdated,
   onCreditsUsed,
   className,
@@ -42,9 +47,33 @@ export function EmailDetailTabs({
   fillAvailableHeight = false,
 }: EmailDetailTabsProps) {
   const { t } = useI18n();
+  const { getIdToken } = useAuth();
   const hasRewritten = Boolean(emailData?.processedBody);
   const showRewriteWarning = Boolean(log.ruleApplied && log.status === 'error' && log.errorMessage);
   const [showRewritten, setShowRewritten] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState('');
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    setRetryError('');
+    try {
+      const token = await getIdToken();
+      const res = await fetch(`/api/email/${log.id}/reprocess`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? 'error');
+      }
+      onReprocessed?.();
+    } catch {
+      setRetryError(t.emailOriginal.admin.failedToReprocess);
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   // The body currently displayed in the iframe
   const displayBody =
@@ -139,9 +168,23 @@ export function EmailDetailTabs({
         )}
 
         {showRewriteWarning && (
-          <Alert variant="destructive" className="text-xs flex text-center">
+          <Alert variant="destructive" className="text-xs">
             <AlertCircle className="h-3.5 w-3.5" />
             <AlertDescription>{t.dashboard.emailHistory.rewriteFailedWarning}</AlertDescription>
+            <AlertAction>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRetry}
+                disabled={retrying}
+                className="text-xs border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+              >
+                {retrying ? t.emailOriginal.admin.processing : t.emailOriginal.admin.reprocess}
+              </Button>
+              {retryError && (
+                <span className="text-red-600 dark:text-red-400 text-xs">{retryError}</span>
+              )}
+            </AlertAction>
           </Alert>
         )}
 

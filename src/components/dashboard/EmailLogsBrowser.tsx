@@ -142,10 +142,10 @@ export function EmailLogsBrowser({
 
   const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
     received: 'info',
-    processing: 'warning',
+    processing: 'default',
     forwarded: 'success',
     error: 'error',
-    skipped: 'default',
+    skipped: 'warning',
   };
 
   const rowTypeLabel: Record<string, string> = {

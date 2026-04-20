@@ -51,4 +51,15 @@ const AlertDescription = React.forwardRef<
 ));
 AlertDescription.displayName = 'AlertDescription';
 
-export { Alert, AlertTitle, AlertDescription };
+const AlertAction = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn('mt-2 flex items-center gap-2 [&>svg~*]:pl-0', className)}
+      {...props}
+    />
+  ),
+);
+AlertAction.displayName = 'AlertAction';
+
+export { Alert, AlertTitle, AlertDescription, AlertAction };

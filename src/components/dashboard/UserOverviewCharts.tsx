@@ -25,10 +25,10 @@ interface UserOverviewChartsProps {
 
 const chartColors = {
   received: '#3b82f6',
-  processing: '#f59e0b',
+  processing: '#6b7280',
   forwarded: '#16a34a',
   error: '#dc2626',
-  skipped: '#6b7280',
+  skipped: '#f59e0b',
   credits: '#8b5cf6',
 } as const;
 

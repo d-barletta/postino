@@ -53,7 +53,7 @@ export function FullPageEmailDialog({
   // Sync toggle with the initial value whenever the dialog opens.
   useEffect(() => {
     if (open) setShowRewritten(initialShowRewritten);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [open]);
 
   const displayBody = hasRewritten && showRewritten ? (processedBody ?? body) : body;
