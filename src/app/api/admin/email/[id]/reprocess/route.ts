@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { processEmailWithAgent } from '@/lib/agent';
-import { processEmailWithAgent as processEmailWithSandbox } from '@/agents/sandbox-email-agent';
+import { processEmailWithAgent } from '@/agents/sandbox-email-agent';
 import type { RuleForProcessing } from '@/lib/openrouter';
 import { verifyAdminRequest, handleAdminError } from '@/lib/api-auth';
 
@@ -95,22 +94,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Detect whether the original body is HTML
     const isHtml = /<[a-z][\s\S]*>/i.test(originalBody);
 
-    // Load global settings to check if sandbox agent is enabled
-    const { data: settingsRow } = await supabase
-      .from('settings')
-      .select('data')
-      .eq('id', 'global')
-      .single();
-    const settings = (settingsRow?.data as Record<string, unknown> | null) ?? {};
-
-    const opencodeMinLen =
-      typeof settings?.opencodeMinBodyLength === 'number'
-        ? (settings.opencodeMinBodyLength as number)
-        : 50000;
-    const useSandbox = settings?.agentUseOpencode === true && originalBody.length >= opencodeMinLen;
-    const agentFn = useSandbox ? processEmailWithSandbox : processEmailWithAgent;
-
-    const result = await agentFn(
+    const result = await processEmailWithAgent(
       userId,
       id,
       emailFrom,

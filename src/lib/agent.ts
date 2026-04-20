@@ -1,15 +1,14 @@
 /**
  * agent.ts — Re-export shim for backward compatibility.
  *
- * The agent implementation has moved to `src/agents/email-agent.ts`.
- * This file re-exports all public symbols so existing import paths continue to work.
+ * Keep existing imports working while routing processing to the OpenCode sandbox agent.
  */
 
 export {
   analyzeEmailContent,
-  processEmailWithAgent,
-  getUserMemory,
-  saveUserMemory,
-  compactMemory,
-  buildMemoryContext,
+  buildMemoryEntryFromAnalysis,
+  saveToSupermemory,
+  saveAttachmentFilesToSupermemory,
 } from '@/agents/email-agent';
+
+export { processEmailWithAgent } from '@/agents/sandbox-email-agent';

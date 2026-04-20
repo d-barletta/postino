@@ -19,7 +19,6 @@ export async function GET() {
         data as { emailDomain?: string; mailgunSandboxEmail?: string; mailgunDomain?: string },
       ),
       signupMaintenanceMode: data?.signupMaintenanceMode === true,
-      memoryEnabled: data?.memoryEnabled === true,
       creditsPerDollarFactor:
         typeof data?.creditsPerDollarFactor === 'number'
           ? data.creditsPerDollarFactor
@@ -35,7 +34,6 @@ export async function GET() {
       maxRuleLength: 1000,
       assignedEmailDomain: resolveAssignedEmailDomain(),
       signupMaintenanceMode: false,
-      memoryEnabled: false,
       creditsPerDollarFactor: DEFAULT_CREDITS_PER_DOLLAR_FACTOR,
       freeCreditsPerMonth: DEFAULT_FREE_CREDITS_PER_MONTH,
     });

@@ -86,14 +86,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         .eq('id', 'global')
         .single();
       const settingsData = settingsRow?.data as Record<string, unknown> | undefined;
-      const memoryEnabled = settingsData?.memoryEnabled === true;
-      const supermemoryApiKey = memoryEnabled
-        ? (
-            (settingsData?.memoryApiKey as string | undefined) ||
-            process.env.SUPERMEMORY_API_KEY ||
-            ''
-          ).trim()
-        : '';
+      const supermemoryApiKey = (
+        (settingsData?.memoryApiKey as string | undefined) ||
+        process.env.SUPERMEMORY_API_KEY ||
+        ''
+      ).trim();
 
       let reanalyzedCount = 0;
       let failedCount = 0;
@@ -142,7 +139,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           reanalyzedCount += 1;
 
           // Optionally persist the updated analysis to Supermemory.
-          if (memoryEnabled && supermemoryApiKey) {
+          if (supermemoryApiKey) {
             const receivedAt = logRow.received_at ? new Date(logRow.received_at) : new Date();
             const entry = buildMemoryEntryFromAnalysis(
               {

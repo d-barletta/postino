@@ -15,7 +15,6 @@ export interface MemoryChatMessage {
 
 export function resolveMemoryChatErrorStatus(message: string): number {
   if (message === 'Unauthorized') return 401;
-  if (message === 'Memory feature is not enabled') return 403;
   if (message === 'Query is required' || message.includes('at most')) return 400;
   return 500;
 }
@@ -95,10 +94,6 @@ export async function getMemoryChatRuntimeConfig(): Promise<{
     .eq('id', 'global')
     .single();
   const settingsData = (settingsRow?.data as Record<string, unknown> | undefined) ?? {};
-
-  if (settingsData.memoryEnabled !== true) {
-    throw new Error('Memory feature is not enabled');
-  }
 
   const memoryApiKey = resolveMemoryApiKey(settingsData.memoryApiKey as string | undefined);
   if (!memoryApiKey) {

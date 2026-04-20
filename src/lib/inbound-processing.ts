@@ -1,15 +1,12 @@
 import crypto from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
-  processEmailWithAgent,
   analyzeEmailContent,
-  getUserMemory,
-  saveUserMemory,
   saveToSupermemory,
   saveAttachmentFilesToSupermemory,
   buildMemoryEntryFromAnalysis,
 } from '@/agents/email-agent';
-import { processEmailWithAgent as processEmailWithSandbox } from '@/agents/sandbox-email-agent';
+import { processEmailWithAgent } from '@/agents/sandbox-email-agent';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import type { RuleForProcessing } from '@/lib/openrouter';
 import type { PreComputedEmailAnalysis } from '@/types';
@@ -483,21 +480,18 @@ export async function processQueuedInboundPayload(
     }
 
     try {
-      const [analysisResult, memory] = await Promise.all([
-        analyzeEmailContent(
-          payload.sender,
-          payload.subject,
-          payload.emailBody,
-          payload.bodyHtml !== '',
-          undefined,
-          analysisOutputLanguage,
-          {
-            userId: payload.userEmail,
-            sessionId: payload.logId,
-          },
-        ),
-        getUserMemory(payload.userId),
-      ]);
+      const analysisResult = await analyzeEmailContent(
+        payload.sender,
+        payload.subject,
+        payload.emailBody,
+        payload.bodyHtml !== '',
+        undefined,
+        analysisOutputLanguage,
+        {
+          userId: payload.userEmail,
+          sessionId: payload.logId,
+        },
+      );
 
       await supabase
         .from('email_logs')
@@ -548,51 +542,43 @@ export async function processQueuedInboundPayload(
         analysisResult.analysis,
       );
 
-      saveUserMemory({
-        userId: payload.userId,
-        entries: [...memory.entries, newEntry],
-        updatedAt: new Date(),
-      }).catch((err) => console.error('Failed to update user memory (AI-only):', err));
-
-      if (settings?.memoryEnabled === true) {
-        const supermemoryApiKey = (
-          (settings.memoryApiKey as string | undefined) ||
-          process.env.SUPERMEMORY_API_KEY ||
-          ''
-        ).trim();
-        if (supermemoryApiKey) {
-          saveToSupermemory(supermemoryApiKey, payload.userId, newEntry).catch((err) =>
-            console.error('Failed to save to Supermemory (AI-only):', err),
-          );
-          if (payload.attachments && payload.attachments.length > 0) {
-            const date = new Date().toISOString().slice(0, 10);
-            Promise.allSettled(
-              payload.attachments.map(async (att) => {
-                if (!att.storagePath) return null;
-                const content = await downloadAttachmentFromStorage(att.storagePath);
-                if (!content) return null;
-                return { filename: att.filename, content, contentType: att.contentType };
-              }),
-            ).then((results) => {
-              const files = results
-                .filter(
-                  (r): r is PromiseFulfilledResult<EmailAttachment> =>
-                    r.status === 'fulfilled' && r.value !== null,
-                )
-                .map((r) => r.value);
-              if (files.length > 0) {
-                saveAttachmentFilesToSupermemory(
-                  supermemoryApiKey,
-                  payload.userId,
-                  payload.logId,
-                  date,
-                  files,
-                ).catch((err) =>
-                  console.error('Failed to upload attachments to Supermemory (AI-only):', err),
-                );
-              }
-            });
-          }
+      const supermemoryApiKey = (
+        (settings?.memoryApiKey as string | undefined) ||
+        process.env.SUPERMEMORY_API_KEY ||
+        ''
+      ).trim();
+      if (supermemoryApiKey) {
+        saveToSupermemory(supermemoryApiKey, payload.userId, newEntry).catch((err) =>
+          console.error('Failed to save to Supermemory (AI-only):', err),
+        );
+        if (payload.attachments && payload.attachments.length > 0) {
+          const date = new Date().toISOString().slice(0, 10);
+          Promise.allSettled(
+            payload.attachments.map(async (att) => {
+              if (!att.storagePath) return null;
+              const content = await downloadAttachmentFromStorage(att.storagePath);
+              if (!content) return null;
+              return { filename: att.filename, content, contentType: att.contentType };
+            }),
+          ).then((results) => {
+            const files = results
+              .filter(
+                (r): r is PromiseFulfilledResult<EmailAttachment> =>
+                  r.status === 'fulfilled' && r.value !== null,
+              )
+              .map((r) => r.value);
+            if (files.length > 0) {
+              saveAttachmentFilesToSupermemory(
+                supermemoryApiKey,
+                payload.userId,
+                payload.logId,
+                date,
+                files,
+              ).catch((err) =>
+                console.error('Failed to upload attachments to Supermemory (AI-only):', err),
+              );
+            }
+          });
         }
       }
 
@@ -877,15 +863,7 @@ export async function processQueuedInboundPayload(
           .filter((name): name is string => Boolean(name))
       : undefined;
 
-  const opencodeMinLen =
-    typeof settings?.opencodeMinBodyLength === 'number'
-      ? (settings.opencodeMinBodyLength as number)
-      : 50000;
-  const useSandbox =
-    settings?.agentUseOpencode === true && payload.emailBody.length >= opencodeMinLen;
-  const agentFn = useSandbox ? processEmailWithSandbox : processEmailWithAgent;
-
-  const result = await agentFn(
+  const result = await processEmailWithAgent(
     payload.userId,
     payload.logId,
     payload.sender,

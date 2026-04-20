@@ -35,7 +35,7 @@ Typical model choices:
 Postino notes:
 
 - AI costs scale with inbound email volume and token settings.
-- Use admin settings (`llmMaxTokens` and agent limits) to cap spend.
+- Use admin settings (pre-analysis limits and model choice) to cap spend.
 
 ## 3. Mailgun (Inbound + Optional Outbound)
 
