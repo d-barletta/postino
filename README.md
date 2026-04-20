@@ -27,6 +27,8 @@ cp .env.local.example .env.local
 
 1. Fill all required variables in `.env.local`.
 
+  Important for runtime limits: set `PRO_VERCEL=true` on Pro deployments, or `PRO_VERCEL=false` for Hobby limits.
+
 2. Start development server.
 
 ```bash

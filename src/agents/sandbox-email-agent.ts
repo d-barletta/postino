@@ -56,6 +56,7 @@ import {
   createSandboxMemoryToolToken,
   resolveSandboxMemoryToolBaseUrl,
 } from '@/lib/sandbox-memory-tool';
+import { VERCEL_TIMEOUTS } from '@/lib/vercel-plan';
 
 // Re-export memory helpers so consumers can import from either agent module.
 export {
@@ -78,16 +79,16 @@ export { analyzeEmailContent } from './email-agent';
 const SNAPSHOT_ID_ENV = 'OPENCODE_SANDBOX_SNAPSHOT_ID';
 
 /** Platform-level hard cap for a sandbox execution. */
-const SANDBOX_PLATFORM_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const SANDBOX_PLATFORM_TIMEOUT_MS = VERCEL_TIMEOUTS.sandboxPlatformTimeoutMs;
 
 /** Max time (ms) the sandbox is allowed to run before we kill it. */
-const SANDBOX_TIMEOUT_MS = 14 * 60 * 1000; // 14 minutes (leave headroom under platform hard limit)
+const SANDBOX_TIMEOUT_MS = VERCEL_TIMEOUTS.sandboxTimeoutMs;
 
 /** Max time (ms) we wait for the `opencode run` command. */
-const OPENCODE_RUN_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes (leave headroom for readback + cleanup)
+const OPENCODE_RUN_TIMEOUT_MS = VERCEL_TIMEOUTS.opencodeRunTimeoutMs;
 
 /** Max time (ms) for the optional verification/correction pass. */
-const OPENCODE_VERIFY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+const OPENCODE_VERIFY_TIMEOUT_MS = VERCEL_TIMEOUTS.opencodeVerifyTimeoutMs;
 
 const OPENCODE_RUN_LOG_PATH = '/vercel/sandbox/opencode-run.log';
 const OPENCODE_VERIFY_LOG_PATH = '/vercel/sandbox/opencode-verify.log';

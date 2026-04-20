@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getPendingJobIds } from '@/lib/email-jobs';
+import { VERCEL_TIMEOUTS } from '@/lib/vercel-plan';
 
 /**
  * Max function duration: 15 minutes.
@@ -15,14 +16,14 @@ import { getPendingJobIds } from '@/lib/email-jobs';
  *   waveSize = ceil(15 / 4)              = 4
  *   dispatch time = 3 × 180 000         = 9 min  ✓
  */
-export const maxDuration = 800; //max 300 in hobby plan
+//export const maxDuration = 800; //max: 300 in hobby plan and 800 in pro plan
 
 /**
  * Hard budget for dispatching all waves. Wave size is auto-calculated so the
  * final wave is sent before this deadline, leaving the remaining Vercel function
  * time as headroom for the last dispatch call.
  */
-const MAX_DISPATCH_MS = 10 * 60 * 1000;
+const MAX_DISPATCH_MS = VERCEL_TIMEOUTS.emailJobsDispatchBudgetMs;
 
 /** Default delay between waves in milliseconds (3 minutes). */
 const DEFAULT_WAVE_DELAY_MS = 3 * 60 * 1000;
