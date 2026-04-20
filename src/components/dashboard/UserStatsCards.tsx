@@ -42,7 +42,7 @@ export function UserStatsCards({ stats, period, onPeriodChange }: UserStatsCards
     {
       label: s.emailsSkipped,
       value: stats.totalEmailsSkipped,
-      color: 'text-gray-500 dark:text-gray-400',
+      color: 'text-orange-600 dark:text-orange-400',
     },
   ];
 

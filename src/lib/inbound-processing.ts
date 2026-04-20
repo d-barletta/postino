@@ -448,13 +448,6 @@ export async function processQueuedInboundPayload(
         error_message: FORWARDING_DISABLED_MESSAGE,
       })
       .eq('id', payload.logId);
-    await sendEmailPushNotification(
-      payload.userId,
-      payload.fromHeader || payload.sender,
-      payload.subject,
-      payload.logId,
-      'skipped',
-    );
     return;
   }
 

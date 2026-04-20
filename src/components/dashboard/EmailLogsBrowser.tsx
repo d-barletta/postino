@@ -140,12 +140,15 @@ export function EmailLogsBrowser({
     skipped: t.dashboard.charts.skipped,
   };
 
-  const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
+  const statusVariant: Record<
+    string,
+    'info' | 'warning' | 'success' | 'error' | 'default' | 'skipped'
+  > = {
     received: 'info',
     processing: 'default',
     forwarded: 'success',
     error: 'error',
-    skipped: 'warning',
+    skipped: 'skipped',
   };
 
   const rowTypeLabel: Record<string, string> = {
@@ -427,17 +430,15 @@ export function EmailLogsBrowser({
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-1.5">
-                          {log.status !== 'forwarded' && (
-                            <Badge
-                              variant={statusVariant[log.status] || 'default'}
-                              className="text-[10px] px-1.5 py-0 h-4"
-                            >
-                              {log.status === 'processing' && (
-                                <Spinner className="h-2.5 w-2.5 mr-0.5 shrink-0" />
-                              )}
-                              {statusLabel[log.status] ?? log.status}
-                            </Badge>
-                          )}
+                          <Badge
+                            variant={statusVariant[log.status] || 'default'}
+                            className="text-[10px] px-1.5 py-0 h-4"
+                          >
+                            {log.status === 'processing' && (
+                              <Spinner className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                            )}
+                            {statusLabel[log.status] ?? log.status}
+                          </Badge>
                           <span className="text-[10px] text-gray-400 dark:text-gray-500">
                             {formatDate(log.receivedAt, locale)}
                           </span>

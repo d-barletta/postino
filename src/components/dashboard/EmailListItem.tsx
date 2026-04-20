@@ -353,12 +353,15 @@ export function EmailListItem({
     skipped: t.dashboard.charts.skipped,
   };
 
-  const statusVariant: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
+  const statusVariant: Record<
+    string,
+    'info' | 'warning' | 'success' | 'error' | 'default' | 'skipped'
+  > = {
     received: 'info',
     processing: 'default',
     forwarded: 'success',
     error: 'error',
-    skipped: 'warning',
+    skipped: 'skipped',
   };
 
   const rowTypeLabel: Record<string, string> = {
@@ -412,12 +415,10 @@ export function EmailListItem({
 
   const statusAndDate = (
     <>
-      {log.status !== 'forwarded' && (
-        <Badge variant={statusVariant[log.status] || 'default'}>
-          {statusIcon[log.status]}
-          {statusLabel[log.status] ?? log.status}
-        </Badge>
-      )}
+      <Badge variant={statusVariant[log.status] || 'default'}>
+        {statusIcon[log.status]}
+        {statusLabel[log.status] ?? log.status}
+      </Badge>
       <span className="text-xs text-gray-400 dark:text-gray-500">
         {formatDate(log.receivedAt, locale)}
       </span>
