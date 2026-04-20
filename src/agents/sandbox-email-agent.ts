@@ -84,6 +84,10 @@ const OPENCODE_VERIFY_TIMEOUT_MS = VERCEL_TIMEOUTS.opencodeVerifyTimeoutMs;
 
 const OPENCODE_RUN_LOG_PATH = '/vercel/sandbox/opencode-run.log';
 const OPENCODE_VERIFY_LOG_PATH = '/vercel/sandbox/opencode-verify.log';
+const SANDBOX_EMAIL_HTML_PATH = '/vercel/sandbox/email.html';
+const SANDBOX_SUBJECT_PATH = '/vercel/sandbox/subject.txt';
+const SANDBOX_PROCESSING_RESULT_PATH = '/vercel/sandbox/processing_result.json';
+const DEFAULT_PROCESSING_RESULT_JSON = '{"forward":true}';
 const TRACE_TEXT_EXCERPT_MAX_CHARS = 2000;
 const TRACE_TEXT_TAIL_MAX_CHARS = 4000;
 const TRACE_CONSOLE_TEXT_MAX_CHARS = 320;
@@ -251,6 +255,43 @@ function parseSubjectWithForwardingDecision(rawSubjectFile: string): {
     shouldForward,
     ...(!shouldForward && reason ? { skipForwardReason: reason } : {}),
   };
+}
+
+function parseProcessingResultFile(rawResultFile: string): {
+  shouldForward?: boolean;
+  skipForwardReason?: string;
+} {
+  const normalized = rawResultFile.trim();
+  if (!normalized) return {};
+
+  try {
+    const parsed = JSON.parse(normalized) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+
+    const shouldForward =
+      typeof parsed.forward === 'boolean'
+        ? parsed.forward
+        : typeof parsed.shouldForward === 'boolean'
+          ? parsed.shouldForward
+          : undefined;
+
+    const rawSkipReason =
+      typeof parsed.skipReason === 'string'
+        ? parsed.skipReason
+        : typeof parsed.skipForwardReason === 'string'
+          ? parsed.skipForwardReason
+          : typeof parsed.reason === 'string'
+            ? parsed.reason
+            : '';
+    const skipForwardReason = rawSkipReason.trim();
+
+    return {
+      ...(shouldForward !== undefined ? { shouldForward } : {}),
+      ...(shouldForward === false && skipForwardReason ? { skipForwardReason } : {}),
+    };
+  } catch {
+    return {};
+  }
 }
 
 function parseOpencodeStatsOutput(text: string): {
@@ -1109,7 +1150,12 @@ export async function processEmailWithAgent(
 
     // Write files into the sandbox.
     await sandbox.writeFiles([
-      { path: '/vercel/sandbox/email.html', content: Buffer.from(emailBody, 'utf-8') },
+      { path: SANDBOX_EMAIL_HTML_PATH, content: Buffer.from(emailBody, 'utf-8') },
+      { path: SANDBOX_SUBJECT_PATH, content: Buffer.from(emailSubject, 'utf-8') },
+      {
+        path: SANDBOX_PROCESSING_RESULT_PATH,
+        content: Buffer.from(DEFAULT_PROCESSING_RESULT_JSON, 'utf-8'),
+      },
       { path: '/vercel/sandbox/prompt.txt', content: Buffer.from(opencodePrompt, 'utf-8') },
       { path: '/vercel/sandbox/opencode.json', content: Buffer.from(opencodeConfig, 'utf-8') },
       {
@@ -1120,7 +1166,9 @@ export async function processEmailWithAgent(
 
     pushTrace('sandbox_files_written', 'ok', 'Wrote email and config into sandbox', {
       files: [
-        '/vercel/sandbox/email.html',
+        SANDBOX_EMAIL_HTML_PATH,
+        SANDBOX_SUBJECT_PATH,
+        SANDBOX_PROCESSING_RESULT_PATH,
         '/vercel/sandbox/prompt.txt',
         '/vercel/sandbox/opencode.json',
         '/vercel/sandbox/.local/share/opencode/auth.json',
@@ -1340,14 +1388,20 @@ export async function processEmailWithAgent(
         clearTimeout(timer);
         const msg = waitError instanceof Error ? waitError.message : String(waitError);
         console.error('[sandbox-agent] opencode wait failed:', msg);
-        const [runLogSnapshot, subjectSnapshot] = sandbox
+        const [runLogSnapshot, subjectSnapshot, processingResultSnapshot] = sandbox
           ? await Promise.all([
               readSandboxTextSnapshot(sandbox, OPENCODE_RUN_LOG_PATH, includeTraceExcerpts),
-              readSandboxTextSnapshot(sandbox, '/vercel/sandbox/subject.txt', includeTraceExcerpts),
+              readSandboxTextSnapshot(sandbox, SANDBOX_SUBJECT_PATH, includeTraceExcerpts),
+              readSandboxTextSnapshot(
+                sandbox,
+                SANDBOX_PROCESSING_RESULT_PATH,
+                includeTraceExcerpts,
+              ),
             ])
           : [
               { path: OPENCODE_RUN_LOG_PATH, exists: false },
-              { path: '/vercel/sandbox/subject.txt', exists: false },
+              { path: SANDBOX_SUBJECT_PATH, exists: false },
+              { path: SANDBOX_PROCESSING_RESULT_PATH, exists: false },
             ];
         if (timedOut) {
           const timeoutMsg = `OpenCode timed out after ${Math.round(OPENCODE_RUN_TIMEOUT_MS / 60000)} minutes; original email was forwarded without AI rewrite`;
@@ -1356,6 +1410,7 @@ export async function processEmailWithAgent(
             waitError: msg,
             runLog: runLogSnapshot,
             subjectSnapshot,
+            processingResultSnapshot,
           });
           parseError = timeoutMsg;
           parseErrorCode = 'forwarded_without_ai_rewrite_timeout';
@@ -1364,6 +1419,7 @@ export async function processEmailWithAgent(
             durationMs: Date.now() - opencodeRunStartedAt,
             runLog: runLogSnapshot,
             subjectSnapshot,
+            processingResultSnapshot,
           });
           parseError = `OpenCode command failed: ${msg}`;
         }
@@ -1376,8 +1432,11 @@ export async function processEmailWithAgent(
     }
 
     // Read the processed email back.
-    const htmlBuffer = await sandbox.readFileToBuffer({ path: '/vercel/sandbox/email.html' });
-    const subjectBuffer = await sandbox.readFileToBuffer({ path: '/vercel/sandbox/subject.txt' });
+    const htmlBuffer = await sandbox.readFileToBuffer({ path: SANDBOX_EMAIL_HTML_PATH });
+    const subjectBuffer = await sandbox.readFileToBuffer({ path: SANDBOX_SUBJECT_PATH });
+    const processingResultBuffer = await sandbox.readFileToBuffer({
+      path: SANDBOX_PROCESSING_RESULT_PATH,
+    });
 
     if (htmlBuffer) {
       processedBody = htmlBuffer.toString('utf-8');
@@ -1394,17 +1453,45 @@ export async function processEmailWithAgent(
       const rawSubject = subjectBuffer.toString('utf-8');
       const parsedSubject = parseSubjectWithForwardingDecision(rawSubject);
       if (parsedSubject.subject) processedSubject = parsedSubject.subject;
-      if (parsedSubject.shouldForward !== undefined) {
-        shouldForward = parsedSubject.shouldForward;
-        skipForwardReason = parsedSubject.skipForwardReason;
-      }
       pushTrace('read_processed_subject', 'ok', 'Read processed subject from sandbox', {
         processedSubject,
+      });
+      // Legacy fallback: accept decision markers from subject.txt only if JSON decision
+      // output is unavailable, to preserve compatibility with older sandbox outputs.
+      if (!processingResultBuffer && parsedSubject.shouldForward !== undefined) {
+        shouldForward = parsedSubject.shouldForward;
+        skipForwardReason = parsedSubject.skipForwardReason;
+        pushTrace(
+          'read_processed_subject_legacy_decision',
+          'warning',
+          'Using legacy subject marker decision because processing_result.json is missing',
+          {
+            shouldForward: shouldForward ?? null,
+            skipForwardReason: skipForwardReason ?? null,
+          },
+        );
+      }
+    } else {
+      pushTrace('read_processed_subject', 'warning', 'Subject file not found — using fallback');
+    }
+
+    if (processingResultBuffer) {
+      const rawProcessingResult = processingResultBuffer.toString('utf-8');
+      const parsedProcessingResult = parseProcessingResultFile(rawProcessingResult);
+      if (parsedProcessingResult.shouldForward !== undefined) {
+        shouldForward = parsedProcessingResult.shouldForward;
+        skipForwardReason = parsedProcessingResult.skipForwardReason;
+      }
+      pushTrace('read_processing_result', 'ok', 'Read processing decision JSON from sandbox', {
         shouldForward: shouldForward ?? null,
         skipForwardReason: skipForwardReason ?? null,
       });
     } else {
-      pushTrace('read_processed_subject', 'warning', 'Subject file not found — using fallback');
+      pushTrace(
+        'read_processing_result',
+        'warning',
+        'Processing decision file not found — defaulting to forward',
+      );
     }
 
     // Optional verification pass: re-run OpenCode to check all rules were fully applied.
@@ -1534,10 +1621,13 @@ export async function processEmailWithAgent(
           if (verifyExitCode === 0) {
             // Read back the (potentially corrected) files.
             const verifyHtmlBuffer = await sandbox!.readFileToBuffer({
-              path: '/vercel/sandbox/email.html',
+              path: SANDBOX_EMAIL_HTML_PATH,
             });
             const verifySubjectBuffer = await sandbox!.readFileToBuffer({
-              path: '/vercel/sandbox/subject.txt',
+              path: SANDBOX_SUBJECT_PATH,
+            });
+            const verifyProcessingResultBuffer = await sandbox!.readFileToBuffer({
+              path: SANDBOX_PROCESSING_RESULT_PATH,
             });
 
             if (verifyHtmlBuffer) {
@@ -1550,15 +1640,41 @@ export async function processEmailWithAgent(
               const rawVerifySubject = verifySubjectBuffer.toString('utf-8');
               const parsedVerifySubject = parseSubjectWithForwardingDecision(rawVerifySubject);
               if (parsedVerifySubject.subject) processedSubject = parsedVerifySubject.subject;
-              if (parsedVerifySubject.shouldForward !== undefined) {
-                shouldForward = parsedVerifySubject.shouldForward;
-                skipForwardReason = parsedVerifySubject.skipForwardReason;
-              }
               pushTrace('opencode_verify_subject', 'ok', 'Read verified subject from sandbox', {
                 processedSubject,
-                shouldForward: shouldForward ?? null,
-                skipForwardReason: skipForwardReason ?? null,
               });
+              if (!verifyProcessingResultBuffer && parsedVerifySubject.shouldForward !== undefined) {
+                shouldForward = parsedVerifySubject.shouldForward;
+                skipForwardReason = parsedVerifySubject.skipForwardReason;
+                pushTrace(
+                  'opencode_verify_subject_legacy_decision',
+                  'warning',
+                  'Using legacy subject marker decision because processing_result.json is missing',
+                  {
+                    shouldForward: shouldForward ?? null,
+                    skipForwardReason: skipForwardReason ?? null,
+                  },
+                );
+              }
+            }
+
+            if (verifyProcessingResultBuffer) {
+              const rawVerifyProcessingResult = verifyProcessingResultBuffer.toString('utf-8');
+              const parsedVerifyProcessingResult =
+                parseProcessingResultFile(rawVerifyProcessingResult);
+              if (parsedVerifyProcessingResult.shouldForward !== undefined) {
+                shouldForward = parsedVerifyProcessingResult.shouldForward;
+                skipForwardReason = parsedVerifyProcessingResult.skipForwardReason;
+              }
+              pushTrace(
+                'opencode_verify_processing_result',
+                'ok',
+                'Read verified processing decision JSON from sandbox',
+                {
+                  shouldForward: shouldForward ?? null,
+                  skipForwardReason: skipForwardReason ?? null,
+                },
+              );
             }
           } else {
             console.error(
