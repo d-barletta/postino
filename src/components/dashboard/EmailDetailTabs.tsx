@@ -129,27 +129,28 @@ export function EmailDetailTabs({
             )}
           </dd>
         </dl>
+
         {log.ruleApplied && (
           <p className="text-xs text-gray-600 dark:text-gray-300">
             <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span>{' '}
             {log.ruleApplied}
-            {showRewriteWarning && (
-              <span
-                className="ml-1 inline-flex align-text-bottom text-amber-500"
-                title={t.dashboard.emailHistory.rewriteFailedWarning}
-                aria-label={t.dashboard.emailHistory.rewriteFailedWarning}
-              >
-                <AlertTriangle className="h-3.5 w-3.5" />
-              </span>
-            )}
           </p>
         )}
+
+        {showRewriteWarning && (
+          <p className="mt-1 break-all text-xs text-red-700 dark:text-red-300">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            {t.dashboard.emailHistory.rewriteFailedWarning}
+          </p>
+        )}
+
         {log.status === 'skipped' && log.errorMessage && (
-          <p className="text-xs text-amber-700 dark:text-amber-300">
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
             <span className="font-medium">{t.dashboard.emailHistory.skipReason}</span>{' '}
             {log.errorMessage}
           </p>
         )}
+
         {emailData?.loading && (
           <div className="animate-pulse space-y-2 pt-1">
             <div className="h-50 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
