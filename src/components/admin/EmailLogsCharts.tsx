@@ -46,7 +46,7 @@ const chartConfig = {
   processing: { label: 'Processing', color: '#f59e0b' },
   forwarded: { label: 'Forwarded', color: '#16a34a' },
   error: { label: 'Error', color: '#dc2626' },
-  skipped: { label: 'Skipped', color: '#6b7280' },
+  skipped: { label: 'Skipped', color: '#f59e0b' },
   tokens: { label: 'Tokens', color: '#0ea5e9' },
   cost: { label: 'Cost', color: '#8b5cf6' },
 } satisfies ChartConfig;

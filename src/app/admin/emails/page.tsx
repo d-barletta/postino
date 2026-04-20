@@ -61,12 +61,15 @@ function asAgentTrace(value: unknown): AgentTraceView | null {
   return trace;
 }
 
-const STATUS_VARIANT: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
+const STATUS_VARIANT: Record<
+  string,
+  'info' | 'warning' | 'success' | 'error' | 'default' | 'skipped'
+> = {
   received: 'info',
   processing: 'default',
   forwarded: 'success',
   error: 'error',
-  skipped: 'warning',
+  skipped: 'skipped',
 };
 
 const ALL_STATUSES = ['received', 'processing', 'forwarded', 'error', 'skipped'] as const;

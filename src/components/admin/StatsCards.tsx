@@ -48,7 +48,7 @@ export function StatsCards({ stats, period, onPeriodChange }: StatsCardsProps) {
     {
       label: 'Emails Skipped',
       value: stats.totalEmailsSkipped,
-      color: 'text-gray-500 dark:text-gray-400',
+      color: 'text-orange-600 dark:text-orange-400',
     },
     {
       label: 'Tokens Used',

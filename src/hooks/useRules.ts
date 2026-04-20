@@ -127,7 +127,10 @@ export function useRules() {
     const previousRules = rules;
     // Optimistic reorder
     const reordered = orderedIds
-      .map((id) => rules.find((r) => r.id === id))
+      .map((id, index) => {
+        const rule = rules.find((r) => r.id === id);
+        return rule ? { ...rule, sortOrder: index } : null;
+      })
       .filter(Boolean) as Rule[];
     setRules(reordered);
     try {
