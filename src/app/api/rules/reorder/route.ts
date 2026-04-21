@@ -34,22 +34,38 @@ export async function PATCH(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Verify ownership of all provided rule IDs in one batch read.
-    const { data: rules } = await supabase.from('rules').select('id, user_id').in('id', orderedIds);
+    const { data: userRules, error: userRulesError } = await supabase
+      .from('rules')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true });
+    if (userRulesError) throw userRulesError;
 
-    const ruleMap = new Map((rules ?? []).map((r) => [r.id, r]));
-    const ownedIds = orderedIds.filter((id) => ruleMap.get(id)?.user_id === user.id);
+    const currentIds = (userRules ?? []).map((rule) => rule.id as string);
+    const currentIdSet = new Set(currentIds);
 
-    await Promise.all(
-      ownedIds.map((id) =>
-        supabase
-          .from('rules')
-          .update({ sort_order: orderedIds.indexOf(id) })
-          .eq('id', id),
+    const invalidIds = orderedIds.filter((id) => !currentIdSet.has(id));
+    if (invalidIds.length > 0) {
+      return NextResponse.json(
+        { error: 'orderedIds contains rule IDs that do not belong to the user' },
+        { status: 403 },
+      );
+    }
+
+    // Apply the caller-provided order first, then keep any omitted rules in their existing order.
+    const finalOrderedIds = [...orderedIds, ...currentIds.filter((id) => !uniqueIds.has(id))];
+
+    const updates = await Promise.all(
+      finalOrderedIds.map((id, index) =>
+        supabase.from('rules').update({ sort_order: index }).eq('id', id).eq('user_id', user.id),
       ),
     );
 
-    return NextResponse.json({ success: true, updated: ownedIds.length });
+    const updateError = updates.find((result) => result.error)?.error;
+    if (updateError) throw updateError;
+
+    return NextResponse.json({ success: true, updated: finalOrderedIds.length });
   } catch (error) {
     return handleUserError(error, 'rules/reorder POST');
   }
