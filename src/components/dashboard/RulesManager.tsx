@@ -459,7 +459,7 @@ export function RulesManager({
           </Card>
         ) : (
           <div className="space-y-3">
-            {filteredRules.map((rule) => {
+            {filteredRules.map((rule, i) => {
               const index = rules.findIndex((r) => r.id === rule.id);
               return (
                 <div key={rule.id} ref={rule.id === editingId ? editRuleRef : undefined}>
@@ -568,7 +568,7 @@ export function RulesManager({
                                   className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0"
                                   title={t.dashboard.rules.processingOrder}
                                 >
-                                  {typeof rule.sortOrder === 'number' ? rule.sortOrder + 1 : index + 1}
+                                  {i + 1}
                                 </span>
                               )}
                               <p

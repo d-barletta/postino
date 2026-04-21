@@ -884,12 +884,17 @@ export async function processQueuedInboundPayload(
         rule_applied: result.ruleApplied,
         tokens_used: result.tokensUsed,
         estimated_cost: result.estimatedCost,
-        estimated_credits: dollarsToCredits(result.estimatedCost, creditSettings.creditsPerDollarFactor),
+        estimated_credits: dollarsToCredits(
+          result.estimatedCost,
+          creditSettings.creditsPerDollarFactor,
+        ),
         // Preserve the original body (instead of AI-modified body) because this path
         // intentionally skips both forwarding and rewrite output.
         processed_body: payload.emailBody,
         error_message: skipReason,
-        ...(result.trace ? { agent_trace: result.trace as unknown as import('@/types/supabase').Json } : {}),
+        ...(result.trace
+          ? { agent_trace: result.trace as unknown as import('@/types/supabase').Json }
+          : {}),
         ...(result.analysis
           ? { email_analysis: result.analysis as unknown as import('@/types/supabase').Json }
           : {}),
@@ -903,13 +908,13 @@ export async function processQueuedInboundPayload(
       settingsData: settings,
     });
 
-    await sendEmailPushNotification(
-      payload.userId,
-      payload.fromHeader || payload.sender,
-      payload.subject,
-      payload.logId,
-      'skipped',
-    );
+    // await sendEmailPushNotification(
+    //   payload.userId,
+    //   payload.fromHeader || payload.sender,
+    //   payload.subject,
+    //   payload.logId,
+    //   'skipped',
+    // );
     return;
   }
 
