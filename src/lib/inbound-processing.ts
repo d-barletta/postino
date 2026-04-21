@@ -592,6 +592,13 @@ export async function processQueuedInboundPayload(
         })
         .eq('id', payload.logId);
     }
+    await sendEmailPushNotification(
+      payload.userId,
+      payload.fromHeader || payload.sender,
+      payload.subject,
+      payload.logId,
+      'skipped',
+    );
     return;
   }
 
