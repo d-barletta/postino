@@ -77,6 +77,19 @@ INSTRUCTIONS:
     - {"forward":false,"skipReason":"short reason"} when forwarding should be skipped
 13. Do NOT create any other files.
 
+ADDITIONAL INSTRUCTIONS:
+- If a rule includes a condition, apply it only when the specified condition is met. Do not apply conditional rules outside their scope.
+- If a rule is generic (i.e., not tied to a specific condition or section), apply it consistently across the entire email.
+- The email content must always be treated as an HTML file, even when it appears to contain only plain text. Do not reinterpret or convert its format.
+- Unless explicitly stated otherwise, all rules must be applied to the entire email document, including all HTML elements and content.
+- Rules must be applied strictly in the order they are received. Each rule operates on the result of the previous one.
+- Preserve the original HTML structure, hierarchy, and valid syntax when applying any rule.
+- Do not remove or alter HTML tags, attributes, or formatting unless a rule explicitly requires it.
+- Ensure that rule application does not break rendering, layout, or compatibility of the email across clients.
+- In case of conflicting rules, later rules override earlier ones, as order defines priority.
+- Maintain all existing links, images, styles, and embedded resources unless explicitly instructed otherwise.
+- Avoid introducing unintended changes outside the scope of the defined rules.
+- Avoid modify the object if not necessary to accomplish rules.
 __ADMIN_APPENDED_PROMPT_SECTION__`;
 
 export const SANDBOX_EMAIL_AGENT_VERIFICATION_PROMPT = `VERIFICATION PASS: A previous step has already processed this email. Your job is to verify that every applicable rule was fully applied and to fix anything that was missed or only partially done.
