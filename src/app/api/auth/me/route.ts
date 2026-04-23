@@ -12,6 +12,7 @@ import {
   normalizeUserCreditsSnapshot,
   getUtcMonthKey,
 } from '@/lib/credits';
+import { notifyAdminsNewSignup } from '@/lib/email';
 
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
 
@@ -106,6 +107,12 @@ export async function GET(request: NextRequest) {
         .eq('id', user.id)
         .single();
       userData = newUserData;
+
+      notifyAdminsNewSignup({
+        email: user.email ?? '',
+        assignedEmail: assignedEmail,
+        createdAt: new Date().toISOString(),
+      }).catch((err) => console.error('[auth/me] notifyAdminsNewSignup failed:', err));
     } else {
       if (userData.suspended) {
         return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
