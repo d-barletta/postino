@@ -320,6 +320,8 @@ export interface EmailListItemProps {
   onAnalysisUpdated?: (analysis: EmailAnalysis) => void;
   /** Called when AI analysis uses credits (triggers stats refresh) */
   onCreditsUsed?: () => void;
+  /** Called after an email is successfully queued for reprocessing. */
+  onReprocessed?: () => void;
   /**
    * 'side'   — status + date on the right of the top row (modal style)
    * 'bottom' — status + date in a separate bottom row (narrow list style, default)
@@ -340,6 +342,7 @@ export function EmailListItem({
   onToggleRead,
   onAnalysisUpdated,
   onCreditsUsed,
+  onReprocessed,
   statusLayout = 'bottom',
 }: EmailListItemProps) {
   const { t, locale } = useI18n();
@@ -515,6 +518,7 @@ export function EmailListItem({
             onViewFullscreen={onViewFullscreen}
             onAnalysisUpdated={onAnalysisUpdated}
             onCreditsUsed={onCreditsUsed}
+            onReprocessed={onReprocessed}
           />
         </div>
       )}

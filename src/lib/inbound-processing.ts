@@ -73,6 +73,12 @@ export interface QueuedInboundPayload {
    * Rules and forwarding are skipped. Status is saved as 'skipped'.
    */
   aiAnalysisOnly?: boolean;
+  /**
+   * When true, the duplicate-forward nonce check is skipped.
+   * Set by the reprocess route so manually retried emails are not blocked by
+   * a previously-inserted nonce for the same Message-Id.
+   */
+  isReprocess?: boolean;
 }
 
 // System sentinel values are defined in @/lib/email-sentinel-rules
@@ -739,7 +745,7 @@ export async function processQueuedInboundPayload(
   if (monthlyCreditsRemaining <= 0) {
     const forwardedBody = buildForwardBodyWithoutAi(payload);
 
-    if (payload.messageId) {
+    if (payload.messageId && !payload.isReprocess) {
       const forwardNonce = `forward:${crypto
         .createHash('sha256')
         .update(`${payload.userId}:${payload.messageId}`)
@@ -980,8 +986,8 @@ export async function processQueuedInboundPayload(
 
   // Last-mile dedupe guard: when duplicate webhook deliveries slip through with
   // different nonces, ensure only one forwarded email is actually sent for a
-  // given user + Message-Id pair.
-  if (payload.messageId) {
+  // given user + Message-Id pair. Skipped for manual reprocessing.
+  if (payload.messageId && !payload.isReprocess) {
     const forwardNonce = `forward:${crypto
       .createHash('sha256')
       .update(`${payload.userId}:${payload.messageId}`)

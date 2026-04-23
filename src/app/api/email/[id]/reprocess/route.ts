@@ -94,6 +94,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ccAddress: (logRow.cc_address as string) ?? undefined,
       bccAddress: (logRow.bcc_address as string) ?? undefined,
       attachments: attachments.length > 0 ? attachments : undefined,
+      isReprocess: true,
     };
 
     // Enqueue a new job and trigger processing asynchronously (same pattern as the
