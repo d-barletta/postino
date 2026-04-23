@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyMailgunSignature, isMailgunTimestampFresh, type EmailAttachment } from '@/lib/email';
 import { enqueueEmailJob, triggerEmailJobsProcessing } from '@/lib/email-jobs';
+import { getBaseUrl } from '@/lib/request-utils';
 import {
   deleteAttachmentFromStorage,
   processQueuedInboundPayload,
@@ -568,15 +569,8 @@ async function uploadWebhookPayloadSnapshot(
 function scheduleProcessingTrigger(request: NextRequest): void {
   after(async () => {
     await new Promise<void>((resolve) => setTimeout(resolve, 20_000));
-
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
-    const host = request.headers.get('host') || 'localhost:3000';
-    const proto =
-      request.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https');
-    const baseUrl = appUrl || `${proto}://${host}`;
-
     try {
-      await triggerEmailJobsProcessing(baseUrl, ASYNC_TRIGGER_BATCH_SIZE);
+      await triggerEmailJobsProcessing(getBaseUrl(request), ASYNC_TRIGGER_BATCH_SIZE);
     } catch (err) {
       console.error('Async process trigger failed:', err);
     }

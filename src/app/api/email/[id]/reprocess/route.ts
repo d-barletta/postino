@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { enqueueEmailJob, triggerEmailJobsProcessing } from '@/lib/email-jobs';
+import { getBaseUrl } from '@/lib/request-utils';
 import { type SerializedAttachment, type QueuedInboundPayload } from '@/lib/inbound-processing';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -98,14 +99,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await enqueueEmailJob(payload, jobId);
 
     after(async () => {
-      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
-      const host = request.headers.get('host') || 'localhost:3000';
-      const proto =
-        request.headers.get('x-forwarded-proto') ||
-        (host.startsWith('localhost') ? 'http' : 'https');
-      const baseUrl = appUrl || `${proto}://${host}`;
       try {
-        await triggerEmailJobsProcessing(baseUrl, 1);
+        await triggerEmailJobsProcessing(getBaseUrl(request), 1);
       } catch (err) {
         console.error('[reprocess] Async process trigger failed (jobId:', jobId, '):', err);
       }
