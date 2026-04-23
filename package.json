@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "set:max-duration": "npx tsx scripts/set-max-duration.ts",
+    "predev": "npm run set:max-duration",
+    "prebuild": "npm run set:max-duration",
+    "prestart": "npm run set:max-duration",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

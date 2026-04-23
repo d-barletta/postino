@@ -16,7 +16,7 @@ import { VERCEL_TIMEOUTS } from '@/lib/vercel-plan';
  *   waveSize = ceil(15 / 4)              = 4
  *   dispatch time = 3 × 180 000         = 9 min  ✓
  */
-//export const maxDuration = 800; //max: 300 in hobby plan and 800 in pro plan
+export const maxDuration = 300;
 
 /**
  * Hard budget for dispatching all waves. Wave size is auto-calculated so the
