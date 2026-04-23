@@ -1,28 +1,157 @@
 ---
 name: html-email-editing
-description: Expert at surgically editing HTML emails while preserving structure, styles, and layout. Use when processing email HTML files.
+description: Deterministic HTML email editor. Performs minimal, rule-driven edits while preserving exact structure and rendering.
 ---
 
-## What I do
+## Mission
 
-- Edit HTML email content while preserving ALL original structure
-- Maintain inline styles, CSS classes, table layouts, and image references
-- Make minimal, surgical changes — only modify what the rules require
-- Handle multi-part HTML emails (with nested tables, media queries, etc.)
+Apply user rules to HTML email content using **minimal, surgical edits**.
 
-## Guidelines
+If no rule applies → DO NOT modify the HTML.
 
-- Never strip or rewrite the HTML skeleton — only edit text content nodes
-- Preserve `<style>` blocks, `<meta>` tags, and `<head>` content exactly
-- Keep all `class`, `id`, `style`, `width`, `height`, `bgcolor`, and other layout attributes
-- Do not remove tracking pixels, spacer GIFs, or structural `<table>` elements
-- When translating, translate visible text only — not HTML attributes, URLs, or alt text for logos
-- If an email uses `<!--[if mso]>` conditional comments, preserve them verbatim
-- Multi-byte characters (emoji, accented letters) must remain valid UTF-8
+---
 
-## Common pitfalls
+## Hard Constraints (NON-NEGOTIABLE)
 
-- Do NOT convert `<table>` layouts to `<div>` — email clients need tables
-- Do NOT remove `&nbsp;` entities — they may be structural spacers
-- Do NOT "clean up" or reformat the HTML — email clients are fragile
-- Do NOT add `<!DOCTYPE>` or `<html>` tags if they weren't in the original
+- Input is ALWAYS HTML
+- Preserve 100% of:
+  - structure
+  - tag hierarchy
+  - attributes
+  - inline styles
+  - CSS
+  - layout
+  - rendering behavior
+
+- DO NOT:
+  - reformat
+  - prettify
+  - normalize
+  - restructure
+  - convert to plain text
+  - inject new wrappers
+
+---
+
+## Editing Model (CRITICAL)
+
+- Modify ONLY what rules explicitly require
+- Edit ONLY:
+  - visible text nodes
+
+- Everything else MUST remain byte-equivalent when possible
+
+- Use **minimal-diff strategy**:
+  - smallest possible change
+  - no collateral edits
+
+---
+
+## Rule Application
+
+- Apply rules **sequentially (top → bottom)**
+- If conflict:
+  - **later rule overrides earlier**
+
+- Ignore irrelevant rules
+
+---
+
+## Allowed Transformations
+
+### Translation
+
+- Translate ONLY visible text
+- NEVER translate:
+  - HTML
+  - attributes
+  - CSS
+  - URLs
+  - tracking params
+
+### Summarization / Rewrite
+
+- Preserve:
+  - meaning
+  - facts
+  - names
+  - dates
+  - links
+  - CTAs
+
+- DO NOT change structure
+
+### Content Removal
+
+- Remove ONLY:
+  - explicitly targeted content
+  - clearly irrelevant sections (ads) IF safe
+
+- Do NOT break layout:
+  - keep spacing elements if needed
+
+---
+
+## Strict Preservation
+
+Always preserve EXACTLY:
+
+- `<head>`, `<style>`, `<meta>`
+- conditional comments (`<!--[if mso]>`)
+- tables and nested tables
+- attributes (`class`, `id`, `style`, `width`, etc.)
+- images, links, tracking pixels
+- HTML entities (`&nbsp;`, etc.)
+- spacer elements
+
+---
+
+## Rendering Guarantee
+
+After editing:
+
+- Visual rendering MUST remain unchanged
+  - except intended text changes
+
+- No layout shifts
+- No broken email client behavior
+
+---
+
+## Failure Handling
+
+If edit fails:
+
+1. Re-locate target content
+2. Retry with precise match
+3. If still failing:
+   - rewrite ONLY the affected fragment
+
+NEVER rewrite entire document unless explicitly required
+
+---
+
+## Determinism
+
+- Same input → identical output
+- No randomness
+- No stylistic variation
+
+---
+
+## Anti-Patterns (FORBIDDEN)
+
+- Converting tables → divs
+- Removing `&nbsp;`
+- Modifying `<head>`
+- Cleaning or modernizing HTML
+- Editing outside rule scope
+- Rewriting large sections unnecessarily
+
+---
+
+## Output
+
+- Valid, well-formed HTML
+- Structurally identical (except minimal edits)
+- All changes traceable to rules
