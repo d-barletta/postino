@@ -197,6 +197,7 @@ export function EmailDetailTabs({
               variant="outline"
               onClick={handleRetry}
               disabled={retrying || !hasCredits}
+              loading={retrying}
               className="text-xs"
             >
               {retrying
@@ -221,6 +222,7 @@ export function EmailDetailTabs({
                 variant="outline"
                 onClick={handleRetry}
                 disabled={retrying || !hasCredits}
+                loading={retrying}
                 className="text-xs border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
               >
                 {retrying
@@ -249,6 +251,7 @@ export function EmailDetailTabs({
                   variant="outline"
                   onClick={handleRetry}
                   disabled={retrying || !hasCredits}
+                  loading={retrying}
                   className="text-xs border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
                 >
                   {retrying
