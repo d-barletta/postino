@@ -5,6 +5,7 @@ import {
   type QueuedInboundPayload,
 } from '@/lib/inbound-processing';
 import { analyzeEmailContent } from '@/agents/email-agent';
+import { addUserCreditsUsage, dollarsToCredits, resolveCreditSettings } from '@/lib/credits';
 import type { PreComputedEmailAnalysis } from '@/types';
 
 export type EmailJobStatus = 'pending' | 'processing' | 'retrying' | 'done' | 'failed';
@@ -378,20 +379,38 @@ async function runEarlyAnalysisAndSave(
       },
     );
 
-    if (result.analysis) {
-      await supabase
-        .from('email_logs')
-        .update({
-          email_analysis: result.analysis as unknown as import('@/types/supabase').Json,
-        })
-        .eq('id', payload.logId);
-    }
+    // Fetch settings to compute credits factor for the partial save.
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+    const settings = (settingsRow?.data as Record<string, unknown> | null) ?? {};
+    const creditSettings = resolveCreditSettings(settings);
+    const estimatedCredits = dollarsToCredits(
+      result.estimatedCost,
+      creditSettings.creditsPerDollarFactor,
+    );
+
+    // Persist partial results immediately so the UI reflects analysis while the agent runs.
+    await supabase
+      .from('email_logs')
+      .update({
+        ...(result.analysis
+          ? { email_analysis: result.analysis as unknown as import('@/types/supabase').Json }
+          : {}),
+        tokens_used: result.tokensUsed,
+        estimated_cost: result.estimatedCost,
+        estimated_credits: estimatedCredits,
+      })
+      .eq('id', payload.logId);
 
     return {
       analysis: result.analysis,
       tokensUsed: result.tokensUsed,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
+      estimatedCost: result.estimatedCost,
     };
   } catch (err) {
     console.error('[email-jobs] runEarlyAnalysisAndSave failed (log:', payload.logId, '):', err);
@@ -463,6 +482,23 @@ export async function processSingleClaimedJob(job: EmailJob & { id: string }): P
   // sandbox/agent is still running. The result is passed to processQueuedInboundPayload
   // so the agent reuses it instead of running a duplicate LLM analysis call.
   const preComputedAnalysis = await runEarlyAnalysisAndSave(job.payload, supabase);
+
+  // Charge the analysis credits immediately so the user sees them while the agent runs.
+  // The agent-only incremental cost will be charged when processQueuedInboundPayload completes.
+  if (preComputedAnalysis && (preComputedAnalysis.estimatedCost ?? 0) > 0) {
+    await addUserCreditsUsage({
+      userId: job.payload.userId,
+      userEmail: job.payload.userEmail,
+      estimatedCostUsd: preComputedAnalysis.estimatedCost!,
+    }).catch((err) =>
+      console.error(
+        '[email-jobs] early addUserCreditsUsage failed (log:',
+        job.payload.logId,
+        '):',
+        err,
+      ),
+    );
+  }
 
   try {
     await processQueuedInboundPayload(job.payload, undefined, preComputedAnalysis);

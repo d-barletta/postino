@@ -414,6 +414,10 @@ export async function processQueuedInboundPayload(
   const settings = (settingsRow?.data as Record<string, unknown> | null) ?? {};
   const creditSettings = resolveCreditSettings(settings);
 
+  // Cost already charged when early analysis ran before the agent.
+  // All addUserCreditsUsage calls below subtract this to avoid double-charging.
+  const preChargedCostUsd = preComputedAnalysis?.estimatedCost ?? 0;
+
   // Fetch user preferences. is_forwarding_header_enabled defaults to true when unset.
   const { data: userRow } = await supabase
     .from('users')
@@ -908,7 +912,7 @@ export async function processQueuedInboundPayload(
     await addUserCreditsUsage({
       userId: payload.userId,
       userEmail: payload.userEmail,
-      estimatedCostUsd: result.estimatedCost,
+      estimatedCostUsd: Math.max(0, result.estimatedCost - preChargedCostUsd),
       settingsData: settings,
     });
 
@@ -1089,7 +1093,7 @@ export async function processQueuedInboundPayload(
   await addUserCreditsUsage({
     userId: payload.userId,
     userEmail: payload.userEmail,
-    estimatedCostUsd: result.estimatedCost,
+    estimatedCostUsd: Math.max(0, result.estimatedCost - preChargedCostUsd),
     settingsData: settings,
   });
 

@@ -128,6 +128,8 @@ export interface PreComputedEmailAnalysis {
   tokensUsed: number;
   promptTokens: number;
   completionTokens: number;
+  /** Pre-analysis LLM cost in USD, used to avoid double-charging when the agent runs later. */
+  estimatedCost?: number;
 }
 
 export interface EmailAttachmentInfo {
