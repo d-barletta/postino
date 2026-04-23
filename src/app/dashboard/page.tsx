@@ -174,6 +174,11 @@ export default function DashboardPage() {
       setActiveTab('inbox');
     } else if (editRuleId) {
       setActiveTab('rules');
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('editRule')) {
+        url.searchParams.set('editRule', '');
+        window.history.replaceState(window.history.state, '', url);
+      }
     }
   }, [selectedEmailId, editRuleId]);
 

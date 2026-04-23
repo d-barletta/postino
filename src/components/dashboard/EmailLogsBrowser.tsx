@@ -96,9 +96,20 @@ export function EmailLogsBrowser({
     if (!selectedEmailId) return;
     setSelectedId(selectedEmailId);
     fetchExpandedEmail(selectedEmailId);
-    if (!markEmailAsRead) return;
+    const clearSelectedEmailParam = () => {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has('selectedEmail')) return;
+      url.searchParams.set('selectedEmail', '');
+      window.history.replaceState(window.history.state, '', url);
+    };
+
+    if (!markEmailAsRead) {
+      clearSelectedEmailParam();
+      return;
+    }
     const timer = setTimeout(() => {
       void markEmailAsRead(selectedEmailId);
+      clearSelectedEmailParam();
     }, 2000);
     return () => clearTimeout(timer);
   }, [selectedEmailId, fetchExpandedEmail, markEmailAsRead]);
