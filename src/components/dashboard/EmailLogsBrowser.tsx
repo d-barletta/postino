@@ -321,8 +321,8 @@ export function EmailLogsBrowser({
                       onCreditsUsed={onCreditsUsed}
                       onReprocessed={
                         onReprocessed
-                          ? () => {
-                              void fetchExpandedEmail(log.id, { force: true });
+                          ? async () => {
+                              await fetchExpandedEmail(log.id, { force: true });
                               onReprocessed();
                             }
                           : undefined
@@ -588,8 +588,8 @@ export function EmailLogsBrowser({
                   onCreditsUsed={onCreditsUsed}
                   onReprocessed={
                     onReprocessed
-                      ? () => {
-                          void fetchExpandedEmail(selectedLog.id, { force: true });
+                      ? async () => {
+                          await fetchExpandedEmail(selectedLog.id, { force: true });
                           onReprocessed();
                         }
                       : undefined
