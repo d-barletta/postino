@@ -358,7 +358,7 @@ export function EmailListItem({
     string,
     'info' | 'warning' | 'success' | 'error' | 'default' | 'skipped'
   > = {
-    pending: 'warning',
+    pending: 'info',
     received: 'info',
     processing: 'default',
     forwarded: 'success',
