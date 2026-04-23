@@ -6,6 +6,7 @@ import { BlogArticleContent } from '@/components/blog/BlogArticleContent';
 import type { BlogArticle } from '@/types';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const baseUrl = appUrl.replace(/\/$/, '');
 
 const getArticle = unstable_cache(
   async (slug: string): Promise<BlogArticle | null> => {
@@ -78,7 +79,18 @@ export async function generateMetadata({
     .slice(0, 160)
     .trim();
 
-  const canonicalUrl = `${appUrl}/blog/${article.slug}`;
+  const canonicalUrl = `${baseUrl}/blog/${article.slug}`;
+  const siblingSlugs = article.translationGroupId
+    ? await getArticleSiblings(article.translationGroupId)
+    : {};
+
+  const languageAlternates: Record<string, string> = {
+    [article.language]: canonicalUrl,
+  };
+
+  for (const [language, siblingSlug] of Object.entries(siblingSlugs)) {
+    languageAlternates[language] = `${baseUrl}/blog/${siblingSlug}`;
+  }
 
   return {
     title: article.title,
@@ -105,15 +117,22 @@ export async function generateMetadata({
     },
     alternates: {
       canonical: canonicalUrl,
-      languages: {
-        en: canonicalUrl,
-        it: canonicalUrl,
-        es: canonicalUrl,
-        fr: canonicalUrl,
-        de: canonicalUrl,
-      },
+      languages: languageAlternates,
     },
   };
+}
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase.from('blog_articles').select('slug').eq('published', true);
+    return (data ?? [])
+      .map((row) => row.slug)
+      .filter((slug): slug is string => typeof slug === 'string' && slug.length > 0)
+      .map((slug) => ({ slug }));
+  } catch {
+    return [];
+  }
 }
 
 export default async function BlogArticlePage({ params }: { params: Promise<{ slug: string }> }) {

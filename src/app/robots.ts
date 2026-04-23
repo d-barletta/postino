@@ -1,14 +1,22 @@
 import type { MetadataRoute } from 'next';
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://postino.pro';
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/login', '/register'],
-        disallow: ['/dashboard', '/api', '/verify-email'],
+        allow: ['/', '/blog', '/blog/*', '/login', '/register'],
+        disallow: [
+          '/dashboard',
+          '/api',
+          '/verify-email',
+          '/auth',
+          '/logout',
+          '/reset-password',
+          '/forgot-password',
+        ],
       },
     ],
     sitemap: `${appUrl.replace(/\/$/, '')}/sitemap.xml`,

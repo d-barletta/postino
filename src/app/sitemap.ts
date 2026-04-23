@@ -1,7 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://postino.pro';
+
+export const revalidate = 3600;
 
 async function getBlogSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   try {
