@@ -5,6 +5,7 @@ import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
 import { enqueueEmailJob, triggerEmailJobsProcessing } from '@/lib/email-jobs';
 import { getBaseUrl } from '@/lib/request-utils';
 import { type SerializedAttachment, type QueuedInboundPayload } from '@/lib/inbound-processing';
+import { SYSTEM_RULE_AI_SKIPPED_CREDITS } from '@/lib/email-sentinel-rules';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,8 +31,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Allow retrying emails that failed (error) or were skipped for any reason
-    if (logRow.status !== 'error' && logRow.status !== 'skipped') {
+    // Allow retrying emails that failed (error), were skipped for any reason,
+    // or were forwarded without AI because credits were exhausted.
+    const isCreditsExhaustedForward =
+      logRow.status === 'forwarded' && logRow.rule_applied === SYSTEM_RULE_AI_SKIPPED_CREDITS;
+    if (logRow.status !== 'error' && logRow.status !== 'skipped' && !isCreditsExhaustedForward) {
       return NextResponse.json(
         { error: 'Email is not in a failed or skipped state' },
         { status: 422 },
