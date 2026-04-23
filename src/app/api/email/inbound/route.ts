@@ -2,7 +2,8 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyMailgunSignature, isMailgunTimestampFresh, type EmailAttachment } from '@/lib/email';
-import { enqueueEmailJob } from '@/lib/email-jobs';
+import { enqueueEmailJob, triggerEmailJobsProcessing } from '@/lib/email-jobs';
+import { getBaseUrl } from '@/lib/request-utils';
 import {
   deleteAttachmentFromStorage,
   processQueuedInboundPayload,
@@ -563,40 +564,13 @@ async function uploadWebhookPayloadSnapshot(
 /**
  * Schedule a non-blocking call to the email-jobs process endpoint after a short delay.
  * Uses `after()` so the response is returned immediately; the fetch runs after the
- * request is complete, with a 10-second delay to give the DB time to persist the job.
+ * request is complete, with a 20-second delay to give the DB time to persist the job.
  */
 function scheduleProcessingTrigger(request: NextRequest): void {
-  const workerSecret = process.env.EMAIL_JOBS_WORKER_SECRET || '';
-  const cronSecret = process.env.CRON_SECRET || '';
-
-  if (!workerSecret && !cronSecret) {
-    // Cannot authorise the internal call — skip silently.
-    // Processing will still occur via the scheduled cron job.
-    return;
-  }
-
   after(async () => {
     await new Promise<void>((resolve) => setTimeout(resolve, 20_000));
-
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
-    const host = request.headers.get('host') || 'localhost:3000';
-    const proto =
-      request.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https');
-    const baseUrl = appUrl || `${proto}://${host}`;
-
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (workerSecret) {
-      headers['x-worker-secret'] = workerSecret;
-    } else {
-      headers['Authorization'] = `Bearer ${cronSecret}`;
-    }
-
     try {
-      await fetch(`${baseUrl}/api/internal/email-jobs/process`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ batchSize: ASYNC_TRIGGER_BATCH_SIZE }),
-      });
+      await triggerEmailJobsProcessing(getBaseUrl(request), ASYNC_TRIGGER_BATCH_SIZE);
     } catch (err) {
       console.error('Async process trigger failed:', err);
     }

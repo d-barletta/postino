@@ -523,6 +523,35 @@ export async function processSingleClaimedJob(job: EmailJob & { id: string }): P
 }
 
 /**
+ * Fire a POST to /api/internal/email-jobs/process to kick off a processing pass.
+ * Reads auth credentials from environment variables. Returns without error if no
+ * credentials are configured (processing will still happen via the scheduled cron).
+ * Throws on fetch failure so callers can log accordingly.
+ */
+export async function triggerEmailJobsProcessing(baseUrl: string, batchSize = 1): Promise<void> {
+  const workerSecret = process.env.EMAIL_JOBS_WORKER_SECRET || '';
+  const cronSecret = process.env.CRON_SECRET || '';
+  if (!workerSecret && !cronSecret) return;
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (workerSecret) {
+    headers['x-worker-secret'] = workerSecret;
+  } else {
+    headers['Authorization'] = `Bearer ${cronSecret}`;
+  }
+
+  const res = await fetch(`${baseUrl}/api/internal/email-jobs/process`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ batchSize }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`email-jobs/process responded ${res.status}: ${text}`);
+  }
+}
+
+/**
  * Return the IDs of jobs that are eligible for processing right now.
  * Jobs are not claimed — use `claimJobById` to acquire each one before processing.
  */

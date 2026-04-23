@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-import {
-  processQueuedInboundPayload,
-  type SerializedAttachment,
-  type QueuedInboundPayload,
-} from '@/lib/inbound-processing';
+import { enqueueEmailJob, triggerEmailJobsProcessing } from '@/lib/email-jobs';
+import { getBaseUrl } from '@/lib/request-utils';
+import { type SerializedAttachment, type QueuedInboundPayload } from '@/lib/inbound-processing';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -93,7 +92,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
-    await processQueuedInboundPayload(payload);
+    // Enqueue a new job and trigger processing asynchronously (same pattern as the
+    // inbound route). Calling processQueuedInboundPayload directly would time out
+    // the Vercel function and leave the email stuck in the pending state forever.
+    const jobId = crypto.randomUUID();
+    await enqueueEmailJob(payload, jobId);
+
+    after(async () => {
+      try {
+        await triggerEmailJobsProcessing(getBaseUrl(request), 1);
+      } catch (err) {
+        console.error(`[reprocess] Async process trigger failed (jobId: ${jobId}):`, err);
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
