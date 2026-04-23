@@ -362,6 +362,9 @@ const en: Translations = {
       markUnread: 'Mark as unread',
       failedToLoad: 'Failed to load emails',
       failedToLoadCount: 'Failed to load email count',
+      systemRuleAiSkippedCredits: 'AI skipped (credits exhausted)',
+      systemMsgAiSkippedAnalysisOnly: 'Skipped: monthly credits exhausted (analysis-only mode)',
+      systemMsgForwardingDisabled: 'Forwarding disabled: your Postino address is turned off',
     },
     search: {
       title: 'Search Emails',
@@ -702,6 +705,8 @@ const en: Translations = {
       modelUsed: 'Model used:',
       reprocess: 'Re-process',
       failedToReprocess: 'Failed to reprocess email.',
+      processNow: 'Process now',
+      noCredits: 'No credits',
       ruleApplied: 'Rule applied:',
       tokensUsed: 'Tokens used:',
       estCost: 'Est. cost:',

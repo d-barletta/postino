@@ -9,7 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import type { UserStats } from '@/types';
 
 interface MonthlyCreditsCardProps {
-  stats: UserStats;
+  stats: UserStats | null;
   onRefresh?: () => Promise<void>;
 }
 
@@ -23,11 +23,12 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
   const { t } = useI18n();
   const tr = t.dashboard.monthlyCredits;
 
-  const used = stats.monthlyCreditsUsed || 0;
-  const limit = stats.monthlyCreditsLimit || 0;
-  const remaining = Math.max(0, stats.monthlyCreditsRemaining || 0);
+  const loaded = stats !== null;
+  const used = stats?.monthlyCreditsUsed ?? 0;
+  const limit = stats?.monthlyCreditsLimit ?? 0;
+  const remaining = Math.max(0, stats?.monthlyCreditsRemaining ?? 0);
   const percent = toPercent(remaining, limit);
-  const isLimitReached = limit > 0 && remaining <= 0;
+  const isLimitReached = loaded && remaining <= 0;
 
   const barColor = percent <= 10 ? 'bg-red-500' : percent <= 25 ? 'bg-orange-500' : 'bg-green-500';
 
@@ -58,7 +59,7 @@ export function MonthlyCreditsCard({ stats, onRefresh }: MonthlyCreditsCardProps
           ) : null
         }
       />
-      {refreshing ? (
+      {refreshing || !loaded ? (
         <CardContent className="space-y-3 animate-pulse">
           <div className="flex items-baseline justify-between gap-3">
             <div className="h-4 w-28 rounded bg-gray-200 dark:bg-gray-700" />

@@ -369,6 +369,9 @@ const fr: Translations = {
       markUnread: 'Marquer comme non lu',
       failedToLoad: 'Échec du chargement des e-mails',
       failedToLoadCount: "Échec du chargement du nombre d'e-mails",
+      systemRuleAiSkippedCredits: 'IA ignorée (crédits épuisés)',
+      systemMsgAiSkippedAnalysisOnly: 'Ignoré : crédits mensuels épuisés (mode analyse uniquement)',
+      systemMsgForwardingDisabled: 'Transfert désactivé : votre adresse Postino est désactivée',
     },
     search: {
       title: 'Rechercher des e-mails',
@@ -713,6 +716,8 @@ const fr: Translations = {
       modelUsed: 'Modèle utilisé :',
       reprocess: 'Retraiter',
       failedToReprocess: "Impossible de retraiter l'e-mail.",
+      processNow: 'Traiter maintenant',
+      noCredits: 'Aucun crédit',
       ruleApplied: 'Règle appliquée :',
       tokensUsed: 'Tokens utilisés :',
       estCost: 'Coût est. :',

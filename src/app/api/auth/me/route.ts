@@ -6,6 +6,12 @@ import {
   isEmailUsingDomain,
 } from '@/lib/email-utils';
 import { verifyUserRequest } from '@/lib/api-auth';
+import {
+  resolveCreditSettings,
+  computeMonthlyCreditsLimit,
+  normalizeUserCreditsSnapshot,
+  getUtcMonthKey,
+} from '@/lib/credits';
 
 const MAX_ASSIGNED_EMAIL_ATTEMPTS = 10;
 
@@ -147,6 +153,16 @@ export async function GET(request: NextRequest) {
     }
 
     const safeUserData = userData;
+    const creditSettings = resolveCreditSettings(settingsData as Record<string, unknown>);
+    const monthlyCredits = normalizeUserCreditsSnapshot(
+      safeUserData as Parameters<typeof normalizeUserCreditsSnapshot>[0],
+      getUtcMonthKey(),
+    );
+    const monthlyCreditsLimit = computeMonthlyCreditsLimit(
+      creditSettings.freeCreditsPerMonth,
+      monthlyCredits.bonus,
+    );
+    const monthlyCreditsRemaining = Math.max(0, monthlyCreditsLimit - monthlyCredits.used);
     return NextResponse.json({
       user: {
         uid: user.id,
@@ -161,6 +177,7 @@ export async function GET(request: NextRequest) {
         isForwardingHeaderEnabled: safeUserData.is_forwarding_header_enabled,
         displayName: safeUserData.display_name,
         createdAt: safeUserData.created_at ?? null,
+        monthlyCreditsRemaining,
       },
     });
   } catch (error) {

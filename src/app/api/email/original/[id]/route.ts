@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
+import { SYSTEM_RULE_AI_SKIPPED_CREDITS } from '@/lib/email-sentinel-rules';
 import type { SerializedAttachment } from '@/lib/inbound-processing';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { data: logRow } = await supabase
       .from('email_logs')
       .select(
-        'user_id, from_address, to_address, cc_address, bcc_address, subject, original_body, processed_body, rule_applied, received_at, attachment_count, attachment_names, attachments, email_analysis',
+        'user_id, from_address, to_address, cc_address, bcc_address, subject, original_body, processed_body, rule_applied, status, received_at, attachment_count, attachment_names, attachments, email_analysis',
       )
       .eq('id', id)
       .single();
@@ -88,7 +89,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       bccAddress: logRow.bcc_address ?? null,
       subject: logRow.subject,
       originalBody: resolvedBody,
-      processedBody: logRow.processed_body ?? null,
+      // For skipped emails, processed_body is always the original (unmodified) body —
+      // suppress it so UI toggles don't appear regardless of the skip reason.
+      processedBody:
+        logRow.status === 'skipped' || logRow.rule_applied === SYSTEM_RULE_AI_SKIPPED_CREDITS
+          ? null
+          : (logRow.processed_body ?? null),
       ruleApplied: logRow.rule_applied ?? null,
       receivedAt: logRow.received_at ?? null,
       attachmentCount: logRow.attachment_count ?? 0,

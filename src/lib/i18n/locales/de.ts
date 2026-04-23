@@ -371,6 +371,11 @@ const de: Translations = {
       markUnread: 'Als ungelesen markieren',
       failedToLoad: 'E-Mails konnten nicht geladen werden',
       failedToLoadCount: 'Anzahl der E-Mails konnte nicht geladen werden',
+      systemRuleAiSkippedCredits: 'KI übersprungen (Guthaben erschöpft)',
+      systemMsgAiSkippedAnalysisOnly:
+        'Übersprungen: monatliches Guthaben erschöpft (nur Analyse-Modus)',
+      systemMsgForwardingDisabled:
+        'Weiterleitung deaktiviert: Ihre Postino-Adresse ist deaktiviert',
     },
     search: {
       title: 'E-Mails suchen',
@@ -716,6 +721,8 @@ const de: Translations = {
       modelUsed: 'Verwendetes Modell:',
       reprocess: 'Neu verarbeiten',
       failedToReprocess: 'E-Mail konnte nicht neu verarbeitet werden.',
+      processNow: 'Jetzt verarbeiten',
+      noCredits: 'Kein Guthaben',
       ruleApplied: 'Angewendete Regel:',
       tokensUsed: 'Verwendete Tokens:',
       estCost: 'Gesch. Kosten:',

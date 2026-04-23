@@ -545,29 +545,34 @@ export default function AdminUsersPage({ showPageHeader = true }: AdminUsersPage
                         <div className="h-1.5 w-full max-w-xs rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                           <div
                             className={`h-1.5 rounded-full ${
-                              (user.monthlyCreditsLimit || 0) > 0 &&
-                              (user.monthlyCreditsUsed || 0) / (user.monthlyCreditsLimit || 1) >=
-                                0.9
+                              (user.monthlyCreditsRemaining ?? 0) <= 0
                                 ? 'bg-red-500'
                                 : (user.monthlyCreditsLimit || 0) > 0 &&
                                     (user.monthlyCreditsUsed || 0) /
                                       (user.monthlyCreditsLimit || 1) >=
-                                      0.75
-                                  ? 'bg-orange-500'
-                                  : 'bg-green-500'
+                                      0.9
+                                  ? 'bg-red-500'
+                                  : (user.monthlyCreditsLimit || 0) > 0 &&
+                                      (user.monthlyCreditsUsed || 0) /
+                                        (user.monthlyCreditsLimit || 1) >=
+                                        0.75
+                                    ? 'bg-orange-500'
+                                    : 'bg-green-500'
                             }`}
                             style={{
-                              width: `${Math.max(
-                                0,
-                                Math.min(
-                                  100,
-                                  (user.monthlyCreditsLimit || 0) <= 0
-                                    ? 100
-                                    : ((user.monthlyCreditsUsed || 0) /
-                                        (user.monthlyCreditsLimit || 1)) *
+                              width: `${
+                                (user.monthlyCreditsLimit || 0) <= 0
+                                  ? 100
+                                  : Math.max(
+                                      0,
+                                      Math.min(
                                         100,
-                                ),
-                              )}%`,
+                                        ((user.monthlyCreditsUsed || 0) /
+                                          (user.monthlyCreditsLimit || 1)) *
+                                          100,
+                                      ),
+                                    )
+                              }%`,
                             }}
                           />
                         </div>

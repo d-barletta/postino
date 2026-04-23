@@ -11,6 +11,11 @@ import { EmailAnalysisTabContent } from '@/components/dashboard/EmailAnalysisTab
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  SYSTEM_RULE_AI_SKIPPED_CREDITS,
+  SYSTEM_MSG_AI_SKIPPED_ANALYSIS_ONLY,
+  SYSTEM_MSG_FORWARDING_DISABLED,
+} from '@/lib/email-sentinel-rules';
 import type { EmailAnalysis, EmailLog } from '@/types';
 import type { ExpandedEmailData } from '@/components/dashboard/EmailListItem';
 
@@ -47,9 +52,28 @@ export function EmailDetailTabs({
   fillAvailableHeight = false,
 }: EmailDetailTabsProps) {
   const { t } = useI18n();
-  const { getIdToken } = useAuth();
+  const { getIdToken, user } = useAuth();
+  const k = t.dashboard.emailHistory;
+  const hasCredits = (user?.monthlyCreditsRemaining ?? 0) > 0;
+  const isCreditsExhausted = log.ruleApplied === SYSTEM_RULE_AI_SKIPPED_CREDITS;
   const hasRewritten = Boolean(emailData?.processedBody);
-  const showRewriteWarning = Boolean(log.ruleApplied && log.status === 'error' && log.errorMessage);
+  // Show warning (and hide toggle) when the email errored and was not actually rewritten.
+  const showRewriteWarning = Boolean(log.status === 'error' && log.errorMessage);
+
+  // Translate known system sentinel values; fall back to the raw string for user-defined rule names.
+  const ruleAppliedDisplay = log.ruleApplied
+    ? log.ruleApplied === SYSTEM_RULE_AI_SKIPPED_CREDITS
+      ? k.systemRuleAiSkippedCredits
+      : log.ruleApplied
+    : undefined;
+
+  const skipReasonDisplay = log.errorMessage
+    ? log.errorMessage === SYSTEM_MSG_AI_SKIPPED_ANALYSIS_ONLY
+      ? k.systemMsgAiSkippedAnalysisOnly
+      : log.errorMessage === SYSTEM_MSG_FORWARDING_DISABLED
+        ? k.systemMsgForwardingDisabled
+        : log.errorMessage
+    : undefined;
   const [showRewritten, setShowRewritten] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState('');
@@ -160,11 +184,31 @@ export function EmailDetailTabs({
           </dd>
         </dl>
 
-        {log.ruleApplied && (
+        {ruleAppliedDisplay && (
           <p className="text-xs text-gray-600 dark:text-gray-300">
-            <span className="font-medium">{t.dashboard.emailHistory.ruleApplied}</span>{' '}
-            {log.ruleApplied}
+            <span className="font-medium">{k.ruleApplied}</span> {ruleAppliedDisplay}
           </p>
+        )}
+
+        {isCreditsExhausted && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRetry}
+              disabled={retrying || !hasCredits}
+              className="text-xs"
+            >
+              {retrying
+                ? t.emailOriginal.admin.processing
+                : !hasCredits
+                  ? t.emailOriginal.admin.noCredits
+                  : t.emailOriginal.admin.processNow}
+            </Button>
+            {retryError && (
+              <span className="text-red-600 dark:text-red-400 text-xs">{retryError}</span>
+            )}
+          </div>
         )}
 
         {showRewriteWarning && (
@@ -176,10 +220,14 @@ export function EmailDetailTabs({
                 size="sm"
                 variant="outline"
                 onClick={handleRetry}
-                disabled={retrying}
+                disabled={retrying || !hasCredits}
                 className="text-xs border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
               >
-                {retrying ? t.emailOriginal.admin.processing : t.emailOriginal.admin.reprocess}
+                {retrying
+                  ? t.emailOriginal.admin.processing
+                  : !hasCredits
+                    ? t.emailOriginal.admin.noCredits
+                    : t.emailOriginal.admin.processNow}
               </Button>
               {retryError && (
                 <span className="text-red-600 dark:text-red-400 text-xs">{retryError}</span>
@@ -188,13 +236,32 @@ export function EmailDetailTabs({
           </Alert>
         )}
 
-        {log.status === 'skipped' && log.errorMessage && (
+        {log.status === 'skipped' && skipReasonDisplay && (
           <Alert variant="warning" className="text-left text-xs">
             <AlertCircle className="h-3.5 w-3.5" />
             <AlertDescription>
-              <span className="font-medium">{t.dashboard.emailHistory.skipReason}</span>{' '}
-              {log.errorMessage}
+              <span className="font-medium">{k.skipReason}</span> {skipReasonDisplay}
             </AlertDescription>
+            {!isCreditsExhausted && (
+              <AlertAction>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRetry}
+                  disabled={retrying || !hasCredits}
+                  className="text-xs border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
+                >
+                  {retrying
+                    ? t.emailOriginal.admin.processing
+                    : !hasCredits
+                      ? t.emailOriginal.admin.noCredits
+                      : t.emailOriginal.admin.processNow}
+                </Button>
+                {retryError && (
+                  <span className="text-red-600 dark:text-red-400 text-xs">{retryError}</span>
+                )}
+              </AlertAction>
+            )}
           </Alert>
         )}
 
@@ -207,7 +274,7 @@ export function EmailDetailTabs({
         )}
         {emailData && !emailData.loading && emailData.originalBody && (
           <div className={cn(fillAvailableHeight && 'min-h-0 flex-1 flex flex-col')}>
-            {hasRewritten && !showRewriteWarning && (
+            {hasRewritten && !showRewriteWarning && log.status !== 'skipped' && (
               <div className="flex items-center gap-1 mb-2 shrink-0">
                 <button
                   onClick={() => setShowRewritten(false)}

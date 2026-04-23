@@ -366,6 +366,9 @@ const it: Translations = {
       markUnread: 'Segna come non letta',
       failedToLoad: 'Caricamento email non riuscito',
       failedToLoadCount: 'Caricamento conteggio email non riuscito',
+      systemRuleAiSkippedCredits: 'AI saltata (crediti esauriti)',
+      systemMsgAiSkippedAnalysisOnly: 'Saltata: crediti mensili esauriti (modalità solo analisi)',
+      systemMsgForwardingDisabled: 'Inoltro disabilitato: il tuo indirizzo Postino è disattivato',
     },
     search: {
       title: 'Cerca email',
@@ -709,6 +712,8 @@ const it: Translations = {
       modelUsed: 'Modello usato:',
       reprocess: 'Rielabora',
       failedToReprocess: "Impossibile rielaborare l'email.",
+      processNow: 'Elabora ora',
+      noCredits: 'Crediti esauriti',
       ruleApplied: 'Regola applicata:',
       tokensUsed: 'Token usati:',
       estCost: 'Costo est.:',

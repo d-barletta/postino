@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { Database } from '@/types/supabase';
 import type { User, Rule, EmailLog, Settings } from '@/types';
 import { DEFAULT_CREDITS_PER_DOLLAR_FACTOR, DEFAULT_FREE_CREDITS_PER_MONTH } from '@/lib/credits';
+import { SYSTEM_RULE_AI_SKIPPED_CREDITS } from '@/lib/email-sentinel-rules';
 
 type UserUpdate = Database['public']['Tables']['users']['Update'];
 type RuleUpdate = Database['public']['Tables']['rules']['Update'];
@@ -67,7 +68,12 @@ function rowToEmailLog(row: any): EmailLog {
     estimatedCredits: row.estimated_credits ?? undefined,
     userId: row.user_id,
     originalBody: row.original_body ?? undefined,
-    processedBody: row.processed_body ?? undefined,
+    // When AI was skipped (credits exhausted), processed_body is set to the forwarded body
+    // (same as original) — suppress it so UI toggles don't appear.
+    processedBody:
+      row.rule_applied === SYSTEM_RULE_AI_SKIPPED_CREDITS
+        ? undefined
+        : (row.processed_body ?? undefined),
     errorMessage: row.error_message ?? undefined,
     attachmentCount: row.attachment_count ?? undefined,
     attachmentNames: row.attachment_names ?? undefined,

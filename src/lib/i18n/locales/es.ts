@@ -365,6 +365,9 @@ const es: Translations = {
       markUnread: 'Marcar como no leído',
       failedToLoad: 'Error al cargar los correos',
       failedToLoadCount: 'Error al cargar el recuento de correos',
+      systemRuleAiSkippedCredits: 'IA omitida (créditos agotados)',
+      systemMsgAiSkippedAnalysisOnly: 'Omitido: créditos mensuales agotados (modo solo análisis)',
+      systemMsgForwardingDisabled: 'Reenvío desactivado: tu dirección de Postino está desactivada',
     },
     search: {
       title: 'Buscar correos',
@@ -708,6 +711,8 @@ const es: Translations = {
       modelUsed: 'Modelo usado:',
       reprocess: 'Reprocesar',
       failedToReprocess: 'No se pudo reprocesar el correo.',
+      processNow: 'Procesar ahora',
+      noCredits: 'Sin créditos',
       ruleApplied: 'Regla aplicada:',
       tokensUsed: 'Tokens usados:',
       estCost: 'Coste est.:',

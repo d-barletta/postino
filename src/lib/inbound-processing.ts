@@ -18,6 +18,12 @@ import {
   normalizeUserCreditsSnapshot,
   resolveCreditSettings,
 } from '@/lib/credits';
+import {
+  SYSTEM_RULE_AI_SKIPPED_CREDITS,
+  SYSTEM_MSG_AI_SKIPPED_ANALYSIS_ONLY,
+  SYSTEM_MSG_AI_SKIPPED_FORWARDED,
+  SYSTEM_MSG_FORWARDING_DISABLED,
+} from '@/lib/email-sentinel-rules';
 
 /**
  * Attachment serialized for queue storage.
@@ -69,13 +75,11 @@ export interface QueuedInboundPayload {
   aiAnalysisOnly?: boolean;
 }
 
-const AI_SKIPPED_CREDITS_EXHAUSTED_RULE = 'AI skipped (credits exhausted)';
-const AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE =
-  'Skipped because monthly credits are exhausted (analysis-only mode)';
-const AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE =
-  'Monthly credits exhausted; email forwarded without AI processing';
-const FORWARDING_DISABLED_MESSAGE =
-  'Forwarding is disabled because your Postino address is turned off';
+// System sentinel values are defined in @/lib/email-sentinel-rules
+const AI_SKIPPED_CREDITS_EXHAUSTED_RULE = SYSTEM_RULE_AI_SKIPPED_CREDITS;
+const AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE = SYSTEM_MSG_AI_SKIPPED_ANALYSIS_ONLY;
+const AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE = SYSTEM_MSG_AI_SKIPPED_FORWARDED;
+const FORWARDING_DISABLED_MESSAGE = SYSTEM_MSG_FORWARDING_DISABLED;
 
 /** Escape special HTML characters to prevent HTML injection in email templates. */
 function escapeHtml(text: string): string {

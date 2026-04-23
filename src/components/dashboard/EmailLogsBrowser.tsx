@@ -233,7 +233,10 @@ export function EmailLogsBrowser({
     openFullPageEmail({
       subject: log.subject,
       body: expanded?.originalBody ?? null,
-      processedBody: expanded?.processedBody ?? null,
+      processedBody:
+        log.status === 'error' || log.status === 'skipped'
+          ? null
+          : (expanded?.processedBody ?? null),
       loading: !expanded || (expanded.loading ?? false),
     });
   };
@@ -248,7 +251,10 @@ export function EmailLogsBrowser({
     openFullPageEmail({
       subject: log.subject,
       body: expanded?.originalBody ?? body,
-      processedBody: expanded?.processedBody ?? null,
+      processedBody:
+        log.status === 'error' || log.status === 'skipped'
+          ? null
+          : (expanded?.processedBody ?? null),
       initialShowRewritten: showRewritten,
       loading: false,
     });

@@ -51,7 +51,7 @@ export function dollarsToCredits(usd: number, factor: number): number {
 }
 
 export function computeMonthlyCreditsLimit(freeCreditsPerMonth: number, bonus: number): number {
-  return Math.max(0, freeCreditsPerMonth) + Math.max(0, bonus);
+  return Math.max(0, freeCreditsPerMonth + bonus);
 }
 
 export function normalizeUserCreditsSnapshot(
@@ -70,7 +70,7 @@ export function normalizeUserCreditsSnapshot(
   return {
     month: currentMonth,
     used: sameMonth ? Math.max(0, row?.monthly_credits_used ?? 0) : 0,
-    bonus: sameMonth ? Math.max(0, row?.monthly_credits_bonus ?? 0) : 0,
+    bonus: sameMonth ? (row?.monthly_credits_bonus ?? 0) : 0,
     thresholdNotified: sameMonth ? row?.credits_threshold_notified === true : false,
   };
 }

@@ -31,9 +31,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Only emails that failed a rewrite (status=error with a rule applied) should be retried here
-    if (logRow.status !== 'error') {
-      return NextResponse.json({ error: 'Email is not in a failed state' }, { status: 422 });
+    // Allow retrying emails that failed (error) or were skipped for any reason
+    if (logRow.status !== 'error' && logRow.status !== 'skipped') {
+      return NextResponse.json(
+        { error: 'Email is not in a failed or skipped state' },
+        { status: 422 },
+      );
     }
 
     // Fetch the owner's email address (needed for QueuedInboundPayload.userEmail)

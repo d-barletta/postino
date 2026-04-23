@@ -460,7 +460,7 @@ export default function DashboardPage() {
             onAiAnalysisOnlyToggle={handleAiAnalysisOnlyToggle}
           />
         )}
-        <MonthlyCreditsCard stats={userStats ?? EMPTY_STATS} onRefresh={fetchStats} />
+        <MonthlyCreditsCard stats={userStats} onRefresh={fetchStats} />
         {(userStats?.totalEmailsReceived ?? 0) > 0 && (
           <Card
             className="group cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-[#efd957]"

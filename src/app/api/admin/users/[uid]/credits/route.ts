@@ -78,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         (settingsRow?.data as Record<string, unknown> | undefined) ?? {},
       );
 
-      const bonus = Math.max(0, desiredLimit - creditSettings.freeCreditsPerMonth);
+      const bonus = desiredLimit - creditSettings.freeCreditsPerMonth;
 
       await supabase
         .from('users')

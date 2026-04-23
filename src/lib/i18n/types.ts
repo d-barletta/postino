@@ -323,6 +323,9 @@ export interface Translations {
       markUnread: string;
       failedToLoad: string;
       failedToLoadCount: string;
+      systemRuleAiSkippedCredits: string;
+      systemMsgAiSkippedAnalysisOnly: string;
+      systemMsgForwardingDisabled: string;
     };
     search: {
       title: string;
@@ -659,6 +662,8 @@ export interface Translations {
       modelUsed: string;
       reprocess: string;
       failedToReprocess: string;
+      processNow: string;
+      noCredits: string;
       ruleApplied: string;
       tokensUsed: string;
       estCost: string;
