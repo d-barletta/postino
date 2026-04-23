@@ -102,7 +102,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       try {
         await triggerEmailJobsProcessing(getBaseUrl(request), 1);
       } catch (err) {
-        console.error('[reprocess] Async process trigger failed (jobId:', jobId, '):', err);
+        console.error(`[reprocess] Async process trigger failed (jobId: ${jobId}):`, err);
       }
     });
 
