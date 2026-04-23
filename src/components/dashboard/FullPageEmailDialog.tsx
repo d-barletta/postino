@@ -53,7 +53,6 @@ export function FullPageEmailDialog({
   // Sync toggle with the initial value whenever the dialog opens.
   useEffect(() => {
     if (open) setShowRewritten(initialShowRewritten);
-     
   }, [open]);
 
   const displayBody = hasRewritten && showRewritten ? (processedBody ?? body) : body;

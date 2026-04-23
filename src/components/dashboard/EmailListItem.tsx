@@ -408,7 +408,7 @@ export function EmailListItem({
   const statusIcon: Record<string, React.ReactNode> = {
     received: <Inbox className="h-3 w-3 mr-1 shrink-0" />,
     processing: <Spinner className="h-3 w-3 mr-1 shrink-0" />,
-    forwarded: <CheckCircle className="h-3 w-3 mr-1 shrink-0" />,
+    forwarded: <CheckCircle className="h-3 w-3 my-1 shrink-0" />,
     error: <MailWarning className="h-3 w-3 mr-1 shrink-0" />,
     skipped: <MinusCircle className="h-3 w-3 mr-1 shrink-0" />,
   };
@@ -417,7 +417,7 @@ export function EmailListItem({
     <>
       <Badge variant={statusVariant[log.status] || 'default'}>
         {statusIcon[log.status]}
-        {statusLabel[log.status] ?? log.status}
+        {log.status !== 'forwarded' ? (statusLabel[log.status] ?? log.status) : ''}
       </Badge>
       <span className="text-xs text-gray-400 dark:text-gray-500">
         {formatDate(log.receivedAt, locale)}
