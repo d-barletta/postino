@@ -39,6 +39,8 @@ interface EmailLogsBrowserProps {
   onDeleteEmail?: (emailId: string) => void | Promise<void>;
   onAnalysisUpdated?: (emailId: string, analysis: EmailAnalysis) => void;
   onCreditsUsed?: () => void;
+  /** Called after an email is successfully queued for reprocessing. Allows the parent to refresh the email list. */
+  onReprocessed?: () => void;
   selectedEmailId?: string;
   selectionResetKey?: string | number;
   narrowCardClassName?: string;
@@ -65,6 +67,7 @@ export function EmailLogsBrowser({
   onDeleteEmail,
   onAnalysisUpdated,
   onCreditsUsed,
+  onReprocessed,
   selectedEmailId,
   selectionResetKey,
   narrowCardClassName = 'hover:translate-y-0 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]',
@@ -316,6 +319,14 @@ export function EmailLogsBrowser({
                           : undefined
                       }
                       onCreditsUsed={onCreditsUsed}
+                      onReprocessed={
+                        onReprocessed
+                          ? () => {
+                              void fetchExpandedEmail(log.id, { force: true });
+                              onReprocessed();
+                            }
+                          : undefined
+                      }
                       statusLayout="bottom"
                     />
                   ))}
@@ -575,6 +586,14 @@ export function EmailLogsBrowser({
                       : undefined
                   }
                   onCreditsUsed={onCreditsUsed}
+                  onReprocessed={
+                    onReprocessed
+                      ? () => {
+                          void fetchExpandedEmail(selectedLog.id, { force: true });
+                          onReprocessed();
+                        }
+                      : undefined
+                  }
                   fillAvailableHeight
                   className="flex flex-col flex-1 overflow-hidden"
                 />

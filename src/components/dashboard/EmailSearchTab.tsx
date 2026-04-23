@@ -1242,6 +1242,7 @@ export function EmailSearchTab({
         onDeleteEmail={handleDeleteEmail}
         onAnalysisUpdated={handleAnalysisUpdated}
         onCreditsUsed={onCreditsUsed}
+        onReprocessed={() => fetchLogs(page, true)}
         selectedEmailId={selectedEmailId}
         selectionResetKey={selectionResetKey}
       />

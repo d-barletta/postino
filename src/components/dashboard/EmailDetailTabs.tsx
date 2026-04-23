@@ -76,6 +76,7 @@ export function EmailDetailTabs({
     : undefined;
   const [showRewritten, setShowRewritten] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [reprocessQueued, setReprocessQueued] = useState(false);
   const [retryError, setRetryError] = useState('');
 
   const handleRetry = async () => {
@@ -91,6 +92,7 @@ export function EmailDetailTabs({
         const data = await res.json().catch(() => ({}));
         throw new Error((data as { error?: string }).error ?? 'error');
       }
+      setReprocessQueued(true);
       onReprocessed?.();
     } catch {
       setRetryError(t.emailOriginal.admin.failedToReprocess);
@@ -196,11 +198,11 @@ export function EmailDetailTabs({
               size="sm"
               variant="outline"
               onClick={handleRetry}
-              disabled={retrying || !hasCredits}
+              disabled={retrying || reprocessQueued || !hasCredits}
               loading={retrying}
               className="text-xs"
             >
-              {retrying
+              {retrying || reprocessQueued
                 ? t.emailOriginal.admin.processing
                 : !hasCredits
                   ? t.emailOriginal.admin.noCredits
@@ -221,11 +223,11 @@ export function EmailDetailTabs({
                 size="sm"
                 variant="outline"
                 onClick={handleRetry}
-                disabled={retrying || !hasCredits}
+                disabled={retrying || reprocessQueued || !hasCredits}
                 loading={retrying}
                 className="text-xs border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
               >
-                {retrying
+                {retrying || reprocessQueued
                   ? t.emailOriginal.admin.processing
                   : !hasCredits
                     ? t.emailOriginal.admin.noCredits
@@ -241,7 +243,7 @@ export function EmailDetailTabs({
         {log.status === 'skipped' && skipReasonDisplay && (
           <Alert variant="warning" className="text-left text-xs">
             <AlertCircle className="h-3.5 w-3.5" />
-            <AlertDescription>
+            <AlertDescription className="break-all">
               <span className="font-medium">{k.skipReason}</span> {skipReasonDisplay}
             </AlertDescription>
             {!isCreditsExhausted && (
@@ -250,11 +252,11 @@ export function EmailDetailTabs({
                   size="sm"
                   variant="outline"
                   onClick={handleRetry}
-                  disabled={retrying || !hasCredits}
+                  disabled={retrying || reprocessQueued || !hasCredits}
                   loading={retrying}
                   className="text-xs border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
                 >
-                  {retrying
+                  {retrying || reprocessQueued
                     ? t.emailOriginal.admin.processing
                     : !hasCredits
                       ? t.emailOriginal.admin.noCredits
