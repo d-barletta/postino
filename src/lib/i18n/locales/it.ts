@@ -289,6 +289,7 @@ const it: Translations = {
       statusProcessing: 'In elaborazione',
       statusForwarded: 'Inoltrata',
       statusError: 'Errore',
+      statusPending: 'In coda',
       statusSkipped: 'Saltata',
       creditsUsed: 'Crediti usati',
       estimatedCost: 'Costo stimato',

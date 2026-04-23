@@ -285,6 +285,7 @@ const en: Translations = {
       statusProcessing: 'Processing',
       statusForwarded: 'Forwarded',
       statusError: 'Error',
+      statusPending: 'Pending',
       statusSkipped: 'Skipped',
       creditsUsed: 'Credits Used',
       estimatedCost: 'Estimated Cost',

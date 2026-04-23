@@ -346,6 +346,7 @@ export function EmailListItem({
   const ts = t.dashboard.search;
 
   const statusLabel: Record<string, string> = {
+    pending: t.dashboard.charts.statusPending,
     received: t.dashboard.charts.statusReceived,
     processing: t.dashboard.charts.statusProcessing,
     forwarded: t.dashboard.charts.statusForwarded,
@@ -357,6 +358,7 @@ export function EmailListItem({
     string,
     'info' | 'warning' | 'success' | 'error' | 'default' | 'skipped'
   > = {
+    pending: 'warning',
     received: 'info',
     processing: 'default',
     forwarded: 'success',
@@ -406,6 +408,7 @@ export function EmailListItem({
   );
 
   const statusIcon: Record<string, React.ReactNode> = {
+    pending: <Spinner className="h-3 w-3 mr-1 shrink-0" />,
     received: <Inbox className="h-3 w-3 mr-1 shrink-0" />,
     processing: <Spinner className="h-3 w-3 mr-1 shrink-0" />,
     forwarded: <CheckCircle className="h-3 w-3 my-1 shrink-0" />,

@@ -288,6 +288,7 @@ const es: Translations = {
       statusProcessing: 'En proceso',
       statusForwarded: 'Reenviado',
       statusError: 'Error',
+      statusPending: 'Pendiente',
       statusSkipped: 'Omitido',
       creditsUsed: 'Créditos usados',
       estimatedCost: 'Coste estimado',

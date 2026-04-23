@@ -247,6 +247,7 @@ export interface Translations {
       statusProcessing: string;
       statusForwarded: string;
       statusError: string;
+      statusPending: string;
       statusSkipped: string;
       creditsUsed: string;
       estimatedCost: string;

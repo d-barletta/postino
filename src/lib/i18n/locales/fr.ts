@@ -292,6 +292,7 @@ const fr: Translations = {
       statusProcessing: 'En cours',
       statusForwarded: 'Transmis',
       statusError: 'Erreur',
+      statusPending: 'En attente',
       statusSkipped: 'Ignoré',
       creditsUsed: 'Crédits utilisés',
       estimatedCost: 'Coût estimé',

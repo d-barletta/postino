@@ -294,6 +294,7 @@ const de: Translations = {
       statusProcessing: 'In Bearbeitung',
       statusForwarded: 'Weitergeleitet',
       statusError: 'Fehler',
+      statusPending: 'Ausstehend',
       statusSkipped: 'Übersprungen',
       creditsUsed: 'Verwendete Credits',
       estimatedCost: 'Geschätzte Kosten',
