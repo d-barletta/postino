@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyUserRequest, handleUserError } from '@/lib/api-auth';
-import { enqueueEmailJob } from '@/lib/email-jobs';
+import { enqueueEmailJob, triggerEmailJobsProcessing } from '@/lib/email-jobs';
 import { type SerializedAttachment, type QueuedInboundPayload } from '@/lib/inbound-processing';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -98,32 +98,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await enqueueEmailJob(payload, jobId);
 
     after(async () => {
-      const workerSecret = process.env.EMAIL_JOBS_WORKER_SECRET || '';
-      const cronSecret = process.env.CRON_SECRET || '';
-      if (!workerSecret && !cronSecret) return;
-
       const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
       const host = request.headers.get('host') || 'localhost:3000';
       const proto =
         request.headers.get('x-forwarded-proto') ||
         (host.startsWith('localhost') ? 'http' : 'https');
       const baseUrl = appUrl || `${proto}://${host}`;
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (workerSecret) {
-        headers['x-worker-secret'] = workerSecret;
-      } else {
-        headers['Authorization'] = `Bearer ${cronSecret}`;
-      }
-
       try {
-        await fetch(`${baseUrl}/api/internal/email-jobs/process`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ batchSize: 1 }),
-        });
+        await triggerEmailJobsProcessing(baseUrl, 1);
       } catch (err) {
-        console.error('[reprocess] Async process trigger failed:', err);
+        console.error('[reprocess] Async process trigger failed (jobId:', jobId, '):', err);
       }
     });
 
