@@ -346,11 +346,11 @@ export function EmailListItem({
   const ts = t.dashboard.search;
 
   const statusLabel: Record<string, string> = {
-    received: t.dashboard.charts.received,
-    processing: t.dashboard.charts.processing,
-    forwarded: t.dashboard.charts.forwarded,
-    error: t.dashboard.charts.error,
-    skipped: t.dashboard.charts.skipped,
+    received: t.dashboard.charts.statusReceived,
+    processing: t.dashboard.charts.statusProcessing,
+    forwarded: t.dashboard.charts.statusForwarded,
+    error: t.dashboard.charts.statusError,
+    skipped: t.dashboard.charts.statusSkipped,
   };
 
   const statusVariant: Record<

@@ -243,6 +243,11 @@ export interface Translations {
       forwarded: string;
       error: string;
       skipped: string;
+      statusReceived: string;
+      statusProcessing: string;
+      statusForwarded: string;
+      statusError: string;
+      statusSkipped: string;
       creditsUsed: string;
       estimatedCost: string;
       estCost: string;
