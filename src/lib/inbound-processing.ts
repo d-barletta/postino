@@ -86,17 +86,14 @@ const AI_SKIPPED_CREDITS_EXHAUSTED_RULE = SYSTEM_RULE_AI_SKIPPED_CREDITS;
 const AI_CREDITS_EXHAUSTED_ANALYSIS_ONLY_MESSAGE = SYSTEM_MSG_AI_SKIPPED_ANALYSIS_ONLY;
 const AI_CREDITS_EXHAUSTED_FORWARDED_MESSAGE = SYSTEM_MSG_AI_SKIPPED_FORWARDED;
 const FORWARDING_DISABLED_MESSAGE = SYSTEM_MSG_FORWARDING_DISABLED;
-const AGENT_LOG_MAX_CONSOLE_CHARS = 60_000;
-const AGENT_LOG_CONSOLE_CHUNK_CHARS = 8_000;
 
 async function mirrorAgentOutputToConsole(
-  supabase: ReturnType<typeof createAdminClient>,
+  _supabase: ReturnType<typeof createAdminClient>,
   logId: string,
   result: ProcessEmailResult,
 ): Promise<void> {
   try {
     const trace = result.trace;
-    const runLogStoragePath = trace?.runLogStoragePath;
 
     console.log('[processing][agent-output] summary', {
       logId,
@@ -107,41 +104,7 @@ async function mirrorAgentOutputToConsole(
       tokensUsed: result.tokensUsed,
       estimatedCost: result.estimatedCost,
       traceSteps: trace?.steps.length ?? 0,
-      runLogStoragePath: runLogStoragePath ?? null,
     });
-
-    if (!runLogStoragePath) return;
-
-    const { data: runLogBlob, error: runLogError } = await supabase.storage
-      .from('email-attachments')
-      .download(runLogStoragePath);
-
-    if (runLogError || !runLogBlob) {
-      console.warn('[processing][agent-output] failed to download stored run log', {
-        logId,
-        runLogStoragePath,
-        error: runLogError?.message ?? 'missing blob',
-      });
-      return;
-    }
-
-    const fullRunLog = await runLogBlob.text();
-    const boundedRunLog =
-      fullRunLog.length <= AGENT_LOG_MAX_CONSOLE_CHARS
-        ? fullRunLog
-        : `${fullRunLog.slice(0, AGENT_LOG_MAX_CONSOLE_CHARS)}\n...[truncated ${fullRunLog.length - AGENT_LOG_MAX_CONSOLE_CHARS} chars]`;
-
-    const totalChunks = Math.max(
-      1,
-      Math.ceil(boundedRunLog.length / AGENT_LOG_CONSOLE_CHUNK_CHARS),
-    );
-    for (let i = 0; i < boundedRunLog.length; i += AGENT_LOG_CONSOLE_CHUNK_CHARS) {
-      const chunkIndex = Math.floor(i / AGENT_LOG_CONSOLE_CHUNK_CHARS) + 1;
-      const chunk = boundedRunLog.slice(i, i + AGENT_LOG_CONSOLE_CHUNK_CHARS);
-      console.log(
-        `[processing][agent-output][${logId}] run-log chunk ${chunkIndex}/${totalChunks} path=${runLogStoragePath}\n${chunk}`,
-      );
-    }
   } catch (err) {
     console.warn('[processing][agent-output] unexpected mirror failure', {
       logId,

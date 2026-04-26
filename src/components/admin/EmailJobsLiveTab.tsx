@@ -30,16 +30,6 @@ interface RecentFailure {
   logId: string | null;
 }
 
-interface AgentRunLog {
-  id: string;
-  fromAddress: string;
-  subject: string;
-  receivedAt: string | null;
-  processedAt: string | null;
-  status: string;
-  runLogStoragePath: string | null;
-}
-
 interface JobsOverviewResponse {
   counts: JobCounts;
   backlog: number;
@@ -47,8 +37,6 @@ interface JobsOverviewResponse {
   recentFailures: RecentFailure[];
   webhookLoggingEnabled: boolean;
   recentWebhookRequests: WebhookRequestLog[];
-  agentTracingEnabled: boolean;
-  recentAgentRunLogs: AgentRunLog[];
 }
 
 interface WebhookRequestLog {
@@ -210,117 +198,6 @@ function WebhookLogRow({
             <textarea
               readOnly
               value={payload ?? ''}
-              className="h-80 w-full resize-y rounded-md bg-gray-900 p-3 font-mono text-[11px] leading-5 text-gray-100 focus:outline-none"
-            />
-          )}
-        </div>
-      </div>
-    </details>
-  );
-}
-
-function AgentRunLogRow({
-  row,
-  getIdToken,
-}: {
-  row: AgentRunLog;
-  getIdToken: () => Promise<string | null>;
-}) {
-  const [logContent, setLogContent] = useState<string | null>(null);
-  const [loadingLog, setLoadingLog] = useState(false);
-  const [logError, setLogError] = useState('');
-  const [copied, setCopied] = useState(false);
-  const fetchedRef = useRef(false);
-
-  const loadLog = useCallback(async () => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    setLoadingLog(true);
-    try {
-      const token = await getIdToken();
-      if (!token) {
-        setLogError('Not authenticated');
-        return;
-      }
-      const res = await fetch(`/api/admin/email-logs/${row.id}/run-log`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store',
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setLogError(body.error ?? 'Failed to load run log');
-        return;
-      }
-      setLogContent(await res.text());
-    } catch {
-      setLogError('Failed to load run log');
-    } finally {
-      setLoadingLog(false);
-    }
-  }, [row.id, getIdToken]);
-
-  const handleCopy = useCallback(async () => {
-    if (!logContent) return;
-    await navigator.clipboard.writeText(logContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [logContent]);
-
-  return (
-    <details
-      key={row.id}
-      onToggle={(e) => {
-        if ((e.currentTarget as HTMLDetailsElement).open) loadLog();
-      }}
-      className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 dark:border-violet-900 dark:bg-violet-950/20"
-    >
-      <summary className="cursor-pointer list-none">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{row.status}</Badge>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {formatDate(row.receivedAt)}
-          </span>
-        </div>
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          {row.subject || '(no subject)'}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">from {row.fromAddress}</p>
-      </summary>
-
-      <div className="mt-3 space-y-2 border-t border-violet-200 pt-3 dark:border-violet-900">
-        <a
-          className="text-xs text-blue-600 underline dark:text-blue-300"
-          href={`/email/original/${row.id}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          open linked email log
-        </a>
-
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              OpenCode run log
-            </span>
-            {logContent ? (
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-                type="button"
-              >
-                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-            ) : null}
-          </div>
-          {loadingLog ? (
-            <p className="text-xs text-gray-400">Loading run log…</p>
-          ) : logError ? (
-            <p className="text-xs text-red-500">{logError}</p>
-          ) : (
-            <textarea
-              readOnly
-              value={logContent ?? ''}
               className="h-80 w-full resize-y rounded-md bg-gray-900 p-3 font-mono text-[11px] leading-5 text-gray-100 focus:outline-none"
             />
           )}
@@ -727,32 +604,6 @@ export default function EmailJobsLiveTab() {
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400">
               No failed jobs in the recent queue history.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader
-          heading="Agent Run Logs"
-          description="OpenCode run logs stored when Agent tracing is enabled in settings."
-        />
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Loading agent run logs…</p>
-          ) : !data?.agentTracingEnabled ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Agent tracing is disabled. Enable it in Settings to start storing OpenCode run logs.
-            </p>
-          ) : data && data.recentAgentRunLogs.length > 0 ? (
-            <div className="space-y-2">
-              {data.recentAgentRunLogs.map((row) => (
-                <AgentRunLogRow key={row.id} row={row} getIdToken={getIdToken} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No agent run logs stored yet.
             </p>
           )}
         </CardContent>

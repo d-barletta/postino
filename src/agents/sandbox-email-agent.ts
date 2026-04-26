@@ -871,63 +871,8 @@ async function saveOpencodeSessionId(logId: string, sessionId: string): Promise<
 }
 
 // ---------------------------------------------------------------------------
-// OpenCode run log storage
+// OpenCode run logs
 // ---------------------------------------------------------------------------
-
-/**
- * Uploads the raw OpenCode run log to Supabase Storage.
- *
- * Returns the storage path on success, or null if the upload fails.
- * The log is stored at `email-logs/{logId}/opencode-run.log` inside the
- * `email-attachments` bucket so it can be retrieved on demand by admins.
- */
-async function uploadOpenCodeRunLog(logId: string, content: string): Promise<string | null> {
-  try {
-    const supabase = createAdminClient();
-    const storagePath = `email-logs/${logId}/opencode-run.log`;
-    const { error } = await supabase.storage
-      .from('email-attachments')
-      .upload(storagePath, Buffer.from(content, 'utf-8'), {
-        contentType: 'text/plain; charset=utf-8',
-        upsert: true,
-      });
-    if (error) throw error;
-    return storagePath;
-  } catch (err) {
-    console.error('[sandbox-agent] Failed to upload OpenCode run log to Supabase Storage:', err);
-    return null;
-  }
-}
-
-function formatOpenCodeStoredRunLog(
-  liveLog: string,
-  sessionExport?: {
-    sessionId?: string | null;
-    rawText: string;
-    parsedJson?: Record<string, unknown> | null;
-  },
-): string {
-  const normalizedLiveLog = liveLog.trimEnd();
-  if (!sessionExport?.rawText.trim()) {
-    return normalizedLiveLog;
-  }
-
-  const exportBody = sessionExport.parsedJson
-    ? JSON.stringify(sessionExport.parsedJson, null, 2)
-    : sessionExport.rawText.trimEnd();
-  const exportLabel = sessionExport.sessionId
-    ? `OpenCode session export (${sessionExport.sessionId})`
-    : 'OpenCode session export';
-
-  return [
-    '===== OpenCode live output =====',
-    normalizedLiveLog,
-    '',
-    `===== ${exportLabel} =====`,
-    exportBody,
-    '',
-  ].join('\n');
-}
 
 // ---------------------------------------------------------------------------
 // Main entry point
@@ -1164,7 +1109,6 @@ export async function processEmailWithAgent(
   let sandboxCompletionTokens = 0;
   let opencodeSessionId: string | null = null;
   let opencodeStatsRaw: string | undefined;
-  let runLogStoragePath: string | null = null;
   let opencodeStatsParsed:
     | {
         inputTokens: number;
@@ -1380,14 +1324,6 @@ export async function processEmailWithAgent(
                 ...summarizeTextForTrace(runLogRaw, includeTraceExcerpts),
               }
             : { path: OPENCODE_RUN_LOG_PATH, exists: false };
-        let sessionExportForLog:
-          | {
-              sessionId?: string | null;
-              rawText: string;
-              parsedJson?: Record<string, unknown> | null;
-            }
-          | undefined;
-
         opencodeSessionId = parseOpencodeSessionId(stdout);
 
         // `opencode stats` is the primary usage source for the sandbox state.
@@ -1451,12 +1387,6 @@ export async function processEmailWithAgent(
                 throw new Error('Could not parse opencode export JSON');
               }
 
-              sessionExportForLog = {
-                sessionId: opencodeSessionId,
-                rawText: exportOut,
-                parsedJson: sessionData,
-              };
-
               const exportedUsage = extractUsageFromOpencodeExport(sessionData);
               sandboxPromptTokens = exportedUsage.promptTokens;
               sandboxCompletionTokens = exportedUsage.completionTokens;
@@ -1473,40 +1403,7 @@ export async function processEmailWithAgent(
           sandboxCompletionTokens = parsed.completionTokens;
         }
 
-        if (tracingEnabled && runLogRaw) {
-          if (!sessionExportForLog && opencodeSessionId) {
-            try {
-              const exportCmd = await sandbox.runCommand({
-                cmd: 'opencode',
-                args: ['export', opencodeSessionId],
-                cwd: '/vercel/sandbox',
-                env: {
-                  HOME: '/vercel/sandbox',
-                  XDG_DATA_HOME: '/vercel/sandbox/.local/share',
-                  OPENROUTER_API_KEY: apiKey,
-                  OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
-                  OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
-                },
-              });
-              const exportOut = await (await exportCmd.wait()).stdout();
-              sessionExportForLog = {
-                sessionId: opencodeSessionId,
-                rawText: exportOut,
-                parsedJson: extractJsonObject(exportOut),
-              };
-            } catch (exportErr) {
-              console.warn(
-                '[sandbox-agent] Failed to export OpenCode session for stored run log:',
-                exportErr,
-              );
-            }
-          }
-
-          runLogStoragePath = await uploadOpenCodeRunLog(
-            logId,
-            formatOpenCodeStoredRunLog(runLogRaw, sessionExportForLog),
-          );
-        }
+        // Run output is streamed to console via live polling; no longer persisted to Storage.
 
         pushTrace(
           'opencode_finished',
@@ -1546,13 +1443,6 @@ export async function processEmailWithAgent(
         const msg = waitError instanceof Error ? waitError.message : String(waitError);
         console.error('[sandbox-agent] opencode wait failed:', msg);
         let runLogRawOnFailure: string | null = null;
-        let sessionExportForLogOnFailure:
-          | {
-              sessionId?: string | null;
-              rawText: string;
-              parsedJson?: Record<string, unknown> | null;
-            }
-          | undefined;
         const [runLogSnapshot, subjectSnapshot, processingResultSnapshot]: Record<
           string,
           unknown
@@ -1589,24 +1479,6 @@ export async function processEmailWithAgent(
 
           if (opencodeSessionId) {
             try {
-              const exportCmd = await sandbox.runCommand({
-                cmd: 'opencode',
-                args: ['export', opencodeSessionId],
-                cwd: '/vercel/sandbox',
-                env: {
-                  HOME: '/vercel/sandbox',
-                  XDG_DATA_HOME: '/vercel/sandbox/.local/share',
-                  OPENROUTER_API_KEY: apiKey,
-                  OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
-                  OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
-                },
-              });
-              const exportOut = await (await exportCmd.wait()).stdout();
-              sessionExportForLogOnFailure = {
-                sessionId: opencodeSessionId,
-                rawText: exportOut,
-                parsedJson: extractJsonObject(exportOut),
-              };
               await saveOpencodeSessionId(logId, opencodeSessionId);
             } catch (exportErr) {
               console.warn(
@@ -1615,11 +1487,6 @@ export async function processEmailWithAgent(
               );
             }
           }
-
-          runLogStoragePath = await uploadOpenCodeRunLog(
-            logId,
-            formatOpenCodeStoredRunLog(runLogRawOnFailure, sessionExportForLogOnFailure),
-          );
         }
         if (timedOut) {
           const timeoutMsg = `OpenCode timed out after ${Math.round(OPENCODE_RUN_TIMEOUT_MS / 60000)} minutes; original email was forwarded without AI rewrite`;
@@ -2030,7 +1897,6 @@ export async function processEmailWithAgent(
         startedAt: traceStartedAt,
         finishedAt: new Date().toISOString(),
         steps: traceSteps,
-        ...(runLogStoragePath ? { runLogStoragePath } : {}),
       }
     : undefined;
 
