@@ -104,6 +104,8 @@ export async function GET(request: NextRequest) {
       .single();
     const settingsData = (settingsRow?.data ?? {}) as Record<string, unknown>;
     const webhookLoggingEnabled = Boolean(settingsData.mailgunWebhookLoggingEnabled);
+    // agentTracingEnabled defaults to true when not explicitly set (mirrors agent behavior).
+    const agentTracingEnabled = settingsData.agentTracingEnabled !== false;
 
     const { data: webhookRows } = await supabase
       .from('mailgun_webhook_logs')
@@ -153,6 +155,33 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Fetch recent email logs that have an OpenCode run log stored in Supabase Storage.
+    const { data: runLogRows } = await supabase
+      .from('email_logs')
+      .select('id, from_address, subject, received_at, processed_at, status, agent_trace')
+      .not('agent_trace', 'is', null)
+      .order('received_at', { ascending: false })
+      .limit(200);
+
+    const recentAgentRunLogs = (runLogRows ?? [])
+      .filter((row) => {
+        const trace = row.agent_trace as { runLogStoragePath?: string } | null;
+        return Boolean(trace?.runLogStoragePath);
+      })
+      .slice(0, 50)
+      .map((row) => {
+        const trace = row.agent_trace as { runLogStoragePath?: string } | null;
+        return {
+          id: row.id as string,
+          fromAddress: (row.from_address as string) ?? 'Unknown sender',
+          subject: (row.subject as string) ?? '(no subject)',
+          receivedAt: (row.received_at as string) ?? null,
+          processedAt: (row.processed_at as string) ?? null,
+          status: (row.status as string) ?? 'unknown',
+          runLogStoragePath: trace?.runLogStoragePath ?? null,
+        };
+      });
+
     const latestUpdatedAt =
       latestJobRows && latestJobRows.length > 0
         ? ((latestJobRows[0].created_at as string) ?? null)
@@ -166,6 +195,8 @@ export async function GET(request: NextRequest) {
         recentFailures,
         webhookLoggingEnabled,
         recentWebhookRequests,
+        agentTracingEnabled,
+        recentAgentRunLogs,
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );
