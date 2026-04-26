@@ -52,6 +52,7 @@ interface AgentTraceView {
   startedAt: string;
   finishedAt: string;
   steps: AgentTraceStepView[];
+  runLogStoragePath?: string | null;
 }
 
 function asAgentTrace(value: unknown): AgentTraceView | null {
@@ -59,6 +60,88 @@ function asAgentTrace(value: unknown): AgentTraceView | null {
   const trace = value as AgentTraceView;
   if (!Array.isArray(trace.steps)) return null;
   return trace;
+}
+
+function TraceRunLogPanel({
+  logId,
+  runLogStoragePath,
+  getIdToken,
+}: {
+  logId: string;
+  runLogStoragePath?: string | null;
+  getIdToken: () => Promise<string | null>;
+}) {
+  const [logContent, setLogContent] = useState<string | null>(null);
+  const [loadingLog, setLoadingLog] = useState(false);
+  const [logError, setLogError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const loadRunLog = useCallback(async () => {
+    if (!runLogStoragePath || loadingLog || logContent) return;
+    setLoadingLog(true);
+    setLogError('');
+    try {
+      const token = await getIdToken();
+      if (!token) {
+        setLogError('Not authenticated');
+        return;
+      }
+
+      const res = await fetch(`/api/admin/email-logs/${logId}/run-log`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setLogError(body.error ?? 'Failed to load run log');
+        return;
+      }
+
+      setLogContent(await res.text());
+    } catch {
+      setLogError('Failed to load run log');
+    } finally {
+      setLoadingLog(false);
+    }
+  }, [getIdToken, logContent, logId, loadingLog, runLogStoragePath]);
+
+  const handleCopy = useCallback(async () => {
+    if (!logContent) return;
+    try {
+      await navigator.clipboard.writeText(logContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // No-op; clipboard can fail on non-secure contexts.
+    }
+  }, [logContent]);
+
+  if (!runLogStoragePath) return null;
+
+  return (
+    <div className="rounded-lg border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-900 dark:bg-violet-950/20">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="ghost" onClick={loadRunLog} disabled={loadingLog || !!logContent}>
+          {loadingLog ? 'Loading run log...' : logContent ? 'Run log loaded' : 'Load OpenCode run log'}
+        </Button>
+        {logContent ? (
+          <Button size="sm" variant="ghost" onClick={handleCopy}>
+            <Copy className="h-3.5 w-3.5 mr-1" />
+            {copied ? 'Copied' : 'Copy run log'}
+          </Button>
+        ) : null}
+      </div>
+      {logError ? <p className="mt-2 text-xs text-red-500">{logError}</p> : null}
+      {logContent ? (
+        <textarea
+          readOnly
+          value={logContent}
+          className="mt-2 h-80 w-full resize-y rounded-md bg-gray-900 p-3 font-mono text-[11px] leading-5 text-gray-100 focus:outline-none"
+        />
+      ) : null}
+    </div>
+  );
 }
 
 const STATUS_VARIANT: Record<
@@ -504,6 +587,12 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                           </Badge>
                                         </div>
 
+                                        <TraceRunLogPanel
+                                          logId={log.id}
+                                          runLogStoragePath={trace.runLogStoragePath}
+                                          getIdToken={getIdToken}
+                                        />
+
                                         <div className="flex flex-wrap items-center gap-2">
                                           <Button
                                             size="sm"
@@ -768,6 +857,12 @@ export default function AdminEmailsPage({ showPageHeader = true }: AdminEmailsPa
                                                   Steps: {trace.steps.length}
                                                 </Badge>
                                               </div>
+
+                                              <TraceRunLogPanel
+                                                logId={log.id}
+                                                runLogStoragePath={trace.runLogStoragePath}
+                                                getIdToken={getIdToken}
+                                              />
 
                                               <div className="flex flex-wrap items-center gap-2">
                                                 <Button
