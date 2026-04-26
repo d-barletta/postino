@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { claimJobById, processSingleClaimedJob } from '@/lib/email-jobs';
 
 /**
  * Max function duration: 12 minutes.
- * This route waits for full job processing so sandbox execution completes
- * before returning to the caller.
+ * The HTTP response is returned immediately after the job is claimed; the
+ * actual processing runs via after() so sandbox execution can run to
+ * completion without blocking the caller.
  */
 export const maxDuration = 300;
 
@@ -60,13 +61,17 @@ async function handleProcessOne(request: NextRequest, bodyJobId?: string) {
     return NextResponse.json({ claimed: false, jobId });
   }
 
-  try {
-    await processSingleClaimedJob(job);
-    return NextResponse.json({ claimed: true, jobId });
-  } catch (err) {
-    console.error('[process-one] processSingleClaimedJob unhandled error (job:', job.id, '):', err);
-    return NextResponse.json({ error: 'Worker failed', jobId }, { status: 500 });
-  }
+  // Return immediately so the wave-dispatcher fetch doesn't time out waiting
+  // for long-running sandbox execution. Processing continues in the background.
+  after(async () => {
+    try {
+      await processSingleClaimedJob(job);
+    } catch (err) {
+      console.error('[process-one] processSingleClaimedJob unhandled error (job:', job.id, '):', err);
+    }
+  });
+
+  return NextResponse.json({ claimed: true, jobId });
 }
 
 export async function POST(request: NextRequest) {
