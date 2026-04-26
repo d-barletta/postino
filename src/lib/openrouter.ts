@@ -34,6 +34,8 @@ export interface AgentTrace {
   startedAt: string;
   finishedAt: string;
   steps: AgentTraceStep[];
+  /** Storage path for the full OpenCode run log, when agent tracing is enabled. */
+  runLogStoragePath?: string;
 }
 
 /** Pricing for a specific model (USD per token). */

@@ -808,6 +808,35 @@ async function saveOpencodeSessionId(logId: string, sessionId: string): Promise<
 }
 
 // ---------------------------------------------------------------------------
+// OpenCode run log storage
+// ---------------------------------------------------------------------------
+
+/**
+ * Uploads the raw OpenCode run log to Supabase Storage.
+ *
+ * Returns the storage path on success, or null if the upload fails.
+ * The log is stored at `email-logs/{logId}/opencode-run.log` inside the
+ * `email-attachments` bucket so it can be retrieved on demand by admins.
+ */
+async function uploadOpenCodeRunLog(logId: string, content: string): Promise<string | null> {
+  try {
+    const supabase = createAdminClient();
+    const storagePath = `email-logs/${logId}/opencode-run.log`;
+    const { error } = await supabase.storage
+      .from('email-attachments')
+      .upload(storagePath, Buffer.from(content, 'utf-8'), {
+        contentType: 'text/plain; charset=utf-8',
+        upsert: true,
+      });
+    if (error) throw error;
+    return storagePath;
+  } catch (err) {
+    console.error('[sandbox-agent] Failed to upload OpenCode run log to Supabase Storage:', err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
 
@@ -1042,6 +1071,7 @@ export async function processEmailWithAgent(
   let sandboxCompletionTokens = 0;
   let opencodeSessionId: string | null = null;
   let opencodeStatsRaw: string | undefined;
+  let runLogStoragePath: string | null = null;
   let opencodeStatsParsed:
     | {
         inputTokens: number;
@@ -1240,11 +1270,14 @@ export async function processEmailWithAgent(
         const exitCode = finished.exitCode;
         const stdout = await finished.stdout();
         const stderr = await finished.stderr();
-        const runLogSnapshot = await readSandboxTextSnapshot(
-          sandbox,
-          OPENCODE_RUN_LOG_PATH,
-          includeTraceExcerpts,
-        );
+        const runLogRaw = await readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH);
+        const runLogSnapshot = runLogRaw !== null
+          ? { path: OPENCODE_RUN_LOG_PATH, exists: true, ...summarizeTextForTrace(runLogRaw, includeTraceExcerpts) }
+          : { path: OPENCODE_RUN_LOG_PATH, exists: false };
+
+        if (tracingEnabled && runLogRaw) {
+          runLogStoragePath = await uploadOpenCodeRunLog(logId, runLogRaw);
+        }
 
         opencodeSessionId = parseOpencodeSessionId(stdout);
 
@@ -1354,16 +1387,22 @@ export async function processEmailWithAgent(
           console.error(`[sandbox-agent] opencode exited with code ${exitCode}:`, stderr);
           const stderrSummary =
             stderr.trim() ||
-            (runLogSnapshot.exists ? String(runLogSnapshot.tailExcerpt ?? '') : '');
+            (runLogSnapshot.exists ? String((runLogSnapshot as Record<string, unknown>).tailExcerpt ?? '') : '');
           parseError = `OpenCode exited with code ${exitCode}: ${stderrSummary.slice(0, 500)}`;
         }
       } catch (waitError) {
         clearTimeout(timer);
         const msg = waitError instanceof Error ? waitError.message : String(waitError);
         console.error('[sandbox-agent] opencode wait failed:', msg);
+        let runLogRawOnFailure: string | null = null;
         const [runLogSnapshot, subjectSnapshot, processingResultSnapshot] = sandbox
           ? await Promise.all([
-              readSandboxTextSnapshot(sandbox, OPENCODE_RUN_LOG_PATH, includeTraceExcerpts),
+              readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH).then((raw) => {
+                runLogRawOnFailure = raw;
+                return raw !== null
+                  ? { path: OPENCODE_RUN_LOG_PATH, exists: true, ...summarizeTextForTrace(raw, includeTraceExcerpts) }
+                  : { path: OPENCODE_RUN_LOG_PATH, exists: false };
+              }),
               readSandboxTextSnapshot(sandbox, SANDBOX_SUBJECT_PATH, includeTraceExcerpts),
               readSandboxTextSnapshot(
                 sandbox,
@@ -1376,6 +1415,9 @@ export async function processEmailWithAgent(
               { path: SANDBOX_SUBJECT_PATH, exists: false },
               { path: SANDBOX_PROCESSING_RESULT_PATH, exists: false },
             ];
+        if (tracingEnabled && runLogRawOnFailure) {
+          runLogStoragePath = await uploadOpenCodeRunLog(logId, runLogRawOnFailure);
+        }
         if (timedOut) {
           const timeoutMsg = `OpenCode timed out after ${Math.round(OPENCODE_RUN_TIMEOUT_MS / 60000)} minutes; original email was forwarded without AI rewrite`;
           pushTrace('opencode_timeout', 'error', timeoutMsg, {
@@ -1776,6 +1818,7 @@ export async function processEmailWithAgent(
         startedAt: traceStartedAt,
         finishedAt: new Date().toISOString(),
         steps: traceSteps,
+        ...(runLogStoragePath ? { runLogStoragePath } : {}),
       }
     : undefined;
 
