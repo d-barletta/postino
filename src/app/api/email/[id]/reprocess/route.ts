@@ -7,6 +7,8 @@ import { getBaseUrl } from '@/lib/request-utils';
 import { type SerializedAttachment, type QueuedInboundPayload } from '@/lib/inbound-processing';
 import { SYSTEM_RULE_AI_SKIPPED_CREDITS } from '@/lib/email-sentinel-rules';
 
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await verifyUserRequest(request);
