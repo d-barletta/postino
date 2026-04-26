@@ -5,16 +5,15 @@ import { VERCEL_TIMEOUTS } from '@/lib/vercel-plan';
 
 /**
  * Max function duration: 15 minutes.
- * Wave dispatch must complete within MAX_DISPATCH_MS (10 min). Wave size is
- * auto-calculated: given N total jobs and waveDelayMs between waves, the
- * maximum number of waves that fit is floor(MAX_DISPATCH_MS / waveDelayMs) + 1,
- * and wave size = ceil(N / maxWaves). This guarantees all waves are dispatched
- * before the function times out.
+ * process-one returns immediately after claiming a job (processing runs via
+ * after()), so the wave dispatcher only needs a small inter-wave gap to avoid
+ * thundering-herd. Wave size is auto-calculated so all waves are dispatched
+ * well within MAX_DISPATCH_MS.
  *
- * Example — 15 jobs, 3-min delay:
- *   maxWaves = floor(600 000 / 180 000) + 1 = 4
- *   waveSize = ceil(15 / 4)              = 4
- *   dispatch time = 3 × 180 000         = 9 min  ✓
+ * Example — 15 jobs, 2-second delay:
+ *   maxWaves = floor(600 000 / 2 000) + 1 = 301
+ *   waveSize = ceil(15 / 301)             = 1
+ *   dispatch time ≈ 14 × 2 000           = 28 s  ✓
  */
 export const maxDuration = 300;
 
@@ -25,8 +24,8 @@ export const maxDuration = 300;
  */
 const MAX_DISPATCH_MS = VERCEL_TIMEOUTS.emailJobsDispatchBudgetMs;
 
-/** Default delay between waves in milliseconds (3 minutes). */
-const DEFAULT_WAVE_DELAY_MS = 3 * 60 * 1000;
+/** Default delay between waves in milliseconds (2 seconds). */
+const DEFAULT_WAVE_DELAY_MS = 2 * 1000;
 /** Default total number of jobs to query and dispatch in a single run. */
 const DEFAULT_BATCH_SIZE = 10;
 
