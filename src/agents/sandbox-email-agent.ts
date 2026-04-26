@@ -1271,7 +1271,7 @@ export async function processEmailWithAgent(
         const stdout = await finished.stdout();
         const stderr = await finished.stderr();
         const runLogRaw = await readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH);
-        const runLogSnapshot = runLogRaw !== null
+        const runLogSnapshot: Record<string, unknown> = runLogRaw !== null
           ? { path: OPENCODE_RUN_LOG_PATH, exists: true, ...summarizeTextForTrace(runLogRaw, includeTraceExcerpts) }
           : { path: OPENCODE_RUN_LOG_PATH, exists: false };
 
@@ -1387,7 +1387,7 @@ export async function processEmailWithAgent(
           console.error(`[sandbox-agent] opencode exited with code ${exitCode}:`, stderr);
           const stderrSummary =
             stderr.trim() ||
-            (runLogSnapshot.exists ? String((runLogSnapshot as Record<string, unknown>).tailExcerpt ?? '') : '');
+            (runLogSnapshot.exists ? String(runLogSnapshot.tailExcerpt ?? '') : '');
           parseError = `OpenCode exited with code ${exitCode}: ${stderrSummary.slice(0, 500)}`;
         }
       } catch (waitError) {
@@ -1395,9 +1395,9 @@ export async function processEmailWithAgent(
         const msg = waitError instanceof Error ? waitError.message : String(waitError);
         console.error('[sandbox-agent] opencode wait failed:', msg);
         let runLogRawOnFailure: string | null = null;
-        const [runLogSnapshot, subjectSnapshot, processingResultSnapshot] = sandbox
+        const [runLogSnapshot, subjectSnapshot, processingResultSnapshot]: Record<string, unknown>[] = sandbox
           ? await Promise.all([
-              readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH).then((raw) => {
+              readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH).then((raw): Record<string, unknown> => {
                 runLogRawOnFailure = raw;
                 return raw !== null
                   ? { path: OPENCODE_RUN_LOG_PATH, exists: true, ...summarizeTextForTrace(raw, includeTraceExcerpts) }

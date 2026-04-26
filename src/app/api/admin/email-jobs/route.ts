@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       .single();
     const settingsData = (settingsRow?.data ?? {}) as Record<string, unknown>;
     const webhookLoggingEnabled = Boolean(settingsData.mailgunWebhookLoggingEnabled);
-    // agentTracingEnabled defaults to true when not explicitly set (mirrors agent behaviour).
+    // agentTracingEnabled defaults to true when not explicitly set (mirrors agent behavior).
     const agentTracingEnabled = settingsData.agentTracingEnabled !== false;
 
     const { data: webhookRows } = await supabase
@@ -173,11 +173,11 @@ export async function GET(request: NextRequest) {
         const trace = row.agent_trace as { runLogStoragePath?: string } | null;
         return {
           id: row.id as string,
-          fromAddress: (row.from_address as string) || 'Unknown sender',
+          fromAddress: (row.from_address as string) ?? 'Unknown sender',
           subject: (row.subject as string) ?? '(no subject)',
           receivedAt: (row.received_at as string) ?? null,
           processedAt: (row.processed_at as string) ?? null,
-          status: (row.status as string) || 'unknown',
+          status: (row.status as string) ?? 'unknown',
           runLogStoragePath: trace?.runLogStoragePath ?? null,
         };
       });
