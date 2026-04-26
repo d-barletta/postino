@@ -12,7 +12,7 @@ __RULES_TEXT__
 CRITICAL DIRECTIVES:
 __CAVEMAN_IMPORTANT_LINE__
 __HTML_EDITING_IMPORTANT_LINE__
-- Execution time limit: __SANDBOX_PLATFORM_TIMEOUT_MINUTES__ minutes. Finish all operations well before timeout.
+- Hard runtime limit: this sandbox execution is capped at __SANDBOX_PLATFORM_TIMEOUT_MINUTES__ minutes total. Complete your work and write final outputs well before that limit.
 - An optional <email_analysis> block may appear below. Use it only as supporting context.
 - For "transactional" or "personal" emails, strictly preserve key data (order IDs, dates, account info, identifiers).
 __MEMORY_IMPORTANT_LINE__
