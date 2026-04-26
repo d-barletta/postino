@@ -10,7 +10,6 @@ export function getBaseUrl(request: NextRequest): string {
   if (appUrl) return appUrl;
   const host = request.headers.get('host') || 'localhost:3000';
   const proto =
-    request.headers.get('x-forwarded-proto') ||
-    (host.startsWith('localhost') ? 'http' : 'https');
+    request.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https');
   return `${proto}://${host}`;
 }

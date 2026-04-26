@@ -122,8 +122,17 @@ function TraceRunLogPanel({
   return (
     <div className="rounded-lg border border-violet-200 bg-violet-50/60 p-3 dark:border-violet-900 dark:bg-violet-950/20">
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="ghost" onClick={loadRunLog} disabled={loadingLog || !!logContent}>
-          {loadingLog ? 'Loading run log...' : logContent ? 'Run log loaded' : 'Load OpenCode run log'}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={loadRunLog}
+          disabled={loadingLog || !!logContent}
+        >
+          {loadingLog
+            ? 'Loading run log...'
+            : logContent
+              ? 'Run log loaded'
+              : 'Load OpenCode run log'}
         </Button>
         {logContent ? (
           <Button size="sm" variant="ghost" onClick={handleCopy}>

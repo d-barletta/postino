@@ -91,6 +91,9 @@ const DEFAULT_PROCESSING_RESULT_JSON = '{"forward":true}';
 const TRACE_TEXT_EXCERPT_MAX_CHARS = 2000;
 const TRACE_TEXT_TAIL_MAX_CHARS = 4000;
 const TRACE_CONSOLE_TEXT_MAX_CHARS = 320;
+const LIVE_LOG_POLL_INTERVAL_MS = 5000;
+const LIVE_LOG_CONSOLE_CHUNK_CHARS = 4000;
+const LIVE_LOG_CONSOLE_MAX_TOTAL_CHARS = 120000;
 
 const OPENCODE_SKILLS = ['caveman', 'html-email-editing'] as const;
 
@@ -583,6 +586,66 @@ async function readSandboxTextSnapshot(
     path: filePath,
     exists: true,
     ...summarizeTextForTrace(text, includeExcerpt),
+  };
+}
+
+function startLiveSandboxLogPolling(
+  sandbox: Awaited<ReturnType<typeof Sandbox.create>>,
+  logId: string,
+  filePath: string,
+  label: 'opencode-live' | 'opencode-verify-live',
+): { stop: () => Promise<void> } {
+  let seenChars = 0;
+  let printedChars = 0;
+  let truncated = false;
+  let pollInFlight = false;
+
+  const flush = async (): Promise<void> => {
+    if (pollInFlight) return;
+    pollInFlight = true;
+    try {
+      const text = await readSandboxTextFile(sandbox, filePath);
+      if (text === null || text.length <= seenChars) return;
+
+      const delta = text.slice(seenChars);
+      seenChars = text.length;
+
+      if (delta.length === 0) return;
+
+      const remaining = Math.max(0, LIVE_LOG_CONSOLE_MAX_TOTAL_CHARS - printedChars);
+      const bounded = remaining > 0 ? delta.slice(0, remaining) : '';
+      if (bounded.length > 0) {
+        const totalChunks = Math.ceil(bounded.length / LIVE_LOG_CONSOLE_CHUNK_CHARS);
+        for (let i = 0; i < bounded.length; i += LIVE_LOG_CONSOLE_CHUNK_CHARS) {
+          const chunkIndex = Math.floor(i / LIVE_LOG_CONSOLE_CHUNK_CHARS) + 1;
+          const chunk = bounded.slice(i, i + LIVE_LOG_CONSOLE_CHUNK_CHARS);
+          console.log(
+            `[sandbox-agent][${logId}][${label}] chunk ${chunkIndex}/${totalChunks} (${filePath})\n${chunk}`,
+          );
+        }
+        printedChars += bounded.length;
+      }
+
+      if (!truncated && delta.length > bounded.length) {
+        truncated = true;
+        console.log(
+          `[sandbox-agent][${logId}][${label}] further live output truncated after ${LIVE_LOG_CONSOLE_MAX_TOTAL_CHARS} chars`,
+        );
+      }
+    } finally {
+      pollInFlight = false;
+    }
+  };
+
+  const timer = setInterval(() => {
+    void flush();
+  }, LIVE_LOG_POLL_INTERVAL_MS);
+
+  return {
+    stop: async () => {
+      clearInterval(timer);
+      await flush();
+    },
   };
 }
 
@@ -1279,6 +1342,13 @@ export async function processEmailWithAgent(
         detached: true,
       });
 
+      const liveRunLogPolling = startLiveSandboxLogPolling(
+        sandbox,
+        logId,
+        OPENCODE_RUN_LOG_PATH,
+        'opencode-live',
+      );
+
       pushTrace('opencode_started', 'ok', 'OpenCode command launched (detached)', {
         cmdId: command.cmdId,
         timeoutMs: OPENCODE_RUN_TIMEOUT_MS,
@@ -1296,14 +1366,20 @@ export async function processEmailWithAgent(
       try {
         const finished = await command.wait({ signal: controller.signal });
         clearTimeout(timer);
+        await liveRunLogPolling.stop();
 
         const exitCode = finished.exitCode;
         const stdout = await finished.stdout();
         const stderr = await finished.stderr();
         const runLogRaw = await readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH);
-        const runLogSnapshot: Record<string, unknown> = runLogRaw !== null
-          ? { path: OPENCODE_RUN_LOG_PATH, exists: true, ...summarizeTextForTrace(runLogRaw, includeTraceExcerpts) }
-          : { path: OPENCODE_RUN_LOG_PATH, exists: false };
+        const runLogSnapshot: Record<string, unknown> =
+          runLogRaw !== null
+            ? {
+                path: OPENCODE_RUN_LOG_PATH,
+                exists: true,
+                ...summarizeTextForTrace(runLogRaw, includeTraceExcerpts),
+              }
+            : { path: OPENCODE_RUN_LOG_PATH, exists: false };
         let sessionExportForLog:
           | {
               sessionId?: string | null;
@@ -1419,7 +1495,10 @@ export async function processEmailWithAgent(
                 parsedJson: extractJsonObject(exportOut),
               };
             } catch (exportErr) {
-              console.warn('[sandbox-agent] Failed to export OpenCode session for stored run log:', exportErr);
+              console.warn(
+                '[sandbox-agent] Failed to export OpenCode session for stored run log:',
+                exportErr,
+              );
             }
           }
 
@@ -1463,17 +1542,34 @@ export async function processEmailWithAgent(
         }
       } catch (waitError) {
         clearTimeout(timer);
+        await liveRunLogPolling.stop();
         const msg = waitError instanceof Error ? waitError.message : String(waitError);
         console.error('[sandbox-agent] opencode wait failed:', msg);
         let runLogRawOnFailure: string | null = null;
-        const [runLogSnapshot, subjectSnapshot, processingResultSnapshot]: Record<string, unknown>[] = sandbox
+        let sessionExportForLogOnFailure:
+          | {
+              sessionId?: string | null;
+              rawText: string;
+              parsedJson?: Record<string, unknown> | null;
+            }
+          | undefined;
+        const [runLogSnapshot, subjectSnapshot, processingResultSnapshot]: Record<
+          string,
+          unknown
+        >[] = sandbox
           ? await Promise.all([
-              readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH).then((raw): Record<string, unknown> => {
-                runLogRawOnFailure = raw;
-                return raw !== null
-                  ? { path: OPENCODE_RUN_LOG_PATH, exists: true, ...summarizeTextForTrace(raw, includeTraceExcerpts) }
-                  : { path: OPENCODE_RUN_LOG_PATH, exists: false };
-              }),
+              readSandboxTextFile(sandbox, OPENCODE_RUN_LOG_PATH).then(
+                (raw): Record<string, unknown> => {
+                  runLogRawOnFailure = raw;
+                  return raw !== null
+                    ? {
+                        path: OPENCODE_RUN_LOG_PATH,
+                        exists: true,
+                        ...summarizeTextForTrace(raw, includeTraceExcerpts),
+                      }
+                    : { path: OPENCODE_RUN_LOG_PATH, exists: false };
+                },
+              ),
               readSandboxTextSnapshot(sandbox, SANDBOX_SUBJECT_PATH, includeTraceExcerpts),
               readSandboxTextSnapshot(
                 sandbox,
@@ -1487,7 +1583,43 @@ export async function processEmailWithAgent(
               { path: SANDBOX_PROCESSING_RESULT_PATH, exists: false },
             ];
         if (tracingEnabled && runLogRawOnFailure) {
-          runLogStoragePath = await uploadOpenCodeRunLog(logId, runLogRawOnFailure);
+          if (!opencodeSessionId) {
+            opencodeSessionId = parseOpencodeSessionId(runLogRawOnFailure);
+          }
+
+          if (opencodeSessionId) {
+            try {
+              const exportCmd = await sandbox.runCommand({
+                cmd: 'opencode',
+                args: ['export', opencodeSessionId],
+                cwd: '/vercel/sandbox',
+                env: {
+                  HOME: '/vercel/sandbox',
+                  XDG_DATA_HOME: '/vercel/sandbox/.local/share',
+                  OPENROUTER_API_KEY: apiKey,
+                  OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+                  OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
+                },
+              });
+              const exportOut = await (await exportCmd.wait()).stdout();
+              sessionExportForLogOnFailure = {
+                sessionId: opencodeSessionId,
+                rawText: exportOut,
+                parsedJson: extractJsonObject(exportOut),
+              };
+              await saveOpencodeSessionId(logId, opencodeSessionId);
+            } catch (exportErr) {
+              console.warn(
+                '[sandbox-agent] Failed to export OpenCode session for timeout/failure run log:',
+                exportErr,
+              );
+            }
+          }
+
+          runLogStoragePath = await uploadOpenCodeRunLog(
+            logId,
+            formatOpenCodeStoredRunLog(runLogRawOnFailure, sessionExportForLogOnFailure),
+          );
         }
         if (timedOut) {
           const timeoutMsg = `OpenCode timed out after ${Math.round(OPENCODE_RUN_TIMEOUT_MS / 60000)} minutes; original email was forwarded without AI rewrite`;
@@ -1617,12 +1749,20 @@ export async function processEmailWithAgent(
           detached: true,
         });
 
+        const liveVerifyLogPolling = startLiveSandboxLogPolling(
+          sandbox!,
+          logId,
+          OPENCODE_VERIFY_LOG_PATH,
+          'opencode-verify-live',
+        );
+
         const verifyController = new AbortController();
         const verifyTimer = setTimeout(() => verifyController.abort(), OPENCODE_VERIFY_TIMEOUT_MS);
 
         try {
           const verifyFinished = await verifyCommand.wait({ signal: verifyController.signal });
           clearTimeout(verifyTimer);
+          await liveVerifyLogPolling.stop();
 
           const verifyExitCode = verifyFinished.exitCode;
           const verifyStdout = await verifyFinished.stdout();
@@ -1747,6 +1887,7 @@ export async function processEmailWithAgent(
           }
         } catch (verifyWaitError) {
           clearTimeout(verifyTimer);
+          await liveVerifyLogPolling.stop();
           const msg =
             verifyWaitError instanceof Error ? verifyWaitError.message : String(verifyWaitError);
           console.error('[sandbox-agent] verification pass wait failed:', msg);
