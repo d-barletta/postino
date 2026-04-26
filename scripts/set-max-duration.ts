@@ -8,6 +8,7 @@ const HOBBY_MAX_DURATION = 300;
 const routeFiles = [
   'src/app/api/internal/email-jobs/process/route.ts',
   'src/app/api/internal/email-jobs/process-one/route.ts',
+  'src/app/api/email/[id]/reprocess/route.ts',
 ];
 
 function readEnvFromDotEnvLocal(projectRoot: string, key: string): string | undefined {
