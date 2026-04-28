@@ -29,7 +29,7 @@ async function main() {
   console.log('Creating sandbox…');
   const sandbox = await Sandbox.create({
     runtime: 'node24',
-    timeout: 5 * 60 * 1000, // 5 minutes
+    timeout: 15 * 60 * 1000, // 5 minutes
   });
 
   console.log('Installing opencode-ai…');
