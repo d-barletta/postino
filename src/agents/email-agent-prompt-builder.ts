@@ -51,7 +51,7 @@ export function buildEmailAgentAnalysisSystemPrompt(outputLanguage?: string): st
   const langCode = outputLanguage?.toLowerCase().trim();
   const langName = langCode ? (LANGUAGE_NAMES[langCode] ?? langCode) : null;
   const languageInstruction = langName
-    ? ` Write the summary, intent, and topics fields in ${langName}.`
+    ? `LANGUAGE_INSTRUCTION: Write the summary, intent, and topics fields in ${langName}.`
     : '';
 
   return populateTemplate(EMAIL_AGENT_ANALYSIS_SYSTEM_PROMPT, {
