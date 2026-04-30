@@ -40,14 +40,14 @@
     "@vercel/sandbox": "^1.10.0",
     "@vercel/speed-insights": "^2.0.0",
     "@xyflow/react": "^12.10.2",
-    "ai": "^6.0.169",
+    "ai": "^6.0.170",
     "bootstrap-icons": "^1.13.1",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "crypto-js": "^4.2.0",
-    "cytoscape": "^3.33.2",
+    "cytoscape": "^3.33.3",
     "dompurify": "^3.4.1",
     "elkjs": "^0.11.1",
     "jsonrepair": "^3.14.0",
@@ -66,7 +66,7 @@
     "supermemory": "^4.21.1",
     "tailwind-merge": "^3.5.0",
     "vaul": "^1.1.2",
-    "zod": "^4.3.6"
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
