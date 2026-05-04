@@ -67,7 +67,12 @@ async function handleProcessOne(request: NextRequest, bodyJobId?: string) {
     try {
       await processSingleClaimedJob(job);
     } catch (err) {
-      console.error('[process-one] processSingleClaimedJob unhandled error (job:', job.id, '):', err);
+      console.error(
+        '[process-one] processSingleClaimedJob unhandled error (job:',
+        job.id,
+        '):',
+        err,
+      );
     }
   });
 

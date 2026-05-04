@@ -964,15 +964,12 @@ export async function processEmailWithAgent(
     process.env[SNAPSHOT_ID_ENV] ||
     '';
 
-  if (!snapshotId) {
-    throw new Error(
-      'Missing OpenCode sandbox snapshot ID. Set OPENCODE_SANDBOX_SNAPSHOT_ID env var or configure it in admin settings.',
-    );
-  }
+  const useSnapshot = snapshotId.length > 0;
 
   pushTrace('settings_loaded', 'ok', 'Loaded runtime settings', {
     model,
-    snapshotId,
+    snapshotId: useSnapshot ? snapshotId : undefined,
+    sandboxMode: useSnapshot ? 'snapshot' : 'fresh',
     tracingEnabled,
     includeTraceExcerpts,
     subjectPrefix,
@@ -1170,23 +1167,59 @@ export async function processEmailWithAgent(
       opencodeModelId,
     });
 
-    sandbox = await Sandbox.create({
-      source: { type: 'snapshot', snapshotId },
-      timeout: SANDBOX_TIMEOUT_MS,
-      env: {
-        // Pass OpenRouter key as env var as well (belt-and-suspenders).
-        OPENROUTER_API_KEY: apiKey,
-        OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
-        OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
-        POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
-        POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
-      },
-    });
+    const myEnv = {
+      OPENROUTER_API_KEY: apiKey,
+      OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
+      OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
+      POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
+      POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
+    };
+
+    sandbox = await Sandbox.create(
+      useSnapshot
+        ? {
+            source: { type: 'snapshot', snapshotId },
+            timeout: SANDBOX_TIMEOUT_MS,
+            env: myEnv,
+          }
+        : {
+            runtime: 'node24',
+            timeout: SANDBOX_TIMEOUT_MS,
+            env: myEnv,
+          },
+    );
 
     pushTrace('sandbox_created', 'ok', 'Sandbox started', {
       sandboxId: sandbox.sandboxId,
       sandboxTimeoutMs: SANDBOX_TIMEOUT_MS,
+      mode: useSnapshot ? 'snapshot' : 'fresh',
     });
+
+    // If using a fresh template (not snapshot), install and prime OpenCode
+    if (!useSnapshot) {
+      try {
+        pushTrace('sandbox_init_start', 'ok', 'Initializing fresh sandbox with OpenCode');
+
+        const installCmd = await sandbox.runCommand({
+          cmd: 'npm',
+          args: ['install', '-g', 'opencode-ai'],
+        });
+
+        if (installCmd.exitCode !== 0) {
+          const stderr = await installCmd.stderr();
+          throw new Error(
+            `Failed to install opencode-ai (exit code ${installCmd.exitCode}): ${stderr}`,
+          );
+        }
+
+        pushTrace('sandbox_init_install', 'ok', 'Installed opencode-ai');
+      } catch (initError) {
+        const msg = initError instanceof Error ? initError.message : String(initError);
+        pushTrace('sandbox_init_failed', 'warning', `Fresh sandbox init failed: ${msg}`);
+        parseError =
+          (parseError ? parseError + '; ' : '') + `Sandbox initialization failed: ${msg}`;
+      }
+    }
 
     // Write files into the sandbox.
     await sandbox.writeFiles([
