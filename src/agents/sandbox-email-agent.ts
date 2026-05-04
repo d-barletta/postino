@@ -1118,7 +1118,11 @@ export async function processEmailWithAgent(
     | undefined;
 
   try {
-    pushTrace('sandbox_creating', 'ok', 'Creating sandbox from snapshot');
+    pushTrace(
+      'sandbox_creating',
+      'ok',
+      useSnapshot ? 'Creating sandbox from snapshot' : 'Creating fresh sandbox',
+    );
 
     // Build the opencode.json config for OpenRouter inside the sandbox.
     const trackingHeaders = buildOpenRouterHeaders(openRouterTracking);
@@ -1189,16 +1193,21 @@ export async function processEmailWithAgent(
           },
     );
 
-    pushTrace('sandbox_created', 'ok', 'Sandbox started', {
-      sandboxId: sandbox.sandboxId,
-      sandboxTimeoutMs: SANDBOX_TIMEOUT_MS,
-      mode: useSnapshot ? 'snapshot' : 'fresh',
-    });
+    pushTrace(
+      'sandbox_created',
+      'ok',
+      useSnapshot ? 'Snapshot started ' : 'Fresh sandbox started',
+      {
+        sandboxId: sandbox.sandboxId,
+        sandboxTimeoutMs: SANDBOX_TIMEOUT_MS,
+        mode: useSnapshot ? 'snapshot' : 'fresh',
+      },
+    );
 
     // If using a fresh template (not snapshot), install and prime OpenCode
     if (!useSnapshot) {
       try {
-        pushTrace('sandbox_init_start', 'ok', 'Initializing fresh sandbox with OpenCode');
+        pushTrace('sandbox_init_start', 'ok', 'Installing fresh sandbox with OpenCode');
 
         const installCmd = await sandbox.runCommand({
           cmd: 'npm',
