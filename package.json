@@ -18,7 +18,7 @@
     "debug:sandbox": "npx tsx --env-file .env.local scripts/debug-sandbox-agent.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.60",
+    "@ai-sdk/openai": "^3.0.61",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
