@@ -793,23 +793,16 @@ export async function processQueuedInboundPayload(
           .from('email_logs')
           .update({
             processed_at: new Date().toISOString(),
-            status: 'skipped',
+            status: 'forwarded',
             rule_applied: AI_SKIPPED_CREDITS_EXHAUSTED_RULE,
             tokens_used: 0,
             estimated_cost: 0,
             estimated_credits: 0,
             processed_body: forwardedBody,
-            error_message: `Duplicate forward prevented for Message-Id: ${payload.messageId}`,
+            error_message: null, // Clear error - email was already forwarded successfully
           })
           .eq('id', payload.logId);
 
-        await sendEmailPushNotification(
-          payload.userId,
-          payload.fromHeader || payload.sender,
-          payload.subject,
-          payload.logId,
-          'skipped',
-        );
         return;
       }
     }
@@ -1015,6 +1008,8 @@ export async function processQueuedInboundPayload(
   // Last-mile dedupe guard: when duplicate webhook deliveries slip through with
   // different nonces, ensure only one forwarded email is actually sent for a
   // given user + Message-Id pair. Skipped for manual reprocessing.
+  // CRITICAL: Insert nonce BEFORE sending to prevent race conditions where
+  // attempt 1 sends but crashes before marking done, then attempt 2 re-sends.
   if (payload.messageId && !payload.isReprocess) {
     const forwardNonce = `forward:${crypto
       .createHash('sha256')
@@ -1027,7 +1022,7 @@ export async function processQueuedInboundPayload(
     });
 
     if (nonceErr) {
-      console.warn('[processing] duplicate forward prevented', {
+      console.warn('[processing] duplicate forward prevented (retry after successful send)', {
         logId: payload.logId,
         userId: payload.userId,
         messageId: payload.messageId,
@@ -1037,7 +1032,7 @@ export async function processQueuedInboundPayload(
         .from('email_logs')
         .update({
           processed_at: new Date().toISOString(),
-          status: 'skipped',
+          status: 'forwarded',
           rule_applied: result.ruleApplied,
           tokens_used: result.tokensUsed,
           estimated_cost: result.estimatedCost,
@@ -1046,7 +1041,7 @@ export async function processQueuedInboundPayload(
             creditSettings.creditsPerDollarFactor,
           ),
           processed_body: result.body,
-          error_message: `Duplicate forward prevented for Message-Id: ${payload.messageId}`,
+          error_message: null, // Clear error - email was already forwarded successfully
           ...(result.trace
             ? { agent_trace: result.trace as unknown as import('@/types/supabase').Json }
             : {}),
@@ -1056,13 +1051,6 @@ export async function processQueuedInboundPayload(
         })
         .eq('id', payload.logId);
 
-      await sendEmailPushNotification(
-        payload.userId,
-        payload.fromHeader || payload.sender,
-        result.subject,
-        payload.logId,
-        'skipped',
-      );
       return;
     }
   }
