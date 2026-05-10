@@ -1326,13 +1326,13 @@ export async function processEmailWithAgent(
           OPENCODE_REQUIRE_CONFIRMATION: 'false',
           POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
           POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
-          OPENCODE_CONFIG_CONTENT: JSON.stringify({
-            agent: {
-              enabled: true,
-              require_confirmation: false,
-              max_steps: 100,
-            },
-          }),
+          // OPENCODE_CONFIG_CONTENT: JSON.stringify({
+          //   agent: {
+          //     enabled: true,
+          //     require_confirmation: false,
+          //     max_steps: 100,
+          //   },
+          // }),
         },
         detached: true,
       });
