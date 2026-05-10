@@ -39,8 +39,8 @@ const SUGGESTED_MODELS = [
 ];
 
 const AGENT_LIMITS = {
-  analysisMaxTokens: { min: 100, max: 2000 },
-  bodyAnalysisMaxChars: { min: 500, max: 50000 },
+  analysisMaxTokens: { min: 100, max: 40000 },
+  bodyAnalysisMaxChars: { min: 500, max: 100000 },
 } as const;
 
 const OPENCODE_SKILLS = [

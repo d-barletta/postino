@@ -6,8 +6,8 @@ import type { Json } from '@/types/supabase';
 import { DEFAULT_CREDITS_PER_DOLLAR_FACTOR, DEFAULT_FREE_CREDITS_PER_MONTH } from '@/lib/credits';
 
 const AGENT_LIMITS = {
-  agentAnalysisMaxTokens: { min: 100, max: 2000 },
-  agentBodyAnalysisMaxChars: { min: 500, max: 50000 },
+  agentAnalysisMaxTokens: { min: 100, max: 40000 },
+  agentBodyAnalysisMaxChars: { min: 500, max: 100000 },
 } as const;
 
 const OPENCODE_SKILL_KEYS = ['caveman', 'html-email-editing'] as const;
