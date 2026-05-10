@@ -1312,7 +1312,7 @@ export async function processEmailWithAgent(
         cmd: 'bash',
         args: [
           '-lc',
-          `set -o pipefail; opencode run --agent --yes --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_RUN_LOG_PATH}`,
+          `set -o pipefail; opencode run --agent build --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_RUN_LOG_PATH}`,
         ],
         cwd: '/vercel/sandbox',
         env: {
@@ -1326,6 +1326,13 @@ export async function processEmailWithAgent(
           OPENCODE_REQUIRE_CONFIRMATION: 'false',
           POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
           POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
+          OPENCODE_CONFIG_CONTENT: JSON.stringify({
+            agent: {
+              enabled: true,
+              require_confirmation: false,
+              max_steps: 100,
+            },
+          }),
         },
         detached: true,
       });
@@ -1644,7 +1651,7 @@ export async function processEmailWithAgent(
           cmd: 'bash',
           args: [
             '-lc',
-            `set -o pipefail; opencode run --agent --yes --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_VERIFY_LOG_PATH}`,
+            `set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_VERIFY_LOG_PATH}`,
           ],
           cwd: '/vercel/sandbox',
           env: {
