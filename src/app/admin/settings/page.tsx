@@ -34,11 +34,12 @@ interface AdminSettingsPageProps {
 
 const SUGGESTED_MODELS = [
   { id: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash Preview' },
+  { id: 'deepseek/deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
   { id: 'anthropic/claude-haiku-4.5', label: 'Claude Haiku 4.5' },
 ];
 
 const AGENT_LIMITS = {
-  analysisMaxTokens: { min: 100, max: 2000 },
+  analysisMaxTokens: { min: 100, max: 40000 },
   bodyAnalysisMaxChars: { min: 500, max: 100000 },
 } as const;
 

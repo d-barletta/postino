@@ -40,14 +40,20 @@ import type { EmailAttachment } from '@/lib/email';
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Default max output tokens for the pre-analysis classification call. */
-const ANALYSIS_MAX_TOKENS = 2_000;
+/** Default max output tokens for the pre-analysis classification call.
+ * Models with extended thinking (e.g., deepseek) can consume a large portion
+ * of the token budget for reasoning, so this must be generous.
+ */
+const ANALYSIS_MAX_TOKENS = 40_000;
+
+/** Maximum retries for incomplete JSON responses (with exponential token increase). */
+const ANALYSIS_MAX_RETRIES = 2;
 
 /** Default max body characters included in pre-analysis.
  * HTML emails are reduced to reader-friendly structured text before this limit
  * is applied so the AI sees more useful content within the same token budget.
  */
-const BODY_ANALYSIS_MAX_CHARS = 30_000;
+const BODY_ANALYSIS_MAX_CHARS = 60_000;
 
 async function getGlobalSettings(): Promise<Record<string, unknown> | undefined> {
   const supabase = createAdminClient();
@@ -618,6 +624,19 @@ async function htmlToMarkdown(html: string): Promise<string> {
   }
 }
 
+/** Detect if an error indicates the response was truncated due to token limit. */
+function isTruncatedJsonError(err: unknown): boolean {
+  const message = String(err).toLowerCase();
+  return (
+    message.includes('json') &&
+    (message.includes('parsing failed') ||
+      message.includes('could not parse') ||
+      message.includes('unexpected end') ||
+      message.includes('unclosed') ||
+      message.includes('expected double-quoted property'))
+  );
+}
+
 async function preAnalyzeEmail(
   emailFrom: string,
   emailSubject: string,
@@ -635,42 +654,65 @@ async function preAnalyzeEmail(
     ? (await htmlToMarkdown(emailBody)).slice(0, agentRuntimeSettings.bodyAnalysisMaxChars)
     : emailBody.slice(0, agentRuntimeSettings.bodyAnalysisMaxChars);
 
-  try {
-    const { object, usage } = await generateObject({
-      model: openrouterProvider(model),
-      schema: emailAnalysisSchema,
-      maxRetries: 3,
-      system: buildEmailAgentAnalysisSystemPrompt(outputLanguage),
-      prompt: buildEmailAgentAnalysisPrompt(
-        sanitizeEmailField(emailFrom),
-        sanitizeEmailField(emailSubject),
-        isHtml,
-        bodyExcerpt,
-      ),
-      maxOutputTokens: agentRuntimeSettings.analysisMaxTokens,
-      ...(buildOpenRouterProviderOptions(openRouterTracking)
-        ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
-        : {}),
-    });
-    const normalizedUsage = normalizeUsageTotals(usage);
+  let lastErr: unknown;
+  let maxTokens = agentRuntimeSettings.analysisMaxTokens;
 
-    return {
-      analysis: object as RawEmailAnalysis,
-      extractedBody: bodyExcerpt,
-      tokensUsed: normalizedUsage.totalTokens,
-      promptTokens: normalizedUsage.promptTokens,
-      completionTokens: normalizedUsage.completionTokens,
-    };
-  } catch (err) {
-    console.warn('Email pre-analysis failed, continuing without analysis context:', err);
-    return {
-      analysis: null,
-      extractedBody: bodyExcerpt,
-      tokensUsed: 0,
-      promptTokens: 0,
-      completionTokens: 0,
-    };
+  // Retry loop: if we detect truncated JSON, retry with higher token limits.
+  for (let attempt = 0; attempt <= ANALYSIS_MAX_RETRIES; attempt++) {
+    try {
+      const { object, usage } = await generateObject({
+        model: openrouterProvider(model),
+        schema: emailAnalysisSchema,
+        maxRetries: 3,
+        system: buildEmailAgentAnalysisSystemPrompt(outputLanguage),
+        prompt: buildEmailAgentAnalysisPrompt(
+          sanitizeEmailField(emailFrom),
+          sanitizeEmailField(emailSubject),
+          isHtml,
+          bodyExcerpt,
+        ),
+        maxOutputTokens: maxTokens,
+        ...(buildOpenRouterProviderOptions(openRouterTracking)
+          ? { providerOptions: buildOpenRouterProviderOptions(openRouterTracking) }
+          : {}),
+      });
+      const normalizedUsage = normalizeUsageTotals(usage);
+
+      return {
+        analysis: object as RawEmailAnalysis,
+        extractedBody: bodyExcerpt,
+        tokensUsed: normalizedUsage.totalTokens,
+        promptTokens: normalizedUsage.promptTokens,
+        completionTokens: normalizedUsage.completionTokens,
+      };
+    } catch (err) {
+      lastErr = err;
+
+      // If this looks like truncated JSON and we haven't exceeded our retry budget,
+      // increase the token limit and try again.
+      if (isTruncatedJsonError(err) && attempt < ANALYSIS_MAX_RETRIES) {
+        maxTokens = Math.min(maxTokens * 1.5, 100_000); // Cap at 100k to avoid runaway costs
+        console.warn(
+          `[email-agent] Truncated JSON detected (attempt ${attempt + 1}/${ANALYSIS_MAX_RETRIES}), retrying with ${Math.floor(maxTokens)} tokens:`,
+          String(err).slice(0, 200),
+        );
+        continue;
+      }
+
+      // Either it's not a truncation error, or we've exhausted retries.
+      break;
+    }
   }
+
+  // All retries failed or the error wasn't truncation-related.
+  console.warn('Email pre-analysis failed, continuing without analysis context:', lastErr);
+  return {
+    analysis: null,
+    extractedBody: bodyExcerpt,
+    tokensUsed: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+  };
 }
 
 async function hydrateEmailAnalysis(
