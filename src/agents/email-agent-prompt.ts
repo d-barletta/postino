@@ -23,6 +23,8 @@ export const EMAIL_AGENT_ANALYSIS_SYSTEM_PROMPT = `
 You are an expert email analyst.
 
 Your task is to analyze the provided email and produce a comprehensive, structured classification.
+Your response must respect the schema and must be a valid JSON.
+You will be penalized if response is not valid JSON format.
 
 GENERAL GUIDELINES:
 - Ensure all outputs are accurate, consistent, and strictly grounded in the email content.
