@@ -1128,17 +1128,6 @@ export async function processEmailWithAgent(
     const trackingHeaders = buildOpenRouterHeaders(openRouterTracking);
     const trackingBody = buildOpenRouterChatCompletionTrackingFields(openRouterTracking);
     const opencodeModelId = `openrouter/${model}`;
-    const agentConfig = {
-      require_confirmation: false,
-      require_shell_confirmation: false,
-      ...(isOpencodeSkillEnabled(skillToggles, 'caveman')
-        ? {
-            build: {
-              prompt: '/caveman ultra\nAlways use caveman ultra mode. Maximum compression.',
-            },
-          }
-        : {}),
-    };
     const opencodeConfig = JSON.stringify(
       {
         $schema: 'https://opencode.ai/config.json',
@@ -1155,7 +1144,15 @@ export async function processEmailWithAgent(
             },
           },
         },
-        agent: agentConfig,
+        ...(isOpencodeSkillEnabled(skillToggles, 'caveman')
+          ? {
+              agent: {
+                build: {
+                  prompt: '/caveman ultra\nAlways use caveman ultra mode. Maximum compression.',
+                },
+              },
+            }
+          : {}),
       },
       null,
       2,
@@ -1315,7 +1312,7 @@ export async function processEmailWithAgent(
         cmd: 'bash',
         args: [
           '-lc',
-          `set -o pipefail; opencode run --agent --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_RUN_LOG_PATH}`,
+          `set -o pipefail; opencode run --agent --yes --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_RUN_LOG_PATH}`,
         ],
         cwd: '/vercel/sandbox',
         env: {
@@ -1325,6 +1322,8 @@ export async function processEmailWithAgent(
           OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
           OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
           OPENCODE_MODEL: opencodeModelId,
+          OPENCODE_NO_CONFIRM: '1',
+          OPENCODE_REQUIRE_CONFIRMATION: 'false',
           POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
           POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
         },
@@ -1645,7 +1644,7 @@ export async function processEmailWithAgent(
           cmd: 'bash',
           args: [
             '-lc',
-            `set -o pipefail; opencode run --agent --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_VERIFY_LOG_PATH}`,
+            `set -o pipefail; opencode run --agent --yes --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_VERIFY_LOG_PATH}`,
           ],
           cwd: '/vercel/sandbox',
           env: {
@@ -1655,6 +1654,8 @@ export async function processEmailWithAgent(
             OPENROUTER_USER_ID: openRouterTracking.userId ?? '',
             OPENROUTER_SESSION_ID: openRouterTracking.sessionId ?? '',
             OPENCODE_MODEL: opencodeModelId,
+            OPENCODE_NO_CONFIRM: '1',
+            OPENCODE_REQUIRE_CONFIRMATION: 'false',
             POSTINO_INTERNAL_BASE_URL: sandboxMemoryToolBaseUrl,
             POSTINO_MEMORY_TOOL_TOKEN: sandboxMemoryToolToken ?? '',
           },
