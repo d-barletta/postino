@@ -1128,6 +1128,17 @@ export async function processEmailWithAgent(
     const trackingHeaders = buildOpenRouterHeaders(openRouterTracking);
     const trackingBody = buildOpenRouterChatCompletionTrackingFields(openRouterTracking);
     const opencodeModelId = `openrouter/${model}`;
+    const agentConfig = {
+      require_confirmation: false,
+      require_shell_confirmation: false,
+      ...(isOpencodeSkillEnabled(skillToggles, 'caveman')
+        ? {
+            build: {
+              prompt: '/caveman ultra\nAlways use caveman ultra mode. Maximum compression.',
+            },
+          }
+        : {}),
+    };
     const opencodeConfig = JSON.stringify(
       {
         $schema: 'https://opencode.ai/config.json',
@@ -1144,15 +1155,7 @@ export async function processEmailWithAgent(
             },
           },
         },
-        ...(isOpencodeSkillEnabled(skillToggles, 'caveman')
-          ? {
-              agent: {
-                build: {
-                  prompt: '/caveman ultra\nAlways use caveman ultra mode. Maximum compression.',
-                },
-              },
-            }
-          : {}),
+        agent: agentConfig,
       },
       null,
       2,
@@ -1312,7 +1315,7 @@ export async function processEmailWithAgent(
         cmd: 'bash',
         args: [
           '-lc',
-          `set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_RUN_LOG_PATH}`,
+          `set -o pipefail; opencode run --agent --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_RUN_LOG_PATH}`,
         ],
         cwd: '/vercel/sandbox',
         env: {
@@ -1642,7 +1645,7 @@ export async function processEmailWithAgent(
           cmd: 'bash',
           args: [
             '-lc',
-            `set -o pipefail; opencode run --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_VERIFY_LOG_PATH}`,
+            `set -o pipefail; opencode run --agent --format json --model "$OPENCODE_MODEL" "$(cat /vercel/sandbox/prompt.txt)" 2>&1 | tee ${OPENCODE_VERIFY_LOG_PATH}`,
           ],
           cwd: '/vercel/sandbox',
           env: {

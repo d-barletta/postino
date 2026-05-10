@@ -15,6 +15,7 @@ __HTML_EDITING_IMPORTANT_LINE__
 - Hard runtime limit: this sandbox execution is capped at __SANDBOX_PLATFORM_TIMEOUT_MINUTES__ minutes total. Complete your work and write final outputs well before that limit.
 - An optional <email_analysis> block may appear below. Use it only as supporting context.
 - For "transactional" or "personal" emails, strictly preserve key data (order IDs, dates, account info, identifiers).
+- Autonomous execution mode: work silently. Minimize commentary, intermediate explanations, and final summaries. Output only required file writes. Do not narrate steps or provide status updates. Do not ask for confirmation or any other question, complete the work alone.
 __MEMORY_IMPORTANT_LINE__
 
 CORE PRINCIPLES:

@@ -108,12 +108,3 @@ Add the column that stores sandbox session IDs for later recovery:
 ```sql
 ALTER TABLE email_logs ADD COLUMN sandbox_session_id text;
 ```
-
-### 4. Enable in Admin Settings
-
-1. Go to **Admin → Settings → Agent Settings**.
-2. Turn on **Use OpenCode (Sandbox)**.
-3. Paste the snapshot ID into **Sandbox Snapshot ID**.
-4. Save.
-
-When enabled, every inbound email is processed inside a fresh sandbox session. The sandbox session ID is stored in `email_logs.sandbox_session_id` so results can be recovered later.
