@@ -1198,7 +1198,7 @@ export async function processEmailWithAgent(
       'ok',
       useSnapshot ? 'Snapshot started ' : 'Fresh sandbox started',
       {
-        sandboxId: sandbox.sandboxId,
+        sandboxId: sandbox.name,
         sandboxTimeoutMs: SANDBOX_TIMEOUT_MS,
         mode: useSnapshot ? 'snapshot' : 'fresh',
       },
@@ -1844,9 +1844,9 @@ export async function processEmailWithAgent(
     // Always clean up the sandbox.
     if (sandbox) {
       try {
-        await sandbox.stop({ blocking: false });
+        await sandbox.stop();
         pushTrace('sandbox_stopped', 'ok', 'Stopped sandbox', {
-          sandboxId: sandbox.sandboxId,
+          sandboxId: sandbox.name,
         });
       } catch {
         // Ignore stop errors.

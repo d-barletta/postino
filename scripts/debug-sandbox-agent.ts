@@ -586,7 +586,7 @@ async function main() {
       POSTINO_MEMORY_TOOL_TOKEN: memoryToolEnabled ? (sandboxMemoryToolToken ?? '') : '',
     },
   });
-  console.log('✅ Sandbox ID:', sandbox.sandboxId);
+  console.log('✅ Sandbox ID:', sandbox.name);
 
   // Write files
   const opencodeModelId = `openrouter/${model}`;
@@ -839,7 +839,7 @@ async function main() {
       artifactDir,
     },
     sandbox: {
-      sandboxId: sandbox.sandboxId,
+      sandboxId: sandbox.name,
       snapshotId,
     },
     memory: {
@@ -887,7 +887,7 @@ async function main() {
   console.log('🧮 Completion tokens:', completionTokens);
 
   console.log('\n🧹 Stopping sandbox...');
-  await sandbox.stop({ blocking: true });
+  await sandbox.stop();
   console.log('✅ Done');
 }
 
