@@ -1550,6 +1550,11 @@ export async function processEmailWithAgent(
           });
           parseError = timeoutMsg;
           parseErrorCode = 'forwarded_without_ai_rewrite_timeout';
+          // Use fixed credit values when timeout occurs and we cannot check actual usage
+          if (sandboxPromptTokens === 0 && sandboxCompletionTokens === 0) {
+            sandboxPromptTokens = 20;
+            sandboxCompletionTokens = 20;
+          }
         } else {
           pushTrace('opencode_wait_failed', 'error', msg, {
             durationMs: Date.now() - opencodeRunStartedAt,
