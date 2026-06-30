@@ -18,7 +18,7 @@
     "debug:sandbox": "npx tsx --env-file .env.local scripts/debug-sandbox-agent.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.76",
+    "@ai-sdk/openai": "^3.0.78",
     "@radix-ui/react-accordion": "^1.2.14",
     "@radix-ui/react-dialog": "^1.1.17",
     "@radix-ui/react-dropdown-menu": "^2.1.18",
@@ -40,7 +40,7 @@
     "@vercel/sandbox": "^2.2.1",
     "@vercel/speed-insights": "^2.0.0",
     "@xyflow/react": "^12.11.1",
-    "ai": "^6.0.213",
+    "ai": "^6.0.216",
     "bootstrap-icons": "^1.13.1",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
@@ -53,9 +53,9 @@
     "jsonrepair": "^3.14.1",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
-    "lucide-react": "^1.21.0",
+    "lucide-react": "^1.22.0",
     "next": "^16.2.9",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^9.0.2",
     "openai": "^6.45.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -69,7 +69,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.1",
+    "@tailwindcss/postcss": "^4.3.2",
     "@tailwindcss/typography": "^0.5.20",
     "@types/crypto-js": "^4.2.2",
     "@types/cytoscape": "^3.21.9",
@@ -81,8 +81,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.9",
-    "prettier": "^3.9.0",
-    "tailwindcss": "^4.3.1",
+    "prettier": "^3.9.4",
+    "tailwindcss": "^4.3.2",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.3"
   },
